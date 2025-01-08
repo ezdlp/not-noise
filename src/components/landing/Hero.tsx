@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleCreateLink = () => {
+    navigate("/create");
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
       <div className="max-w-4xl mx-auto text-center">
@@ -11,7 +18,7 @@ export const Hero = () => {
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
           Create beautiful landing pages for your music. Share your tracks across all streaming platforms with a single link.
         </p>
-        <Button size="lg" className="button-gradient">
+        <Button size="lg" className="button-gradient" onClick={handleCreateLink}>
           Create Your Smart Link <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
