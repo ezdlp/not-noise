@@ -6,64 +6,44 @@ import DetailsStep from "@/components/create-smart-link/DetailsStep";
 import PlatformsStep from "@/components/create-smart-link/PlatformsStep";
 import EmailCaptureStep from "@/components/create-smart-link/EmailCaptureStep";
 import ReviewStep from "@/components/create-smart-link/ReviewStep";
+import { toast } from "sonner";
 
 const CreateSmartLink = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<any>({});
 
-  const handleNext = (stepData: any) => {
-    setData({ ...data, ...stepData });
-    setStep(step + 1);
+  const handleSearchComplete = (trackData: any) => {
+    setData(trackData);
+    setStep(2);
+  };
+
+  const handleDetailsComplete = (detailsData: any) => {
+    setData({ ...data, ...detailsData });
+    setStep(3);
+  };
+
+  const handlePlatformsComplete = (platformsData: any) => {
+    setData({ ...data, ...platformsData });
+    setStep(4);
+  };
+
+  const handleEmailCaptureComplete = (emailCaptureData: any) => {
+    setData({ ...data, ...emailCaptureData });
+    setStep(5);
   };
 
   const handleBack = () => {
-    setStep(step - 1);
+    if (step > 1) {
+      setStep(step - 1);
+    }
   };
 
   const handleComplete = () => {
+    // Here we would typically save the data to a backend
+    console.log("Final smart link data:", data);
+    toast.success("Smart link created successfully!");
     navigate("/dashboard");
-  };
-
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return <SearchStep onNext={handleNext} />;
-      case 2:
-        return (
-          <DetailsStep
-            initialData={data}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 3:
-        return (
-          <PlatformsStep
-            initialData={data}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 4:
-        return (
-          <EmailCaptureStep
-            initialData={data}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 5:
-        return (
-          <ReviewStep
-            data={data}
-            onBack={handleBack}
-            onComplete={handleComplete}
-          />
-        );
-      default:
-        return null;
-    }
   };
 
   return (
@@ -83,7 +63,36 @@ const CreateSmartLink = () => {
             />
           </div>
         </div>
-        {renderStep()}
+
+        {step === 1 && <SearchStep onNext={handleSearchComplete} />}
+        {step === 2 && (
+          <DetailsStep
+            initialData={data}
+            onNext={handleDetailsComplete}
+            onBack={handleBack}
+          />
+        )}
+        {step === 3 && (
+          <PlatformsStep
+            initialData={data}
+            onNext={handlePlatformsComplete}
+            onBack={handleBack}
+          />
+        )}
+        {step === 4 && (
+          <EmailCaptureStep
+            initialData={data}
+            onNext={handleEmailCaptureComplete}
+            onBack={handleBack}
+          />
+        )}
+        {step === 5 && (
+          <ReviewStep
+            data={data}
+            onBack={handleBack}
+            onComplete={handleComplete}
+          />
+        )}
       </Card>
     </div>
   );

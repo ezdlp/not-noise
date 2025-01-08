@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
 
 interface SearchStepProps {
   onNext: (trackData: any) => void;
@@ -10,15 +11,16 @@ interface SearchStepProps {
 const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Placeholder for Spotify search - will be implemented later with API
   const handleSearch = () => {
-    // Temporary mock data
+    // Mock data - in a real app, this would come from Spotify API
     const mockTrackData = {
-      title: "Example Track",
+      title: searchQuery || "Example Track",
       artist: "Example Artist",
       album: "Example Album",
       coverUrl: "/placeholder.svg",
     };
+    
+    toast.success("Track found!");
     onNext(mockTrackData);
   };
 

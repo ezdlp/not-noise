@@ -10,7 +10,8 @@ interface ReviewStepProps {
 
 const ReviewStep = ({ data, onBack, onComplete }: ReviewStepProps) => {
   const handlePublish = () => {
-    // Temporary mock publish action
+    // In a real app, this would save to a backend
+    console.log("Publishing smart link:", data);
     toast.success("Smart link created successfully!");
     onComplete();
   };
@@ -30,20 +31,30 @@ const ReviewStep = ({ data, onBack, onComplete }: ReviewStepProps) => {
             {data.title} by {data.artist}
           </p>
           <p className="text-sm text-muted-foreground">Slug: {data.slug}</p>
+          {data.description && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Description: {data.description}
+            </p>
+          )}
         </div>
         <div>
           <h3 className="font-medium">Platforms</h3>
           <ul className="text-sm text-muted-foreground">
             {data.platforms.map((platform: any) => (
-              <li key={platform.id}>{platform.name}</li>
+              <li key={platform.id} className="mt-1">
+                {platform.name}: {platform.url}
+              </li>
             ))}
           </ul>
         </div>
-        {data.emailCapture.enabled && (
+        {data.emailCapture?.enabled && (
           <div>
             <h3 className="font-medium">Email Capture Form</h3>
             <p className="text-sm text-muted-foreground">
-              {data.emailCapture.title}
+              Title: {data.emailCapture.title}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Description: {data.emailCapture.description}
             </p>
           </div>
         )}

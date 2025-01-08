@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface EmailCaptureStepProps {
   initialData: any;
@@ -32,6 +33,7 @@ const EmailCaptureStep = ({
         buttonText,
       },
     });
+    toast.success("Email capture settings saved!");
   };
 
   return (

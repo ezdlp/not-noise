@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface DetailsStepProps {
   initialData: any;
@@ -14,11 +16,17 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [description, setDescription] = useState("");
 
   const handleNext = () => {
+    if (!slug.trim()) {
+      toast.error("Please enter a URL slug");
+      return;
+    }
+    
     onNext({
       ...initialData,
       slug,
       description,
     });
+    toast.success("Details saved!");
   };
 
   return (
@@ -31,7 +39,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       </div>
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Custom URL Slug</label>
+          <Label>Custom URL Slug</Label>
           <Input
             placeholder="e.g., my-awesome-track"
             value={slug}
@@ -39,7 +47,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium">Description (Optional)</label>
+          <Label>Description (Optional)</Label>
           <Textarea
             placeholder="Add a short description..."
             value={description}

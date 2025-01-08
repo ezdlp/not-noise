@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface PlatformsStepProps {
   initialData: any;
@@ -18,10 +19,17 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   ]);
 
   const handleNext = () => {
+    const enabledPlatforms = platforms.filter((p) => p.enabled);
+    if (!enabledPlatforms.some((p) => p.url)) {
+      toast.error("Please add at least one platform URL");
+      return;
+    }
+    
     onNext({
       ...initialData,
-      platforms: platforms.filter((p) => p.enabled),
+      platforms: enabledPlatforms,
     });
+    toast.success("Platforms saved!");
   };
 
   const togglePlatform = (platformId: string) => {
