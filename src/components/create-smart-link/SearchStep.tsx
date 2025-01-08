@@ -3,25 +3,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import SpotifyWebApi from "spotify-web-api-node";
 
 interface SearchStepProps {
   onNext: (trackData: any) => void;
 }
 
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+});
+
 const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const handleSearch = () => {
-    // Mock data - in a real app, this would come from Spotify API
-    const mockTrackData = {
-      title: searchQuery || "Example Track",
-      artist: "Example Artist",
-      album: "Example Album",
-      coverUrl: "/placeholder.svg",
-    };
-    
-    toast.success("Track found!");
-    onNext(mockTrackData);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSearch = async () => {
+    try {
+      setIsLoading(true);
+
+      // Get access token
+      const authResponse = await spotifyApi.clientCredentialsGrant();
+      spotifyApi.setAccessToken(authResponse.body.access_token);
+
+      // Search for tracks
+      const searchResults = await spotifyApi.searchTracks(searchQuery, { limit: 1 });
+      
+      if (searchResults.body.tracks?.items.length === 0) {
+        toast.error("No tracks found. Please try a different search term.");
+        return;
+      }
+
+      const track = searchResults.body.tracks?.items[0];
+      const trackData = {
+        title: track.name,
+        artist: track.artists.map(artist => artist.name).join(", "),
+        album: track.album.name,
+        coverUrl: track.album.images[0]?.url || "/placeholder.svg",
+        spotifyId: track.id,
+        spotifyUrl: track.external_urls.spotify,
+      };
+
+      toast.success("Track found!");
+      onNext(trackData);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("Failed to search for tracks. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -38,10 +68,18 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
-        <Button onClick={handleSearch} disabled={!searchQuery.trim()}>
+        <Button 
+          onClick={handleSearch} 
+          disabled={!searchQuery.trim() || isLoading}
+        >
           <Search className="mr-2 h-4 w-4" />
-          Search
+          {isLoading ? "Searching..." : "Search"}
         </Button>
       </div>
     </div>
