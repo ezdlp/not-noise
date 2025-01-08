@@ -10,8 +10,8 @@ interface SearchStepProps {
 }
 
 const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  clientId: "0e9ee3ef0f2a499cb2e8151cdcdb87b8",
+  clientSecret: "a4c7c2ec14564d9b94a5e8b18bd57931",
 });
 
 const SearchStep = ({ onNext }: SearchStepProps) => {
