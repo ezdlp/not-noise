@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
-  Music, 
-  Youtube, 
-  Apple,
+  Music,
   GripVertical,
 } from "lucide-react";
 import {
@@ -72,9 +69,8 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
           <img 
             src={platform.icon} 
             alt={`${platform.name} logo`} 
-            className="w-8 h-8 object-contain"
+            className="w-12 h-12 object-contain"
           />
-          <Label className="text-base font-medium">{platform.name}</Label>
           <div className="ml-auto">
             <Button
               variant={platform.enabled ? "default" : "outline"}
@@ -92,7 +88,7 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
           value={platform.url}
           onChange={(e) => onUrlChange(platform.id, e.target.value)}
           className="mt-4"
-          placeholder={`Enter ${platform.name} URL...`}
+          placeholder={platform.url ? undefined : `Enter ${platform.name} URL manually...`}
         />
       )}
     </div>
@@ -118,6 +114,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     { id: "napster", name: "Napster", enabled: false, url: "", icon: "/lovable-uploads/d16e78a9-e41f-466c-a339-e293d03110ba.png" },
     { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: "/lovable-uploads/c564128e-b594-4909-8fb2-5f1e98cbe6cc.png" },
     { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: "/lovable-uploads/398fda54-f8aa-4b4e-ad28-984135ded1c8.png" },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: "/lovable-uploads/beatport.png" },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: "/lovable-uploads/bandcamp.png" },
+    { id: "audius", name: "Audius", enabled: false, url: "", icon: "/lovable-uploads/audius.png" },
   ]);
 
   const sensors = useSensors(
@@ -204,11 +203,22 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   };
 
   const togglePlatform = (platformId: string) => {
-    setPlatforms(
-      platforms.map((p) =>
-        p.id === platformId ? { ...p, enabled: !p.enabled } : p
-      )
-    );
+    // Check if the platform is in additionalPlatforms
+    const additionalPlatform = additionalPlatforms.find(p => p.id === platformId);
+    if (additionalPlatform) {
+      // If enabling an additional platform, move it to platforms
+      if (!additionalPlatform.enabled) {
+        setPlatforms(prev => [...prev, { ...additionalPlatform, enabled: true }]);
+        setAdditionalPlatforms(prev => prev.filter(p => p.id !== platformId));
+      }
+    } else {
+      // Toggle existing platform
+      setPlatforms(
+        platforms.map((p) =>
+          p.id === platformId ? { ...p, enabled: !p.enabled } : p
+        )
+      );
+    }
   };
 
   const updateUrl = (platformId: string, url: string) => {
@@ -268,9 +278,8 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
               <img 
                 src={platform.icon} 
                 alt={`${platform.name} logo`} 
-                className="w-8 h-8 object-contain"
+                className="w-12 h-12 object-contain"
               />
-              <Label className="text-base font-medium">{platform.name}</Label>
               <div className="ml-auto">
                 <Button
                   variant={platform.enabled ? "default" : "outline"}
@@ -281,14 +290,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
                 </Button>
               </div>
             </div>
-            {platform.enabled && (
-              <Input
-                value={platform.url}
-                onChange={(e) => updateUrl(platform.id, e.target.value)}
-                className="mt-4"
-                placeholder={`Enter ${platform.name} URL...`}
-              />
-            )}
           </div>
         ))}
       </div>
