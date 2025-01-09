@@ -8,7 +8,6 @@ import {
   Music, 
   Youtube, 
   Apple,
-  Loader2
 } from "lucide-react";
 import {
   DndContext,
@@ -89,7 +88,20 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: <Music className="text-green-500" /> },
     { id: "apple", name: "Apple Music", enabled: false, url: "", icon: <Apple className="text-gray-900" /> },
-    { id: "youtube", name: "YouTube Music", enabled: false, url: "", icon: <Youtube className="text-red-500" /> },
+    { id: "amazon", name: "Amazon Music", enabled: false, url: "", icon: <Music className="text-orange-500" /> },
+    { id: "youtube_music", name: "YouTube Music", enabled: false, url: "", icon: <Youtube className="text-red-500" /> },
+    { id: "deezer", name: "Deezer", enabled: false, url: "", icon: <Music className="text-blue-500" /> },
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: <Music className="text-black" /> },
+    { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: <Music className="text-orange-600" /> },
+    { id: "youtube", name: "YouTube", enabled: false, url: "", icon: <Youtube className="text-red-600" /> },
+    { id: "itunes", name: "iTunes", enabled: false, url: "", icon: <Apple className="text-purple-600" /> },
+  ]);
+
+  const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
+    { id: "pandora", name: "Pandora", enabled: false, url: "", icon: <Music className="text-blue-400" /> },
+    { id: "audiomack", name: "Audiomack", enabled: false, url: "", icon: <Music className="text-orange-400" /> },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: <Music className="text-green-400" /> },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: <Music className="text-blue-600" /> },
   ]);
 
   const sensors = useSensors(
@@ -105,15 +117,46 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(initialData.spotifyUrl)}`);
+        const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(initialData.spotifyUrl)}`, {
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch streaming links');
+        }
+
         const data = await response.json();
 
         setPlatforms(prev => prev.map(platform => {
           let url = "";
-          if (platform.id === "apple" && data.linksByPlatform.appleMusic) {
-            url = data.linksByPlatform.appleMusic.url;
-          } else if (platform.id === "youtube" && data.linksByPlatform.youtubeMusic) {
-            url = data.linksByPlatform.youtubeMusic.url;
+          switch (platform.id) {
+            case "apple":
+              url = data.linksByPlatform.appleMusic?.url || "";
+              break;
+            case "youtube_music":
+              url = data.linksByPlatform.youtubeMusic?.url || "";
+              break;
+            case "amazon":
+              url = data.linksByPlatform.amazonMusic?.url || "";
+              break;
+            case "deezer":
+              url = data.linksByPlatform.deezer?.url || "";
+              break;
+            case "tidal":
+              url = data.linksByPlatform.tidal?.url || "";
+              break;
+            case "soundcloud":
+              url = data.linksByPlatform.soundcloud?.url || "";
+              break;
+            case "youtube":
+              url = data.linksByPlatform.youtube?.url || "";
+              break;
+            case "itunes":
+              url = data.linksByPlatform.itunes?.url || "";
+              break;
           }
           return {
             ...platform,
@@ -121,6 +164,21 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             url: url || platform.url,
           };
         }));
+
+        setAdditionalPlatforms(prev => prev.map(platform => {
+          let url = "";
+          if (platform.id === "pandora") {
+            url = data.linksByPlatform.pandora?.url || "";
+          } else if (platform.id === "audiomack") {
+            url = data.linksByPlatform.audiomack?.url || "";
+          }
+          return {
+            ...platform,
+            enabled: !!url,
+            url: url || platform.url,
+          };
+        }));
+
       } catch (error) {
         console.error("Error fetching Odesli links:", error);
         toast.error("Failed to fetch streaming links. Please add them manually.");
@@ -173,15 +231,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     toast.success("Platforms saved!");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading streaming links...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -210,6 +259,33 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           ))}
         </SortableContext>
       </DndContext>
+
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-4">Add More Services</h3>
+        {additionalPlatforms.map((platform) => (
+          <div key={platform.id} className="bg-white p-4 rounded-lg shadow-sm mb-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-6 h-6">
+                {platform.icon}
+              </div>
+              <Checkbox
+                id={platform.id}
+                checked={platform.enabled}
+                onCheckedChange={() => togglePlatform(platform.id)}
+              />
+              <Label htmlFor={platform.id}>{platform.name}</Label>
+            </div>
+            {platform.enabled && (
+              <Input
+                placeholder={`Enter ${platform.name} URL...`}
+                value={platform.url}
+                onChange={(e) => updateUrl(platform.id, e.target.value)}
+                className="mt-2"
+              />
+            )}
+          </div>
+        ))}
+      </div>
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>

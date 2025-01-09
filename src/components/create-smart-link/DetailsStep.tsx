@@ -17,7 +17,6 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    // Generate slug from artist and title
     const generatedSlug = `${initialData.artist.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${initialData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     setSlug(generatedSlug);
   }, [initialData.artist, initialData.title]);
@@ -33,7 +32,9 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       slug,
       description,
     });
-    toast.success("Details saved!");
+    toast.success("Details saved!", {
+      position: "top-center",
+    });
   };
 
   return (
@@ -63,11 +64,15 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Custom URL Slug</Label>
-          <Input
-            placeholder="e.g., artist-track-name"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
+          <div className="flex items-center space-x-2">
+            <span className="text-muted-foreground">srsr.li/</span>
+            <Input
+              placeholder="e.g., artist-track-name"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="flex-1"
+            />
+          </div>
           <p className="text-xs text-muted-foreground">
             This will be the URL of your smart link
           </p>

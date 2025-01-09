@@ -57,11 +57,11 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         spotifyId: track.id,
         spotifyUrl: track.external_urls.spotify,
         releaseDate: track.album.release_date,
+        relevanceScore: calculateRelevanceScore(track, query),
       }));
 
-      setSearchResults(tracks.sort((a, b) => 
-        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
-      ));
+      // Sort by relevance score
+      setSearchResults(tracks.sort((a, b) => b.relevanceScore - a.relevanceScore));
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search for tracks. Please try again.");
@@ -69,6 +69,15 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const calculateRelevanceScore = (track: any, query: string) => {
+    const queryLower = query.toLowerCase();
+    const titleMatch = track.name.toLowerCase().includes(queryLower) ? 2 : 0;
+    const artistMatch = track.artists.some((artist: any) => 
+      artist.name.toLowerCase().includes(queryLower)
+    ) ? 1 : 0;
+    return titleMatch + artistMatch;
   };
 
   const handleSearchChange = (value: string) => {
@@ -80,7 +89,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
     const timeout = setTimeout(() => {
       performSearch(value);
-    }, 2000); // 2 second debounce
+    }, 2000);
 
     setSearchTimeout(timeout);
   };
@@ -95,7 +104,9 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
   const handleSelectTrack = (track: any) => {
     onNext(track);
-    toast.success("Track selected!");
+    toast.success("Track selected!", {
+      position: "top-center",
+    });
   };
 
   return (
