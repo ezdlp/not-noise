@@ -12,11 +12,6 @@ import {
   faYoutube, 
   faSoundcloud,
   faDeezer,
-  faTidal,
-  faAnghami,
-  faNapster,
-  faBoomplay,
-  faYandex,
 } from "@fortawesome/free-brands-svg-icons";
 import { faMusic } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -43,6 +38,15 @@ interface Platform {
   icon: any;
 }
 
+interface PlatformsStepProps {
+  initialData: {
+    spotifyUrl: string;
+    [key: string]: any;
+  };
+  onNext: (data: any) => void;
+  onBack: () => void;
+}
+
 const getPlatformIcon = (platformId: string) => {
   switch (platformId) {
     case "spotify": return faSpotify;
@@ -50,17 +54,9 @@ const getPlatformIcon = (platformId: string) => {
     case "amazon": return faAmazon;
     case "youtube_music": return faYoutube;
     case "deezer": return faDeezer;
-    case "tidal": return faTidal;
     case "soundcloud": return faSoundcloud;
     case "youtube": return faYoutube;
     case "itunes": return faApple;
-    case "anghami": return faMusic;
-    case "napster": return faMusic;
-    case "boomplay": return faMusic;
-    case "yandex": return faMusic;
-    case "beatport": return faMusic;
-    case "bandcamp": return faMusic;
-    case "audius": return faMusic;
     default: return faMusic;
   }
 };
@@ -138,13 +134,13 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: faAmazon },
     { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: faYoutube },
     { id: "deezer", name: "Deezer", enabled: true, url: "", icon: faDeezer },
-    { id: "tidal", name: "Tidal", enabled: true, url: "", icon: faTidal },
     { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: faSoundcloud },
     { id: "youtube", name: "YouTube", enabled: true, url: "", icon: faYoutube },
     { id: "itunes", name: "iTunes", enabled: true, url: "", icon: faApple },
   ]);
 
   const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: faMusic },
     { id: "anghami", name: "Anghami", enabled: false, url: "", icon: faMusic },
     { id: "napster", name: "Napster", enabled: false, url: "", icon: faMusic },
     { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: faMusic },
