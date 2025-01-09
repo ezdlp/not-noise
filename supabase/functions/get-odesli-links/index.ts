@@ -1,4 +1,4 @@
-import { serve } from "https://deno.fresh.run/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url)
-    const spotifyUrl = url.searchParams.get('url')
+    const { url } = await req.json()
     
-    if (!spotifyUrl) {
+    if (!url) {
       return new Response(
         JSON.stringify({ error: 'No Spotify URL provided' }),
         { 
@@ -25,10 +24,10 @@ serve(async (req) => {
       )
     }
 
-    console.log('Fetching Odesli links for:', spotifyUrl)
+    console.log('Fetching Odesli links for:', url)
     
     const odesliResponse = await fetch(
-      `https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(spotifyUrl)}`,
+      `https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`,
       {
         headers: {
           'Accept': 'application/json',
