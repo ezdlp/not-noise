@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
 import SpotifyWebApi from "spotify-web-api-node";
 
 interface SearchStepProps {
@@ -18,6 +19,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [foundTrack, setFoundTrack] = useState<any>(null);
 
   const performSearch = async (query: string) => {
     if (!query.trim()) return;
@@ -58,8 +60,8 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         spotifyUrl: track.external_urls.spotify,
       };
 
+      setFoundTrack(trackData);
       toast.success("Track found!");
-      onNext(trackData);
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search for tracks. Please try again.");
@@ -94,6 +96,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     };
   }, [searchTimeout]);
 
+  const handleNext = () => {
+    if (foundTrack) {
+      onNext(foundTrack);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -115,6 +123,26 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           {isLoading ? "Searching..." : "Search"}
         </Button>
       </div>
+
+      {foundTrack && (
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <img 
+              src={foundTrack.coverUrl} 
+              alt={`${foundTrack.title} cover`} 
+              className="w-24 h-24 object-cover rounded-lg"
+            />
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">{foundTrack.title}</h3>
+              <p className="text-muted-foreground">{foundTrack.artist}</p>
+              <p className="text-sm text-muted-foreground mt-1">{foundTrack.album}</p>
+              <Button onClick={handleNext} className="mt-4">
+                Use This Track
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

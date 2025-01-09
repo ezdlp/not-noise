@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
 
 interface DetailsStepProps {
   initialData: any;
@@ -37,6 +38,22 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           Customize your smart link details
         </p>
       </div>
+
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <img 
+            src={initialData.coverUrl} 
+            alt={`${initialData.title} cover`} 
+            className="w-24 h-24 object-cover rounded-lg"
+          />
+          <div>
+            <h3 className="font-semibold text-lg">{initialData.title}</h3>
+            <p className="text-muted-foreground">{initialData.artist}</p>
+            <p className="text-sm text-muted-foreground mt-1">{initialData.album}</p>
+          </div>
+        </div>
+      </Card>
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Custom URL Slug</Label>
