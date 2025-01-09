@@ -122,7 +122,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           placeholder="Search by track name or artist..."
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="flex-1"
+          className="flex-1 focus:ring-primary focus:border-primary"
           disabled={isLoading}
         />
       </div>

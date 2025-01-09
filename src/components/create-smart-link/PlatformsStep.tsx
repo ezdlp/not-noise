@@ -3,10 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { GripVertical } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
-  Music,
-  GripVertical,
-} from "lucide-react";
+  faSpotify, 
+  faApple, 
+  faAmazon, 
+  faYoutube, 
+  faSoundcloud,
+  faDeezer,
+  faTidal,
+  faAnghami,
+  faNapster,
+  faBoomplay,
+  faYandex,
+} from "@fortawesome/free-brands-svg-icons";
+import { faMusic } from "@fortawesome/free-solid-svg-icons";
 import {
   DndContext,
   closestCenter,
@@ -28,14 +40,30 @@ interface Platform {
   name: string;
   enabled: boolean;
   url: string;
-  icon: string;
+  icon: any;
 }
 
-interface PlatformsStepProps {
-  initialData: any;
-  onNext: (data: any) => void;
-  onBack: () => void;
-}
+const getPlatformIcon = (platformId: string) => {
+  switch (platformId) {
+    case "spotify": return faSpotify;
+    case "apple": return faApple;
+    case "amazon": return faAmazon;
+    case "youtube_music": return faYoutube;
+    case "deezer": return faDeezer;
+    case "tidal": return faTidal;
+    case "soundcloud": return faSoundcloud;
+    case "youtube": return faYoutube;
+    case "itunes": return faApple;
+    case "anghami": return faMusic;
+    case "napster": return faMusic;
+    case "boomplay": return faMusic;
+    case "yandex": return faMusic;
+    case "beatport": return faMusic;
+    case "bandcamp": return faMusic;
+    case "audius": return faMusic;
+    default: return faMusic;
+  }
+};
 
 const SortablePlatform = ({ platform, onToggle, onUrlChange }: { 
   platform: Platform; 
@@ -59,26 +87,33 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow duration-200"
+      className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-center gap-4">
         <div {...attributes} {...listeners} className="cursor-grab hover:opacity-70">
           <GripVertical className="text-gray-400" />
         </div>
         <div className="flex items-center gap-3 flex-1">
-          <img 
-            src={platform.icon} 
-            alt={`${platform.name} logo`} 
-            className="w-12 h-12 object-contain"
+          <FontAwesomeIcon 
+            icon={getPlatformIcon(platform.id)} 
+            className="text-3xl"
           />
+          <span className="ml-2 text-sm font-medium">{platform.name}</span>
           <div className="ml-auto">
             <Button
               variant={platform.enabled ? "default" : "outline"}
               onClick={() => onToggle(platform.id)}
               disabled={platform.id === "spotify"}
-              className="min-w-[100px]"
+              className={`min-w-[100px] group hover:bg-red-500 hover:border-red-500 ${
+                platform.enabled ? "" : "hover:bg-primary hover:border-primary"
+              }`}
             >
-              {platform.enabled ? "Enabled" : "Disabled"}
+              <span className="group-hover:hidden">
+                {platform.enabled ? "Enabled" : "Disabled"}
+              </span>
+              <span className="hidden group-hover:inline">
+                {platform.enabled ? "Disable" : "Enable"}
+              </span>
             </Button>
           </div>
         </div>
@@ -88,7 +123,7 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
           value={platform.url}
           onChange={(e) => onUrlChange(platform.id, e.target.value)}
           className="mt-4"
-          placeholder={platform.url ? undefined : `Enter ${platform.name} URL manually...`}
+          placeholder={`Enter ${platform.name} URL manually...`}
         />
       )}
     </div>
@@ -98,25 +133,25 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: "/lovable-uploads/1774db88-cf22-42a3-ae4e-f569d084758b.png" },
-    { id: "apple", name: "Apple Music", enabled: false, url: "", icon: "/lovable-uploads/525c74dd-2e67-4591-868b-3a20ec72bb1b.png" },
-    { id: "amazon", name: "Amazon Music", enabled: false, url: "", icon: "/lovable-uploads/3307f3ee-5e9f-4d5c-98df-d81e826dadb2.png" },
-    { id: "youtube_music", name: "YouTube Music", enabled: false, url: "", icon: "/lovable-uploads/4510bd60-a8a4-4c06-8850-3ecd456bd61c.png" },
-    { id: "deezer", name: "Deezer", enabled: false, url: "", icon: "/lovable-uploads/8fd0c910-5818-42d5-8b7c-28687de751f0.png" },
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: "/lovable-uploads/4c9eb575-58f0-4d5e-9109-0fe49ff42c02.png" },
-    { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: "/lovable-uploads/784c6037-6e3d-4a29-8283-6779b3e8614b.png" },
-    { id: "youtube", name: "YouTube", enabled: false, url: "", icon: "/lovable-uploads/4510bd60-a8a4-4c06-8850-3ecd456bd61c.png" },
-    { id: "itunes", name: "iTunes", enabled: false, url: "", icon: "/lovable-uploads/12904552-0e7f-4be4-b8fe-9da870581acd.png" },
+    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: faSpotify },
+    { id: "apple", name: "Apple Music", enabled: true, url: "", icon: faApple },
+    { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: faAmazon },
+    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: faYoutube },
+    { id: "deezer", name: "Deezer", enabled: true, url: "", icon: faDeezer },
+    { id: "tidal", name: "Tidal", enabled: true, url: "", icon: faTidal },
+    { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: faSoundcloud },
+    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: faYoutube },
+    { id: "itunes", name: "iTunes", enabled: true, url: "", icon: faApple },
   ]);
 
   const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
-    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: "/lovable-uploads/dce36b1c-1b3e-44a4-9f09-ada4ea475cd4.png" },
-    { id: "napster", name: "Napster", enabled: false, url: "", icon: "/lovable-uploads/d16e78a9-e41f-466c-a339-e293d03110ba.png" },
-    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: "/lovable-uploads/c564128e-b594-4909-8fb2-5f1e98cbe6cc.png" },
-    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: "/lovable-uploads/398fda54-f8aa-4b4e-ad28-984135ded1c8.png" },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: "/lovable-uploads/beatport.png" },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: "/lovable-uploads/bandcamp.png" },
-    { id: "audius", name: "Audius", enabled: false, url: "", icon: "/lovable-uploads/audius.png" },
+    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: faMusic },
+    { id: "napster", name: "Napster", enabled: false, url: "", icon: faMusic },
+    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: faMusic },
+    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: faMusic },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: faMusic },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: faMusic },
+    { id: "audius", name: "Audius", enabled: false, url: "", icon: faMusic },
   ]);
 
   const sensors = useSensors(
