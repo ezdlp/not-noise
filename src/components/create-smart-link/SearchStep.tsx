@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -17,8 +17,11 @@ spotifyApi.setClientSecret("a4c7c2ec14564d9b94a5e8b18bd57931");
 const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const handleSearch = async () => {
+  const performSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
     try {
       setIsLoading(true);
 
@@ -38,7 +41,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
       spotifyApi.setAccessToken(tokenResponse.access_token);
 
       // Search for tracks
-      const searchResults = await spotifyApi.searchTracks(searchQuery, { limit: 1 });
+      const searchResults = await spotifyApi.searchTracks(query, { limit: 1 });
       
       if (searchResults.body.tracks?.items.length === 0) {
         toast.error("No tracks found. Please try a different search term.");
@@ -65,6 +68,32 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     }
   };
 
+  // Handle search input changes with debounce
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    // Clear any existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Set new timeout for the search
+    const timeout = setTimeout(() => {
+      performSearch(value);
+    }, 500); // 500ms debounce
+
+    setSearchTimeout(timeout);
+  };
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -77,18 +106,11 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         <Input
           placeholder="Search by track name or artist..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="flex-1"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSearch();
-            }
-          }}
+          disabled={isLoading}
         />
-        <Button 
-          onClick={handleSearch} 
-          disabled={!searchQuery.trim() || isLoading}
-        >
+        <Button disabled={!searchQuery.trim() || isLoading}>
           <Search className="mr-2 h-4 w-4" />
           {isLoading ? "Searching..." : "Search"}
         </Button>
