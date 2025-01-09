@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,12 @@ interface DetailsStepProps {
 const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    // Generate slug from artist and title
+    const generatedSlug = `${initialData.artist.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${initialData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    setSlug(generatedSlug);
+  }, [initialData.artist, initialData.title]);
 
   const handleNext = () => {
     if (!slug.trim()) {
@@ -58,10 +64,13 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
         <div className="space-y-2">
           <Label>Custom URL Slug</Label>
           <Input
-            placeholder="e.g., my-awesome-track"
+            placeholder="e.g., artist-track-name"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
           />
+          <p className="text-xs text-muted-foreground">
+            This will be the URL of your smart link
+          </p>
         </div>
         <div className="space-y-2">
           <Label>Description (Optional)</Label>

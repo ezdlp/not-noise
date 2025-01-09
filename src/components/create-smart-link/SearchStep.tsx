@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import SpotifyWebApi from "spotify-web-api-node";
@@ -10,7 +10,6 @@ interface SearchStepProps {
   onNext: (trackData: any) => void;
 }
 
-// Initialize the Spotify API client
 const spotifyApi = new SpotifyWebApi();
 spotifyApi.setClientId("0e9ee3ef0f2a499cb2e8151cdcdb87b8");
 spotifyApi.setClientSecret("a4c7c2ec14564d9b94a5e8b18bd57931");
@@ -19,15 +18,17 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [foundTrack, setFoundTrack] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const performSearch = async (query: string) => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
     try {
       setIsLoading(true);
 
-      // Get access token using client credentials
       const data = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
         headers: {
@@ -38,56 +39,52 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
       });
       
       const tokenResponse = await data.json();
-      
-      // Set the access token
       spotifyApi.setAccessToken(tokenResponse.access_token);
 
-      // Search for tracks
-      const searchResults = await spotifyApi.searchTracks(query, { limit: 1 });
+      const searchResults = await spotifyApi.searchTracks(query, { limit: 10 });
       
       if (searchResults.body.tracks?.items.length === 0) {
         toast.error("No tracks found. Please try a different search term.");
+        setSearchResults([]);
         return;
       }
 
-      const track = searchResults.body.tracks?.items[0];
-      const trackData = {
+      const tracks = searchResults.body.tracks?.items.map(track => ({
         title: track.name,
         artist: track.artists.map(artist => artist.name).join(", "),
         album: track.album.name,
         coverUrl: track.album.images[0]?.url || "/placeholder.svg",
         spotifyId: track.id,
         spotifyUrl: track.external_urls.spotify,
-      };
+        releaseDate: track.album.release_date,
+      }));
 
-      setFoundTrack(trackData);
-      toast.success("Track found!");
+      setSearchResults(tracks.sort((a, b) => 
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+      ));
     } catch (error) {
       console.error("Search error:", error);
       toast.error("Failed to search for tracks. Please try again.");
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle search input changes with debounce
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     
-    // Clear any existing timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // Set new timeout for the search
     const timeout = setTimeout(() => {
       performSearch(value);
-    }, 500); // 500ms debounce
+    }, 2000); // 2 second debounce
 
     setSearchTimeout(timeout);
   };
 
-  // Cleanup timeout on component unmount
   useEffect(() => {
     return () => {
       if (searchTimeout) {
@@ -96,10 +93,9 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     };
   }, [searchTimeout]);
 
-  const handleNext = () => {
-    if (foundTrack) {
-      onNext(foundTrack);
-    }
+  const handleSelectTrack = (track: any) => {
+    onNext(track);
+    toast.success("Track selected!");
   };
 
   return (
@@ -118,31 +114,36 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           className="flex-1"
           disabled={isLoading}
         />
-        <Button disabled={!searchQuery.trim() || isLoading}>
-          <Search className="mr-2 h-4 w-4" />
-          {isLoading ? "Searching..." : "Search"}
-        </Button>
       </div>
 
-      {foundTrack && (
-        <Card className="p-4">
-          <div className="flex items-center gap-4">
-            <img 
-              src={foundTrack.coverUrl} 
-              alt={`${foundTrack.title} cover`} 
-              className="w-24 h-24 object-cover rounded-lg"
-            />
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{foundTrack.title}</h3>
-              <p className="text-muted-foreground">{foundTrack.artist}</p>
-              <p className="text-sm text-muted-foreground mt-1">{foundTrack.album}</p>
-              <Button onClick={handleNext} className="mt-4">
-                Use This Track
-              </Button>
-            </div>
-          </div>
-        </Card>
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Searching...</span>
+        </div>
       )}
+
+      <div className="space-y-4">
+        {searchResults.map((track) => (
+          <Card key={track.spotifyId} className="p-4">
+            <div className="flex items-center gap-4">
+              <img 
+                src={track.coverUrl} 
+                alt={`${track.title} cover`} 
+                className="w-24 h-24 object-cover rounded-lg"
+              />
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">{track.title}</h3>
+                <p className="text-muted-foreground">{track.artist}</p>
+                <p className="text-sm text-muted-foreground mt-1">{track.album}</p>
+                <Button onClick={() => handleSelectTrack(track)} className="mt-4">
+                  Use This Track
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
