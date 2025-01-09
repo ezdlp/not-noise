@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import {
   Music, 
   Youtube, 
   Apple,
+  GripVertical,
 } from "lucide-react";
 import {
   DndContext,
@@ -31,7 +31,7 @@ interface Platform {
   name: string;
   enabled: boolean;
   url: string;
-  icon: React.ReactNode;
+  icon: string;
 }
 
 interface PlatformsStepProps {
@@ -59,25 +59,40 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
   } : undefined;
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-white p-4 rounded-lg shadow-sm mb-2 cursor-move" {...attributes} {...listeners}>
-      <div className="flex items-center space-x-2 mb-2">
-        <div className="w-6 h-6">
-          {platform.icon}
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow duration-200"
+    >
+      <div className="flex items-center gap-4">
+        <div {...attributes} {...listeners} className="cursor-grab hover:opacity-70">
+          <GripVertical className="text-gray-400" />
         </div>
-        <Checkbox
-          id={platform.id}
-          checked={platform.enabled}
-          onCheckedChange={() => onToggle(platform.id)}
-          disabled={platform.id === "spotify"}
-        />
-        <Label htmlFor={platform.id}>{platform.name}</Label>
+        <div className="flex items-center gap-3 flex-1">
+          <img 
+            src={platform.icon} 
+            alt={`${platform.name} logo`} 
+            className="w-8 h-8 object-contain"
+          />
+          <Label className="text-base font-medium">{platform.name}</Label>
+          <div className="ml-auto">
+            <Button
+              variant={platform.enabled ? "default" : "outline"}
+              onClick={() => onToggle(platform.id)}
+              disabled={platform.id === "spotify"}
+              className="min-w-[100px]"
+            >
+              {platform.enabled ? "Enabled" : "Disabled"}
+            </Button>
+          </div>
+        </div>
       </div>
       {platform.enabled && (
         <Input
-          placeholder={`Enter ${platform.name} URL...`}
           value={platform.url}
           onChange={(e) => onUrlChange(platform.id, e.target.value)}
-          className="mt-2"
+          className="mt-4"
+          placeholder={`Enter ${platform.name} URL...`}
         />
       )}
     </div>
@@ -87,22 +102,22 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: <Music className="text-green-500" /> },
-    { id: "apple", name: "Apple Music", enabled: false, url: "", icon: <Apple className="text-gray-900" /> },
-    { id: "amazon", name: "Amazon Music", enabled: false, url: "", icon: <Music className="text-orange-500" /> },
-    { id: "youtube_music", name: "YouTube Music", enabled: false, url: "", icon: <Youtube className="text-red-500" /> },
-    { id: "deezer", name: "Deezer", enabled: false, url: "", icon: <Music className="text-blue-500" /> },
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: <Music className="text-black" /> },
-    { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: <Music className="text-orange-600" /> },
-    { id: "youtube", name: "YouTube", enabled: false, url: "", icon: <Youtube className="text-red-600" /> },
-    { id: "itunes", name: "iTunes", enabled: false, url: "", icon: <Apple className="text-purple-600" /> },
+    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: "/lovable-uploads/1774db88-cf22-42a3-ae4e-f569d084758b.png" },
+    { id: "apple", name: "Apple Music", enabled: false, url: "", icon: "/lovable-uploads/525c74dd-2e67-4591-868b-3a20ec72bb1b.png" },
+    { id: "amazon", name: "Amazon Music", enabled: false, url: "", icon: "/lovable-uploads/3307f3ee-5e9f-4d5c-98df-d81e826dadb2.png" },
+    { id: "youtube_music", name: "YouTube Music", enabled: false, url: "", icon: "/lovable-uploads/4510bd60-a8a4-4c06-8850-3ecd456bd61c.png" },
+    { id: "deezer", name: "Deezer", enabled: false, url: "", icon: "/lovable-uploads/8fd0c910-5818-42d5-8b7c-28687de751f0.png" },
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: "/lovable-uploads/4c9eb575-58f0-4d5e-9109-0fe49ff42c02.png" },
+    { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: "/lovable-uploads/784c6037-6e3d-4a29-8283-6779b3e8614b.png" },
+    { id: "youtube", name: "YouTube", enabled: false, url: "", icon: "/lovable-uploads/4510bd60-a8a4-4c06-8850-3ecd456bd61c.png" },
+    { id: "itunes", name: "iTunes", enabled: false, url: "", icon: "/lovable-uploads/12904552-0e7f-4be4-b8fe-9da870581acd.png" },
   ]);
 
   const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
-    { id: "pandora", name: "Pandora", enabled: false, url: "", icon: <Music className="text-blue-400" /> },
-    { id: "audiomack", name: "Audiomack", enabled: false, url: "", icon: <Music className="text-orange-400" /> },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: <Music className="text-green-400" /> },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: <Music className="text-blue-600" /> },
+    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: "/lovable-uploads/dce36b1c-1b3e-44a4-9f09-ada4ea475cd4.png" },
+    { id: "napster", name: "Napster", enabled: false, url: "", icon: "/lovable-uploads/d16e78a9-e41f-466c-a339-e293d03110ba.png" },
+    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: "/lovable-uploads/c564128e-b594-4909-8fb2-5f1e98cbe6cc.png" },
+    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: "/lovable-uploads/398fda54-f8aa-4b4e-ad28-984135ded1c8.png" },
   ]);
 
   const sensors = useSensors(
@@ -129,6 +144,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
         setPlatforms(prev => prev.map(platform => {
           let url = "";
           switch (platform.id) {
+            case "spotify":
+              url = initialData.spotifyUrl;
+              break;
             case "apple":
               url = data.linksByPlatform.appleMusic?.url || "";
               break;
@@ -156,21 +174,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           }
           return {
             ...platform,
-            enabled: !!url,
-            url: url || platform.url,
-          };
-        }));
-
-        setAdditionalPlatforms(prev => prev.map(platform => {
-          let url = "";
-          if (platform.id === "pandora") {
-            url = data.linksByPlatform.pandora?.url || "";
-          } else if (platform.id === "audiomack") {
-            url = data.linksByPlatform.audiomack?.url || "";
-          }
-          return {
-            ...platform,
-            enabled: !!url,
+            enabled: platform.id === "spotify" ? true : !!url,
             url: url || platform.url,
           };
         }));
@@ -232,7 +236,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Manage Platforms</h2>
         <p className="text-sm text-muted-foreground">
-          Add your music links for each platform. Drag to reorder.
+          Drag to reorder platforms and enable the ones you want to include.
         </p>
       </div>
 
@@ -257,26 +261,32 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       </DndContext>
 
       <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">Add More Services</h3>
+        <h3 className="text-lg font-semibold mb-4">Additional Services</h3>
         {additionalPlatforms.map((platform) => (
-          <div key={platform.id} className="bg-white p-4 rounded-lg shadow-sm mb-2">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-6 h-6">
-                {platform.icon}
-              </div>
-              <Checkbox
-                id={platform.id}
-                checked={platform.enabled}
-                onCheckedChange={() => togglePlatform(platform.id)}
+          <div key={platform.id} className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center gap-3">
+              <img 
+                src={platform.icon} 
+                alt={`${platform.name} logo`} 
+                className="w-8 h-8 object-contain"
               />
-              <Label htmlFor={platform.id}>{platform.name}</Label>
+              <Label className="text-base font-medium">{platform.name}</Label>
+              <div className="ml-auto">
+                <Button
+                  variant={platform.enabled ? "default" : "outline"}
+                  onClick={() => togglePlatform(platform.id)}
+                  className="min-w-[100px]"
+                >
+                  {platform.enabled ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
             </div>
             {platform.enabled && (
               <Input
-                placeholder={`Enter ${platform.name} URL...`}
                 value={platform.url}
                 onChange={(e) => updateUrl(platform.id, e.target.value)}
-                className="mt-2"
+                className="mt-4"
+                placeholder={`Enter ${platform.name} URL...`}
               />
             )}
           </div>
