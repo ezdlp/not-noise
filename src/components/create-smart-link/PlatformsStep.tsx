@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Music, 
   Youtube, 
@@ -117,18 +118,13 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(initialData.spotifyUrl)}`, {
-          mode: 'cors',
-          headers: {
-            'Accept': 'application/json',
-          }
+        const { data, error } = await supabase.functions.invoke('get-odesli-links', {
+          body: { url: initialData.spotifyUrl }
         });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch streaming links');
-        }
 
-        const data = await response.json();
+        if (error) {
+          throw new Error(error.message);
+        }
 
         setPlatforms(prev => prev.map(platform => {
           let url = "";
