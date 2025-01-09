@@ -40,6 +40,7 @@ serve(async (req) => {
     }
 
     const data = await odesliResponse.json()
+    console.log('Odesli API response:', data)
 
     return new Response(
       JSON.stringify(data),
