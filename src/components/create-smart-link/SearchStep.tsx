@@ -9,10 +9,10 @@ interface SearchStepProps {
   onNext: (trackData: any) => void;
 }
 
-const spotifyApi = new SpotifyWebApi({
-  clientId: "0e9ee3ef0f2a499cb2e8151cdcdb87b8",
-  clientSecret: "a4c7c2ec14564d9b94a5e8b18bd57931",
-});
+// Initialize the Spotify API client
+const spotifyApi = new SpotifyWebApi();
+spotifyApi.setClientId("0e9ee3ef0f2a499cb2e8151cdcdb87b8");
+spotifyApi.setClientSecret("a4c7c2ec14564d9b94a5e8b18bd57931");
 
 const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,9 +22,20 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     try {
       setIsLoading(true);
 
-      // Get access token
-      const authResponse = await spotifyApi.clientCredentialsGrant();
-      spotifyApi.setAccessToken(authResponse.body.access_token);
+      // Get access token using client credentials
+      const data = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: "Basic " + btoa("0e9ee3ef0f2a499cb2e8151cdcdb87b8:a4c7c2ec14564d9b94a5e8b18bd57931"),
+        },
+        body: "grant_type=client_credentials",
+      });
+      
+      const tokenResponse = await data.json();
+      
+      // Set the access token
+      spotifyApi.setAccessToken(tokenResponse.access_token);
 
       // Search for tracks
       const searchResults = await spotifyApi.searchTracks(searchQuery, { limit: 1 });
