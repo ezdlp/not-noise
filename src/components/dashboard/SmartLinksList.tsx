@@ -11,6 +11,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EditIcon, TrashIcon, ExternalLinkIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -19,6 +33,22 @@ interface SmartLinksListProps {
 
 export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("smart_links").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["smartLinks"] });
+      toast.success("Smart link deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting smart link:", error);
+      toast.error("Failed to delete smart link");
+    },
+  });
 
   if (isLoading) {
     return (
@@ -85,14 +115,36 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
                   <EditIcon className="w-4 h-4" />
                   <span className="sr-only">Edit</span>
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                  <span className="sr-only">Delete</span>
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{link.title}"? This action
+                        cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate(link.id)}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </TableCell>
           </TableRow>
