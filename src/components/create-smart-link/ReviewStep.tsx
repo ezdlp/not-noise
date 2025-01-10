@@ -9,9 +9,10 @@ interface ReviewStepProps {
   onBack: () => void;
   onComplete: () => void;
   onEditStep: (step: number) => void;
+  isEditing?: boolean;
 }
 
-const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) => {
+const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }: ReviewStepProps) => {
   const navigate = useNavigate();
 
   const handlePublish = async () => {
@@ -24,7 +25,52 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         return;
       }
 
-      // Insert the smart link with properly formatted data
+      if (isEditing) {
+        // Update existing smart link
+        const { error: smartLinkError } = await supabase
+          .from("smart_links")
+          .update({
+            artwork_url: data.coverUrl,
+            release_date: new Date(data.releaseDate).toISOString(),
+            meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
+            meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
+            meta_click_event: data.metaPixel?.enabled ? data.metaPixel.clickEventName : null,
+            email_capture_enabled: data.emailCapture?.enabled || false,
+            email_capture_title: data.emailCapture?.title || null,
+            email_capture_description: data.emailCapture?.description || null,
+            title: data.title,
+          })
+          .eq('id', data.id);
+
+        if (smartLinkError) throw smartLinkError;
+
+        // Delete existing platform links
+        const { error: deleteError } = await supabase
+          .from("platform_links")
+          .delete()
+          .eq('smart_link_id', data.id);
+
+        if (deleteError) throw deleteError;
+
+        // Insert new platform links
+        const platformLinksToInsert = data.platforms
+          .filter((platform: any) => platform.enabled)
+          .map((platform: any) => ({
+            smart_link_id: data.id,
+            platform_id: platform.id,
+            platform_name: platform.name,
+            url: platform.url,
+          }));
+
+        const { error: platformLinksError } = await supabase
+          .from("platform_links")
+          .insert(platformLinksToInsert);
+
+        if (platformLinksError) throw platformLinksError;
+
+        toast.success("Smart link updated successfully!");
+      } else {
+        // Create new smart link
       const { data: smartLink, error: smartLinkError } = await supabase
         .from("smart_links")
         .insert({
@@ -61,10 +107,12 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       if (platformLinksError) throw platformLinksError;
 
       toast.success("Smart link created successfully!");
+      }
+
       navigate("/dashboard");
     } catch (error) {
-      console.error("Error creating smart link:", error);
-      toast.error("Failed to create smart link. Please try again.");
+      console.error("Error saving smart link:", error);
+      toast.error("Failed to save smart link. Please try again.");
     }
   };
 
@@ -73,7 +121,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Review Your Smart Link</h2>
         <p className="text-sm text-muted-foreground">
-          Review your smart link details before publishing
+          Review your smart link details before {isEditing ? "saving" : "publishing"}
         </p>
       </div>
 
@@ -134,7 +182,9 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={handlePublish}>Publish Smart Link</Button>
+        <Button onClick={handlePublish}>
+          {isEditing ? "Save Changes" : "Publish Smart Link"}
+        </Button>
       </div>
     </div>
   );
