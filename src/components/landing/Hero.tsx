@@ -1,33 +1,40 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
   const navigate = useNavigate();
 
-  const handleCreateLink = () => {
-    navigate("/create");
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
-      <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent gradient-primary">
-          One Link for All Your Music
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Create beautiful landing pages for your music. Share your tracks across all streaming platforms with a single link.
-        </p>
-        <Button size="lg" className="button-gradient" onClick={handleCreateLink}>
-          Create Your Smart Link <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-      <div className="mt-16 animate-float">
-        <img
-          src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
-          alt="Smart Link Preview"
-          className="rounded-lg shadow-2xl max-w-sm mx-auto"
-        />
+    <div className="min-h-[80vh] flex items-center px-4 py-20">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div className="text-left">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Elevate Your Music With{" "}
+            <span className="bg-clip-text text-transparent gradient-primary">
+              Smart Links
+            </span>
+            .
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl">
+            Seamlessly connect your audience to your music across all major streaming platforms with just one click.
+          </p>
+          <Button 
+            size="lg" 
+            className="button-gradient"
+            onClick={() => navigate("/create")}
+          >
+            Get Started For Free
+          </Button>
+        </div>
+        <div className="relative">
+          <div className="relative w-full aspect-square">
+            <img
+              src="/lovable-uploads/hero-mockup.png"
+              alt="Smart Link Preview"
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
