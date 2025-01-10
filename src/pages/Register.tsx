@@ -80,10 +80,16 @@ export default function Register() {
     setError(null);
 
     try {
-      // First, sign up the user
+      // First, sign up the user with email verification disabled
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          emailRedirectTo: null,
+          data: {
+            email_confirm: true
+          }
+        }
       });
 
       if (authError) throw authError;
@@ -108,7 +114,7 @@ export default function Register() {
 
         toast({
           title: "Registration successful!",
-          description: "Please check your email to verify your account.",
+          description: "Your account has been created. You can now log in.",
         });
         
         navigate("/login");
@@ -278,4 +284,4 @@ export default function Register() {
       </div>
     </div>
   );
-}
+};
