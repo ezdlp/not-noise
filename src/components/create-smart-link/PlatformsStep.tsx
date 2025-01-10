@@ -47,6 +47,7 @@ const getPlatformIcon = (platformId: string) => {
 
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: getPlatformIcon("spotify") },
     { id: "apple", name: "Apple Music", enabled: true, url: "", icon: getPlatformIcon("apple") },
@@ -68,6 +69,29 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp") },
     { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius") },
   ]);
+
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout;
+    
+    if (isLoading) {
+      setProgress(0);
+      progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+    } else {
+      setProgress(100);
+    }
+
+    return () => {
+      if (progressInterval) clearInterval(progressInterval);
+    };
+  }, [isLoading]);
 
   useEffect(() => {
     const fetchOdesliLinks = async () => {
@@ -190,7 +214,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       {isLoading ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">Fetching streaming links...</p>
-          <Progress value={100} className="w-full" />
+          <Progress value={progress} className="w-full" />
         </div>
       ) : (
         <>
