@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { arrayMove } from '@dnd-kit/sortable';
+import { Progress } from "@/components/ui/progress";
 import PlatformsSection from "./PlatformsSection";
 
 interface Platform {
@@ -186,21 +187,30 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
         </p>
       </div>
 
-      <PlatformsSection
-        title="Manage Platforms"
-        platforms={platforms}
-        onToggle={togglePlatform}
-        onUrlChange={updateUrl}
-        onDragEnd={handleDragEnd}
-        isDraggable={true}
-      />
+      {isLoading ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Fetching streaming links...</p>
+          <Progress value={100} className="w-full" />
+        </div>
+      ) : (
+        <>
+          <PlatformsSection
+            title="Manage Platforms"
+            platforms={platforms}
+            onToggle={togglePlatform}
+            onUrlChange={updateUrl}
+            onDragEnd={handleDragEnd}
+            isDraggable={true}
+          />
 
-      <PlatformsSection
-        title="Additional Services"
-        platforms={additionalPlatforms}
-        onToggle={togglePlatform}
-        onUrlChange={updateUrl}
-      />
+          <PlatformsSection
+            title="Additional Services"
+            platforms={additionalPlatforms}
+            onToggle={togglePlatform}
+            onUrlChange={updateUrl}
+          />
+        </>
+      )}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
