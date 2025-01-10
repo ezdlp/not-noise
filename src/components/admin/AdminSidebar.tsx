@@ -1,11 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
-import { UsersIcon, NewspaperIcon, LayoutDashboardIcon } from "lucide-react";
+import { 
+  UsersIcon, 
+  NewspaperIcon, 
+  LayoutDashboardIcon,
+  Settings
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -26,6 +31,11 @@ const menuItems = [
     title: "Blog Posts",
     icon: NewspaperIcon,
     href: "/admin/posts",
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    href: "/admin/settings",
   },
 ];
 

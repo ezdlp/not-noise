@@ -14,6 +14,7 @@ import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
+import { Overview, Users, Posts, Settings } from "./pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -110,13 +111,18 @@ const AppContent = () => {
 
         {/* Admin Routes */}
         <Route
-          path="/admin/*"
+          path="/admin"
           element={
             <AdminRoute>
               <AdminLayout />
             </AdminRoute>
           }
-        />
+        >
+          <Route index element={<Overview />} />
+          <Route path="users" element={<Users />} />
+          <Route path="posts" element={<Posts />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
       </Routes>
     </div>
   );
