@@ -1,8 +1,8 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { UseFormReturn } from "react-hook-form";
 import { PostFormValues } from "./PostEditor";
+import { RichTextEditor } from "./RichTextEditor";
 
 interface PostContentProps {
   form: UseFormReturn<PostFormValues>;
@@ -32,10 +32,9 @@ export function PostContent({ form }: PostContentProps) {
           <FormItem>
             <FormLabel>Content</FormLabel>
             <FormControl>
-              <Textarea
-                placeholder="Write your post content here..."
-                className="min-h-[300px]"
-                {...field}
+              <RichTextEditor
+                content={field.value}
+                onChange={field.onChange}
               />
             </FormControl>
             <FormMessage />
