@@ -23,7 +23,7 @@ const formSchema = z.object({
   excerpt: z.string().optional(),
   meta_description: z.string().optional(),
   meta_keywords: z.string().optional(),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published"]).default("draft"),
 });
 
 type PostFormValues = z.infer<typeof formSchema>;
@@ -59,10 +59,15 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   async function onSubmit(values: PostFormValues) {
     setIsSubmitting(true);
     try {
+      const user = await supabase.auth.getUser();
       const postData = {
-        ...values,
+        title: values.title,
+        content: values.content,
+        excerpt: values.excerpt,
+        meta_description: values.meta_description,
+        meta_keywords: values.meta_keywords,
+        status: values.status,
         slug: createSlug(values.title),
-        content: values.content || "",
       };
 
       const { error } = post
@@ -72,7 +77,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .eq("id", post.id)
         : await supabase.from("blog_posts").insert({
             ...postData,
-            author_id: (await supabase.auth.getUser()).data.user?.id,
+            author_id: user.data.user?.id,
           });
 
       if (error) throw error;
