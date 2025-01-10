@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Header from "./components/layout/Header";
+import { AdminLayout } from "./components/admin/AdminLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 
@@ -36,9 +37,40 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsAdmin(false);
+        return;
+      }
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .single();
+
+      setIsAdmin(!!roles);
+    };
+
+    checkAdminRole();
+  }, []);
+
+  if (isAdmin === null) {
+    return null;
+  }
+
+  return isAdmin ? <>{children}</> : <Navigate to="/dashboard" />;
+};
+
 const AppContent = () => {
   const location = useLocation();
-  const showHeader = !location.pathname.startsWith('/link/');
+  const showHeader = !location.pathname.startsWith('/link/') && !location.pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -73,6 +105,16 @@ const AppContent = () => {
             <PrivateRoute>
               <Dashboard />
             </PrivateRoute>
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
           }
         />
       </Routes>
