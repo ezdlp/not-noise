@@ -5,20 +5,20 @@ export const CallToAction = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 px-4 bg-gray-50">
+    <section className="py-24 px-4 bg-white">
       <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Create Free Music Smart Links
+        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+          Start Growing Your Music Career Today
         </h2>
-        <p className="text-lg text-gray-600 mb-8">
-          Setup your music smart link in less than 3 minutes. It's 100% free, no credit card required.
+        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+          Join thousands of artists using Soundraiser to promote their music smarter. Create your first Smart Link in less than 3 minutes - it's free.
         </p>
         <Button 
           size="lg" 
-          className="button-gradient"
+          className="button-gradient text-lg px-12 py-6 h-auto"
           onClick={() => navigate("/create")}
         >
-          Get Started Now
+          Create Your Smart Link
         </Button>
       </div>
     </section>
