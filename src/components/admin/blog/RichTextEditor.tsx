@@ -16,10 +16,10 @@ import {
   Undo,
   Redo
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { MediaLibrary } from './MediaLibrary';
 
 interface RichTextEditorProps {
   content: string;
@@ -30,7 +30,6 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -50,37 +49,17 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     return null;
   }
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) return;
-
-    try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('blog-images')
-        .upload(filePath, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('blog-images')
-        .getPublicUrl(filePath);
-
-      editor.chain().focus().setImage({ src: publicUrl }).run();
-      setIsMediaDialogOpen(false);
-      setSelectedFile(null);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    }
-  };
-
   const handleAddLink = () => {
     if (linkUrl) {
       editor.chain().focus().setLink({ href: linkUrl }).run();
       setIsLinkDialogOpen(false);
       setLinkUrl('');
     }
+  };
+
+  const handleImageSelect = (url: string) => {
+    editor.chain().focus().setImage({ src: url }).run();
+    setIsMediaDialogOpen(false);
   };
 
   return (
@@ -175,20 +154,14 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       <EditorContent editor={editor} className="prose max-w-none p-4" />
 
       <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
+            <DialogTitle>Media Library</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            />
-            <Button onClick={handleFileUpload} disabled={!selectedFile}>
-              Upload and Insert
-            </Button>
-          </div>
+          <MediaLibrary
+            onSelect={handleImageSelect}
+            onClose={() => setIsMediaDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

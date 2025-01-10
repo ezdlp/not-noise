@@ -288,6 +288,51 @@ export type Database = {
           },
         ]
       }
+      media_files: {
+        Row: {
+          alt_text: string | null
+          caption: string | null
+          created_at: string | null
+          file_path: string
+          filename: string
+          height: number | null
+          id: string
+          mime_type: string
+          size: number
+          updated_at: string | null
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string | null
+          file_path: string
+          filename: string
+          height?: number | null
+          id?: string
+          mime_type: string
+          size: number
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string | null
+          file_path?: string
+          filename?: string
+          height?: number | null
+          id?: string
+          mime_type?: string
+          size?: number
+          updated_at?: string | null
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
       platform_clicks: {
         Row: {
           clicked_at: string | null
