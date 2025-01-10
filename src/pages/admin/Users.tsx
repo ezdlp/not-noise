@@ -47,7 +47,7 @@ export default function Users() {
           user_roles (
             role
           ),
-          smart_links (
+          smart_links:smart_links (
             id,
             title
           )
