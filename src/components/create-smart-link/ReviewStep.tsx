@@ -47,6 +47,20 @@ const ReviewStep = ({ data, onBack, onComplete }: ReviewStepProps) => {
             ))}
           </ul>
         </div>
+        {data.metaPixel?.enabled && (
+          <div>
+            <h3 className="font-medium">Meta Pixel Configuration</h3>
+            <p className="text-sm text-muted-foreground">
+              Pixel ID: {data.metaPixel.pixelId}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              View Event: {data.metaPixel.viewEventName}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Click Event: {data.metaPixel.clickEventName}
+            </p>
+          </div>
+        )}
         {data.emailCapture?.enabled && (
           <div>
             <h3 className="font-medium">Email Capture Form</h3>

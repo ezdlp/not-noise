@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import SearchStep from "@/components/create-smart-link/SearchStep";
 import DetailsStep from "@/components/create-smart-link/DetailsStep";
 import PlatformsStep from "@/components/create-smart-link/PlatformsStep";
+import MetaPixelStep from "@/components/create-smart-link/MetaPixelStep";
 import EmailCaptureStep from "@/components/create-smart-link/EmailCaptureStep";
 import ReviewStep from "@/components/create-smart-link/ReviewStep";
 import { toast } from "sonner";
@@ -28,9 +29,14 @@ const CreateSmartLink = () => {
     setStep(4);
   };
 
+  const handleMetaPixelComplete = (metaPixelData: any) => {
+    setData({ ...data, ...metaPixelData });
+    setStep(5);
+  };
+
   const handleEmailCaptureComplete = (emailCaptureData: any) => {
     setData({ ...data, ...emailCaptureData });
-    setStep(5);
+    setStep(6);
   };
 
   const handleBack = () => {
@@ -53,13 +59,13 @@ const CreateSmartLink = () => {
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Create Your Smart Link</h1>
             <span className="text-sm text-muted-foreground">
-              Step {step} of 5
+              Step {step} of 6
             </span>
           </div>
           <div className="w-full bg-secondary/20 h-2 rounded-full">
             <div
               className="bg-primary h-full rounded-full transition-all duration-300"
-              style={{ width: `${(step / 5) * 100}%` }}
+              style={{ width: `${(step / 6) * 100}%` }}
             />
           </div>
         </div>
@@ -80,13 +86,20 @@ const CreateSmartLink = () => {
           />
         )}
         {step === 4 && (
+          <MetaPixelStep
+            initialData={data}
+            onNext={handleMetaPixelComplete}
+            onBack={handleBack}
+          />
+        )}
+        {step === 5 && (
           <EmailCaptureStep
             initialData={data}
             onNext={handleEmailCaptureComplete}
             onBack={handleBack}
           />
         )}
-        {step === 5 && (
+        {step === 6 && (
           <ReviewStep
             data={data}
             onBack={handleBack}
