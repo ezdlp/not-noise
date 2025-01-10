@@ -64,17 +64,19 @@ const platforms: Platform[] = [
 ];
 
 const SmartLink = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
-  const { data: smartLink, isLoading } = useQuery({
+  const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', id],
     queryFn: async () => {
+      if (!id) throw new Error('Smart link ID is required');
+
       // Fetch the smart link data
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (smartLinkError) throw smartLinkError;
       if (!smartLinkData) throw new Error('Smart link not found');
@@ -91,7 +93,8 @@ const SmartLink = () => {
         ...smartLinkData,
         platformLinks: platformLinks || []
       };
-    }
+    },
+    enabled: !!id // Only run the query if we have an ID
   });
 
   if (isLoading) {
@@ -102,10 +105,12 @@ const SmartLink = () => {
     );
   }
 
-  if (!smartLink) {
+  if (error || !smartLink) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-red-500">Smart link not found</p>
+        <p className="text-lg text-red-500">
+          {error ? 'Error loading smart link' : 'Smart link not found'}
+        </p>
       </div>
     );
   }
