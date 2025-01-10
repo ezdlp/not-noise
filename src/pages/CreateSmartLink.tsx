@@ -52,6 +52,10 @@ const CreateSmartLink = () => {
     navigate("/dashboard");
   };
 
+  const handleEditStep = (stepNumber: number) => {
+    setStep(stepNumber);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <Card className="max-w-2xl mx-auto p-6">
@@ -104,6 +108,7 @@ const CreateSmartLink = () => {
             data={data}
             onBack={handleBack}
             onComplete={handleComplete}
+            onEditStep={handleEditStep}
           />
         )}
       </Card>
