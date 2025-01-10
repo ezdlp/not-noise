@@ -80,6 +80,7 @@ export default function Register() {
     setError(null);
 
     try {
+      // First, sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -88,6 +89,7 @@ export default function Register() {
       if (authError) throw authError;
 
       if (authData.user) {
+        // Then, update their profile
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
@@ -98,17 +100,23 @@ export default function Register() {
           })
           .eq("id", authData.user.id);
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // If profile update fails, we should handle it appropriately
+          console.error("Profile update error:", profileError);
+          throw new Error("Failed to update profile information");
+        }
 
         toast({
           title: "Registration successful!",
           description: "Please check your email to verify your account.",
         });
-
+        
         navigate("/login");
       }
     } catch (error) {
       if (error instanceof AuthError) {
+        setError(error.message);
+      } else if (error instanceof Error) {
         setError(error.message);
       } else {
         setError("An unexpected error occurred");
