@@ -80,13 +80,17 @@ export default function Register() {
     setError(null);
 
     try {
-      // First, sign up the user with email verification disabled
+      // Sign up with user metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           emailRedirectTo: null,
           data: {
+            name: formData.name,
+            artistName: formData.artistName,
+            musicGenre: formData.musicGenre,
+            country: formData.country,
             email_confirm: true
           }
         }
@@ -95,23 +99,6 @@ export default function Register() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Then, update their profile
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            name: formData.name,
-            artist_name: formData.artistName,
-            music_genre: formData.musicGenre,
-            country: formData.country,
-          })
-          .eq("id", authData.user.id);
-
-        if (profileError) {
-          // If profile update fails, we should handle it appropriately
-          console.error("Profile update error:", profileError);
-          throw new Error("Failed to update profile information");
-        }
-
         toast({
           title: "Registration successful!",
           description: "Your account has been created. You can now log in.",
@@ -120,6 +107,7 @@ export default function Register() {
         navigate("/login");
       }
     } catch (error) {
+      console.error("Registration error:", error);
       if (error instanceof AuthError) {
         setError(error.message);
       } else if (error instanceof Error) {
