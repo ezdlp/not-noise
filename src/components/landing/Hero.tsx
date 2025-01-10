@@ -18,8 +18,8 @@ export const Hero = () => {
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <Button 
-            size="lg" 
-            className="button-gradient text-lg px-10 py-6 h-auto"
+            size="default" 
+            className="button-gradient"
             onClick={() => navigate("/create")}
           >
             Get Started For Free

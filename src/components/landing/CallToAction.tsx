@@ -14,8 +14,8 @@ export const CallToAction = () => {
           Join thousands of artists using Soundraiser to promote their music smarter. Create your first Smart Link in less than 3 minutes - it's free.
         </p>
         <Button 
-          size="lg" 
-          className="button-gradient text-lg px-12 py-6 h-auto"
+          size="default" 
+          className="button-gradient"
           onClick={() => navigate("/create")}
         >
           Create Your Smart Link
