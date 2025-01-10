@@ -30,7 +30,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   if (isAuthenticated === null) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
@@ -43,23 +43,36 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <div className="min-h-screen flex flex-col">
+          <Header />
           <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/link/:slug" element={<SmartLink />} />
+            
+            {/* Protected Routes */}
             <Route
-              path="*"
+              path="/create"
               element={
                 <PrivateRoute>
-                  <>
-                    <Header />
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/create" element={<CreateSmartLink />} />
-                      <Route path="/links/:id/edit" element={<EditSmartLink />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
-                    </Routes>
-                  </>
+                  <CreateSmartLink />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/links/:id/edit"
+              element={
+                <PrivateRoute>
+                  <EditSmartLink />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
                 </PrivateRoute>
               }
             />

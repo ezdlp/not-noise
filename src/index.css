@@ -34,9 +34,9 @@
 }
 
 .gradient-primary {
-  @apply bg-gradient-to-br from-primary via-secondary to-accent;
+  @apply bg-primary;
 }
 
 .button-gradient {
-  @apply bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity;
+  @apply bg-primary hover:bg-primary/90 transition-colors;
 }
