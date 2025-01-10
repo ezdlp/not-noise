@@ -8,7 +8,6 @@ import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import PlatformsSection from "@/components/create-smart-link/PlatformsSection";
 import { useState } from "react";
@@ -18,7 +17,6 @@ const EditSmartLink = () => {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [emailCaptureEnabled, setEmailCaptureEnabled] = useState(false);
   const [emailCaptureTitle, setEmailCaptureTitle] = useState("");
   const [emailCaptureDescription, setEmailCaptureDescription] = useState("");
@@ -48,7 +46,6 @@ const EditSmartLink = () => {
 
       // Initialize form state with fetched data
       setTitle(data.title);
-      setDescription(data.description || "");
       setEmailCaptureEnabled(data.email_capture_enabled || false);
       setEmailCaptureTitle(data.email_capture_title || "");
       setEmailCaptureDescription(data.email_capture_description || "");
@@ -176,15 +173,6 @@ const EditSmartLink = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter title..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a description..."
             />
           </div>
         </div>
