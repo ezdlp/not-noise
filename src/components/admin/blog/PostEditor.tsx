@@ -96,7 +96,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         slug: createSlug(values.title),
         visibility: values.visibility,
         password: values.password,
-        scheduled_for: values.scheduled_for,
+        scheduled_for: values.scheduled_for?.toISOString(),
         allow_comments: values.allow_comments,
         is_sticky: values.is_sticky,
         format: values.format,
