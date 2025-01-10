@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import SmartLink from "./pages/SmartLink";
 import CreateSmartLink from "./pages/CreateSmartLink";
@@ -36,48 +36,57 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
+const AppContent = () => {
+  const location = useLocation();
+  const showHeader = !location.pathname.startsWith('/link/');
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {showHeader && <Header />}
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/link/:slug" element={<SmartLink />} />
+        
+        {/* Protected Routes */}
+        <Route
+          path="/create"
+          element={
+            <PrivateRoute>
+              <CreateSmartLink />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/links/:id/edit"
+          element={
+            <PrivateRoute>
+              <EditSmartLink />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/link/:slug" element={<SmartLink />} />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/create"
-              element={
-                <PrivateRoute>
-                  <CreateSmartLink />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/links/:id/edit"
-              element={
-                <PrivateRoute>
-                  <EditSmartLink />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </div>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
