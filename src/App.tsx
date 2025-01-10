@@ -10,6 +10,7 @@ import EditSmartLink from "./pages/EditSmartLink";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Header from "./components/layout/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 
@@ -41,36 +42,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/link/:slug" element={<SmartLink />} />
-          <Route
-            path="/create"
-            element={
-              <PrivateRoute>
-                <CreateSmartLink />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/links/:id/edit"
-            element={
-              <PrivateRoute>
-                <EditSmartLink />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
+        <div className="min-h-screen flex flex-col">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/link/:slug" element={<SmartLink />} />
+            <Route
+              path="*"
+              element={
+                <PrivateRoute>
+                  <>
+                    <Header />
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/create" element={<CreateSmartLink />} />
+                      <Route path="/links/:id/edit" element={<EditSmartLink />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                    </Routes>
+                  </>
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
