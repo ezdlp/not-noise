@@ -30,12 +30,13 @@ export default function Login() {
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
+      if (error.message.includes("Email not confirmed")) {
+        return "Please verify your email address before signing in. Check your inbox for the verification link.";
+      }
+      
       switch (error.status) {
         case 400:
-          if (error.message.includes("Email not confirmed")) {
-            return "Please verify your email address before signing in. Check your inbox for the verification link.";
-          }
-          return "Invalid email or password. Please check your credentials.";
+          return "Invalid login attempt. Please check your credentials.";
         case 401:
           return "Invalid credentials. Please check your email and password.";
         case 422:
