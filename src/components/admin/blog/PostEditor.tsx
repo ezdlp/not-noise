@@ -1,34 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { CategorySelect } from "./CategorySelect";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { PostContent } from "./PostContent";
+import { PostSettings } from "./PostSettings";
+import { PostActions } from "./PostActions";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -48,7 +28,7 @@ const formSchema = z.object({
   focus_keyword: z.string().optional(),
 });
 
-type PostFormValues = z.infer<typeof formSchema>;
+export type PostFormValues = z.infer<typeof formSchema>;
 
 interface PostEditorProps {
   post?: PostFormValues & { id: string };
@@ -106,7 +86,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       };
 
       if (post) {
-        // Update existing post
         const { error: postError } = await supabase
           .from("blog_posts")
           .update(postData)
@@ -115,7 +94,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         if (postError) throw postError;
 
         if (values.category_id) {
-          // Update category
           await supabase
             .from("blog_post_categories")
             .delete()
@@ -126,7 +104,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: post.id, category_id: values.category_id });
         }
       } else {
-        // Create new post
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
           .insert(postData)
@@ -136,7 +113,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         if (postError) throw postError;
 
         if (values.category_id && newPost) {
-          // Insert category
           await supabase
             .from("blog_post_categories")
             .insert({ post_id: newPost.id, category_id: values.category_id });
@@ -158,171 +134,18 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Post title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Write your post content here..."
-                      className="min-h-[300px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="col-span-2">
+            <PostContent form={form} />
           </div>
-
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="category_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <CategorySelect
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="visibility"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visibility</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select visibility" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="public">Public</SelectItem>
-                      <SelectItem value="private">Private</SelectItem>
-                      <SelectItem value="password">Password Protected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {form.watch("visibility") === "password" && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <FormField
-              control={form.control}
-              name="scheduled_for"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Schedule Publication</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date()
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div>
+            <PostSettings form={form} />
           </div>
         </div>
-
-        <div className="flex justify-end space-x-4">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : (post ? "Update" : "Create")}
-          </Button>
-        </div>
+        <PostActions 
+          isSubmitting={isSubmitting}
+          onClose={onClose}
+          isEditing={!!post}
+        />
       </form>
     </Form>
   );
