@@ -29,9 +29,9 @@ export const Hero = () => {
         <div className="relative">
           <div className="relative w-full aspect-square">
             <img
-              src="/lovable-uploads/hero-mockup.png"
+              src="/lovable-uploads/home/hero-mockup.png"
               alt="Smart Link Preview"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain animate-float"
             />
           </div>
         </div>
