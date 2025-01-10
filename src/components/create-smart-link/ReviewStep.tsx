@@ -18,19 +18,26 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
     try {
       console.info("Publishing smart link:", data);
 
-      // Insert the smart link
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user?.id) {
+        toast.error("You must be logged in to create a smart link");
+        return;
+      }
+
+      // Insert the smart link with properly formatted data
       const { data: smartLink, error: smartLinkError } = await supabase
         .from("smart_links")
         .insert({
-          title: data.title,
           artwork_url: data.coverUrl,
-          release_date: new Date(data.releaseDate),
+          release_date: new Date(data.releaseDate).toISOString(),
           meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
           meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
           meta_click_event: data.metaPixel?.enabled ? data.metaPixel.clickEventName : null,
           email_capture_enabled: data.emailCapture?.enabled || false,
           email_capture_title: data.emailCapture?.title || null,
           email_capture_description: data.emailCapture?.description || null,
+          title: data.title,
+          user_id: session.session.user.id,
         })
         .select()
         .single();
