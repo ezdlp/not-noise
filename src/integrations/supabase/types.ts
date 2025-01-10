@@ -9,7 +9,159 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      link_views: {
+        Row: {
+          country: string | null
+          id: string
+          ip_address: string | null
+          smart_link_id: string | null
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          smart_link_id?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          smart_link_id?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_views_smart_link_id_fkey"
+            columns: ["smart_link_id"]
+            isOneToOne: false
+            referencedRelation: "smart_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_clicks: {
+        Row: {
+          clicked_at: string | null
+          country: string | null
+          id: string
+          ip_address: string | null
+          platform_link_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          platform_link_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          country?: string | null
+          id?: string
+          ip_address?: string | null
+          platform_link_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_clicks_platform_link_id_fkey"
+            columns: ["platform_link_id"]
+            isOneToOne: false
+            referencedRelation: "platform_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_links: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform_id: string
+          platform_name: string
+          smart_link_id: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform_id: string
+          platform_name: string
+          smart_link_id?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform_id?: string
+          platform_name?: string
+          smart_link_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_links_smart_link_id_fkey"
+            columns: ["smart_link_id"]
+            isOneToOne: false
+            referencedRelation: "smart_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_links: {
+        Row: {
+          artwork_url: string | null
+          created_at: string | null
+          email_capture_description: string | null
+          email_capture_enabled: boolean | null
+          email_capture_title: string | null
+          id: string
+          meta_click_event: string | null
+          meta_pixel_id: string | null
+          meta_view_event: string | null
+          release_date: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          artwork_url?: string | null
+          created_at?: string | null
+          email_capture_description?: string | null
+          email_capture_enabled?: boolean | null
+          email_capture_title?: string | null
+          id?: string
+          meta_click_event?: string | null
+          meta_pixel_id?: string | null
+          meta_view_event?: string | null
+          release_date?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          artwork_url?: string | null
+          created_at?: string | null
+          email_capture_description?: string | null
+          email_capture_enabled?: boolean | null
+          email_capture_title?: string | null
+          id?: string
+          meta_click_event?: string | null
+          meta_pixel_id?: string | null
+          meta_view_event?: string | null
+          release_date?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
