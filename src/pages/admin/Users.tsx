@@ -4,14 +4,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Pencil, Trash2 } from "lucide-react";
 
+interface UserRole {
+  role: 'admin' | 'user';
+}
+
+interface Profile {
+  id: string;
+  name: string;
+  artist_name: string;
+  music_genre: string;
+  country: string;
+  user_roles: UserRole[];
+}
+
 export default function Users() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["adminUsers"],
     queryFn: async () => {
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("*, user_roles(role)");
-      return profiles;
+        .select(`
+          *,
+          user_roles (
+            role
+          )
+        `);
+
+      if (error) throw error;
+      return profiles as Profile[];
     },
   });
 

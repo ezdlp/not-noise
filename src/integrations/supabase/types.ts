@@ -250,7 +250,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_profile_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
