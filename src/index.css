@@ -38,5 +38,5 @@
 }
 
 .button-gradient {
-  @apply bg-primary hover:bg-primary/90 transition-colors;
+  @apply bg-primary text-white hover:bg-onyx transition-colors;
 }

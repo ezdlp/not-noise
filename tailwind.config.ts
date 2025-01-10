@@ -25,7 +25,7 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#9b87f5",
+          DEFAULT: "#6851FB",
           foreground: "#FFFFFF",
         },
         secondary: {
@@ -36,6 +36,7 @@ export default {
           DEFAULT: "#F2FCE2",
           foreground: "#0F0F0F",
         },
+        onyx: "#0F0F0F",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
