@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthError } from "@supabase/supabase-js";
+import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Login() {
@@ -28,6 +28,25 @@ export default function Login() {
     };
   }, [navigate]);
 
+  const getErrorMessage = (error: AuthError) => {
+    if (error instanceof AuthApiError) {
+      switch (error.status) {
+        case 400:
+          if (error.message.includes("Email not confirmed")) {
+            return "Please verify your email address before signing in. Check your inbox for the verification link.";
+          }
+          return "Invalid email or password. Please check your credentials.";
+        case 401:
+          return "Invalid credentials. Please check your email and password.";
+        case 422:
+          return "Invalid email format. Please enter a valid email address.";
+        default:
+          return error.message;
+      }
+    }
+    return "An unexpected error occurred. Please try again.";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -48,8 +67,9 @@ export default function Login() {
       
       navigate("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       if (error instanceof AuthError) {
-        setError(error.message);
+        setError(getErrorMessage(error));
       } else {
         setError("An unexpected error occurred");
       }
