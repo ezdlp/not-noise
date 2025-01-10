@@ -6,10 +6,10 @@ export const TrustedLabels = () => {
           Trusted by artists from these labels
         </h2>
         <div className="flex justify-center items-center gap-12 flex-wrap">
-          <img src="/lovable-uploads/home/Capitol.png" alt="Capitol Records" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/lovable-uploads/home/DefJam.png" alt="Def Jam" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/lovable-uploads/home/Universal.png" alt="Universal Music" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/lovable-uploads/home/Columbia.png" alt="Columbia Records" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/lovable-uploads/home/capitol-records.png" alt="Capitol Records" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/lovable-uploads/home/Def_Jam_Recording.png" alt="Def Jam" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/lovable-uploads/home/Universal_Music_Group.png" alt="Universal Music" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/lovable-uploads/home/1024px-Columbia_Records_.png" alt="Columbia Records" className="h-12 opacity-80 hover:opacity-100 transition-opacity" />
         </div>
       </div>
     </section>
