@@ -114,6 +114,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          artist_name: string
+          country: string
+          created_at: string | null
+          id: string
+          music_genre: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          artist_name: string
+          country: string
+          created_at?: string | null
+          id: string
+          music_genre: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          artist_name?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          music_genre?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       smart_links: {
         Row: {
           artwork_url: string | null
