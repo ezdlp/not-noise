@@ -64,20 +64,21 @@ const platforms: Platform[] = [
 ];
 
 const SmartLink = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams();
+  const id = params.slug; // Get the actual ID from the URL parameter
 
   const { data: smartLink, isLoading, error } = useQuery({
-    queryKey: ['smartLink', slug],
+    queryKey: ['smartLink', id],
     queryFn: async () => {
-      if (!slug) throw new Error('Smart link ID is required');
+      if (!id) throw new Error('Smart link ID is required');
 
-      console.log('Fetching smart link with ID:', slug);
+      console.log('Fetching smart link with ID:', id);
 
       // Fetch the smart link data
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select('*')
-        .eq('id', slug)
+        .eq('id', id)
         .maybeSingle();
 
       if (smartLinkError) {
@@ -85,7 +86,7 @@ const SmartLink = () => {
         throw smartLinkError;
       }
       if (!smartLinkData) {
-        console.error('Smart link not found for ID:', slug);
+        console.error('Smart link not found for ID:', id);
         throw new Error('Smart link not found');
       }
 
@@ -95,7 +96,7 @@ const SmartLink = () => {
       const { data: platformLinks, error: platformLinksError } = await supabase
         .from('platform_links')
         .select('*')
-        .eq('smart_link_id', slug);
+        .eq('smart_link_id', id);
 
       if (platformLinksError) {
         console.error('Error fetching platform links:', platformLinksError);
@@ -109,7 +110,7 @@ const SmartLink = () => {
         platformLinks: platformLinks || []
       };
     },
-    enabled: !!slug // Only run the query if we have a slug
+    enabled: !!id // Only run the query if we have an ID
   });
 
   if (isLoading) {
