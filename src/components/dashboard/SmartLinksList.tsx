@@ -102,7 +102,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate(`/links/${link.id}`)}
+                  onClick={() => navigate(`/link/${link.id}`)}
                 >
                   <ExternalLinkIcon className="w-4 h-4" />
                   <span className="sr-only">View</span>

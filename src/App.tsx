@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import SmartLink from "./pages/SmartLink";
 import CreateSmartLink from "./pages/CreateSmartLink";
+import EditSmartLink from "./pages/EditSmartLink";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -50,6 +51,14 @@ const App = () => (
             element={
               <PrivateRoute>
                 <CreateSmartLink />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/links/:id/edit"
+            element={
+              <PrivateRoute>
+                <EditSmartLink />
               </PrivateRoute>
             }
           />
