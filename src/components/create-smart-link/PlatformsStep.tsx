@@ -1,24 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { GripVertical } from "lucide-react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { arrayMove } from '@dnd-kit/sortable';
+import PlatformsSection from "./PlatformsSection";
 
 interface Platform {
   id: string;
@@ -59,72 +44,6 @@ const getPlatformIcon = (platformId: string) => {
   return icons[platformId] || "/placeholder.svg";
 };
 
-const SortablePlatform = ({ platform, onToggle, onUrlChange }: { 
-  platform: Platform; 
-  onToggle: (id: string) => void;
-  onUrlChange: (id: string, url: string) => void;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: platform.id });
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    transition,
-  } : undefined;
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-all duration-200"
-    >
-      <div className="flex items-center gap-4">
-        <div {...attributes} {...listeners} className="cursor-grab hover:opacity-70">
-          <GripVertical className="text-gray-400" />
-        </div>
-        <div className="flex items-center gap-3 flex-1">
-          <img 
-            src={getPlatformIcon(platform.id)} 
-            alt={`${platform.name} logo`}
-            className="w-8 h-8 object-contain"
-          />
-          <span className="ml-2 text-sm font-medium">{platform.name}</span>
-          <div className="ml-auto">
-            <Button
-              variant={platform.enabled ? "default" : "outline"}
-              onClick={() => onToggle(platform.id)}
-              disabled={platform.id === "spotify"}
-              className={`min-w-[100px] group hover:bg-red-500 hover:border-red-500 ${
-                platform.enabled ? "" : "hover:bg-primary hover:border-primary"
-              }`}
-            >
-              <span className="group-hover:hidden">
-                {platform.enabled ? "Enabled" : "Disabled"}
-              </span>
-              <span className="hidden group-hover:inline">
-                {platform.enabled ? "Disable" : "Enable"}
-              </span>
-            </Button>
-          </div>
-        </div>
-      </div>
-      {platform.enabled && (
-        <Input
-          value={platform.url}
-          onChange={(e) => onUrlChange(platform.id, e.target.value)}
-          className="mt-4"
-          placeholder={`Enter ${platform.name} URL manually...`}
-        />
-      )}
-    </div>
-  );
-};
-
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
@@ -148,13 +67,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp") },
     { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius") },
   ]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   useEffect(() => {
     const fetchOdesliLinks = async () => {
@@ -207,7 +119,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             url: url || platform.url,
           };
         }));
-
       } catch (error) {
         console.error("Error fetching Odesli links:", error);
         toast.error("Failed to fetch streaming links. Please add them manually.");
@@ -221,12 +132,10 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-
     if (active.id !== over.id) {
       setPlatforms((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -277,51 +186,21 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
         </p>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
+      <PlatformsSection
+        title="Manage Platforms"
+        platforms={platforms}
+        onToggle={togglePlatform}
+        onUrlChange={updateUrl}
         onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={platforms}
-          strategy={verticalListSortingStrategy}
-        >
-          {platforms.map((platform) => (
-            <SortablePlatform
-              key={platform.id}
-              platform={platform}
-              onToggle={togglePlatform}
-              onUrlChange={updateUrl}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+        isDraggable={true}
+      />
 
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">Additional Services</h3>
-        {additionalPlatforms.map((platform) => (
-          <div key={platform.id} className="bg-white p-4 rounded-lg shadow-sm mb-2 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center gap-3">
-              <img 
-                src={platform.icon} 
-                alt={`${platform.name} logo`} 
-                className="w-8 h-8 object-contain"
-              />
-              <span className="text-sm font-medium">{platform.name}</span>
-              <div className="ml-auto">
-                <Button
-                  variant={platform.enabled ? "default" : "outline"}
-                  onClick={() => togglePlatform(platform.id)}
-                  className="min-w-[100px] group hover:bg-primary hover:border-primary"
-                >
-                  <span className="group-hover:hidden">Disabled</span>
-                  <span className="hidden group-hover:inline">Enable</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PlatformsSection
+        title="Additional Services"
+        platforms={additionalPlatforms}
+        onToggle={togglePlatform}
+        onUrlChange={updateUrl}
+      />
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
