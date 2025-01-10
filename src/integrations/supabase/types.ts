@@ -9,14 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blog_post_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           author_id: string
           content: string
+          cover_image: string | null
           created_at: string | null
           excerpt: string | null
           featured_image: string | null
           id: string
+          is_featured: boolean | null
+          meta_description: string | null
+          meta_keywords: string | null
+          published_at: string | null
+          reading_time: number | null
           slug: string
           status: string
           title: string
@@ -25,10 +52,16 @@ export type Database = {
         Insert: {
           author_id: string
           content: string
+          cover_image?: string | null
           created_at?: string | null
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          is_featured?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          published_at?: string | null
+          reading_time?: number | null
           slug: string
           status?: string
           title: string
@@ -37,16 +70,52 @@ export type Database = {
         Update: {
           author_id?: string
           content?: string
+          cover_image?: string | null
           created_at?: string | null
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          is_featured?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          published_at?: string | null
+          reading_time?: number | null
           slug?: string
           status?: string
           title?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      blog_posts_tags: {
+        Row: {
+          post_id: string
+          tag_id: string
+        }
+        Insert: {
+          post_id: string
+          tag_id: string
+        }
+        Update: {
+          post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "blog_post_tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       link_views: {
         Row: {
