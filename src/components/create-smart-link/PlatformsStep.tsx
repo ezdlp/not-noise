@@ -128,25 +128,25 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: "/lovable-uploads/86f2e670-d045-4ae0-9a45-10f5d5789996.png" },
-    { id: "apple", name: "Apple Music", enabled: true, url: "", icon: "/lovable-uploads/b9e12050-d64d-4618-8c2f-e7dde11e3f62.png" },
-    { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: "/lovable-uploads/283ad674-b0b0-4752-ac21-7b7101c961eb.png" },
-    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png" },
-    { id: "deezer", name: "Deezer", enabled: true, url: "", icon: "/lovable-uploads/e701fd77-eff3-427e-8345-ea16f11445d0.png" },
-    { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: "/lovable-uploads/2faf54d9-c033-4184-ac62-50579c3f0a0a.png" },
-    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png" },
-    { id: "itunes", name: "iTunes", enabled: true, url: "", icon: "/lovable-uploads/952e775d-162e-4c42-8356-5b4214084a49.png" },
+    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: getPlatformIcon("spotify") },
+    { id: "apple", name: "Apple Music", enabled: true, url: "", icon: getPlatformIcon("apple") },
+    { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: getPlatformIcon("amazon") },
+    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: getPlatformIcon("youtube_music") },
+    { id: "deezer", name: "Deezer", enabled: true, url: "", icon: getPlatformIcon("deezer") },
+    { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: getPlatformIcon("soundcloud") },
+    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: getPlatformIcon("youtube") },
+    { id: "itunes", name: "iTunes", enabled: true, url: "", icon: getPlatformIcon("itunes") },
   ]);
 
   const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: "/lovable-uploads/86636298-b9cc-4920-befc-47a8080f725d.png" },
-    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png" },
-    { id: "napster", name: "Napster", enabled: false, url: "", icon: "/lovable-uploads/9d6f3e19-6eae-4463-a38e-12484ceb9fbb.png" },
-    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: "/lovable-uploads/4fecc791-6ea7-4737-aa0f-0a3c2c8aa7b3.png" },
-    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: "/lovable-uploads/39a6879b-3c04-4dae-b21d-e7c9c538ffc3.png" },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: "/lovable-uploads/876fdc17-4519-43ce-9587-637f5acc5d67.png" },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png" },
-    { id: "audius", name: "Audius", enabled: false, url: "", icon: "/lovable-uploads/f4e0cb13-a577-4efd-8e18-3b6602ff1093.png" },
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: getPlatformIcon("tidal") },
+    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: getPlatformIcon("anghami") },
+    { id: "napster", name: "Napster", enabled: false, url: "", icon: getPlatformIcon("napster") },
+    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: getPlatformIcon("boomplay") },
+    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: getPlatformIcon("yandex") },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: getPlatformIcon("beatport") },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp") },
+    { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius") },
   ]);
 
   const sensors = useSensors(
@@ -233,16 +233,13 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   };
 
   const togglePlatform = (platformId: string) => {
-    // Check if the platform is in additionalPlatforms
     const additionalPlatform = additionalPlatforms.find(p => p.id === platformId);
     if (additionalPlatform) {
-      // If enabling an additional platform, move it to platforms
       if (!additionalPlatform.enabled) {
         setPlatforms(prev => [...prev, { ...additionalPlatform, enabled: true }]);
         setAdditionalPlatforms(prev => prev.filter(p => p.id !== platformId));
       }
     } else {
-      // Toggle existing platform
       setPlatforms(
         platforms.map((p) =>
           p.id === platformId ? { ...p, enabled: !p.enabled } : p
@@ -308,15 +305,17 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
               <img 
                 src={platform.icon} 
                 alt={`${platform.name} logo`} 
-                className="w-12 h-12 object-contain"
+                className="w-8 h-8 object-contain"
               />
+              <span className="text-sm font-medium">{platform.name}</span>
               <div className="ml-auto">
                 <Button
                   variant={platform.enabled ? "default" : "outline"}
                   onClick={() => togglePlatform(platform.id)}
-                  className="min-w-[100px]"
+                  className="min-w-[100px] group hover:bg-primary hover:border-primary"
                 >
-                  {platform.enabled ? "Enabled" : "Disabled"}
+                  <span className="group-hover:hidden">Disabled</span>
+                  <span className="hidden group-hover:inline">Enable</span>
                 </Button>
               </div>
             </div>
