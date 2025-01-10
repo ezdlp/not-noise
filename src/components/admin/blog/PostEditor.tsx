@@ -49,16 +49,29 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     },
   });
 
+  const createSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
   async function onSubmit(values: PostFormValues) {
     setIsSubmitting(true);
     try {
+      const postData = {
+        ...values,
+        slug: createSlug(values.title),
+        content: values.content || "",
+      };
+
       const { error } = post
         ? await supabase
             .from("blog_posts")
-            .update(values)
+            .update(postData)
             .eq("id", post.id)
         : await supabase.from("blog_posts").insert({
-            ...values,
+            ...postData,
             author_id: (await supabase.auth.getUser()).data.user?.id,
           });
 
