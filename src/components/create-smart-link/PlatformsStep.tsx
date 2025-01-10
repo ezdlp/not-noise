@@ -39,22 +39,22 @@ interface PlatformsStepProps {
 
 const getPlatformIcon = (platformId: string) => {
   const icons: { [key: string]: string } = {
-    spotify: "/lovable-uploads/86f2e670-d045-4ae0-9a45-10f5d5789996.png",
-    apple: "/lovable-uploads/952e775d-162e-4c42-8356-5b4214084a49.png", // Apple Music logo
-    amazon: "/lovable-uploads/283ad674-b0b0-4752-ac21-7b7101c961eb.png",
-    youtube_music: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png", // YouTube Music logo
-    deezer: "/lovable-uploads/e701fd77-eff3-427e-8345-ea16f11445d0.png", // Deezer logo
-    soundcloud: "/lovable-uploads/2faf54d9-c033-4184-ac62-50579c3f0a0a.png",
-    youtube: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png",
-    itunes: "/lovable-uploads/b9e12050-d64d-4618-8c2f-e7dde11e3f62.png", // iTunes logo
-    tidal: "/lovable-uploads/86636298-b9cc-4920-befc-47a8080f725d.png", // Tidal logo
-    anghami: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png",
-    napster: "/lovable-uploads/9d6f3e19-6eae-4463-a38e-12484ceb9fbb.png", // Napster logo
-    boomplay: "/lovable-uploads/4fecc791-6ea7-4737-aa0f-0a3c2c8aa7b3.png", // Boomplay logo
-    yandex: "/lovable-uploads/39a6879b-3c04-4dae-b21d-e7c9c538ffc3.png", // Yandex logo
-    beatport: "/lovable-uploads/876fdc17-4519-43ce-9587-637f5acc5d67.png", // Beatport logo
-    bandcamp: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png", // Bandcamp logo
-    audius: "/lovable-uploads/f4e0cb13-a577-4efd-8e18-3b6602ff1093.png", // Audius logo
+    spotify: "/lovable-uploads/spotify.png",
+    apple: "/lovable-uploads/applemusic.png",
+    amazon: "/lovable-uploads/amazonmusic.png",
+    youtube_music: "/lovable-uploads/youtubemusic.png",
+    deezer: "/lovable-uploads/deezer.png",
+    soundcloud: "/lovable-uploads/soundcloud.png",
+    youtube: "/lovable-uploads/youtube.png",
+    itunes: "/lovable-uploads/itunes.png",
+    tidal: "/lovable-uploads/tidal.png",
+    anghami: "/lovable-uploads/anghami.png",
+    napster: "/lovable-uploads/napster.png",
+    boomplay: "/lovable-uploads/boomplay.png",
+    yandex: "/lovable-uploads/yandex.png",
+    beatport: "/lovable-uploads/beatport.png",
+    bandcamp: "/lovable-uploads/bandcamp.png",
+    audius: "/lovable-uploads/audius.png",
   };
   return icons[platformId] || "/placeholder.svg";
 };
