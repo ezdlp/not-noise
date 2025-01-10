@@ -5,10 +5,24 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import PlatformsSection from "@/components/create-smart-link/PlatformsSection";
+import { useState } from "react";
 
 const EditSmartLink = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [emailCaptureEnabled, setEmailCaptureEnabled] = useState(false);
+  const [emailCaptureTitle, setEmailCaptureTitle] = useState("");
+  const [emailCaptureDescription, setEmailCaptureDescription] = useState("");
+  const [platforms, setPlatforms] = useState<any[]>([]);
 
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
@@ -32,9 +46,83 @@ const EditSmartLink = () => {
         throw error;
       }
 
+      // Initialize form state with fetched data
+      setTitle(data.title);
+      setDescription(data.description || "");
+      setEmailCaptureEnabled(data.email_capture_enabled || false);
+      setEmailCaptureTitle(data.email_capture_title || "");
+      setEmailCaptureDescription(data.email_capture_description || "");
+      
+      // Transform platform links into the format expected by PlatformsSection
+      const transformedPlatforms = data.platform_links.map((link: any) => ({
+        id: link.platform_id,
+        name: link.platform_name,
+        enabled: true,
+        url: link.url,
+        icon: `/lovable-uploads/${link.platform_id}.png`,
+      }));
+      setPlatforms(transformedPlatforms);
+
       return data;
     },
   });
+
+  const handleSave = async () => {
+    try {
+      // Update smart link details
+      const { error: updateError } = await supabase
+        .from("smart_links")
+        .update({
+          title,
+          email_capture_enabled: emailCaptureEnabled,
+          email_capture_title: emailCaptureTitle,
+          email_capture_description: emailCaptureDescription,
+        })
+        .eq("id", id);
+
+      if (updateError) throw updateError;
+
+      // Update platform links
+      const enabledPlatforms = platforms.filter(p => p.enabled);
+      
+      for (const platform of enabledPlatforms) {
+        const { error: platformError } = await supabase
+          .from("platform_links")
+          .upsert({
+            smart_link_id: id,
+            platform_id: platform.id,
+            platform_name: platform.name,
+            url: platform.url,
+          }, {
+            onConflict: 'smart_link_id,platform_id'
+          });
+
+        if (platformError) throw platformError;
+      }
+
+      toast.success("Smart link updated successfully!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error updating smart link:", error);
+      toast.error("Failed to update smart link");
+    }
+  };
+
+  const togglePlatform = (platformId: string) => {
+    setPlatforms(prev =>
+      prev.map(p =>
+        p.id === platformId ? { ...p, enabled: !p.enabled } : p
+      )
+    );
+  };
+
+  const updatePlatformUrl = (platformId: string, url: string) => {
+    setPlatforms(prev =>
+      prev.map(p =>
+        p.id === platformId ? { ...p, url } : p
+      )
+    );
+  };
 
   if (isLoading) {
     return (
@@ -80,10 +168,69 @@ const EditSmartLink = () => {
         </p>
       </div>
 
-      {/* TODO: Add edit form components here */}
-      <pre className="bg-slate-100 p-4 rounded-lg">
-        {JSON.stringify(smartLink, null, 2)}
-      </pre>
+      <Card className="p-6 space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter title..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a description..."
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={emailCaptureEnabled}
+              onCheckedChange={setEmailCaptureEnabled}
+            />
+            <Label>Enable email capture form</Label>
+          </div>
+
+          {emailCaptureEnabled && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Form Title</Label>
+                <Input
+                  value={emailCaptureTitle}
+                  onChange={(e) => setEmailCaptureTitle(e.target.value)}
+                  placeholder="Enter form title..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Form Description</Label>
+                <Input
+                  value={emailCaptureDescription}
+                  onChange={(e) => setEmailCaptureDescription(e.target.value)}
+                  placeholder="Enter form description..."
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <PlatformsSection
+          title="Platform Links"
+          platforms={platforms}
+          onToggle={togglePlatform}
+          onUrlChange={updatePlatformUrl}
+        />
+
+        <div className="flex justify-end">
+          <Button onClick={handleSave}>Save Changes</Button>
+        </div>
+      </Card>
     </div>
   );
 };
