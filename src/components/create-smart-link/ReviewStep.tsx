@@ -2,7 +2,28 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PencilIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+
+const getPlatformIcon = (platformId: string) => {
+  const icons: { [key: string]: string } = {
+    spotify: "/lovable-uploads/spotify.png",
+    apple: "/lovable-uploads/applemusic.png",
+    amazon: "/lovable-uploads/amazonmusic.png",
+    youtube_music: "/lovable-uploads/youtubemusic.png",
+    deezer: "/lovable-uploads/deezer.png",
+    soundcloud: "/lovable-uploads/soundcloud.png",
+    youtube: "/lovable-uploads/youtube.png",
+    itunes: "/lovable-uploads/itunes.png",
+    tidal: "/lovable-uploads/tidal.png",
+    anghami: "/lovable-uploads/anghami.png",
+    napster: "/lovable-uploads/napster.png",
+    boomplay: "/lovable-uploads/boomplay.png",
+    yandex: "/lovable-uploads/yandex.png",
+    beatport: "/lovable-uploads/beatport.png",
+    bandcamp: "/lovable-uploads/bandcamp.png",
+    audius: "/lovable-uploads/audius.png",
+  };
+  return icons[platformId] || "/placeholder.svg";
+};
 
 interface ReviewStepProps {
   data: any;
@@ -17,16 +38,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
     console.log("Publishing smart link:", data);
     toast.success("Smart link created successfully!");
     onComplete();
-  };
-
-  const platformLogos: { [key: string]: string } = {
-    spotify: "/lovable-uploads/spotify.png",
-    applemusic: "/lovable-uploads/applemusic.png",
-    youtubemusic: "/lovable-uploads/youtubemusic.png",
-    soundcloud: "/lovable-uploads/soundcloud.png",
-    deezer: "/lovable-uploads/deezer.png",
-    tidal: "/lovable-uploads/tidal.png",
-    amazonmusic: "/lovable-uploads/amazonmusic.png",
   };
 
   return (
@@ -94,7 +105,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
               className="flex items-center gap-3 p-3 rounded-lg border bg-card/50"
             >
               <img
-                src={platformLogos[platform.id.toLowerCase()] || ''}
+                src={getPlatformIcon(platform.id)}
                 alt={platform.name}
                 className="w-8 h-8 object-contain"
               />
