@@ -4,16 +4,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GripVertical } from "lucide-react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faSpotify, 
-  faApple, 
-  faAmazon, 
-  faYoutube, 
-  faSoundcloud,
-  faDeezer,
-} from "@fortawesome/free-brands-svg-icons";
-import { faMusic } from "@fortawesome/free-solid-svg-icons";
 import {
   DndContext,
   closestCenter,
@@ -35,7 +25,7 @@ interface Platform {
   name: string;
   enabled: boolean;
   url: string;
-  icon: any;
+  icon: string;
 }
 
 interface PlatformsStepProps {
@@ -48,17 +38,25 @@ interface PlatformsStepProps {
 }
 
 const getPlatformIcon = (platformId: string) => {
-  switch (platformId) {
-    case "spotify": return faSpotify;
-    case "apple": return faApple;
-    case "amazon": return faAmazon;
-    case "youtube_music": return faYoutube;
-    case "deezer": return faDeezer;
-    case "soundcloud": return faSoundcloud;
-    case "youtube": return faYoutube;
-    case "itunes": return faApple;
-    default: return faMusic;
-  }
+  const icons: { [key: string]: string } = {
+    spotify: "/lovable-uploads/86f2e670-d045-4ae0-9a45-10f5d5789996.png",
+    apple: "/lovable-uploads/b9e12050-d64d-4618-8c2f-e7dde11e3f62.png",
+    amazon: "/lovable-uploads/283ad674-b0b0-4752-ac21-7b7101c961eb.png",
+    youtube_music: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png",
+    deezer: "/lovable-uploads/e701fd77-eff3-427e-8345-ea16f11445d0.png",
+    soundcloud: "/lovable-uploads/2faf54d9-c033-4184-ac62-50579c3f0a0a.png",
+    youtube: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png",
+    itunes: "/lovable-uploads/952e775d-162e-4c42-8356-5b4214084a49.png",
+    tidal: "/lovable-uploads/86636298-b9cc-4920-befc-47a8080f725d.png",
+    anghami: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png",
+    napster: "/lovable-uploads/9d6f3e19-6eae-4463-a38e-12484ceb9fbb.png",
+    boomplay: "/lovable-uploads/4fecc791-6ea7-4737-aa0f-0a3c2c8aa7b3.png",
+    yandex: "/lovable-uploads/39a6879b-3c04-4dae-b21d-e7c9c538ffc3.png",
+    beatport: "/lovable-uploads/876fdc17-4519-43ce-9587-637f5acc5d67.png",
+    bandcamp: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png",
+    audius: "/lovable-uploads/f4e0cb13-a577-4efd-8e18-3b6602ff1093.png",
+  };
+  return icons[platformId] || "/lovable-uploads/952e775d-162e-4c42-8356-5b4214084a49.png";
 };
 
 const SortablePlatform = ({ platform, onToggle, onUrlChange }: { 
@@ -90,9 +88,10 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
           <GripVertical className="text-gray-400" />
         </div>
         <div className="flex items-center gap-3 flex-1">
-          <FontAwesomeIcon 
-            icon={getPlatformIcon(platform.id)} 
-            className="text-3xl"
+          <img 
+            src={getPlatformIcon(platform.id)} 
+            alt={`${platform.name} logo`}
+            className="w-8 h-8 object-contain"
           />
           <span className="ml-2 text-sm font-medium">{platform.name}</span>
           <div className="ml-auto">
@@ -129,25 +128,25 @@ const SortablePlatform = ({ platform, onToggle, onUrlChange }: {
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: faSpotify },
-    { id: "apple", name: "Apple Music", enabled: true, url: "", icon: faApple },
-    { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: faAmazon },
-    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: faYoutube },
-    { id: "deezer", name: "Deezer", enabled: true, url: "", icon: faDeezer },
-    { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: faSoundcloud },
-    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: faYoutube },
-    { id: "itunes", name: "iTunes", enabled: true, url: "", icon: faApple },
+    { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: "/lovable-uploads/86f2e670-d045-4ae0-9a45-10f5d5789996.png" },
+    { id: "apple", name: "Apple Music", enabled: true, url: "", icon: "/lovable-uploads/b9e12050-d64d-4618-8c2f-e7dde11e3f62.png" },
+    { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: "/lovable-uploads/283ad674-b0b0-4752-ac21-7b7101c961eb.png" },
+    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png" },
+    { id: "deezer", name: "Deezer", enabled: true, url: "", icon: "/lovable-uploads/e701fd77-eff3-427e-8345-ea16f11445d0.png" },
+    { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: "/lovable-uploads/2faf54d9-c033-4184-ac62-50579c3f0a0a.png" },
+    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: "/lovable-uploads/c78c24b6-a622-4f88-8564-be8a4806f335.png" },
+    { id: "itunes", name: "iTunes", enabled: true, url: "", icon: "/lovable-uploads/952e775d-162e-4c42-8356-5b4214084a49.png" },
   ]);
 
   const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: faMusic },
-    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: faMusic },
-    { id: "napster", name: "Napster", enabled: false, url: "", icon: faMusic },
-    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: faMusic },
-    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: faMusic },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: faMusic },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: faMusic },
-    { id: "audius", name: "Audius", enabled: false, url: "", icon: faMusic },
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: "/lovable-uploads/86636298-b9cc-4920-befc-47a8080f725d.png" },
+    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png" },
+    { id: "napster", name: "Napster", enabled: false, url: "", icon: "/lovable-uploads/9d6f3e19-6eae-4463-a38e-12484ceb9fbb.png" },
+    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: "/lovable-uploads/4fecc791-6ea7-4737-aa0f-0a3c2c8aa7b3.png" },
+    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: "/lovable-uploads/39a6879b-3c04-4dae-b21d-e7c9c538ffc3.png" },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: "/lovable-uploads/876fdc17-4519-43ce-9587-637f5acc5d67.png" },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png" },
+    { id: "audius", name: "Audius", enabled: false, url: "", icon: "/lovable-uploads/f4e0cb13-a577-4efd-8e18-3b6602ff1093.png" },
   ]);
 
   const sensors = useSensors(
