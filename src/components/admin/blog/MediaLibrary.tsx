@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Image, Upload, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 interface MediaLibraryProps {
@@ -27,6 +27,17 @@ interface MediaFile {
 export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUserId();
+  }, []);
 
   const { data: mediaFiles, refetch } = useQuery({
     queryKey: ["mediaFiles"],
@@ -42,7 +53,7 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   });
 
   const handleFileUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !userId) return;
 
     setUploading(true);
     try {
@@ -66,6 +77,7 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
           file_path: filePath,
           mime_type: selectedFile.type,
           size: selectedFile.size,
+          uploaded_by: userId
         });
 
       if (dbError) throw dbError;
