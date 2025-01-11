@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
 
 export const CallToAction = () => {
@@ -13,13 +13,11 @@ export const CallToAction = () => {
         <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
           Join thousands of artists using Soundraiser to promote their music smarter. Create your first Smart Link in less than 3 minutes - it's free.
         </p>
-        <Button 
-          size="default" 
-          className="button-gradient"
+        <CTAButton 
           onClick={() => navigate("/create")}
         >
           Create Your Smart Link
-        </Button>
+        </CTAButton>
       </div>
     </section>
   );

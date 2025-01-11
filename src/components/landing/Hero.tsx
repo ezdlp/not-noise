@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
@@ -17,13 +17,11 @@ export const Hero = () => {
           <p className="text-xl text-gray-600 mb-8 max-w-xl leading-relaxed">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
-          <Button 
-            size="default" 
-            className="button-gradient"
+          <CTAButton 
             onClick={() => navigate("/create")}
           >
             Get Started For Free
-          </Button>
+          </CTAButton>
         </div>
         <div className="relative">
           <div className="relative w-full aspect-square">
