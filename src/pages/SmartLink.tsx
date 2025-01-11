@@ -69,15 +69,15 @@ const SmartLink = () => {
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
-      if (!slug) throw new Error('Smart link ID is required');
+      if (!slug) throw new Error('Smart link slug is required');
 
-      console.log('Fetching smart link with ID:', slug);
+      console.log('Fetching smart link with slug:', slug);
 
-      // Fetch the smart link data
+      // Fetch the smart link data using the slug field
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select('*')
-        .eq('id', slug)
+        .eq('slug', slug)
         .maybeSingle();
 
       if (smartLinkError) {
@@ -85,7 +85,7 @@ const SmartLink = () => {
         throw smartLinkError;
       }
       if (!smartLinkData) {
-        console.error('Smart link not found for ID:', slug);
+        console.error('Smart link not found for slug:', slug);
         throw new Error('Smart link not found');
       }
 
@@ -95,7 +95,7 @@ const SmartLink = () => {
       const { data: platformLinks, error: platformLinksError } = await supabase
         .from('platform_links')
         .select('*')
-        .eq('smart_link_id', slug);
+        .eq('smart_link_id', smartLinkData.id);
 
       if (platformLinksError) {
         console.error('Error fetching platform links:', platformLinksError);
@@ -109,7 +109,7 @@ const SmartLink = () => {
         platformLinks: platformLinks || []
       };
     },
-    enabled: !!slug // Only run the query if we have a slug
+    enabled: !!slug
   });
 
   if (isLoading) {
@@ -189,7 +189,7 @@ const SmartLink = () => {
         </div>
         
         <div className="mt-8 text-center">
-          <p className="text-sm text-white/60">Powered by Soundraiser</p>
+          <p className="text-sm text-white/60">Powered by notnoise</p>
         </div>
       </div>
     </div>
