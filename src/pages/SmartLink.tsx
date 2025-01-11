@@ -65,19 +65,18 @@ const platforms: Platform[] = [
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
+  const testId = "6337c960-b1fc-4b88-b38f-4ca691d78b40";
 
   const { data: smartLink, isLoading, error } = useQuery({
-    queryKey: ['smartLink', slug],
+    queryKey: ['smartLink', testId], // Using testId instead of slug for preview
     queryFn: async () => {
-      if (!slug) throw new Error('Smart link slug is required');
+      console.log('Fetching smart link with ID:', testId);
 
-      console.log('Fetching smart link with slug:', slug);
-
-      // Fetch the smart link data using the slug field
+      // Fetch the smart link data using the test ID
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select('*')
-        .eq('slug', slug)
+        .eq('id', testId) // Using eq('id', testId) instead of eq('slug', slug)
         .maybeSingle();
 
       if (smartLinkError) {
@@ -85,7 +84,7 @@ const SmartLink = () => {
         throw smartLinkError;
       }
       if (!smartLinkData) {
-        console.error('Smart link not found for slug:', slug);
+        console.error('Smart link not found for ID:', testId);
         throw new Error('Smart link not found');
       }
 
@@ -108,8 +107,7 @@ const SmartLink = () => {
         ...smartLinkData,
         platformLinks: platformLinks || []
       };
-    },
-    enabled: !!slug
+    }
   });
 
   if (isLoading) {
