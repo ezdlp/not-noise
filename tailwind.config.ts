@@ -33,7 +33,7 @@ export default {
           foreground: "#0F0F0F",
         },
         accent: {
-          DEFAULT: "#F2FCE2",
+          DEFAULT: "#F5F3FF",
           foreground: "#0F0F0F",
         },
         onyx: "#0F0F0F",

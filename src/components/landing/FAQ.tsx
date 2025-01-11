@@ -7,7 +7,7 @@ import {
 
 const faqs = [
   {
-    question: "What makes Soundraiser's Smart Links different?",
+    question: "What makes notnoise's Smart Links different?",
     answer: "Our Smart Links are built for modern music marketing, featuring Meta Pixel integration for retargeting, email capture capabilities, and comprehensive analytics - all in one streamlined solution that takes less than 3 minutes to set up."
   },
   {

@@ -7,19 +7,19 @@ export const Footer = () => {
     <footer className="bg-onyx text-gray-100">
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex justify-center space-x-8 mb-8">
-          <a href="https://www.instagram.com/soundraiser.io/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+          <a href="https://www.instagram.com/notnoise.io/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
             <FontAwesomeIcon icon={faInstagram} className="h-5 w-5" />
           </a>
-          <a href="https://www.tiktok.com/@soundraiser.io" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+          <a href="https://www.tiktok.com/@notnoise.io" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
             <FontAwesomeIcon icon={faTiktok} className="h-5 w-5" />
           </a>
-          <a href="https://twitter.com/Soundraiser_" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+          <a href="https://twitter.com/notnoise_" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
             <FontAwesomeIcon icon={faXTwitter} className="h-5 w-5" />
           </a>
-          <a href="https://open.spotify.com/user/rocktails" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+          <a href="https://open.spotify.com/user/notnoise" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
             <FontAwesomeIcon icon={faSpotify} className="h-5 w-5" />
           </a>
-          <a href="https://www.youtube.com/@Soundraiser" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
+          <a href="https://www.youtube.com/@notnoise" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
             <FontAwesomeIcon icon={faYoutube} className="h-5 w-5" />
           </a>
         </div>
@@ -30,7 +30,7 @@ export const Footer = () => {
             <Link to="/refund" className="text-gray-300 hover:text-white transition-colors">Refund Policy</Link>
             <Link to="/contact" className="text-gray-300 hover:text-white transition-colors">Contact Us</Link>
           </div>
-          <p className="text-gray-400">© 2024 Soundraiser. All rights reserved.</p>
+          <p className="text-gray-400">© 2024 notnoise. All rights reserved.</p>
         </div>
       </div>
     </footer>
