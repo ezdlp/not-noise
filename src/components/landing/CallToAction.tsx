@@ -5,9 +5,9 @@ export const CallToAction = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-24 px-4 bg-white">
-      <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+    <section className="py-20 px-4 bg-white">
+      <div className="max-w-5xl mx-auto text-center">
+        <h2 className="text-4xl md:text-5xl font-bold mb-6 whitespace-nowrap">
           Start Growing Your Music Career Today
         </h2>
         <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
