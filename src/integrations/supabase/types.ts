@@ -445,6 +445,7 @@ export type Database = {
           meta_pixel_id: string | null
           meta_view_event: string | null
           release_date: string | null
+          slug: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -460,6 +461,7 @@ export type Database = {
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           release_date?: string | null
+          slug?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -475,6 +477,7 @@ export type Database = {
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           release_date?: string | null
+          slug?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
