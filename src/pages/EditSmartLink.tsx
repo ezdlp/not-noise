@@ -11,17 +11,51 @@ import { toast } from "sonner";
 import { useState } from "react";
 import PlatformItem from "@/components/create-smart-link/PlatformItem";
 
+const getPlatformIcon = (platformId: string) => {
+  const icons: { [key: string]: string } = {
+    spotify: "/lovable-uploads/spotify.png",
+    apple: "/lovable-uploads/applemusic.png",
+    amazon: "/lovable-uploads/amazonmusic.png",
+    youtube_music: "/lovable-uploads/youtubemusic.png",
+    deezer: "/lovable-uploads/deezer.png",
+    soundcloud: "/lovable-uploads/soundcloud.png",
+    youtube: "/lovable-uploads/youtube.png",
+    itunes: "/lovable-uploads/itunes.png",
+    tidal: "/lovable-uploads/tidal.png",
+    anghami: "/lovable-uploads/anghami.png",
+    napster: "/lovable-uploads/napster.png",
+    boomplay: "/lovable-uploads/boomplay.png",
+    yandex: "/lovable-uploads/yandex.png",
+    beatport: "/lovable-uploads/beatport.png",
+    bandcamp: "/lovable-uploads/bandcamp.png",
+    audius: "/lovable-uploads/audius.png",
+  };
+  return icons[platformId] || "/placeholder.svg";
+};
+
 const EditSmartLink = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
   const [emailCaptureEnabled, setEmailCaptureEnabled] = useState(false);
   const [emailCaptureTitle, setEmailCaptureTitle] = useState("");
   const [emailCaptureDescription, setEmailCaptureDescription] = useState("");
   const [metaPixelId, setMetaPixelId] = useState("");
   const [metaViewEvent, setMetaViewEvent] = useState("");
   const [metaClickEvent, setMetaClickEvent] = useState("");
+
+  const [additionalPlatforms, setAdditionalPlatforms] = useState([
+    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: getPlatformIcon("tidal") },
+    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: getPlatformIcon("anghami") },
+    { id: "napster", name: "Napster", enabled: false, url: "", icon: getPlatformIcon("napster") },
+    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: getPlatformIcon("boomplay") },
+    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: getPlatformIcon("yandex") },
+    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: getPlatformIcon("beatport") },
+    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp") },
+    { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius") },
+  ]);
 
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
@@ -45,6 +79,7 @@ const EditSmartLink = () => {
 
       // Initialize form state
       setTitle(smartLink.title);
+      setSlug(smartLink.slug || "");
       setEmailCaptureEnabled(smartLink.email_capture_enabled || false);
       setEmailCaptureTitle(smartLink.email_capture_title || "");
       setEmailCaptureDescription(smartLink.email_capture_description || "");
@@ -62,6 +97,7 @@ const EditSmartLink = () => {
         .from("smart_links")
         .update({
           title,
+          slug,
           email_capture_enabled: emailCaptureEnabled,
           email_capture_title: emailCaptureTitle,
           email_capture_description: emailCaptureDescription,
@@ -78,6 +114,47 @@ const EditSmartLink = () => {
     } catch (error) {
       console.error("Error updating smart link:", error);
       toast.error("Failed to update smart link");
+    }
+  };
+
+  const togglePlatform = (platformId: string) => {
+    const platform = additionalPlatforms.find(p => p.id === platformId);
+    if (platform) {
+      // Add new platform link
+      const addPlatformLink = async () => {
+        const { error } = await supabase
+          .from("platform_links")
+          .insert({
+            smart_link_id: id,
+            platform_id: platformId,
+            platform_name: platform.name,
+            url: "",
+          });
+
+        if (error) {
+          toast.error("Failed to add platform");
+          return;
+        }
+
+        toast.success("Platform added successfully!");
+        // Refresh the page to show new platform
+        window.location.reload();
+      };
+
+      addPlatformLink();
+    }
+  };
+
+  const updatePlatformUrl = async (platformId: string, url: string) => {
+    const { error } = await supabase
+      .from("platform_links")
+      .update({ url })
+      .eq("platform_id", platformId)
+      .eq("smart_link_id", id);
+
+    if (error) {
+      toast.error("Failed to update platform URL");
+      return;
     }
   };
 
@@ -123,16 +200,22 @@ const EditSmartLink = () => {
                 alt={`${smartLink.title} artwork`}
                 className="w-24 h-24 object-cover rounded-lg"
               />
-              <div>
+              <div className="space-y-4 flex-1">
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="font-semibold text-lg mb-2"
+                  className="font-semibold text-lg"
                   placeholder="Enter title..."
                 />
-                <p className="text-sm text-muted-foreground">
-                  Created {new Date(smartLink.created_at).toLocaleDateString()}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">xnoi.se/</span>
+                  <Input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="custom-url-slug"
+                    className="flex-1"
+                  />
+                </div>
               </div>
             </div>
           </Card>
@@ -149,9 +232,25 @@ const EditSmartLink = () => {
                     name: platform.platform_name,
                     enabled: true,
                     url: platform.url,
-                    icon: `/lovable-uploads/${platform.platform_id}.png`,
+                    icon: getPlatformIcon(platform.platform_id),
                   }}
                   onToggle={() => {}}
+                  onUrlChange={(id, url) => updatePlatformUrl(id, url)}
+                  isDraggable={false}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Platforms */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Additional Services</h2>
+            <div className="space-y-2">
+              {additionalPlatforms.map((platform) => (
+                <PlatformItem
+                  key={platform.id}
+                  platform={platform}
+                  onToggle={togglePlatform}
                   onUrlChange={() => {}}
                   isDraggable={false}
                 />
