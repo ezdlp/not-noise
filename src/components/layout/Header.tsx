@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { CTAButton } from "@/components/ui/cta-button";
-import { User } from "lucide-react";
+import { User, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -61,39 +61,55 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center space-x-6">
-          <CTAButton 
-            onClick={() => navigate("/register")}
-            className="!py-2 !px-4 !text-sm"
-          >
-            GET STARTED
-          </CTAButton>
+          {!isAuthenticated ? (
+            <Button 
+              variant="ghost" 
+              className="text-gray-600 hover:bg-transparent flex items-center"
+              onClick={() => navigate("/login")}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Login
+            </Button>
+          ) : (
+            <>
+              <CTAButton 
+                onClick={() => navigate("/create")}
+                className="!py-2 !px-4 !text-sm"
+              >
+                CREATE LINK
+              </CTAButton>
 
-          {isAuthenticated && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="text-gray-600 hover:bg-transparent"
-                >
-                  <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full cursor-pointer hover:bg-gray-50">
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="w-full cursor-pointer hover:bg-gray-50">
-                    Account Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-gray-50">
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="text-gray-600 hover:bg-transparent"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="w-full cursor-pointer hover:bg-gray-50">
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="w-full cursor-pointer hover:bg-gray-50">
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="w-full cursor-pointer hover:bg-gray-50">
+                      Account Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-gray-50">
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
         </div>
       </div>

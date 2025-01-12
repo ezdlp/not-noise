@@ -209,9 +209,7 @@ const SmartLink = () => {
               className="w-72 h-72 mx-auto rounded-2xl shadow-xl mb-6 object-cover"
             />
             <h1 className="text-2xl font-bold mb-1 text-gray-900">{smartLink.title}</h1>
-            {smartLink.profiles?.artist_name && (
-              <p className="text-lg text-gray-600">{smartLink.profiles.artist_name}</p>
-            )}
+            <p className="text-lg text-gray-600">{smartLink.profiles?.artist_name}</p>
           </div>
           
           <div className="space-y-4">
@@ -262,7 +260,7 @@ const SmartLink = () => {
                 />
                 <Button 
                   type="submit" 
-                  className="w-full"
+                  className="w-full bg-black hover:bg-black/90 text-white"
                   disabled={subscribeMutation.isPending}
                 >
                   {subscribeMutation.isPending ? "Subscribing..." : "Subscribe"}
