@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PlusIcon, Link2Icon, ChartBarIcon } from "lucide-react";
+import { PlusIcon, Link2Icon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { EmailSubscribersList } from "@/components/dashboard/EmailSubscribersList";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -49,10 +50,7 @@ export default function Dashboard() {
             Manage your smart links and track their performance
           </p>
         </div>
-        <Button
-          onClick={() => navigate("/create")}
-          className="gap-2"
-        >
+        <Button onClick={() => navigate("/create")} className="gap-2">
           <PlusIcon />
           Create Smart Link
         </Button>
@@ -68,6 +66,10 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold">Your Smart Links</h2>
         </div>
         <SmartLinksList links={smartLinks} isLoading={isLoading} />
+      </Card>
+
+      <Card className="p-6">
+        <EmailSubscribersList />
       </Card>
     </div>
   );
