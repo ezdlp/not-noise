@@ -72,7 +72,7 @@ const SmartLink = () => {
     queryFn: async () => {
       console.log('Fetching smart link with slug:', slug);
 
-      // Fetch the smart link data using the slug
+      // First try to fetch by slug
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
@@ -88,12 +88,36 @@ const SmartLink = () => {
         console.error('Error fetching smart link:', smartLinkError);
         throw smartLinkError;
       }
-      if (!smartLinkData) {
-        console.error('Smart link not found for slug:', slug);
-        throw new Error('Smart link not found');
-      }
 
-      console.log('Found smart link:', smartLinkData);
+      // If no data found by slug, try fetching by ID as fallback
+      if (!smartLinkData) {
+        console.log('No smart link found by slug, trying ID...');
+        const { data: idData, error: idError } = await supabase
+          .from('smart_links')
+          .select(`
+            *,
+            profiles:user_id (
+              artist_name
+            )
+          `)
+          .eq('id', slug)
+          .maybeSingle();
+
+        if (idError) {
+          console.error('Error fetching smart link by ID:', idError);
+          throw idError;
+        }
+
+        if (!idData) {
+          console.error('Smart link not found by either slug or ID:', slug);
+          throw new Error('Smart link not found');
+        }
+
+        console.log('Found smart link by ID:', idData);
+        smartLinkData = idData;
+      } else {
+        console.log('Found smart link by slug:', smartLinkData);
+      }
 
       // Fetch the platform links for this smart link
       const { data: platformLinks, error: platformLinksError } = await supabase
