@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -65,18 +66,22 @@ const platforms: Platform[] = [
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
-  const testId = "6337c960-b1fc-4b88-b38f-4ca691d78b40";
 
   const { data: smartLink, isLoading, error } = useQuery({
-    queryKey: ['smartLink', testId], // Using testId instead of slug for preview
+    queryKey: ['smartLink', slug],
     queryFn: async () => {
-      console.log('Fetching smart link with ID:', testId);
+      console.log('Fetching smart link with slug:', slug);
 
-      // Fetch the smart link data using the test ID
+      // Fetch the smart link data using the slug
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
-        .select('*')
-        .eq('id', testId) // Using eq('id', testId) instead of eq('slug', slug)
+        .select(`
+          *,
+          profiles:user_id (
+            artist_name
+          )
+        `)
+        .eq('slug', slug)
         .maybeSingle();
 
       if (smartLinkError) {
@@ -84,7 +89,7 @@ const SmartLink = () => {
         throw smartLinkError;
       }
       if (!smartLinkData) {
-        console.error('Smart link not found for ID:', testId);
+        console.error('Smart link not found for slug:', slug);
         throw new Error('Smart link not found');
       }
 
@@ -150,6 +155,9 @@ const SmartLink = () => {
               className="w-72 h-72 mx-auto rounded-2xl shadow-xl mb-6 object-cover"
             />
             <h1 className="text-2xl font-bold mb-1 text-gray-900">{smartLink.title}</h1>
+            {smartLink.profiles?.artist_name && (
+              <p className="text-lg text-gray-600">{smartLink.profiles.artist_name}</p>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -184,6 +192,26 @@ const SmartLink = () => {
               );
             })}
           </div>
+
+          {/* Email Capture Form */}
+          {smartLink.email_capture_enabled && (
+            <div className="mt-8 p-6 bg-gray-50 rounded-xl">
+              <h3 className="text-lg font-semibold mb-2">
+                {smartLink.email_capture_title || "Subscribe to my newsletter"}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {smartLink.email_capture_description || "Stay updated with my latest releases"}
+              </p>
+              <div className="space-y-3">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full"
+                />
+                <Button className="w-full">Subscribe</Button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="mt-8 text-center">
