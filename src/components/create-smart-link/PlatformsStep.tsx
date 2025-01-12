@@ -50,12 +50,12 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [progress, setProgress] = useState(0);
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: "spotify", name: "Spotify", enabled: true, url: initialData.spotifyUrl, icon: getPlatformIcon("spotify") },
+    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: getPlatformIcon("youtube_music") },
+    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: getPlatformIcon("youtube") },
     { id: "apple", name: "Apple Music", enabled: true, url: "", icon: getPlatformIcon("apple") },
     { id: "amazon", name: "Amazon Music", enabled: true, url: "", icon: getPlatformIcon("amazon") },
-    { id: "youtube_music", name: "YouTube Music", enabled: true, url: "", icon: getPlatformIcon("youtube_music") },
     { id: "deezer", name: "Deezer", enabled: true, url: "", icon: getPlatformIcon("deezer") },
     { id: "soundcloud", name: "SoundCloud", enabled: true, url: "", icon: getPlatformIcon("soundcloud") },
-    { id: "youtube", name: "YouTube", enabled: true, url: "", icon: getPlatformIcon("youtube") },
     { id: "itunes", name: "iTunes", enabled: true, url: "", icon: getPlatformIcon("itunes") },
   ]);
 
@@ -119,6 +119,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             case "youtube_music":
               url = data.linksByPlatform.youtubeMusic?.url || "";
               break;
+            case "youtube":
+              url = data.linksByPlatform.youtube?.url || "";
+              break;
             case "amazon":
               url = data.linksByPlatform.amazonMusic?.url || "";
               break;
@@ -130,9 +133,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
               break;
             case "soundcloud":
               url = data.linksByPlatform.soundcloud?.url || "";
-              break;
-            case "youtube":
-              url = data.linksByPlatform.youtube?.url || "";
               break;
             case "itunes":
               url = data.linksByPlatform.itunes?.url || "";

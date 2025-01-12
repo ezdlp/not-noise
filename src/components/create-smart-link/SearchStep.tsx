@@ -75,16 +75,8 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
       return;
     }
 
-    // Check if it's a Spotify URL
-    const trackId = extractSpotifyId(query);
-    if (trackId) {
-      await fetchTrackById(trackId);
-      return;
-    }
-    
     try {
       setIsLoading(true);
-
       const data = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
         headers: {
@@ -137,6 +129,13 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+    
+    // Check if it's a Spotify URL first
+    const trackId = extractSpotifyId(value);
+    if (trackId) {
+      fetchTrackById(trackId);
+      return;
+    }
     
     if (searchTimeout) {
       clearTimeout(searchTimeout);

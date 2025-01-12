@@ -176,7 +176,6 @@ const EditSmartLink = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Preview Card */}
           <Card className="p-4">
             <div className="flex items-center gap-4">
               <img
@@ -204,7 +203,6 @@ const EditSmartLink = () => {
             </div>
           </Card>
 
-          {/* Platform Links */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Platform Links</h2>
             <div className="space-y-2">
@@ -226,7 +224,6 @@ const EditSmartLink = () => {
             </div>
           </div>
 
-          {/* Email Capture Settings */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Email Capture</h2>
             <div className="flex items-center space-x-2">
@@ -259,7 +256,6 @@ const EditSmartLink = () => {
             )}
           </div>
 
-          {/* Meta Pixel Settings */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Meta Pixel</h2>
             <div className="space-y-4">
