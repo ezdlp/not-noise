@@ -62,21 +62,19 @@ const Header = () => {
 
         <div className="flex items-center space-x-6">
           {!isAuthenticated ? (
-            <Button 
-              variant="ghost" 
-              className="text-gray-600 hover:bg-transparent flex items-center"
-              onClick={() => navigate("/login")}
+            <CTAButton 
+              onClick={() => navigate("/register")}
+              className="!py-2 !px-4 !text-sm"
             >
-              <LogIn className="h-5 w-5 mr-2" />
-              Login
-            </Button>
+              Get Started
+            </CTAButton>
           ) : (
             <>
               <CTAButton 
                 onClick={() => navigate("/create")}
                 className="!py-2 !px-4 !text-sm"
               >
-                CREATE LINK
+                Create Smart Link
               </CTAButton>
 
               <DropdownMenu>

@@ -99,7 +99,7 @@ const EditSmartLink = () => {
         .select("id")
         .eq("slug", slug)
         .neq("id", id)
-        .maybeSingle();
+        .single();
 
       if (existingSlug) {
         toast.error("This URL slug is already taken. Please choose another one.");
