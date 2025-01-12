@@ -45,6 +45,7 @@ const EditSmartLink = () => {
   const [metaPixelId, setMetaPixelId] = useState("");
   const [metaViewEvent, setMetaViewEvent] = useState("");
   const [metaClickEvent, setMetaClickEvent] = useState("");
+  const [platformLinks, setPlatformLinks] = useState<any[]>([]);
 
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
@@ -78,6 +79,7 @@ const EditSmartLink = () => {
       setMetaPixelId(smartLink.meta_pixel_id || "");
       setMetaViewEvent(smartLink.meta_view_event || "");
       setMetaClickEvent(smartLink.meta_click_event || "");
+      setPlatformLinks(smartLink.platform_links || []);
 
       return smartLink;
     },
@@ -119,6 +121,24 @@ const EditSmartLink = () => {
     } catch (error) {
       console.error("Error updating smart link:", error);
       toast.error("Failed to update smart link");
+    }
+  };
+
+  const updatePlatformUrl = async (platformId: string, url: string) => {
+    try {
+      const platformLink = platformLinks.find(p => p.platform_id === platformId);
+      if (platformLink) {
+        const { error } = await supabase
+          .from("platform_links")
+          .update({ url })
+          .eq("id", platformLink.id);
+
+        if (error) throw error;
+        setPlatformLinks(prev => prev.map(p => p.platform_id === platformId ? { ...p, url } : p));
+      }
+    } catch (error) {
+      console.error("Error updating platform URL:", error);
+      toast.error("Failed to update platform URL");
     }
   };
 
@@ -176,7 +196,7 @@ const EditSmartLink = () => {
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder={slug || "custom-url-slug"}
+                    placeholder={slug}
                     className="flex-1"
                   />
                 </div>
@@ -188,7 +208,7 @@ const EditSmartLink = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Platform Links</h2>
             <div className="space-y-2">
-              {smartLink.platform_links.map((platform: any) => (
+              {platformLinks.map((platform) => (
                 <PlatformItem
                   key={platform.id}
                   platform={{
@@ -200,22 +220,6 @@ const EditSmartLink = () => {
                   }}
                   onToggle={() => {}}
                   onUrlChange={(id, url) => updatePlatformUrl(id, url)}
-                  isDraggable={false}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Additional Platforms */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Additional Services</h2>
-            <div className="space-y-2">
-              {additionalPlatforms.map((platform) => (
-                <PlatformItem
-                  key={platform.id}
-                  platform={platform}
-                  onToggle={togglePlatform}
-                  onUrlChange={() => {}}
                   isDraggable={false}
                 />
               ))}
