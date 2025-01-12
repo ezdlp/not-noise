@@ -253,6 +253,35 @@ export type Database = {
           },
         ]
       }
+      email_subscribers: {
+        Row: {
+          email: string
+          id: string
+          smart_link_id: string
+          subscribed_at: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          smart_link_id: string
+          subscribed_at?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          smart_link_id?: string
+          subscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_subscribers_smart_link_id_fkey"
+            columns: ["smart_link_id"]
+            isOneToOne: false
+            referencedRelation: "smart_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       link_views: {
         Row: {
           country: string | null

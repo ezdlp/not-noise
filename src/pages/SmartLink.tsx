@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Platform {
   id: string;
@@ -28,7 +30,7 @@ const platforms: Platform[] = [
     action: "Play"
   },
   { 
-    id: "amazonmusic",
+    id: "amazon",
     name: "Amazon Music", 
     color: "bg-[#00A8E1]",
     icon: "/lovable-uploads/amazonmusic.png",
@@ -80,19 +82,19 @@ const platforms: Platform[] = [
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [email, setEmail] = useState("");
 
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
-      console.log('Fetching smart link with slug:', slug);
-
       let { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
           profiles (
             artist_name
-          )
+          ),
+          platform_links (*)
         `)
         .eq('slug', slug)
         .maybeSingle();
@@ -104,14 +106,14 @@ const SmartLink = () => {
 
       // If no data found by slug, try fetching by ID as fallback
       if (!smartLinkData) {
-        console.log('No smart link found by slug, trying ID...');
         const { data: idData, error: idError } = await supabase
           .from('smart_links')
           .select(`
             *,
             profiles (
               artist_name
-            )
+            ),
+            platform_links (*)
           `)
           .eq('id', slug)
           .maybeSingle();
@@ -126,31 +128,48 @@ const SmartLink = () => {
           throw new Error('Smart link not found');
         }
 
-        console.log('Found smart link by ID:', idData);
         smartLinkData = idData;
-      } else {
-        console.log('Found smart link by slug:', smartLinkData);
       }
 
-      // Fetch the platform links for this smart link
-      const { data: platformLinks, error: platformLinksError } = await supabase
-        .from('platform_links')
-        .select('*')
-        .eq('smart_link_id', smartLinkData.id);
+      // Record view
+      await supabase.from('link_views').insert({
+        smart_link_id: smartLinkData.id,
+        user_agent: navigator.userAgent,
+      });
 
-      if (platformLinksError) {
-        console.error('Error fetching platform links:', platformLinksError);
-        throw platformLinksError;
-      }
-
-      console.log('Found platform links:', platformLinks);
-
-      return {
-        ...smartLinkData,
-        platformLinks: platformLinks || []
-      };
+      return smartLinkData;
     }
   });
+
+  const subscribeMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase
+        .from('email_subscribers')
+        .insert({
+          smart_link_id: smartLink!.id,
+          email
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Successfully subscribed!");
+      setEmail("");
+    },
+    onError: (error) => {
+      console.error('Error subscribing:', error);
+      toast.error("Failed to subscribe. Please try again.");
+    }
+  });
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    subscribeMutation.mutate(email);
+  };
 
   if (isLoading) {
     return (
@@ -196,7 +215,7 @@ const SmartLink = () => {
           </div>
           
           <div className="space-y-4">
-            {smartLink.platformLinks.map((platformLink) => {
+            {smartLink.platform_links.map((platformLink) => {
               const platform = platforms.find(p => p.id === platformLink.platform_id);
               if (!platform) return null;
 
@@ -226,7 +245,7 @@ const SmartLink = () => {
           </div>
 
           {smartLink.email_capture_enabled && (
-            <div className="mt-8 p-6 bg-gray-50 rounded-xl">
+            <form onSubmit={handleSubscribe} className="mt-8 p-6 bg-gray-50 rounded-xl">
               <h3 className="text-lg font-semibold mb-2">
                 {smartLink.email_capture_title || "Subscribe to my newsletter"}
               </h3>
@@ -237,11 +256,19 @@ const SmartLink = () => {
                 <Input
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full"
                 />
-                <Button className="w-full">Subscribe</Button>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={subscribeMutation.isPending}
+                >
+                  {subscribeMutation.isPending ? "Subscribing..." : "Subscribe"}
+                </Button>
               </div>
-            </div>
+            </form>
           )}
         </div>
         
