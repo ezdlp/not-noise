@@ -93,6 +93,19 @@ const EditSmartLink = () => {
 
   const handleSave = async () => {
     try {
+      // Check if slug exists (excluding current smart link)
+      const { data: existingSlug } = await supabase
+        .from("smart_links")
+        .select("id")
+        .eq("slug", slug)
+        .neq("id", id)
+        .maybeSingle();
+
+      if (existingSlug) {
+        toast.error("This URL slug is already taken. Please choose another one.");
+        return;
+      }
+
       const { error } = await supabase
         .from("smart_links")
         .update({

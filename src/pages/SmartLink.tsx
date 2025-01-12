@@ -21,7 +21,7 @@ const platforms: Platform[] = [
     action: "Play"
   },
   { 
-    id: "applemusic",
+    id: "apple",
     name: "Apple Music", 
     color: "bg-black",
     icon: "/lovable-uploads/applemusic.png",
@@ -32,6 +32,13 @@ const platforms: Platform[] = [
     name: "Amazon Music", 
     color: "bg-[#00A8E1]",
     icon: "/lovable-uploads/amazonmusic.png",
+    action: "Play"
+  },
+  { 
+    id: "youtube_music",
+    name: "YouTube Music", 
+    color: "bg-[#FF0000]",
+    icon: "/lovable-uploads/youtubemusic.png",
     action: "Play"
   },
   { 
@@ -56,6 +63,13 @@ const platforms: Platform[] = [
     action: "Play"
   },
   { 
+    id: "youtube",
+    name: "YouTube", 
+    color: "bg-[#FF0000]",
+    icon: "/lovable-uploads/youtube.png",
+    action: "Watch"
+  },
+  { 
     id: "itunes",
     name: "iTunes Store", 
     color: "bg-[#FB5BC5]",
@@ -72,12 +86,11 @@ const SmartLink = () => {
     queryFn: async () => {
       console.log('Fetching smart link with slug:', slug);
 
-      // First try to fetch by slug
       let { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             artist_name
           )
         `)
@@ -96,7 +109,7 @@ const SmartLink = () => {
           .from('smart_links')
           .select(`
             *,
-            profiles:user_id (
+            profiles (
               artist_name
             )
           `)
@@ -159,7 +172,6 @@ const SmartLink = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
-      {/* Blurred background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
@@ -169,7 +181,6 @@ const SmartLink = () => {
         }}
       />
 
-      {/* Content */}
       <div className="relative w-full max-w-md mx-auto px-4 py-8 z-10">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
           <div className="text-center mb-8">
@@ -185,16 +196,13 @@ const SmartLink = () => {
           </div>
           
           <div className="space-y-4">
-            {platforms.map((platform) => {
-              const platformLink = smartLink.platformLinks.find(
-                (link) => link.platform_id === platform.id
-              );
-
-              if (!platformLink) return null;
+            {smartLink.platformLinks.map((platformLink) => {
+              const platform = platforms.find(p => p.id === platformLink.platform_id);
+              if (!platform) return null;
 
               return (
                 <div 
-                  key={platform.id}
+                  key={platformLink.id}
                   className="flex items-center justify-between p-3 border-b last:border-b-0"
                 >
                   <div className="flex items-center gap-3">
@@ -217,7 +225,6 @@ const SmartLink = () => {
             })}
           </div>
 
-          {/* Email Capture Form */}
           {smartLink.email_capture_enabled && (
             <div className="mt-8 p-6 bg-gray-50 rounded-xl">
               <h3 className="text-lg font-semibold mb-2">
