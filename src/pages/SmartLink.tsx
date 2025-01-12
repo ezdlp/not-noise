@@ -92,7 +92,8 @@ const SmartLink = () => {
         .select(`
           *,
           profiles (
-            artist_name
+            artist_name,
+            name
           ),
           platform_links (*)
         `)
@@ -111,7 +112,8 @@ const SmartLink = () => {
           .select(`
             *,
             profiles (
-              artist_name
+              artist_name,
+              name
             ),
             platform_links (*)
           `)
