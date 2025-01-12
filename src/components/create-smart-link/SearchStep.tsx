@@ -20,9 +20,65 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
+  const extractSpotifyId = (url: string) => {
+    const match = url.match(/track\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  };
+
+  const fetchTrackById = async (trackId: string) => {
+    try {
+      setIsLoading(true);
+      const data = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: "Basic " + btoa("0e9ee3ef0f2a499cb2e8151cdcdb87b8:a4c7c2ec14564d9b94a5e8b18bd57931"),
+        },
+        body: "grant_type=client_credentials",
+      });
+      
+      const tokenResponse = await data.json();
+      spotifyApi.setAccessToken(tokenResponse.access_token);
+
+      const track = await spotifyApi.getTrack(trackId);
+      
+      if (!track.body) {
+        toast.error("Track not found");
+        return;
+      }
+
+      const trackData = {
+        title: track.body.name,
+        artist: track.body.artists.map(artist => artist.name).join(", "),
+        album: track.body.album.name,
+        coverUrl: track.body.album.images[0]?.url || "/placeholder.svg",
+        spotifyId: track.body.id,
+        spotifyUrl: track.body.external_urls.spotify,
+        releaseDate: track.body.album.release_date,
+      };
+
+      onNext(trackData);
+      toast.success("Track found!", {
+        position: "top-center",
+      });
+    } catch (error) {
+      console.error("Error fetching track:", error);
+      toast.error("Failed to fetch track. Please try searching instead.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const performSearch = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
+      return;
+    }
+
+    // Check if it's a Spotify URL
+    const trackId = extractSpotifyId(query);
+    if (trackId) {
+      await fetchTrackById(trackId);
       return;
     }
     
@@ -60,7 +116,6 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         relevanceScore: calculateRelevanceScore(track, query),
       }));
 
-      // Sort by relevance score
       setSearchResults(tracks.sort((a, b) => b.relevanceScore - a.relevanceScore));
     } catch (error) {
       console.error("Search error:", error);
@@ -114,12 +169,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Search Your Track</h2>
         <p className="text-sm text-muted-foreground">
-          Search for your track on Spotify to get started
+          Search for your track or paste a Spotify URL
         </p>
       </div>
       <div className="flex gap-2">
         <Input
-          placeholder="Search by track name or artist..."
+          placeholder="Search by track name, artist or paste Spotify URL..."
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="flex-1 focus:ring-primary focus:border-primary"

@@ -46,17 +46,6 @@ const EditSmartLink = () => {
   const [metaViewEvent, setMetaViewEvent] = useState("");
   const [metaClickEvent, setMetaClickEvent] = useState("");
 
-  const [additionalPlatforms, setAdditionalPlatforms] = useState([
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: getPlatformIcon("tidal") },
-    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: getPlatformIcon("anghami") },
-    { id: "napster", name: "Napster", enabled: false, url: "", icon: getPlatformIcon("napster") },
-    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: getPlatformIcon("boomplay") },
-    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: getPlatformIcon("yandex") },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: getPlatformIcon("beatport") },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp") },
-    { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius") },
-  ]);
-
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
     queryFn: async () => {
@@ -69,6 +58,9 @@ const EditSmartLink = () => {
             platform_id,
             platform_name,
             url
+          ),
+          profiles (
+            artist_name
           )
         `)
         .eq("id", id)
@@ -99,7 +91,7 @@ const EditSmartLink = () => {
         .select("id")
         .eq("slug", slug)
         .neq("id", id)
-        .single();
+        .maybeSingle();
 
       if (existingSlug) {
         toast.error("This URL slug is already taken. Please choose another one.");
@@ -127,47 +119,6 @@ const EditSmartLink = () => {
     } catch (error) {
       console.error("Error updating smart link:", error);
       toast.error("Failed to update smart link");
-    }
-  };
-
-  const togglePlatform = (platformId: string) => {
-    const platform = additionalPlatforms.find(p => p.id === platformId);
-    if (platform) {
-      // Add new platform link
-      const addPlatformLink = async () => {
-        const { error } = await supabase
-          .from("platform_links")
-          .insert({
-            smart_link_id: id,
-            platform_id: platformId,
-            platform_name: platform.name,
-            url: "",
-          });
-
-        if (error) {
-          toast.error("Failed to add platform");
-          return;
-        }
-
-        toast.success("Platform added successfully!");
-        // Refresh the page to show new platform
-        window.location.reload();
-      };
-
-      addPlatformLink();
-    }
-  };
-
-  const updatePlatformUrl = async (platformId: string, url: string) => {
-    const { error } = await supabase
-      .from("platform_links")
-      .update({ url })
-      .eq("platform_id", platformId)
-      .eq("smart_link_id", id);
-
-    if (error) {
-      toast.error("Failed to update platform URL");
-      return;
     }
   };
 
@@ -225,7 +176,7 @@ const EditSmartLink = () => {
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder="custom-url-slug"
+                    placeholder={slug || "custom-url-slug"}
                     className="flex-1"
                   />
                 </div>

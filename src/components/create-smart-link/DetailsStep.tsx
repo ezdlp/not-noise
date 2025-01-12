@@ -1,102 +1,68 @@
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Card } from "@/components/ui/card";
 
 interface DetailsStepProps {
-  initialData: any;
+  initialData: {
+    title: string;
+    slug: string;
+    [key: string]: any;
+  };
   onNext: (data: any) => void;
   onBack: () => void;
 }
 
 const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-
-  useEffect(() => {
-    const generatedSlug = `${initialData.artist.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${initialData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    setSlug(generatedSlug);
-  }, [initialData.artist, initialData.title]);
+  const [title, setTitle] = useState(initialData.title);
+  const [slug, setSlug] = useState(initialData.slug || "");
 
   const handleNext = () => {
-    if (!slug.trim()) {
-      toast.error("Please enter a URL slug");
+    if (!title || !slug) {
+      toast.error("Please fill in all fields.");
       return;
     }
-    
-    onNext({
-      ...initialData,
-      slug,
-      description,
-    });
-    toast.success("Details saved!", {
-      position: "top-center",
-    });
+    onNext({ title, slug });
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Edit Track Details</h2>
+        <h2 className="text-xl font-semibold">Customize Your Smart Link</h2>
         <p className="text-sm text-muted-foreground">
-          Customize your smart link details
+          Add a custom URL and release date for your smart link
         </p>
       </div>
 
-      <Card className="p-4">
-        <div className="flex items-center gap-4">
-          <img 
-            src={initialData.coverUrl} 
-            alt={`${initialData.title} cover`} 
-            className="w-24 h-24 object-cover rounded-lg"
-          />
-          <div>
-            <h3 className="font-semibold text-lg">{initialData.title}</h3>
-            <p className="text-muted-foreground">{initialData.artist}</p>
-            <p className="text-sm text-muted-foreground mt-1">{initialData.album}</p>
-          </div>
-        </div>
-      </Card>
-
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Custom URL Slug</Label>
+          <Label>Custom URL</Label>
           <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">srsr.li/</span>
+            <span className="text-sm text-muted-foreground">xnoi.se/</span>
             <Input
-              placeholder="e.g., artist-track-name"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              className="flex-1"
+              placeholder="custom-url-slug"
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            This will be the URL of your smart link
-          </p>
         </div>
+
         <div className="space-y-2">
-          <Label>Description (Optional)</Label>
-          <Textarea
-            placeholder="Add a short description..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={150}
+          <Label>Title</Label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter your smart link title"
           />
-          <p className="text-xs text-muted-foreground">
-            {description.length}/150 characters
-          </p>
         </div>
       </div>
+
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={handleNext} disabled={!slug.trim()}>
-          Next
-        </Button>
+        <Button onClick={handleNext}>Next</Button>
       </div>
     </div>
   );

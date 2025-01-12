@@ -1,61 +1,58 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+console.log('Hello from get-odesli-links!')
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { url } = await req.json()
-    
-    if (!url) {
-      return new Response(
-        JSON.stringify({ error: 'No Spotify URL provided' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+
+    const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`)
+    const data = await response.json()
+
+    // Map platform IDs to match our frontend expectations
+    const platformMapping = {
+      spotify: 'spotify',
+      appleMusic: 'apple',
+      youtubeMusic: 'youtube_music',
+      youtube: 'youtube',
+      amazonMusic: 'amazon',
+      deezer: 'deezer',
+      tidal: 'tidal',
+      soundcloud: 'soundcloud',
+      itunes: 'itunes'
     }
 
-    console.log('Fetching Odesli links for:', url)
-    
-    const odesliResponse = await fetch(
-      `https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-        }
+    const linksByPlatform = {}
+    for (const [platform, link] of Object.entries(data.linksByPlatform)) {
+      const mappedPlatform = platformMapping[platform]
+      if (mappedPlatform) {
+        linksByPlatform[mappedPlatform] = link
       }
-    )
-
-    if (!odesliResponse.ok) {
-      throw new Error(`Odesli API responded with status: ${odesliResponse.status}`)
     }
-
-    const data = await odesliResponse.json()
-    console.log('Odesli API response:', data)
 
     return new Response(
-      JSON.stringify(data),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ 
+        linksByPlatform,
+        pageUrl: data.pageUrl,
+        entitiesByUniqueId: data.entitiesByUniqueId
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
-    console.error('Error in get-odesli-links function:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      },
     )
   }
 })
