@@ -39,6 +39,8 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
             email_capture_title: data.emailCapture?.title || null,
             email_capture_description: data.emailCapture?.description || null,
             title: data.title,
+            artist_name: data.artist,
+            slug: data.slug
           })
           .eq('id', data.id);
 
@@ -71,42 +73,44 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
         toast.success("Smart link updated successfully!");
       } else {
         // Create new smart link
-      const { data: smartLink, error: smartLinkError } = await supabase
-        .from("smart_links")
-        .insert({
-          artwork_url: data.coverUrl,
-          release_date: new Date(data.releaseDate).toISOString(),
-          meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
-          meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
-          meta_click_event: data.metaPixel?.enabled ? data.metaPixel.clickEventName : null,
-          email_capture_enabled: data.emailCapture?.enabled || false,
-          email_capture_title: data.emailCapture?.title || null,
-          email_capture_description: data.emailCapture?.description || null,
-          title: data.title,
-          user_id: session.session.user.id,
-        })
-        .select()
-        .single();
+        const { data: smartLink, error: smartLinkError } = await supabase
+          .from("smart_links")
+          .insert({
+            artwork_url: data.coverUrl,
+            release_date: new Date(data.releaseDate).toISOString(),
+            meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
+            meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
+            meta_click_event: data.metaPixel?.enabled ? data.metaPixel.clickEventName : null,
+            email_capture_enabled: data.emailCapture?.enabled || false,
+            email_capture_title: data.emailCapture?.title || null,
+            email_capture_description: data.emailCapture?.description || null,
+            title: data.title,
+            artist_name: data.artist,
+            user_id: session.session.user.id,
+            slug: data.slug
+          })
+          .select()
+          .single();
 
-      if (smartLinkError) throw smartLinkError;
+        if (smartLinkError) throw smartLinkError;
 
-      // Insert platform links
-      const platformLinksToInsert = data.platforms
-        .filter((platform: any) => platform.enabled)
-        .map((platform: any) => ({
-          smart_link_id: smartLink.id,
-          platform_id: platform.id,
-          platform_name: platform.name,
-          url: platform.url,
-        }));
+        // Insert platform links
+        const platformLinksToInsert = data.platforms
+          .filter((platform: any) => platform.enabled)
+          .map((platform: any) => ({
+            smart_link_id: smartLink.id,
+            platform_id: platform.id,
+            platform_name: platform.name,
+            url: platform.url,
+          }));
 
-      const { error: platformLinksError } = await supabase
-        .from("platform_links")
-        .insert(platformLinksToInsert);
+        const { error: platformLinksError } = await supabase
+          .from("platform_links")
+          .insert(platformLinksToInsert);
 
-      if (platformLinksError) throw platformLinksError;
+        if (platformLinksError) throw platformLinksError;
 
-      toast.success("Smart link created successfully!");
+        toast.success("Smart link created successfully!");
       }
 
       navigate("/dashboard");
