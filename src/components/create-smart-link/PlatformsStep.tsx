@@ -19,6 +19,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     isLoading,
     progress,
     platforms,
+    setPlatforms,
     additionalPlatforms,
     togglePlatform,
     updateUrl,

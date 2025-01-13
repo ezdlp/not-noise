@@ -164,6 +164,7 @@ export const usePlatformState = (initialSpotifyUrl: string) => {
     isLoading,
     progress,
     platforms,
+    setPlatforms,
     additionalPlatforms,
     togglePlatform,
     updateUrl,
