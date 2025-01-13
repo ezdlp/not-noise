@@ -81,7 +81,10 @@ export const usePlatformState = (initialSpotifyUrl: string) => {
   }, [isLoading]);
 
   const fetchOdesliLinks = async () => {
-    if (!initialSpotifyUrl) return;
+    if (!initialSpotifyUrl) {
+      toast.error("Please provide a valid Spotify URL");
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -93,48 +96,67 @@ export const usePlatformState = (initialSpotifyUrl: string) => {
         throw new Error(error.message);
       }
 
+      if (!data.linksByPlatform) {
+        throw new Error("No links found for this track");
+      }
+
       setPlatforms(prev => prev.map(platform => {
-        let url = "";
-        switch (platform.id) {
-          case "spotify":
-            url = initialSpotifyUrl;
-            break;
-          case "apple":
-            url = data.linksByPlatform.appleMusic?.url || "";
-            break;
-          case "youtube_music":
-            url = data.linksByPlatform.youtubeMusic?.url || "";
-            break;
-          case "youtube":
-            url = data.linksByPlatform.youtube?.url || "";
-            break;
-          case "amazon":
-            url = data.linksByPlatform.amazonMusic?.url || "";
-            break;
-          case "deezer":
-            url = data.linksByPlatform.deezer?.url || "";
-            break;
-          case "tidal":
-            url = data.linksByPlatform.tidal?.url || "";
-            break;
-          case "soundcloud":
-            url = data.linksByPlatform.soundcloud?.url || "";
-            break;
-          case "itunes":
-            url = data.linksByPlatform.itunes?.url || "";
-            break;
-        }
+        const platformData = data.linksByPlatform[platform.id];
         return {
           ...platform,
-          enabled: platform.id === "spotify" ? true : !!url,
-          url: url || platform.url,
+          enabled: platform.id === "spotify" ? true : !!platformData?.url,
+          url: platform.id === "spotify" ? initialSpotifyUrl : platformData?.url || "",
         };
       }));
+
+      setAdditionalPlatforms(prev => prev.map(platform => {
+        const platformData = data.linksByPlatform[platform.id];
+        return {
+          ...platform,
+          url: platformData?.url || "",
+        };
+      }));
+
+      toast.success("Links fetched successfully!");
     } catch (error) {
       console.error("Error fetching Odesli links:", error);
       toast.error("Failed to fetch streaming links. Please add them manually.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSinglePlatformLink = async (platformId: string) => {
+    if (!initialSpotifyUrl) {
+      toast.error("Please provide a valid Spotify URL");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('get-odesli-links', {
+        body: { url: initialSpotifyUrl }
+      });
+
+      if (error) throw error;
+
+      const platformData = data.linksByPlatform[platformId];
+      if (!platformData?.url) {
+        toast.error(`No link available for ${platformId}. Please add it manually.`);
+        return;
+      }
+
+      setPlatforms(prev => prev.map(p => 
+        p.id === platformId ? { ...p, url: platformData.url } : p
+      ));
+
+      setAdditionalPlatforms(prev => prev.map(p => 
+        p.id === platformId ? { ...p, url: platformData.url } : p
+      ));
+
+      toast.success(`Link fetched for ${platformId}!`);
+    } catch (error) {
+      console.error("Error fetching platform link:", error);
+      toast.error("Failed to fetch link. Please add it manually.");
     }
   };
 
@@ -169,5 +191,6 @@ export const usePlatformState = (initialSpotifyUrl: string) => {
     togglePlatform,
     updateUrl,
     fetchOdesliLinks,
+    fetchSinglePlatformLink,
   };
 };

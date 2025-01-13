@@ -18,6 +18,7 @@ interface PlatformsSectionProps {
   onUrlChange: (id: string, url: string) => void;
   onDragEnd?: (event: any) => void;
   isDraggable?: boolean;
+  onFetchLink?: (id: string) => Promise<void>;
 }
 
 const PlatformsSection = ({ 
@@ -27,7 +28,8 @@ const PlatformsSection = ({
   onToggle, 
   onUrlChange, 
   onDragEnd,
-  isDraggable = false 
+  isDraggable = false,
+  onFetchLink
 }: PlatformsSectionProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -43,6 +45,7 @@ const PlatformsSection = ({
       onToggle={onToggle}
       onUrlChange={onUrlChange}
       isDraggable={isDraggable}
+      onFetchLink={onFetchLink}
     />
   ));
 

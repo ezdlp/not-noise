@@ -4,15 +4,22 @@ import { corsHeaders } from '../_shared/cors.ts'
 console.log('Hello from get-odesli-links!')
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { url } = await req.json()
+    console.log('Fetching links for URL:', url)
 
     const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`)
+    if (!response.ok) {
+      throw new Error(`Odesli API error: ${response.statusText}`)
+    }
+
     const data = await response.json()
+    console.log('Odesli API response:', data)
 
     // Map platform IDs to match our frontend expectations
     const platformMapping = {
@@ -24,7 +31,14 @@ serve(async (req) => {
       deezer: 'deezer',
       tidal: 'tidal',
       soundcloud: 'soundcloud',
-      itunes: 'itunes'
+      itunes: 'itunes',
+      pandora: 'pandora',
+      napster: 'napster',
+      yandex: 'yandex',
+      audiomack: 'audiomack',
+      audius: 'audius',
+      boomplay: 'boomplay',
+      anghami: 'anghami'
     }
 
     const linksByPlatform = {}

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GripVertical, RefreshCw } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useState } from "react";
 
 interface Platform {
   id: string;
@@ -28,6 +29,7 @@ const PlatformItem = ({
   isDraggable = true,
   isFetching = false 
 }: PlatformItemProps) => {
+  const [isLoading, setIsLoading] = useState(false);
   const {
     attributes,
     listeners,
@@ -40,6 +42,16 @@ const PlatformItem = ({
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     transition,
   } : undefined;
+
+  const handleFetchLink = async () => {
+    if (!onFetchLink) return;
+    setIsLoading(true);
+    try {
+      await onFetchLink(platform.id);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div 
@@ -65,10 +77,10 @@ const PlatformItem = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onFetchLink(platform.id)}
-                disabled={isFetching || platform.id === "spotify"}
+                onClick={handleFetchLink}
+                disabled={isLoading || platform.id === "spotify"}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Fetch Link
               </Button>
             )}
