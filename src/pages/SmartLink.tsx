@@ -207,7 +207,7 @@ const SmartLink = () => {
           <div className="text-center mb-8">
             <img
               src={smartLink.artwork_url}
-              alt="Album Cover"
+              alt={`${smartLink.title} cover`}
               className="w-72 h-72 mx-auto rounded-2xl shadow-xl mb-6 object-cover"
             />
             <h1 className="text-2xl font-bold mb-1 text-gray-900">{smartLink.title}</h1>
