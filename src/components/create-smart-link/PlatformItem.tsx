@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GripVertical } from "lucide-react";
+import { GripVertical, RefreshCw } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 
 interface Platform {
@@ -15,10 +15,19 @@ interface PlatformItemProps {
   platform: Platform;
   onToggle: (id: string) => void;
   onUrlChange: (id: string, url: string) => void;
+  onFetchLink?: (id: string) => Promise<void>;
   isDraggable?: boolean;
+  isFetching?: boolean;
 }
 
-const PlatformItem = ({ platform, onToggle, onUrlChange, isDraggable = true }: PlatformItemProps) => {
+const PlatformItem = ({ 
+  platform, 
+  onToggle, 
+  onUrlChange, 
+  onFetchLink,
+  isDraggable = true,
+  isFetching = false 
+}: PlatformItemProps) => {
   const {
     attributes,
     listeners,
@@ -51,7 +60,18 @@ const PlatformItem = ({ platform, onToggle, onUrlChange, isDraggable = true }: P
             className="w-8 h-8 object-contain"
           />
           <span className="ml-2 text-sm font-medium">{platform.name}</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            {platform.enabled && onFetchLink && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onFetchLink(platform.id)}
+                disabled={isFetching || platform.id === "spotify"}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                Fetch Link
+              </Button>
+            )}
             <Button
               variant={platform.enabled ? "default" : "outline"}
               onClick={() => onToggle(platform.id)}

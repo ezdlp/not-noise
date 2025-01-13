@@ -464,6 +464,7 @@ export type Database = {
       }
       smart_links: {
         Row: {
+          artist_name: string
           artwork_url: string | null
           created_at: string | null
           email_capture_description: string | null
@@ -480,6 +481,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          artist_name: string
           artwork_url?: string | null
           created_at?: string | null
           email_capture_description?: string | null
@@ -496,6 +498,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          artist_name?: string
           artwork_url?: string | null
           created_at?: string | null
           email_capture_description?: string | null

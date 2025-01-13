@@ -89,10 +89,6 @@ const SmartLink = () => {
         .from('smart_links')
         .select(`
           *,
-          profiles (
-            artist_name,
-            name
-          ),
           platform_links (*)
         `)
         .eq('slug', slug)
@@ -108,10 +104,6 @@ const SmartLink = () => {
           .from('smart_links')
           .select(`
             *,
-            profiles (
-              artist_name,
-              name
-            ),
             platform_links (*)
           `)
           .eq('id', slug)
@@ -172,7 +164,7 @@ const SmartLink = () => {
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
           <SmartLinkHeader
             title={smartLink.title}
-            artistName={smartLink.profiles?.artist_name}
+            artistName={smartLink.artist_name}
             artworkUrl={smartLink.artwork_url}
           />
           
