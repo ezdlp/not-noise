@@ -13,12 +13,17 @@ serve(async (req) => {
     const { url } = await req.json()
     console.log('Fetching links for URL:', url)
 
-    // The Odesli API requires the URL to be properly encoded
-    const encodedUrl = encodeURIComponent(url)
-    const odesliApiUrl = `https://api.song.link/v1-alpha.1/links?url=${encodedUrl}`
-
+    // Make a POST request to the Odesli API
+    const odesliApiUrl = 'https://api.song.link/v1-alpha.1/links'
+    
     console.log('Calling Odesli API:', odesliApiUrl)
-    const response = await fetch(odesliApiUrl)
+    const response = await fetch(odesliApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    })
     
     if (!response.ok) {
       console.error('Odesli API error:', response.statusText)
