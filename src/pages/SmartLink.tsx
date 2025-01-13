@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
+import PlatformButton from "@/components/smart-link/PlatformButton";
+import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 
 interface Platform {
   id: string;
@@ -82,7 +81,6 @@ const platforms: Platform[] = [
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [email, setEmail] = useState("");
 
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
@@ -105,7 +103,6 @@ const SmartLink = () => {
         throw smartLinkError;
       }
 
-      // If no data found by slug, try fetching by ID as fallback
       if (!smartLinkData) {
         const { data: idData, error: idError } = await supabase
           .from('smart_links')
@@ -133,7 +130,6 @@ const SmartLink = () => {
         smartLinkData = idData;
       }
 
-      // Record view
       await supabase.from('link_views').insert({
         smart_link_id: smartLinkData.id,
         user_agent: navigator.userAgent,
@@ -142,36 +138,6 @@ const SmartLink = () => {
       return smartLinkData;
     }
   });
-
-  const subscribeMutation = useMutation({
-    mutationFn: async (email: string) => {
-      const { error } = await supabase
-        .from('email_subscribers')
-        .insert({
-          smart_link_id: smartLink!.id,
-          email
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Successfully subscribed!");
-      setEmail("");
-    },
-    onError: (error) => {
-      console.error('Error subscribing:', error);
-      toast.error("Failed to subscribe. Please try again.");
-    }
-  });
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
-    }
-    subscribeMutation.mutate(email);
-  };
 
   if (isLoading) {
     return (
@@ -204,71 +170,35 @@ const SmartLink = () => {
 
       <div className="relative w-full max-w-md mx-auto px-4 py-8 z-10">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
-          <div className="text-center mb-8">
-            <img
-              src={smartLink.artwork_url}
-              alt={`${smartLink.title} cover`}
-              className="w-72 h-72 mx-auto rounded-2xl shadow-xl mb-6 object-cover"
-            />
-            <h1 className="text-2xl font-bold mb-1 text-gray-900">{smartLink.title}</h1>
-            <p className="text-lg text-gray-600">{smartLink.profiles?.artist_name}</p>
-          </div>
+          <SmartLinkHeader
+            title={smartLink.title}
+            artistName={smartLink.profiles?.artist_name}
+            artworkUrl={smartLink.artwork_url}
+          />
           
           <div className="space-y-4">
-            {smartLink.platform_links.map((platformLink) => {
+            {smartLink.platform_links.map((platformLink: any) => {
               const platform = platforms.find(p => p.id === platformLink.platform_id);
               if (!platform) return null;
 
               return (
-                <div 
+                <PlatformButton
                   key={platformLink.id}
-                  className="flex items-center justify-between p-3 border-b last:border-b-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <img 
-                      src={platform.icon} 
-                      alt={`${platform.name} logo`}
-                      className="w-8 h-8 object-contain"
-                    />
-                    <span className="font-medium text-gray-900">{platform.name}</span>
-                  </div>
-                  <Button
-                    variant="default"
-                    className="bg-black hover:bg-black/90 text-white min-w-[100px]"
-                    onClick={() => window.open(platformLink.url, '_blank')}
-                  >
-                    {platform.action}
-                  </Button>
-                </div>
+                  name={platform.name}
+                  icon={platform.icon}
+                  action={platform.action}
+                  url={platformLink.url}
+                />
               );
             })}
           </div>
 
           {smartLink.email_capture_enabled && (
-            <form onSubmit={handleSubscribe} className="mt-8 p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-lg font-semibold mb-2">
-                {smartLink.email_capture_title || "Subscribe to my newsletter"}
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {smartLink.email_capture_description || "Stay updated with my latest releases"}
-              </p>
-              <div className="space-y-3">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full"
-                />
-                <Button 
-                  type="submit" 
-                  className="w-full bg-black hover:bg-black/90 text-white"
-                  disabled={subscribeMutation.isPending}
-                >
-                  {subscribeMutation.isPending ? "Subscribing..." : "Subscribe"}
-                </Button>
-              </div>
-            </form>
+            <EmailSubscribeForm
+              smartLinkId={smartLink.id}
+              title={smartLink.email_capture_title}
+              description={smartLink.email_capture_description}
+            />
           )}
         </div>
         
