@@ -13,8 +13,15 @@ serve(async (req) => {
     const { url } = await req.json()
     console.log('Fetching links for URL:', url)
 
-    const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`)
+    // The Odesli API requires the URL to be properly encoded
+    const encodedUrl = encodeURIComponent(url)
+    const odesliApiUrl = `https://api.song.link/v1-alpha.1/links?url=${encodedUrl}&userCountry=US`
+
+    console.log('Calling Odesli API:', odesliApiUrl)
+    const response = await fetch(odesliApiUrl)
+    
     if (!response.ok) {
+      console.error('Odesli API error:', response.statusText)
       throw new Error(`Odesli API error: ${response.statusText}`)
     }
 
@@ -29,10 +36,9 @@ serve(async (req) => {
       youtube: 'youtube',
       amazonMusic: 'amazon',
       deezer: 'deezer',
-      tidal: 'tidal',
       soundcloud: 'soundcloud',
       itunes: 'itunes',
-      pandora: 'pandora',
+      tidal: 'tidal',
       napster: 'napster',
       yandex: 'yandex',
       audiomack: 'audiomack',
@@ -41,13 +47,23 @@ serve(async (req) => {
       anghami: 'anghami'
     }
 
+    // Process the response to match our frontend's expected format
     const linksByPlatform = {}
-    for (const [platform, link] of Object.entries(data.linksByPlatform)) {
-      const mappedPlatform = platformMapping[platform]
-      if (mappedPlatform) {
-        linksByPlatform[mappedPlatform] = link
+    
+    // First, process the platformUrls from the API response
+    if (data.linksByPlatform) {
+      for (const [platform, linkData] of Object.entries(data.linksByPlatform)) {
+        const mappedPlatform = platformMapping[platform]
+        if (mappedPlatform) {
+          linksByPlatform[mappedPlatform] = {
+            url: linkData.url,
+            entityUniqueId: linkData.entityUniqueId
+          }
+        }
       }
     }
+
+    console.log('Processed links:', linksByPlatform)
 
     return new Response(
       JSON.stringify({ 
