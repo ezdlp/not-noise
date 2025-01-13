@@ -15,7 +15,7 @@ serve(async (req) => {
 
     // The Odesli API requires the URL to be properly encoded
     const encodedUrl = encodeURIComponent(url)
-    const odesliApiUrl = `https://api.song.link/v1-alpha.1/links?url=${encodedUrl}&userCountry=US`
+    const odesliApiUrl = `https://api.song.link/v1-alpha.1/links?url=${encodedUrl}`
 
     console.log('Calling Odesli API:', odesliApiUrl)
     const response = await fetch(odesliApiUrl)
