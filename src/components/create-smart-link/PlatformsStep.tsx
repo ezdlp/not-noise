@@ -4,6 +4,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { PlatformsLoading } from "./PlatformsLoading";
 import PlatformsSection from "./PlatformsSection";
 import { usePlatformState } from "./hooks/usePlatformState";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlatformsStepProps {
   initialData: {
@@ -23,8 +25,62 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     additionalPlatforms,
     togglePlatform,
     updateUrl,
-    fetchOdesliLinks,
   } = usePlatformState(initialData.spotifyUrl);
+
+  useEffect(() => {
+    const fetchLinks = async () => {
+      try {
+        const { data: odesliData, error } = await supabase.functions.invoke('get-odesli-links', {
+          body: { url: initialData.spotifyUrl }
+        });
+
+        if (error) throw error;
+
+        if (!odesliData.linksByPlatform) {
+          throw new Error("No links found for this track");
+        }
+
+        // Update platform URLs based on Odesli response
+        setPlatforms(prevPlatforms => 
+          prevPlatforms.map(platform => {
+            let url = '';
+            let enabled = platform.enabled;
+
+            // Map platform IDs to Odesli platform keys
+            const platformMapping: { [key: string]: string } = {
+              spotify: 'spotify',
+              youtube_music: 'youtubeMusic',
+              youtube: 'youtube',
+              apple: 'appleMusic',
+              amazon: 'amazonMusic',
+              deezer: 'deezer',
+              soundcloud: 'soundcloud',
+              itunes: 'itunes',
+            };
+
+            const odesliKey = platformMapping[platform.id];
+            if (odesliKey && odesliData.linksByPlatform[odesliKey]) {
+              url = odesliData.linksByPlatform[odesliKey].url;
+              enabled = true;
+            }
+
+            return {
+              ...platform,
+              url,
+              enabled: enabled
+            };
+          })
+        );
+
+        toast.success("Streaming links fetched successfully!");
+      } catch (error) {
+        console.error("Error fetching Odesli links:", error);
+        toast.error("Failed to fetch streaming links. Please add them manually.");
+      }
+    };
+
+    fetchLinks();
+  }, [initialData.spotifyUrl, setPlatforms]);
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -46,9 +102,8 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     
     onNext({
       ...initialData,
-      platforms: enabledPlatforms,
+      platforms: [...enabledPlatforms],
     });
-    toast.success("Platforms saved!");
   };
 
   return (
