@@ -4,7 +4,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { PlatformsLoading } from "./PlatformsLoading";
 import PlatformsSection from "./PlatformsSection";
 import { usePlatformState } from "./hooks/usePlatformState";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PlatformsStepProps {
@@ -17,9 +17,10 @@ interface PlatformsStepProps {
 }
 
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+
   const {
-    isLoading,
-    progress,
     platforms,
     setPlatforms,
     additionalPlatforms,
@@ -28,8 +29,15 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   } = usePlatformState(initialData.spotifyUrl);
 
   useEffect(() => {
+    let progressInterval: NodeJS.Timeout;
+    
     const fetchLinks = async () => {
       try {
+        // Start progress animation
+        progressInterval = setInterval(() => {
+          setProgress(prev => Math.min(prev + 10, 90));
+        }, 500);
+
         const { data: odesliData, error } = await supabase.functions.invoke('get-odesli-links', {
           body: { url: initialData.spotifyUrl }
         });
@@ -72,14 +80,23 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           })
         );
 
+        // Complete progress
+        setProgress(100);
         toast.success("Streaming links fetched successfully!");
       } catch (error) {
         console.error("Error fetching Odesli links:", error);
         toast.error("Failed to fetch streaming links. Please add them manually.");
+      } finally {
+        clearInterval(progressInterval);
+        setIsLoading(false);
       }
     };
 
     fetchLinks();
+
+    return () => {
+      if (progressInterval) clearInterval(progressInterval);
+    };
   }, [initialData.spotifyUrl, setPlatforms]);
 
   const handleDragEnd = (event: any) => {

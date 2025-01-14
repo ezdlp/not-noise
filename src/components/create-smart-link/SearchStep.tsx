@@ -5,7 +5,6 @@ import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import SpotifyWebApi from "spotify-web-api-node";
-import { supabase } from "@/integrations/supabase/client";
 
 interface SearchStepProps {
   onNext: (trackData: any) => void;
@@ -58,37 +57,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         releaseDate: track.body.album.release_date,
       };
 
-      await fetchOdesliLinks(trackData);
+      onNext(trackData);
     } catch (error) {
       console.error("Error fetching track:", error);
       toast.error("Failed to fetch track. Please try searching instead.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchOdesliLinks = async (trackData: any) => {
-    try {
-      const { data: odesliData, error } = await supabase.functions.invoke('get-odesli-links', {
-        body: { url: trackData.spotifyUrl }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (!odesliData.linksByPlatform) {
-        throw new Error("No links found for this track");
-      }
-
-      onNext(trackData);
-      toast.success("Track found and links fetched!", {
-        position: "top-center",
-      });
-    } catch (error) {
-      console.error("Error fetching Odesli links:", error);
-      toast.error("Failed to fetch streaming links. Please add them manually.");
-      onNext(trackData);
     }
   };
 
@@ -181,7 +155,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
   const handleSelectTrack = async (track: any) => {
     setIsLoading(true);
-    await fetchOdesliLinks(track);
+    onNext(track);
     setIsLoading(false);
   };
 
