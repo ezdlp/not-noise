@@ -28,9 +28,9 @@ const EditSmartLink = () => {
   const getPlatformIcon = (platformId: string) => {
     const icons: { [key: string]: string } = {
       spotify: "/lovable-uploads/spotify.png",
-      apple: "/lovable-uploads/applemusic.png",
-      amazon: "/lovable-uploads/amazonmusic.png",
-      youtube_music: "/lovable-uploads/youtubemusic.png",
+      appleMusic: "/lovable-uploads/applemusic.png",
+      amazonMusic: "/lovable-uploads/amazonmusic.png",
+      youtubeMusic: "/lovable-uploads/youtubemusic.png",
       deezer: "/lovable-uploads/deezer.png",
       soundcloud: "/lovable-uploads/soundcloud.png",
       youtube: "/lovable-uploads/youtube.png",
