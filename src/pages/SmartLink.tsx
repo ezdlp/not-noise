@@ -61,7 +61,6 @@ const SmartLink = () => {
     if (smartLink?.meta_pixel_id) {
       // Initialize Meta Pixel
       const initPixel = () => {
-        // @ts-expect-error - fbq is added by the script
         !function(f,b,e,v,n,t,s) {
           if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -71,9 +70,7 @@ const SmartLink = () => {
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
           
-        // @ts-expect-error - fbq is added by the script
         fbq('init', smartLink.meta_pixel_id);
-        // @ts-expect-error - fbq is added by the script
         fbq('track', smartLink.meta_view_event || 'SmartLinkView');
       };
 
@@ -92,7 +89,6 @@ const SmartLink = () => {
 
       // Track click event with Meta Pixel if enabled
       if (smartLink.meta_pixel_id) {
-        // @ts-expect-error - fbq is added by the script
         fbq('track', smartLink.meta_click_event || 'SmartLinkClick');
       }
     } catch (error) {
