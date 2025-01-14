@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface SmartLinkHeaderProps {
   title: string;
@@ -7,9 +7,14 @@ interface SmartLinkHeaderProps {
 }
 
 const SmartLinkHeader = ({ title, artistName, artworkUrl }: SmartLinkHeaderProps) => {
+  useEffect(() => {
+    console.log("Artwork URL received:", artworkUrl);
+  }, [artworkUrl]);
+
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     console.error("Failed to load artwork:", img.src);
+    console.log("Original artwork URL:", artworkUrl);
     img.src = "/placeholder.svg";
   };
 
