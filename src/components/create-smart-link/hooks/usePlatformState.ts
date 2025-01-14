@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "sonner";
 
 export interface Platform {
   id: string;

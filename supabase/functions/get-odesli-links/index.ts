@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -16,7 +15,6 @@ serve(async (req) => {
 
     console.log('Fetching links for URL:', url)
 
-    // Make a request to the Odesli API using the correct endpoint and method
     const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`, {
       method: 'GET',
       headers: {
@@ -34,12 +32,12 @@ serve(async (req) => {
     const data = await response.json()
     console.log('Odesli API response:', data)
 
-    // Map platform IDs to match our frontend expectations
+    // Updated platform mapping with correct keys
     const platformMapping = {
       spotify: 'spotify',
-      appleMusic: 'apple',
       youtubeMusic: 'youtube_music',
       youtube: 'youtube',
+      appleMusic: 'apple',
       amazonMusic: 'amazon',
       deezer: 'deezer',
       soundcloud: 'soundcloud',
@@ -47,25 +45,23 @@ serve(async (req) => {
       tidal: 'tidal',
       napster: 'napster',
       yandex: 'yandex',
-      audiomack: 'audiomack',
-      audius: 'audius',
-      boomplay: 'boomplay',
       anghami: 'anghami'
     }
 
-    // Process the response to match our frontend's expected format
     const linksByPlatform = {}
     
     if (data.linksByPlatform) {
-      for (const [platform, linkData] of Object.entries(data.linksByPlatform)) {
-        const mappedPlatform = platformMapping[platform]
-        if (mappedPlatform) {
-          linksByPlatform[mappedPlatform] = {
+      Object.entries(data.linksByPlatform).forEach(([platform, linkData]) => {
+        // Find the corresponding internal platform ID
+        const internalPlatform = Object.entries(platformMapping).find(([_, apiKey]) => apiKey === platform)?.[0]
+        
+        if (internalPlatform) {
+          linksByPlatform[internalPlatform] = {
             url: linkData.url,
             entityUniqueId: linkData.entityUniqueId
           }
         }
-      }
+      })
     }
 
     console.log('Processed links:', linksByPlatform)
