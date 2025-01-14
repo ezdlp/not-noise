@@ -41,8 +41,19 @@ const PlatformItem = ({
   }, [platform.icon]);
 
   const handleImageError = () => {
-    // If the icon fails to load, try to get it from the public folder
-    const fallbackIcon = `/lovable-uploads/${platform.id.toLowerCase()}.png`;
+    // Map platform IDs to their correct icon paths
+    const iconMap: { [key: string]: string } = {
+      spotify: "/lovable-uploads/spotify.png",
+      appleMusic: "/lovable-uploads/applemusic.png",
+      amazonMusic: "/lovable-uploads/amazonmusic.png",
+      youtubeMusic: "/lovable-uploads/youtubemusic.png",
+      deezer: "/lovable-uploads/deezer.png",
+      soundcloud: "/lovable-uploads/soundcloud.png",
+      youtube: "/lovable-uploads/youtube.png",
+      itunes: "/lovable-uploads/itunes.png",
+    };
+
+    const fallbackIcon = iconMap[platform.id] || "/placeholder.svg";
     if (iconUrl !== fallbackIcon) {
       setIconUrl(fallbackIcon);
     }

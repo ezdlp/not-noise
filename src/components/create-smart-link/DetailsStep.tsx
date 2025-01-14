@@ -76,6 +76,10 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           src={initialData.artworkUrl}
           alt="Release artwork"
           className="w-32 h-32 rounded-lg object-cover"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.src = "/placeholder.svg";
+          }}
         />
         <div className="flex-1 space-y-4">
           <div className="space-y-2">
@@ -98,11 +102,15 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 
           <div className="space-y-2">
             <Label>Custom URL Slug</Label>
-            <Input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-              placeholder="e.g., my-awesome-release"
-            />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">xnoi.se/</span>
+              <Input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                placeholder="e.g., my-awesome-release"
+                className="flex-1"
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               Leave empty to use auto-generated URL
             </p>
