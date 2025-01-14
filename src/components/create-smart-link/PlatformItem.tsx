@@ -36,12 +36,10 @@ const PlatformItem = ({
   } = useSortable({ id: platform.id });
 
   useEffect(() => {
-    // Update icon URL when platform changes
     setIconUrl(platform.icon);
   }, [platform.icon]);
 
   const handleImageError = () => {
-    // Map platform IDs to their correct icon paths
     const iconMap: { [key: string]: string } = {
       spotify: "/lovable-uploads/spotify.png",
       appleMusic: "/lovable-uploads/applemusic.png",
@@ -51,10 +49,19 @@ const PlatformItem = ({
       soundcloud: "/lovable-uploads/soundcloud.png",
       youtube: "/lovable-uploads/youtube.png",
       itunes: "/lovable-uploads/itunes.png",
+      tidal: "/lovable-uploads/tidal.png",
+      anghami: "/lovable-uploads/anghami.png",
+      napster: "/lovable-uploads/napster.png",
+      boomplay: "/lovable-uploads/boomplay.png",
+      yandex: "/lovable-uploads/yandex.png",
+      beatport: "/lovable-uploads/beatport.png",
+      bandcamp: "/lovable-uploads/bandcamp.png",
+      audius: "/lovable-uploads/audius.png",
     };
 
     const fallbackIcon = iconMap[platform.id] || "/placeholder.svg";
     if (iconUrl !== fallbackIcon) {
+      console.error("Failed to load platform icon:", platform.icon);
       setIconUrl(fallbackIcon);
     }
   };

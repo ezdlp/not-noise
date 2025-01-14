@@ -73,11 +73,12 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 
       <div className="flex items-start gap-4">
         <img
-          src={initialData.artworkUrl}
+          src={initialData.artworkUrl || "/placeholder.svg"}
           alt="Release artwork"
           className="w-32 h-32 rounded-lg object-cover"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
+            console.error("Failed to load artwork:", initialData.artworkUrl);
             img.src = "/placeholder.svg";
           }}
         />
