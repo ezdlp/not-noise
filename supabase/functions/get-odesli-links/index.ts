@@ -1,8 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-console.log('Hello from get-odesli-links!')
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -11,22 +9,26 @@ serve(async (req) => {
 
   try {
     const { url } = await req.json()
+    
+    if (!url) {
+      throw new Error('URL is required')
+    }
+
     console.log('Fetching links for URL:', url)
 
-    // Make a POST request to the Odesli API
-    const odesliApiUrl = 'https://api.song.link/v1-alpha.1/links'
-    
-    console.log('Calling Odesli API:', odesliApiUrl)
-    const response = await fetch(odesliApiUrl, {
+    // Make a request to the Odesli API
+    const response = await fetch('https://api.song.link/v1-alpha.1/links', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ url }),
     })
-    
+
     if (!response.ok) {
-      console.error('Odesli API error:', response.statusText)
+      console.error('Odesli API error:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Error details:', errorText)
       throw new Error(`Odesli API error: ${response.statusText}`)
     }
 
@@ -55,7 +57,6 @@ serve(async (req) => {
     // Process the response to match our frontend's expected format
     const linksByPlatform = {}
     
-    // First, process the platformUrls from the API response
     if (data.linksByPlatform) {
       for (const [platform, linkData] of Object.entries(data.linksByPlatform)) {
         const mappedPlatform = platformMapping[platform]
@@ -86,7 +87,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       },
     )
   }
