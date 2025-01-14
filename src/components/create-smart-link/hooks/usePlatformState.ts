@@ -11,9 +11,9 @@ export interface Platform {
 const getPlatformIcon = (platformId: string) => {
   const icons: { [key: string]: string } = {
     spotify: "/lovable-uploads/spotify.png",
-    apple: "/lovable-uploads/applemusic.png",
-    amazon: "/lovable-uploads/amazonmusic.png",
-    youtube_music: "/lovable-uploads/youtubemusic.png",
+    appleMusic: "/lovable-uploads/applemusic.png",
+    amazonMusic: "/lovable-uploads/amazonmusic.png",
+    youtubeMusic: "/lovable-uploads/youtubemusic.png",
     deezer: "/lovable-uploads/deezer.png",
     soundcloud: "/lovable-uploads/soundcloud.png",
     youtube: "/lovable-uploads/youtube.png",
@@ -33,10 +33,10 @@ const getPlatformIcon = (platformId: string) => {
 export const usePlatformState = (initialSpotifyUrl: string) => {
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: "spotify", name: "Spotify", enabled: true, url: initialSpotifyUrl, icon: getPlatformIcon("spotify") },
-    { id: "youtube_music", name: "YouTube Music", enabled: false, url: "", icon: getPlatformIcon("youtube_music") },
+    { id: "youtubeMusic", name: "YouTube Music", enabled: false, url: "", icon: getPlatformIcon("youtubeMusic") },
     { id: "youtube", name: "YouTube", enabled: false, url: "", icon: getPlatformIcon("youtube") },
-    { id: "apple", name: "Apple Music", enabled: false, url: "", icon: getPlatformIcon("apple") },
-    { id: "amazon", name: "Amazon Music", enabled: false, url: "", icon: getPlatformIcon("amazon") },
+    { id: "appleMusic", name: "Apple Music", enabled: false, url: "", icon: getPlatformIcon("appleMusic") },
+    { id: "amazonMusic", name: "Amazon Music", enabled: false, url: "", icon: getPlatformIcon("amazonMusic") },
     { id: "deezer", name: "Deezer", enabled: false, url: "", icon: getPlatformIcon("deezer") },
     { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: getPlatformIcon("soundcloud") },
     { id: "itunes", name: "iTunes Store", enabled: false, url: "", icon: getPlatformIcon("itunes") },

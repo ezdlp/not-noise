@@ -32,13 +32,16 @@ serve(async (req) => {
     const data = await response.json()
     console.log('Odesli API response:', data)
 
-    // Updated platform mapping with correct keys
+    // Log available platform keys for debugging
+    console.log('Available platform keys:', Object.keys(data.linksByPlatform))
+
+    // Updated platform mapping using camelCase keys
     const platformMapping = {
       spotify: 'spotify',
-      youtubeMusic: 'youtube_music',
+      youtubeMusic: 'youtubeMusic',
       youtube: 'youtube',
-      appleMusic: 'apple',
-      amazonMusic: 'amazon',
+      appleMusic: 'appleMusic',
+      amazonMusic: 'amazonMusic',
       deezer: 'deezer',
       soundcloud: 'soundcloud',
       itunes: 'itunes',
@@ -53,10 +56,10 @@ serve(async (req) => {
     if (data.linksByPlatform) {
       Object.entries(data.linksByPlatform).forEach(([platform, linkData]) => {
         // Find the corresponding internal platform ID
-        const internalPlatform = Object.entries(platformMapping).find(([_, apiKey]) => apiKey === platform)?.[0]
+        const internalPlatform = platformMapping[platform]
         
         if (internalPlatform) {
-          linksByPlatform[internalPlatform] = {
+          linksByPlatform[platform] = {
             url: linkData.url,
             entityUniqueId: linkData.entityUniqueId
           }
