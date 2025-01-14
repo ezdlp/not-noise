@@ -6,9 +6,17 @@ interface PlatformButtonProps {
   icon: string;
   action: string;
   url: string;
+  onClick?: () => void;
 }
 
-const PlatformButton = ({ name, icon, action, url }: PlatformButtonProps) => {
+const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProps) => {
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="flex items-center justify-between p-3 border-b last:border-b-0">
       <div className="flex items-center gap-3">
@@ -22,7 +30,7 @@ const PlatformButton = ({ name, icon, action, url }: PlatformButtonProps) => {
       <Button
         variant="default"
         className="bg-black hover:bg-black/90 text-white min-w-[100px]"
-        onClick={() => window.open(url, '_blank')}
+        onClick={handleClick}
       >
         {action}
       </Button>

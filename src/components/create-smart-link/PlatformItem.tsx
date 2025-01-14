@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useEffect, useState } from "react";
 
 interface Platform {
   id: string;
@@ -24,6 +25,8 @@ const PlatformItem = ({
   onUrlChange, 
   isDraggable = true,
 }: PlatformItemProps) => {
+  const [iconUrl, setIconUrl] = useState(platform.icon);
+
   const {
     attributes,
     listeners,
@@ -31,6 +34,19 @@ const PlatformItem = ({
     transform,
     transition,
   } = useSortable({ id: platform.id });
+
+  useEffect(() => {
+    // Update icon URL when platform changes
+    setIconUrl(platform.icon);
+  }, [platform.icon]);
+
+  const handleImageError = () => {
+    // If the icon fails to load, try to get it from the public folder
+    const fallbackIcon = `/lovable-uploads/${platform.id.toLowerCase()}.png`;
+    if (iconUrl !== fallbackIcon) {
+      setIconUrl(fallbackIcon);
+    }
+  };
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -51,9 +67,10 @@ const PlatformItem = ({
         )}
         <div className="flex items-center gap-3 flex-1">
           <img 
-            src={platform.icon} 
+            src={iconUrl}
             alt={`${platform.name} logo`}
             className="w-8 h-8 object-contain"
+            onError={handleImageError}
           />
           <span className="ml-2 text-sm font-medium">{platform.name}</span>
           <div className="ml-auto">
