@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 interface DetailsStepProps {
   initialData: {
     title: string;
-    artistName: string;
+    artist: string;
     artworkUrl: string;
+    spotifyUrl: string;
   };
   onNext: (data: any) => void;
   onBack: () => void;
@@ -17,8 +18,16 @@ interface DetailsStepProps {
 
 const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [title, setTitle] = useState(initialData.title || "");
-  const [artistName, setArtistName] = useState(initialData.artistName || "");
+  const [artistName, setArtistName] = useState(initialData.artist || "");
   const [slug, setSlug] = useState("");
+
+  useEffect(() => {
+    // Generate slug from artist name and title
+    if (artistName && title) {
+      const generatedSlug = `${artistName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+      setSlug(generatedSlug);
+    }
+  }, [artistName, title]);
 
   const handleNext = async () => {
     if (!title.trim()) {
@@ -48,7 +57,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
     onNext({
       ...initialData,
       title,
-      artistName,
+      artist: artistName,
       slug: slug || undefined,
     });
   };
@@ -66,7 +75,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
         <img
           src={initialData.artworkUrl}
           alt="Release artwork"
-          className="w-24 h-24 rounded-lg object-cover"
+          className="w-32 h-32 rounded-lg object-cover"
         />
         <div className="flex-1 space-y-4">
           <div className="space-y-2">
@@ -88,7 +97,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label>Custom URL Slug (Optional)</Label>
+            <Label>Custom URL Slug</Label>
             <Input
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}

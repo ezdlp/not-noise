@@ -11,28 +11,6 @@ import { toast } from "sonner";
 import { useState } from "react";
 import PlatformItem from "@/components/create-smart-link/PlatformItem";
 
-const getPlatformIcon = (platformId: string) => {
-  const icons: { [key: string]: string } = {
-    spotify: "/lovable-uploads/spotify.png",
-    apple: "/lovable-uploads/applemusic.png",
-    amazon: "/lovable-uploads/amazonmusic.png",
-    youtube_music: "/lovable-uploads/youtubemusic.png",
-    deezer: "/lovable-uploads/deezer.png",
-    soundcloud: "/lovable-uploads/soundcloud.png",
-    youtube: "/lovable-uploads/youtube.png",
-    itunes: "/lovable-uploads/itunes.png",
-    tidal: "/lovable-uploads/tidal.png",
-    anghami: "/lovable-uploads/anghami.png",
-    napster: "/lovable-uploads/napster.png",
-    boomplay: "/lovable-uploads/boomplay.png",
-    yandex: "/lovable-uploads/yandex.png",
-    beatport: "/lovable-uploads/beatport.png",
-    bandcamp: "/lovable-uploads/bandcamp.png",
-    audius: "/lovable-uploads/audius.png",
-  };
-  return icons[platformId] || "/placeholder.svg";
-};
-
 const EditSmartLink = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -46,6 +24,28 @@ const EditSmartLink = () => {
   const [metaViewEvent, setMetaViewEvent] = useState("");
   const [metaClickEvent, setMetaClickEvent] = useState("");
   const [platformLinks, setPlatformLinks] = useState<any[]>([]);
+
+  const getPlatformIcon = (platformId: string) => {
+    const icons: { [key: string]: string } = {
+      spotify: "/lovable-uploads/spotify.png",
+      apple: "/lovable-uploads/applemusic.png",
+      amazon: "/lovable-uploads/amazonmusic.png",
+      youtube_music: "/lovable-uploads/youtubemusic.png",
+      deezer: "/lovable-uploads/deezer.png",
+      soundcloud: "/lovable-uploads/soundcloud.png",
+      youtube: "/lovable-uploads/youtube.png",
+      itunes: "/lovable-uploads/itunes.png",
+      tidal: "/lovable-uploads/tidal.png",
+      anghami: "/lovable-uploads/anghami.png",
+      napster: "/lovable-uploads/napster.png",
+      boomplay: "/lovable-uploads/boomplay.png",
+      yandex: "/lovable-uploads/yandex.png",
+      beatport: "/lovable-uploads/beatport.png",
+      bandcamp: "/lovable-uploads/bandcamp.png",
+      audius: "/lovable-uploads/audius.png",
+    };
+    return icons[platformId] || "/placeholder.svg";
+  };
 
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
@@ -179,8 +179,8 @@ const EditSmartLink = () => {
           <Card className="p-4">
             <div className="flex items-center gap-4">
               <img
-                src={smartLink.artwork_url}
-                alt={`${smartLink.title} artwork`}
+                src={smartLink?.artwork_url}
+                alt={`${title} artwork`}
                 className="w-24 h-24 object-cover rounded-lg"
               />
               <div className="space-y-4 flex-1">
@@ -195,7 +195,7 @@ const EditSmartLink = () => {
                   <Input
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder={slug}
+                    placeholder="custom-url-slug"
                     className="flex-1"
                   />
                 </div>
