@@ -48,34 +48,31 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           throw new Error("No links found for this track");
         }
 
+        // Map platform IDs to Odesli platform keys
+        const platformMapping: { [key: string]: string } = {
+          spotify: 'spotify',
+          youtube_music: 'youtubeMusic',
+          youtube: 'youtube',
+          apple: 'appleMusic',
+          amazon: 'amazonMusic',
+          deezer: 'deezer',
+          soundcloud: 'soundcloud',
+          itunes: 'itunes',
+          tidal: 'tidal',
+          anghami: 'anghami',
+          napster: 'napster',
+          yandex: 'yandex',
+        };
+
         // Update platform URLs based on Odesli response
         setPlatforms(prevPlatforms => 
           prevPlatforms.map(platform => {
-            let url = '';
-            let enabled = platform.enabled;
-
-            // Map platform IDs to Odesli platform keys
-            const platformMapping: { [key: string]: string } = {
-              spotify: 'spotify',
-              youtube_music: 'youtubeMusic',
-              youtube: 'youtube',
-              apple: 'appleMusic',
-              amazon: 'amazonMusic',
-              deezer: 'deezer',
-              soundcloud: 'soundcloud',
-              itunes: 'itunes',
-            };
-
             const odesliKey = platformMapping[platform.id];
-            if (odesliKey && odesliData.linksByPlatform[odesliKey]) {
-              url = odesliData.linksByPlatform[odesliKey].url;
-              enabled = true;
-            }
-
+            const url = odesliData.linksByPlatform[odesliKey]?.url || "";
             return {
               ...platform,
               url,
-              enabled: enabled
+              enabled: platform.id === "spotify" ? true : !!url
             };
           })
         );

@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GripVertical, RefreshCw } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
-import { useState } from "react";
 
 interface Platform {
   id: string;
@@ -16,20 +15,15 @@ interface PlatformItemProps {
   platform: Platform;
   onToggle: (id: string) => void;
   onUrlChange: (id: string, url: string) => void;
-  onFetchLink?: (id: string) => Promise<void>;
   isDraggable?: boolean;
-  isFetching?: boolean;
 }
 
 const PlatformItem = ({ 
   platform, 
   onToggle, 
   onUrlChange, 
-  onFetchLink,
   isDraggable = true,
-  isFetching = false 
 }: PlatformItemProps) => {
-  const [isLoading, setIsLoading] = useState(false);
   const {
     attributes,
     listeners,
@@ -42,16 +36,6 @@ const PlatformItem = ({
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     transition,
   } : undefined;
-
-  const handleFetchLink = async () => {
-    if (!onFetchLink) return;
-    setIsLoading(true);
-    try {
-      await onFetchLink(platform.id);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div 
@@ -72,18 +56,7 @@ const PlatformItem = ({
             className="w-8 h-8 object-contain"
           />
           <span className="ml-2 text-sm font-medium">{platform.name}</span>
-          <div className="ml-auto flex gap-2">
-            {platform.enabled && onFetchLink && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleFetchLink}
-                disabled={isLoading || platform.id === "spotify"}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Fetch Link
-              </Button>
-            )}
+          <div className="ml-auto">
             <Button
               variant={platform.enabled ? "default" : "outline"}
               onClick={() => onToggle(platform.id)}
