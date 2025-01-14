@@ -16,13 +16,12 @@ serve(async (req) => {
 
     console.log('Fetching links for URL:', url)
 
-    // Make a request to the Odesli API
-    const response = await fetch('https://api.song.link/v1-alpha.1/links', {
-      method: 'POST',
+    // Make a request to the Odesli API using the correct endpoint and method
+    const response = await fetch(`https://api.song.link/v1-alpha.1/links?url=${encodeURIComponent(url)}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url }),
     })
 
     if (!response.ok) {
