@@ -51,7 +51,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         title: track.body.name,
         artist: track.body.artists.map(artist => artist.name).join(", "),
         album: track.body.album.name,
-        coverUrl: track.body.album.images[0]?.url || "/placeholder.svg",
+        artworkUrl: track.body.album.images[0]?.url,
         spotifyId: track.body.id,
         spotifyUrl: track.body.external_urls.spotify,
         releaseDate: track.body.album.release_date,
@@ -98,7 +98,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         title: track.name,
         artist: track.artists.map(artist => artist.name).join(", "),
         album: track.album.name,
-        coverUrl: track.album.images[0]?.url || "/placeholder.svg",
+        artworkUrl: track.album.images[0]?.url,
         spotifyId: track.id,
         spotifyUrl: track.external_urls.spotify,
         releaseDate: track.album.release_date,
@@ -155,7 +155,10 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
   const handleSelectTrack = async (track: any) => {
     setIsLoading(true);
-    onNext(track);
+    onNext({
+      ...track,
+      artworkUrl: track.artworkUrl || "/placeholder.svg",
+    });
     setIsLoading(false);
   };
 
@@ -189,9 +192,14 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           <Card key={track.spotifyId} className="p-4">
             <div className="flex items-center gap-4">
               <img 
-                src={track.coverUrl} 
+                src={track.artworkUrl || "/placeholder.svg"} 
                 alt={`${track.title} cover`} 
                 className="w-24 h-24 object-cover rounded-lg"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  console.error("Failed to load search result artwork:", track.artworkUrl);
+                  img.src = "/placeholder.svg";
+                }}
               />
               <div className="flex-1">
                 <h3 className="font-semibold text-lg">{track.title}</h3>
