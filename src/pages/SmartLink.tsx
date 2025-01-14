@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 import { useEffect } from "react";
+import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -125,14 +126,12 @@ const SmartLink = () => {
     { id: "itunes", name: "iTunes Store", icon: "/lovable-uploads/itunes.png" },
   ];
 
-  const artworkUrl = smartLink.artwork_url || "/placeholder.svg";
-
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
-          backgroundImage: `url(${artworkUrl})`,
+          backgroundImage: `url(${smartLink.artwork_url})`,
           filter: 'blur(30px) brightness(0.7)',
           transform: 'scale(1.1)'
         }}
@@ -140,20 +139,11 @@ const SmartLink = () => {
 
       <div className="relative w-full max-w-md mx-auto px-4 py-8 z-10">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
-          <div className="text-center mb-8">
-            <img
-              src={artworkUrl}
-              alt={`${smartLink.title} artwork`}
-              className="w-[300px] h-[300px] mx-auto rounded-2xl shadow-xl mb-6 object-cover"
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                console.error("Failed to load artwork:", artworkUrl);
-                img.src = "/placeholder.svg";
-              }}
-            />
-            <h1 className="text-2xl font-bold mb-1">{smartLink.title}</h1>
-            <p className="text-gray-600">{smartLink.artist_name}</p>
-          </div>
+          <SmartLinkHeader
+            title={smartLink.title}
+            artistName={smartLink.artist_name}
+            artworkUrl={smartLink.artwork_url}
+          />
           
           <div className="space-y-4">
             {smartLink.platform_links.map((platformLink: any) => {
