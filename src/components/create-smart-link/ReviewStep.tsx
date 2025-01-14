@@ -132,9 +132,14 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
       <Card className="p-4">
         <div className="flex items-center gap-4">
           <img
-            src={data.coverUrl}
+            src={data.artworkUrl || "/placeholder.svg"}
             alt={`${data.title} cover`}
             className="w-24 h-24 object-cover rounded-lg"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              console.error("Failed to load review artwork:", data.artworkUrl);
+              img.src = "/placeholder.svg";
+            }}
           />
           <div>
             <h3 className="font-semibold text-lg">{data.title}</h3>
