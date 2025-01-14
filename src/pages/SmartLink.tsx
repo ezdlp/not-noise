@@ -138,16 +138,14 @@ const SmartLink = () => {
 
       <div className="relative w-full max-w-md mx-auto px-4 py-8 z-10">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="text-center mb-8">
             <img
               src={smartLink.artwork_url}
               alt={`${smartLink.title} artwork`}
-              className="w-24 h-24 object-cover rounded-lg shadow-md"
+              className="w-[300px] h-[300px] mx-auto rounded-2xl shadow-xl mb-6 object-cover"
             />
-            <div>
-              <h1 className="text-xl font-bold">{smartLink.title}</h1>
-              <p className="text-gray-600">{smartLink.artist_name}</p>
-            </div>
+            <h1 className="text-2xl font-bold mb-1">{smartLink.title}</h1>
+            <p className="text-gray-600">{smartLink.artist_name}</p>
           </div>
           
           <div className="space-y-4">
