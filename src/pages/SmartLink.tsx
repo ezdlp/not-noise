@@ -125,12 +125,14 @@ const SmartLink = () => {
     { id: "itunes", name: "iTunes Store", icon: "/lovable-uploads/itunes.png" },
   ];
 
+  const artworkUrl = smartLink.artwork_url || "/placeholder.svg";
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
-          backgroundImage: `url(${smartLink.artwork_url})`,
+          backgroundImage: `url(${artworkUrl})`,
           filter: 'blur(30px) brightness(0.7)',
           transform: 'scale(1.1)'
         }}
@@ -140,9 +142,14 @@ const SmartLink = () => {
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
           <div className="text-center mb-8">
             <img
-              src={smartLink.artwork_url}
+              src={artworkUrl}
               alt={`${smartLink.title} artwork`}
               className="w-[300px] h-[300px] mx-auto rounded-2xl shadow-xl mb-6 object-cover"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                console.error("Failed to load artwork:", artworkUrl);
+                img.src = "/placeholder.svg";
+              }}
             />
             <h1 className="text-2xl font-bold mb-1">{smartLink.title}</h1>
             <p className="text-gray-600">{smartLink.artist_name}</p>
