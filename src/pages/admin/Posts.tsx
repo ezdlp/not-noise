@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FileText, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { PostEditor } from "@/components/admin/blog/PostEditor";
 import { ImportPosts } from "@/components/admin/blog/ImportPosts";
@@ -12,7 +11,7 @@ import { toast } from "sonner";
 
 export default function Posts() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["adminPosts"],
@@ -43,6 +42,36 @@ export default function Posts() {
 
   if (isLoading) return <div>Loading...</div>;
 
+  if (isEditing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {selectedPost ? "Edit Post" : "Create New Post"}
+            </h1>
+            <p className="text-muted-foreground">
+              {selectedPost ? "Make changes to your post." : "Create a new blog post."}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => {
+            setIsEditing(false);
+            setSelectedPost(null);
+          }}>
+            Back to Posts
+          </Button>
+        </div>
+        <PostEditor
+          post={selectedPost}
+          onClose={() => {
+            setIsEditing(false);
+            setSelectedPost(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -52,7 +81,7 @@ export default function Posts() {
         </div>
         <div className="flex items-center gap-4">
           <ImportPosts />
-          <Button onClick={() => setIsEditorOpen(true)}>
+          <Button onClick={() => setIsEditing(true)}>
             <FileText className="mr-2 h-4 w-4" />
             Add New Post
           </Button>
@@ -86,7 +115,7 @@ export default function Posts() {
                   size="icon"
                   onClick={() => {
                     setSelectedPost(post);
-                    setIsEditorOpen(true);
+                    setIsEditing(true);
                   }}
                 >
                   <Pencil className="h-4 w-4" />
@@ -103,21 +132,6 @@ export default function Posts() {
           ))}
         </TableBody>
       </Table>
-
-      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{selectedPost ? "Edit Post" : "Create New Post"}</DialogTitle>
-          </DialogHeader>
-          <PostEditor
-            post={selectedPost}
-            onClose={() => {
-              setIsEditorOpen(false);
-              setSelectedPost(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
