@@ -30,12 +30,13 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
 }
 
+// Extend the Image extension with custom attributes
 const CustomImage = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
       alt: {
-        default: '',
+        default: null,
         parseHTML: element => element.getAttribute('alt'),
         renderHTML: attributes => {
           return {
@@ -43,22 +44,34 @@ const CustomImage = Image.extend({
           }
         },
       },
-      caption: {
-        default: '',
-        parseHTML: element => element.getAttribute('data-caption'),
+      title: {
+        default: null,
+        parseHTML: element => element.getAttribute('title'),
         renderHTML: attributes => {
           return {
-            'data-caption': attributes.caption,
+            title: attributes.title,
           }
         },
       },
-      alignment: {
+      'data-caption': {
+        default: null,
+        parseHTML: element => element.getAttribute('data-caption'),
+        renderHTML: attributes => {
+          if (!attributes['data-caption']) {
+            return {};
+          }
+          return {
+            'data-caption': attributes['data-caption'],
+          }
+        },
+      },
+      'data-alignment': {
         default: 'left',
         parseHTML: element => element.getAttribute('data-alignment'),
         renderHTML: attributes => {
           return {
-            'data-alignment': attributes.alignment,
-            class: `image-${attributes.alignment}`,
+            'data-alignment': attributes['data-alignment'],
+            class: `image-${attributes['data-alignment']}`,
           }
         },
       },
@@ -115,8 +128,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         .setImage({ 
           src: selectedImage,
           alt: imageAlt,
-          caption: imageCaption,
-          alignment: 'left',
+          title: imageAlt,
+          'data-caption': imageCaption,
+          'data-alignment': 'left',
         })
         .run();
       setIsImageSettingsOpen(false);
@@ -128,7 +142,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   const setImageAlignment = (alignment: 'left' | 'center' | 'right') => {
     editor.chain().focus().updateAttributes('image', {
-      alignment,
+      'data-alignment': alignment,
     }).run();
   };
 
@@ -309,7 +323,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         </DialogContent>
       </Dialog>
 
-      <style jsx global>{`
+      <style>
+        {`
         .image-left {
           float: left;
           margin: 0 1em 0.5em 0;
@@ -325,11 +340,11 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           margin: 0 0 0.5em 1em;
           max-width: 50%;
         }
-        [data-caption] {
+        img[data-caption] {
           display: inline-block;
           position: relative;
         }
-        [data-caption]::after {
+        img[data-caption]::after {
           content: attr(data-caption);
           display: block;
           text-align: center;
@@ -338,7 +353,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           font-size: 0.875em;
           color: #666;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 }
