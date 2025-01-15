@@ -24,10 +24,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MediaLibrary } from './MediaLibrary';
+import { mergeAttributes } from '@tiptap/core';
 
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
+}
+
+// Define the custom attributes interface
+interface CustomImageAttributes {
+  src: string;
+  alt?: string;
+  title?: string;
+  'data-caption'?: string;
+  'data-alignment'?: 'left' | 'center' | 'right';
 }
 
 // Extend the Image extension with custom attributes
@@ -38,20 +48,16 @@ const CustomImage = Image.extend({
       alt: {
         default: null,
         parseHTML: element => element.getAttribute('alt'),
-        renderHTML: attributes => {
-          return {
-            alt: attributes.alt,
-          }
-        },
+        renderHTML: attributes => ({
+          alt: attributes.alt,
+        }),
       },
       title: {
         default: null,
         parseHTML: element => element.getAttribute('title'),
-        renderHTML: attributes => {
-          return {
-            title: attributes.title,
-          }
-        },
+        renderHTML: attributes => ({
+          title: attributes.title,
+        }),
       },
       'data-caption': {
         default: null,
@@ -62,20 +68,21 @@ const CustomImage = Image.extend({
           }
           return {
             'data-caption': attributes['data-caption'],
-          }
+          };
         },
       },
       'data-alignment': {
         default: 'left',
         parseHTML: element => element.getAttribute('data-alignment'),
-        renderHTML: attributes => {
-          return {
-            'data-alignment': attributes['data-alignment'],
-            class: `image-${attributes['data-alignment']}`,
-          }
-        },
+        renderHTML: attributes => ({
+          'data-alignment': attributes['data-alignment'],
+          class: `image-${attributes['data-alignment']}`,
+        }),
       },
-    }
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
 });
 
@@ -122,16 +129,18 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   const handleImageSettingsConfirm = () => {
     if (selectedImage) {
+      const imageAttributes: CustomImageAttributes = {
+        src: selectedImage,
+        alt: imageAlt,
+        title: imageAlt,
+        'data-caption': imageCaption,
+        'data-alignment': 'left',
+      };
+
       editor
         .chain()
         .focus()
-        .setImage({ 
-          src: selectedImage,
-          alt: imageAlt,
-          title: imageAlt,
-          'data-caption': imageCaption,
-          'data-alignment': 'left',
-        })
+        .setImage(imageAttributes)
         .run();
       setIsImageSettingsOpen(false);
       setSelectedImage(null);
