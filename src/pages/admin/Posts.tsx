@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { PostEditor } from "@/components/admin/blog/PostEditor";
+import { ImportPosts } from "@/components/admin/blog/ImportPosts";
 import { toast } from "sonner";
 
 export default function Posts() {
@@ -49,10 +50,13 @@ export default function Posts() {
           <h1 className="text-3xl font-bold tracking-tight">Blog Posts</h1>
           <p className="text-muted-foreground">Manage your blog content.</p>
         </div>
-        <Button onClick={() => setIsEditorOpen(true)}>
-          <FileText className="mr-2 h-4 w-4" />
-          Add New Post
-        </Button>
+        <div className="flex items-center gap-4">
+          <ImportPosts />
+          <Button onClick={() => setIsEditorOpen(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            Add New Post
+          </Button>
+        </div>
       </div>
 
       <Table>
