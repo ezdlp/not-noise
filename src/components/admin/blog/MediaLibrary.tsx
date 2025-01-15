@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MediaToolbar } from "./MediaToolbar";
 import { MediaFileGrid } from "./MediaFileGrid";
+import { cn } from "@/lib/utils";
 
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
@@ -180,6 +181,26 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
       newSelectedFiles.add(id);
     }
     setSelectedFiles(newSelectedFiles);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await handleFileUpload(e.dataTransfer.files[0]);
+    }
   };
 
   return (
