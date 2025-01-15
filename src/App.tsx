@@ -15,6 +15,7 @@ import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
+import { Overview, Users, Posts, Settings, UserLinks } from "./pages/admin";
 
 const queryClient = new QueryClient();
 
