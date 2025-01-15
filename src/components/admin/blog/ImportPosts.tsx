@@ -25,19 +25,13 @@ export function ImportPosts() {
     formData.append('file', file);
 
     try {
-      const response = await fetch(
-        'https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/wordpress-import',
-        {
-          method: 'POST',
-          body: formData
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('wordpress-import', {
+        body: formData,
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to process WordPress file');
-      }
+      if (error) throw error;
 
-      const { posts, mediaItems } = await response.json();
+      const { posts, mediaItems } = data;
       
       if (mediaItems?.length > 0) {
         setMediaItems(mediaItems);
