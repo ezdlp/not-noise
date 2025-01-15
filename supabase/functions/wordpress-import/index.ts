@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,61 +20,73 @@ serve(async (req) => {
     }
 
     const xmlContent = await file.text()
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(xmlContent, 'text/xml')
+    console.log("Received XML content length:", xmlContent.length)
+
+    const doc = parse(xmlContent)
+    console.log("Parsed XML document")
 
     if (!doc) {
       throw new Error('Invalid XML file')
     }
 
-    const items = doc.getElementsByTagName('item')
-    const posts = []
+    const items = doc.rss?.channel?.item || []
+    console.log("Found items:", items.length)
 
-    for (const item of items) {
-      const title = item.getElementsByTagName('title')[0]?.textContent
-      const content = item.getElementsByTagName('content:encoded')[0]?.textContent
-      const excerpt = item.getElementsByTagName('excerpt:encoded')[0]?.textContent
-      const pubDate = item.getElementsByTagName('pubDate')[0]?.textContent
-      const status = item.getElementsByTagName('wp:status')[0]?.textContent
+    const posts = items.map(item => {
+      // Extract content from CDATA if present
+      const getContent = (field) => {
+        const content = item[field]
+        if (typeof content === 'object' && content?._cdata) {
+          return content._cdata
+        }
+        return content || ''
+      }
+
+      const title = getContent('title')
+      const content = getContent('content:encoded')
+      const excerpt = getContent('excerpt:encoded')
+      const status = item['wp:status'] === 'publish' ? 'published' : 'draft'
       
       // Get featured image if exists
-      const featuredImage = Array.from(item.getElementsByTagName('wp:postmeta'))
-        .find(meta => 
-          meta.getElementsByTagName('wp:meta_key')[0]?.textContent === '_thumbnail_id'
-        )
+      const postmeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : []
+      const featuredImageMeta = postmeta.find(meta => 
+        meta['wp:meta_key'] === '_thumbnail_id'
+      )
 
       // Get categories and tags
-      const categories = Array.from(item.getElementsByTagName('category'))
-        .map(cat => ({
-          domain: cat.getAttribute('domain'),
-          name: cat.textContent
-        }))
-        .filter(cat => cat.name)
+      const categories = Array.isArray(item.category) ? item.category : []
+      const processedCategories = categories.map(cat => ({
+        domain: cat?._attributes?.domain,
+        name: cat?._text || cat
+      })).filter(cat => cat.name)
 
-      posts.push({
+      return {
         title: title || 'Untitled',
         content: content || '',
         excerpt: excerpt || '',
-        status: status === 'publish' ? 'published' : 'draft',
+        status: status,
         meta_description: excerpt?.substring(0, 160) || '',
         visibility: 'public',
         allow_comments: true,
         is_featured: false,
         is_sticky: false,
         format: 'standard',
-        categories: categories
+        categories: processedCategories
           .filter(cat => cat.domain === 'category')
           .map(cat => cat.name),
-        tags: categories
+        tags: processedCategories
           .filter(cat => cat.domain === 'post_tag')
           .map(cat => cat.name)
-      })
-    }
+      }
+    })
 
-    // Get media items for reference
-    const mediaItems = Array.from(doc.getElementsByTagName('wp:attachment_url'))
-      .map(item => item.textContent)
+    // Get media items
+    const mediaItems = items
+      .filter(item => item['wp:post_type'] === 'attachment')
+      .map(item => item['wp:attachment_url'])
       .filter(url => url)
+
+    console.log(`Successfully processed ${posts.length} posts and found ${mediaItems.length} media items`)
 
     return new Response(
       JSON.stringify({ 
@@ -92,6 +103,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    console.error("Error processing WordPress XML:", error)
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress XML', 
