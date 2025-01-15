@@ -45,6 +45,24 @@ export function ImportPosts() {
     }
   };
 
+  const createUniqueSlug = async (baseSlug: string): Promise<string> => {
+    const timestamp = Date.now();
+    const uniqueSlug = `${baseSlug}-${timestamp}`;
+    
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("slug")
+      .eq("slug", uniqueSlug)
+      .single();
+    
+    if (data) {
+      // If still duplicate (very unlikely), try again with a different timestamp
+      return createUniqueSlug(baseSlug);
+    }
+    
+    return uniqueSlug;
+  };
+
   const importPosts = async (posts: any[]) => {
     try {
       setIsImporting(true);
@@ -57,10 +75,20 @@ export function ImportPosts() {
 
       for (const [index, post] of posts.entries()) {
         try {
-          const slug = post.title
+          let baseSlug = post.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
+
+          // Try to use the base slug first
+          let { data: existingPost } = await supabase
+            .from("blog_posts")
+            .select("slug")
+            .eq("slug", baseSlug)
+            .single();
+
+          // If slug exists, create a unique one
+          const slug = existingPost ? await createUniqueSlug(baseSlug) : baseSlug;
 
           const { error: postError } = await supabase
             .from("blog_posts")
