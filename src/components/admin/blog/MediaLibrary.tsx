@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Image, Upload, Trash2 } from "lucide-react";
+import { Image, Upload, Trash2, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
@@ -22,12 +23,21 @@ interface MediaFile {
   height?: number;
   alt_text?: string;
   caption?: string;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  usage_count?: number;
+  last_used?: string;
+  metadata?: Record<string, any>;
 }
 
 export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -40,29 +50,60 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   }, []);
 
   const { data: mediaFiles, refetch } = useQuery({
-    queryKey: ["mediaFiles"],
+    queryKey: ["mediaFiles", searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("media_files")
         .select("*")
         .order("created_at", { ascending: false });
 
+      if (searchTerm) {
+        query = query.ilike("filename", `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as MediaFile[];
     },
   });
 
-  const handleFileUpload = async () => {
-    if (!selectedFile || !userId) return;
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        setSelectedFile(file);
+        await handleFileUpload(file);
+      } else {
+        toast.error("Please upload an image file");
+      }
+    }
+  };
+
+  const handleFileUpload = async (fileToUpload: File = selectedFile) => {
+    if (!fileToUpload || !userId) return;
 
     setUploading(true);
     try {
-      const fileExt = selectedFile.name.split(".").pop();
+      const fileExt = fileToUpload.name.split(".").pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("media-library")
-        .upload(filePath, selectedFile);
+        .upload(filePath, fileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -70,14 +111,26 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
         .from("media-library")
         .getPublicUrl(filePath);
 
+      // Get image dimensions
+      const img = new Image();
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+        img.onload = () => {
+          resolve({ width: img.width, height: img.height });
+        };
+        img.src = publicUrl;
+      });
+
       const { error: dbError } = await supabase
         .from("media_files")
         .insert({
-          filename: selectedFile.name,
+          filename: fileToUpload.name,
           file_path: filePath,
-          mime_type: selectedFile.type,
-          size: selectedFile.size,
-          uploaded_by: userId
+          mime_type: fileToUpload.type,
+          size: fileToUpload.size,
+          uploaded_by: userId,
+          dimensions,
+          usage_count: 0,
+          last_used: new Date().toISOString(),
         });
 
       if (dbError) throw dbError;
@@ -95,6 +148,19 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
 
   const handleDelete = async (id: string, filePath: string) => {
     try {
+      // Check if file is being used
+      const { data: usageData, error: usageError } = await supabase
+        .from("media_usage")
+        .select("post_id")
+        .eq("media_id", id);
+
+      if (usageError) throw usageError;
+
+      if (usageData && usageData.length > 0) {
+        toast.error("This file is currently being used in posts and cannot be deleted");
+        return;
+      }
+
       const { error: storageError } = await supabase.storage
         .from("media-library")
         .remove([filePath]);
@@ -117,15 +183,34 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div 
+      className={cn(
+        "space-y-4",
+        dragActive && "opacity-50"
+      )}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+    >
       <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search files..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Input
           type="file"
           accept="image/*"
           onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          className="max-w-[200px]"
         />
         <Button
-          onClick={handleFileUpload}
+          onClick={() => handleFileUpload()}
           disabled={!selectedFile || uploading}
         >
           <Upload className="h-4 w-4 mr-2" />
@@ -160,7 +245,13 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-sm mt-2 truncate">{file.filename}</p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm truncate">{file.filename}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {file.dimensions ? `${file.dimensions.width}x${file.dimensions.height}` : ""}
+                    {file.size && ` • ${(file.size / 1024).toFixed(1)}KB`}
+                  </p>
+                </div>
               </div>
             );
           })}

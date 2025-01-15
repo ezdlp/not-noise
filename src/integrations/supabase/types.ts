@@ -322,45 +322,96 @@ export type Database = {
           alt_text: string | null
           caption: string | null
           created_at: string | null
+          dimensions: Json | null
           file_path: string
           filename: string
           height: number | null
           id: string
+          last_used: string | null
+          metadata: Json | null
           mime_type: string
           size: number
           updated_at: string | null
           uploaded_by: string | null
+          usage_count: number | null
           width: number | null
         }
         Insert: {
           alt_text?: string | null
           caption?: string | null
           created_at?: string | null
+          dimensions?: Json | null
           file_path: string
           filename: string
           height?: number | null
           id?: string
+          last_used?: string | null
+          metadata?: Json | null
           mime_type: string
           size: number
           updated_at?: string | null
           uploaded_by?: string | null
+          usage_count?: number | null
           width?: number | null
         }
         Update: {
           alt_text?: string | null
           caption?: string | null
           created_at?: string | null
+          dimensions?: Json | null
           file_path?: string
           filename?: string
           height?: number | null
           id?: string
+          last_used?: string | null
+          metadata?: Json | null
           mime_type?: string
           size?: number
           updated_at?: string | null
           uploaded_by?: string | null
+          usage_count?: number | null
           width?: number | null
         }
         Relationships: []
+      }
+      media_usage: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          id: string
+          media_id: string | null
+          post_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          media_id?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          media_id?: string | null
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_usage_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_usage_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_clicks: {
         Row: {
