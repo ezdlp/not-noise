@@ -10,11 +10,11 @@ import EditSmartLink from "./pages/EditSmartLink";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AccountSettings from "./pages/AccountSettings";
 import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
-import { Overview, Users, Posts, Settings, UserLinks } from "./pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +84,14 @@ const AppContent = () => {
         <Route path="/link/:slug" element={<SmartLink />} />
         
         {/* Protected Routes */}
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <AccountSettings />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/create"
           element={
