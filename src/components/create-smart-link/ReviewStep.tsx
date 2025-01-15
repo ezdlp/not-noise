@@ -30,7 +30,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
         const { error: smartLinkError } = await supabase
           .from("smart_links")
           .update({
-            artwork_url: data.coverUrl,
+            artwork_url: data.artworkUrl,
             release_date: new Date(data.releaseDate).toISOString(),
             meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
             meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
@@ -76,7 +76,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
         const { data: smartLink, error: smartLinkError } = await supabase
           .from("smart_links")
           .insert({
-            artwork_url: data.coverUrl,
+            artwork_url: data.artworkUrl,
             release_date: new Date(data.releaseDate).toISOString(),
             meta_pixel_id: data.metaPixel?.enabled ? data.metaPixel.pixelId : null,
             meta_view_event: data.metaPixel?.enabled ? data.metaPixel.viewEventName : null,
