@@ -11,14 +11,18 @@ import {
   Quote, 
   Heading1, 
   Heading2, 
-  Image as ImageIcon,
+  ImageIcon,
   Link as LinkIcon,
   Undo,
-  Redo
+  Redo,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MediaLibrary } from './MediaLibrary';
 
 interface RichTextEditorProps {
@@ -26,15 +30,55 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
 }
 
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      alt: {
+        default: '',
+        parseHTML: element => element.getAttribute('alt'),
+        renderHTML: attributes => {
+          return {
+            alt: attributes.alt,
+          }
+        },
+      },
+      caption: {
+        default: '',
+        parseHTML: element => element.getAttribute('data-caption'),
+        renderHTML: attributes => {
+          return {
+            'data-caption': attributes.caption,
+          }
+        },
+      },
+      alignment: {
+        default: 'left',
+        parseHTML: element => element.getAttribute('data-alignment'),
+        renderHTML: attributes => {
+          return {
+            'data-alignment': attributes.alignment,
+            class: `image-${attributes.alignment}`,
+          }
+        },
+      },
+    }
+  },
+});
+
 export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [isImageSettingsOpen, setIsImageSettingsOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
+  const [imageAlt, setImageAlt] = useState('');
+  const [imageCaption, setImageCaption] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image,
+      CustomImage,
       Link.configure({
         openOnClick: false,
       }),
@@ -58,8 +102,34 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   };
 
   const handleImageSelect = (url: string) => {
-    editor.chain().focus().setImage({ src: url }).run();
+    setSelectedImage(url);
+    setIsImageSettingsOpen(true);
     setIsMediaDialogOpen(false);
+  };
+
+  const handleImageSettingsConfirm = () => {
+    if (selectedImage) {
+      editor
+        .chain()
+        .focus()
+        .setImage({ 
+          src: selectedImage,
+          alt: imageAlt,
+          caption: imageCaption,
+          alignment: 'left',
+        })
+        .run();
+      setIsImageSettingsOpen(false);
+      setSelectedImage(null);
+      setImageAlt('');
+      setImageCaption('');
+    }
+  };
+
+  const setImageAlignment = (alignment: 'left' | 'center' | 'right') => {
+    editor.chain().focus().updateAttributes('image', {
+      alignment,
+    }).run();
   };
 
   return (
@@ -153,6 +223,34 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
       <EditorContent editor={editor} className="prose max-w-none p-4" />
 
+      {editor.isActive('image') && (
+        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+          <div className="flex gap-1 bg-white border rounded-lg shadow-lg p-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setImageAlignment('left')}
+            >
+              <AlignLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setImageAlignment('center')}
+            >
+              <AlignCenter className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setImageAlignment('right')}
+            >
+              <AlignRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </BubbleMenu>
+      )}
+
       <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -162,6 +260,35 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
             onSelect={handleImageSelect}
             onClose={() => setIsMediaDialogOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isImageSettingsOpen} onOpenChange={setIsImageSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Image Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="alt-text">Alt Text</Label>
+              <Input
+                id="alt-text"
+                value={imageAlt}
+                onChange={(e) => setImageAlt(e.target.value)}
+                placeholder="Describe the image for accessibility"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="caption">Caption</Label>
+              <Input
+                id="caption"
+                value={imageCaption}
+                onChange={(e) => setImageCaption(e.target.value)}
+                placeholder="Add a caption to the image"
+              />
+            </div>
+            <Button onClick={handleImageSettingsConfirm}>Insert Image</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -181,6 +308,37 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style jsx global>{`
+        .image-left {
+          float: left;
+          margin: 0 1em 0.5em 0;
+          max-width: 50%;
+        }
+        .image-center {
+          display: block;
+          margin: 0.5em auto;
+          max-width: 100%;
+        }
+        .image-right {
+          float: right;
+          margin: 0 0 0.5em 1em;
+          max-width: 50%;
+        }
+        [data-caption] {
+          display: inline-block;
+          position: relative;
+        }
+        [data-caption]::after {
+          content: attr(data-caption);
+          display: block;
+          text-align: center;
+          font-style: italic;
+          margin-top: 0.5em;
+          font-size: 0.875em;
+          color: #666;
+        }
+      `}</style>
     </div>
   );
 }
