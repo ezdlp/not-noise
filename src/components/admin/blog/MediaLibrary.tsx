@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Image, Upload, Trash2, Search } from "lucide-react";
+import { Image, Upload, Trash2, Search, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -100,7 +102,6 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
         .from("media-library")
         .getPublicUrl(filePath);
 
-      // Get image dimensions
       const img = document.createElement('img');
       const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
         img.onload = () => {
@@ -137,7 +138,6 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
 
   const handleDelete = async (id: string, filePath: string) => {
     try {
-      // Check if file is being used
       const { data: usageData, error: usageError } = await supabase
         .from("media_usage")
         .select("post_id")
@@ -168,6 +168,68 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
     } catch (error) {
       console.error("Error deleting file:", error);
       toast.error("Failed to delete file");
+    }
+  };
+
+  const toggleFileSelection = (id: string) => {
+    const newSelectedFiles = new Set(selectedFiles);
+    if (selectedFiles.has(id)) {
+      newSelectedFiles.delete(id);
+    } else {
+      newSelectedFiles.add(id);
+    }
+    setSelectedFiles(newSelectedFiles);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedFiles.size === 0) return;
+
+    try {
+      // Check if any selected files are in use
+      const { data: usageData, error: usageError } = await supabase
+        .from("media_usage")
+        .select("media_id")
+        .in("media_id", Array.from(selectedFiles));
+
+      if (usageError) throw usageError;
+
+      if (usageData && usageData.length > 0) {
+        toast.error("Some files are currently being used in posts and cannot be deleted");
+        return;
+      }
+
+      // Get file paths for selected files
+      const { data: fileData, error: fileError } = await supabase
+        .from("media_files")
+        .select("file_path")
+        .in("id", Array.from(selectedFiles));
+
+      if (fileError) throw fileError;
+
+      if (!fileData) return;
+
+      // Delete files from storage
+      const { error: storageError } = await supabase.storage
+        .from("media-library")
+        .remove(fileData.map(f => f.file_path));
+
+      if (storageError) throw storageError;
+
+      // Delete records from database
+      const { error: dbError } = await supabase
+        .from("media_files")
+        .delete()
+        .in("id", Array.from(selectedFiles));
+
+      if (dbError) throw dbError;
+
+      toast.success(`${selectedFiles.size} files deleted successfully`);
+      setSelectedFiles(new Set());
+      setIsSelectionMode(false);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting files:", error);
+      toast.error("Failed to delete files");
     }
   };
 
@@ -205,6 +267,25 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
           <Upload className="h-4 w-4 mr-2" />
           Upload
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setIsSelectionMode(!isSelectionMode);
+            if (!isSelectionMode) {
+              setSelectedFiles(new Set());
+            }
+          }}
+        >
+          {isSelectionMode ? "Cancel Selection" : "Select Multiple"}
+        </Button>
+        {isSelectionMode && selectedFiles.size > 0 && (
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+          >
+            Delete Selected ({selectedFiles.size})
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="h-[400px] border rounded-md p-4">
@@ -217,23 +298,43 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
             return (
               <div
                 key={file.id}
-                className="relative group border rounded-md p-2"
+                className={cn(
+                  "relative group border rounded-md p-2",
+                  isSelectionMode && "cursor-pointer",
+                  selectedFiles.has(file.id) && "ring-2 ring-primary"
+                )}
+                onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
               >
                 <img
                   src={publicUrl}
                   alt={file.alt_text || file.filename}
                   className="w-full h-32 object-cover rounded cursor-pointer"
-                  onClick={() => onSelect(publicUrl)}
+                  onClick={(e) => {
+                    if (!isSelectionMode) {
+                      e.stopPropagation();
+                      onSelect(publicUrl);
+                    }
+                  }}
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(file.id, file.file_path)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {isSelectionMode && selectedFiles.has(file.id) && (
+                  <div className="absolute top-4 right-4">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                )}
+                {!isSelectionMode && (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(file.id, file.file_path);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
                 <div className="mt-2 space-y-1">
                   <p className="text-sm truncate">{file.filename}</p>
                   <p className="text-xs text-muted-foreground">
