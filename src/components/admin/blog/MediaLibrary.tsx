@@ -7,30 +7,19 @@ import { Image, Upload, Trash2, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Database } from "@/integrations/supabase/types";
 
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
   onClose: () => void;
 }
 
-interface MediaFile {
-  id: string;
-  filename: string;
-  file_path: string;
-  mime_type: string;
-  size: number;
-  width?: number;
-  height?: number;
-  alt_text?: string;
-  caption?: string;
+type MediaFile = Database['public']['Tables']['media_files']['Row'] & {
   dimensions?: {
     width: number;
     height: number;
   };
-  usage_count?: number;
-  last_used?: string;
-  metadata?: Record<string, any>;
-}
+};
 
 export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -112,7 +101,7 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
         .getPublicUrl(filePath);
 
       // Get image dimensions
-      const img = new Image();
+      const img = document.createElement('img');
       const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
         img.onload = () => {
           resolve({ width: img.width, height: img.height });
