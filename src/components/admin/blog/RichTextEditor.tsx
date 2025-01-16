@@ -20,8 +20,12 @@ import {
   AlignRight,
   Code,
   Eye,
+  Save,
+  Clock,
+  Text as TextIcon,
+  SeparatorHorizontal,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +33,7 @@ import { MediaLibrary } from './MediaLibrary';
 import { mergeAttributes } from '@tiptap/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface ImageSettings {
   alt: string;
@@ -123,6 +128,10 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     size: 'medium',
     alignment: 'left'
   });
+  const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -140,78 +149,49 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       const newContent = editor.getHTML();
       onChange(newContent);
       setHtmlContent(newContent);
+      
+      // Update word count and reading time
+      const text = editor.getText();
+      const words = text.trim().split(/\s+/).length;
+      setWordCount(words);
+      setReadingTime(Math.ceil(words / 200)); // Assuming average reading speed of 200 words per minute
     },
   });
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (editor) {
+      const interval = setInterval(() => {
+        const content = editor.getHTML();
+        onChange(content);
+        setLastSaved(new Date());
+        toast.success("Content auto-saved");
+      }, 60000); // Auto-save every minute
+
+      setAutoSaveInterval(interval);
+
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }
+  }, [editor, onChange]);
+
+  const handleManualSave = () => {
+    if (editor) {
+      const content = editor.getHTML();
+      onChange(content);
+      setLastSaved(new Date());
+      toast.success("Content saved");
+    }
+  };
+
+  const insertHorizontalRule = () => {
+    editor?.chain().focus().setHorizontalRule().run();
+  };
 
   if (!editor) {
     return null;
   }
-
-  const handleAddLink = () => {
-    if (linkUrl) {
-      editor
-        .chain()
-        .focus()
-        .setLink({ 
-          href: linkUrl,
-          target: linkTarget 
-        })
-        .run();
-      
-      setLinkUrl('');
-      setIsLinkDialogOpen(false);
-    }
-  };
-
-  const handleImageSelect = (url: string) => {
-    setSelectedImage(url);
-    setIsImageSettingsOpen(true);
-    setIsMediaDialogOpen(false);
-  };
-
-  const handleImageSettingsConfirm = () => {
-    if (selectedImage) {
-      const imageAttributes = {
-        src: selectedImage,
-        alt: imageSettings.alt,
-        title: imageSettings.alt,
-        'data-caption': imageSettings.caption,
-        'data-alignment': imageSettings.alignment,
-        'data-link': imageSettings.link || undefined,
-        'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
-        'data-size': imageSettings.size,
-        class: `image-${imageSettings.alignment} image-${imageSettings.size}`
-      };
-
-      editor
-        .chain()
-        .focus()
-        .setImage(imageAttributes)
-        .run();
-
-      setIsImageSettingsOpen(false);
-      setSelectedImage(null);
-      setImageSettings({
-        alt: '',
-        caption: '',
-        link: '',
-        linkTarget: '_blank',
-        size: 'medium',
-        alignment: 'left'
-      });
-    }
-  };
-
-  const handleCodeModeChange = (content: string) => {
-    setHtmlContent(content);
-    if (editorMode === 'visual') {
-      editor.commands.setContent(content);
-    }
-  };
-
-  const togglePreviewMode = () => {
-    setIsPreviewMode(!isPreviewMode);
-  };
 
   return (
     <div className="border rounded-md">
@@ -226,8 +206,16 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
           <Button
             variant="outline"
             size="sm"
-            onClick={togglePreviewMode}
-            className="ml-auto"
+            onClick={handleManualSave}
+            className="ml-auto mr-2"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
           >
             <Eye className="h-4 w-4 mr-2" />
             Preview
@@ -320,6 +308,13 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             >
               <Redo className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={insertHorizontalRule}
+            >
+              <SeparatorHorizontal className="h-4 w-4" />
+            </Button>
           </>
         )}
       </div>
@@ -332,7 +327,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
         <div className="p-4">
           <textarea
             value={htmlContent}
-            onChange={(e) => handleCodeModeChange(e.target.value)}
+            onChange={(e) => setHtmlContent(e.target.value)}
             className="w-full h-[400px] font-mono text-sm p-4 border rounded-md"
           />
         </div>
@@ -341,6 +336,24 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       {isPreviewMode && (
         <div className="prose max-w-none p-4 min-h-[400px]" dangerouslySetInnerHTML={{ __html: htmlContent }} />
       )}
+
+      <div className="border-t p-2 flex justify-between items-center text-sm text-muted-foreground">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1">
+            <TextIcon className="h-4 w-4" />
+            {wordCount} words
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            {readingTime} min read
+          </span>
+        </div>
+        {lastSaved && (
+          <span className="text-sm text-muted-foreground">
+            Last saved: {lastSaved.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
 
       <Dialog open={isImageSettingsOpen} onOpenChange={setIsImageSettingsOpen}>
         <DialogContent className="max-w-2xl">
@@ -394,7 +407,38 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
                 </Select>
               </div>
             )}
-            <Button onClick={handleImageSettingsConfirm}>Insert Image</Button>
+            <Button onClick={() => {
+              if (selectedImage) {
+                const imageAttributes = {
+                  src: selectedImage,
+                  alt: imageSettings.alt,
+                  title: imageSettings.alt,
+                  'data-caption': imageSettings.caption,
+                  'data-alignment': imageSettings.alignment,
+                  'data-link': imageSettings.link || undefined,
+                  'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
+                  'data-size': imageSettings.size,
+                  class: `image-${imageSettings.alignment} image-${imageSettings.size}`
+                };
+
+                editor
+                  .chain()
+                  .focus()
+                  .setImage(imageAttributes)
+                  .run();
+
+                setIsImageSettingsOpen(false);
+                setSelectedImage(null);
+                setImageSettings({
+                  alt: '',
+                  caption: '',
+                  link: '',
+                  linkTarget: '_blank',
+                  size: 'medium',
+                  alignment: 'left'
+                });
+              }
+            }}>Insert Image</Button>
           </div>
         </DialogContent>
       </Dialog>
