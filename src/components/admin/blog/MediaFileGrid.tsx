@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useMediaLibrary } from "./MediaLibraryContext";
 
 interface MediaFileGridProps {
   files: any[];
@@ -9,17 +10,16 @@ interface MediaFileGridProps {
   selectedFiles: Set<string>;
   onSelect: (url: string) => void;
   onDelete: (id: string, filePath: string) => void;
-  onToggleSelection: (id: string) => void;
 }
 
 export function MediaFileGrid({
   files,
   isSelectionMode,
-  selectedFiles,
   onSelect,
   onDelete,
-  onToggleSelection,
 }: MediaFileGridProps) {
+  const { selectedFiles, toggleFileSelection } = useMediaLibrary();
+
   return (
     <div className="grid grid-cols-3 gap-4">
       {files?.map((file) => {
@@ -35,7 +35,7 @@ export function MediaFileGrid({
               isSelectionMode && "cursor-pointer",
               selectedFiles.has(file.id) && "ring-2 ring-primary"
             )}
-            onClick={() => isSelectionMode ? onToggleSelection(file.id) : null}
+            onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
           >
             <img
               src={publicUrl}

@@ -3,34 +3,57 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MediaToolbar } from "./MediaToolbar";
 import { MediaFileGrid } from "./MediaFileGrid";
 import { cn } from "@/lib/utils";
+import { MediaLibraryHeader } from "./MediaLibraryHeader";
+import { MediaLibraryProvider, useMediaLibrary } from "./MediaLibraryContext";
 
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
   onClose: () => void;
 }
 
-export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
+function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [sortBy, setSortBy] = useState("date-desc");
+
+  const { selectedFiles, isSelectionMode } = useMediaLibrary();
 
   const { data: mediaFiles, refetch } = useQuery({
-    queryKey: ["mediaFiles", searchTerm],
+    queryKey: ["mediaFiles", searchTerm, sortBy],
     queryFn: async () => {
       let query = supabase
         .from("media_files")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
       if (searchTerm) {
         query = query.ilike("filename", `%${searchTerm}%`);
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case "date-desc":
+          query = query.order("created_at", { ascending: false });
+          break;
+        case "date-asc":
+          query = query.order("created_at", { ascending: true });
+          break;
+        case "name-asc":
+          query = query.order("filename", { ascending: true });
+          break;
+        case "name-desc":
+          query = query.order("filename", { ascending: false });
+          break;
+        case "size-desc":
+          query = query.order("size", { ascending: false });
+          break;
+        case "size-asc":
+          query = query.order("size", { ascending: true });
+          break;
       }
 
       const { data, error } = await query;
@@ -164,23 +187,11 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
       if (dbError) throw dbError;
 
       toast.success(`${selectedFiles.size} files deleted successfully`);
-      setSelectedFiles(new Set());
-      setIsSelectionMode(false);
       refetch();
     } catch (error) {
       console.error("Error deleting files:", error);
       toast.error("Failed to delete files");
     }
-  };
-
-  const toggleFileSelection = (id: string) => {
-    const newSelectedFiles = new Set(selectedFiles);
-    if (selectedFiles.has(id)) {
-      newSelectedFiles.delete(id);
-    } else {
-      newSelectedFiles.add(id);
-    }
-    setSelectedFiles(newSelectedFiles);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -214,22 +225,16 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <MediaToolbar
+      <MediaLibraryHeader
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onFileSelect={(e) => setSelectedFile(e.target.files?.[0] || null)}
         onUpload={() => handleFileUpload()}
         selectedFile={selectedFile}
         uploading={uploading}
-        isSelectionMode={isSelectionMode}
-        selectedFilesCount={selectedFiles.size}
-        onToggleSelectionMode={() => {
-          setIsSelectionMode(!isSelectionMode);
-          if (!isSelectionMode) {
-            setSelectedFiles(new Set());
-          }
-        }}
         onBulkDelete={handleBulkDelete}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
       />
 
       <ScrollArea className="h-[400px] border rounded-md p-4">
@@ -239,9 +244,16 @@ export function MediaLibrary({ onSelect, onClose }: MediaLibraryProps) {
           selectedFiles={selectedFiles}
           onSelect={onSelect}
           onDelete={handleDelete}
-          onToggleSelection={toggleFileSelection}
         />
       </ScrollArea>
     </div>
+  );
+}
+
+export function MediaLibrary(props: MediaLibraryProps) {
+  return (
+    <MediaLibraryProvider>
+      <MediaLibraryContent {...props} />
+    </MediaLibraryProvider>
   );
 }
