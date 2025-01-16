@@ -112,6 +112,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isImageSettingsOpen, setIsImageSettingsOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [linkUrl, setLinkUrl] = useState('');
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     alt: '',
     caption: '',
@@ -138,6 +139,19 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   if (!editor) {
     return null;
   }
+
+  const handleAddLink = () => {
+    if (linkUrl) {
+      editor
+        .chain()
+        .focus()
+        .setLink({ href: linkUrl })
+        .run();
+      
+      setLinkUrl('');
+      setIsLinkDialogOpen(false);
+    }
+  };
 
   const handleImageSelect = (url: string) => {
     setSelectedImage(url);
