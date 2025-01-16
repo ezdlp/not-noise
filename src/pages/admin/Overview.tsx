@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export default function AdminOverview() {
+export function Overview() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["adminStats"],
     queryFn: async () => {

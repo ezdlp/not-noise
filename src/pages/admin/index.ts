@@ -1,6 +1,6 @@
 export { Overview } from "./Overview";
-export { Users } from "./Users";
-export { Posts } from "./Posts";
-export { Settings } from "./Settings";
-export { UserLinks } from "./UserLinks";
+export { default as Users } from "./Users";
+export { default as Posts } from "./Posts";
+export { default as Settings } from "./Settings";
+export { default as UserLinks } from "./UserLinks";
 export { MediaLibraryPage as Media } from "./MediaLibrary";
