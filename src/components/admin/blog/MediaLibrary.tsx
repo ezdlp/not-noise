@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,6 +7,16 @@ import { MediaFileGrid } from "./MediaFileGrid";
 import { cn } from "@/lib/utils";
 import { MediaLibraryHeader } from "./MediaLibraryHeader";
 import { MediaLibraryProvider, useMediaLibrary } from "./MediaLibraryContext";
+import { UploadProgress } from "./UploadProgress";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+interface UploadingFile {
+  file: File;
+  progress: number;
+  controller?: AbortController;
+}
 
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
@@ -14,14 +24,21 @@ interface MediaLibraryProps {
 }
 
 function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Map<string, UploadingFile>>(new Map());
   const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [sortBy, setSortBy] = useState("date-desc");
 
   const { selectedFiles, isSelectionMode } = useMediaLibrary();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user?.id || null);
+    };
+    getUser();
+  }, []);
 
   const { data: mediaFiles, refetch } = useQuery({
     queryKey: ["mediaFiles", searchTerm, sortBy],
@@ -62,17 +79,69 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
     },
   });
 
-  const handleFileUpload = async (fileToUpload: File = selectedFile) => {
-    if (!fileToUpload || !userId) return;
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return `File type ${file.type} is not supported. Please upload an image file.`;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit.`;
+    }
+    return null;
+  };
 
-    setUploading(true);
+  const handleFileUpload = async (fileToUpload: File) => {
+    const error = validateFile(fileToUpload);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fileId = crypto.randomUUID();
+
+    setUploadingFiles(prev => new Map(prev).set(fileId, {
+      file: fileToUpload,
+      progress: 0,
+      controller
+    }));
+
     try {
       const fileExt = fileToUpload.name.split(".").pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
 
+      // Create a ReadableStream from the file
+      const stream = fileToUpload.stream();
+      const reader = stream.getReader();
+      const totalSize = fileToUpload.size;
+      let uploadedSize = 0;
+
+      // Read the file in chunks and update progress
+      const chunks: Uint8Array[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        uploadedSize += value.length;
+        const progress = (uploadedSize / totalSize) * 100;
+        
+        setUploadingFiles(prev => {
+          const updated = new Map(prev);
+          const file = updated.get(fileId);
+          if (file) {
+            updated.set(fileId, { ...file, progress });
+          }
+          return updated;
+        });
+      }
+
+      // Combine chunks and upload
+      const file = new Blob(chunks, { type: fileToUpload.type });
       const { error: uploadError } = await supabase.storage
         .from("media-library")
-        .upload(filePath, fileToUpload);
+        .upload(filePath, file, {
+          contentType: fileToUpload.type,
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
@@ -80,6 +149,7 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
         .from("media-library")
         .getPublicUrl(filePath);
 
+      // Get image dimensions
       const img = document.createElement('img');
       const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
         img.onload = () => {
@@ -105,12 +175,32 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
 
       toast.success("File uploaded successfully");
       refetch();
-      setSelectedFile(null);
     } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("Failed to upload file");
+      if (error.name === 'AbortError') {
+        toast.info("Upload cancelled");
+      } else {
+        console.error("Error uploading file:", error);
+        toast.error("Failed to upload file");
+      }
     } finally {
-      setUploading(false);
+      setUploadingFiles(prev => {
+        const updated = new Map(prev);
+        updated.delete(fileId);
+        return updated;
+      });
+    }
+  };
+
+  const handleMultipleFiles = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      await handleFileUpload(file);
+    }
+  };
+
+  const cancelUpload = (fileId: string) => {
+    const file = uploadingFiles.get(fileId);
+    if (file?.controller) {
+      file.controller.abort();
     }
   };
 
@@ -210,7 +300,7 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await handleFileUpload(e.dataTransfer.files[0]);
+      await handleMultipleFiles(e.dataTransfer.files);
     }
   };
 
@@ -228,14 +318,32 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
       <MediaLibraryHeader
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onFileSelect={(e) => setSelectedFile(e.target.files?.[0] || null)}
-        onUpload={() => handleFileUpload()}
-        selectedFile={selectedFile}
-        uploading={uploading}
-        onBulkDelete={handleBulkDelete}
+        onFileSelect={(e) => {
+          if (e.target.files?.length) {
+            handleMultipleFiles(e.target.files);
+          }
+        }}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        maxFileSize={MAX_FILE_SIZE}
+        allowedTypes={ALLOWED_TYPES}
       />
+
+      {uploadingFiles.size > 0 && (
+        <div className="space-y-4 border rounded-md p-4">
+          <h3 className="text-sm font-medium">Uploading {uploadingFiles.size} file(s)</h3>
+          <div className="space-y-4">
+            {Array.from(uploadingFiles.entries()).map(([id, { file, progress }]) => (
+              <UploadProgress
+                key={id}
+                file={file}
+                progress={progress}
+                onCancel={() => cancelUpload(id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <ScrollArea className="h-[400px] border rounded-md p-4">
         <MediaFileGrid

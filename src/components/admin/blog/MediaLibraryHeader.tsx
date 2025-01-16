@@ -14,26 +14,28 @@ interface MediaLibraryHeaderProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onUpload: () => void;
-  selectedFile: File | null;
-  uploading: boolean;
-  onBulkDelete: () => void;
+  onBulkDelete?: () => void;
   sortBy: string;
   onSortChange: (value: string) => void;
+  maxFileSize: number;
+  allowedTypes: string[];
 }
 
 export function MediaLibraryHeader({
   searchTerm,
   onSearchChange,
   onFileSelect,
-  onUpload,
-  selectedFile,
-  uploading,
   onBulkDelete,
   sortBy,
   onSortChange,
+  maxFileSize,
+  allowedTypes,
 }: MediaLibraryHeaderProps) {
   const { isSelectionMode, selectedFiles, toggleSelectionMode } = useMediaLibrary();
+
+  const formatAllowedTypes = (types: string[]) => {
+    return types.map(type => type.replace('image/', '.')).join(', ');
+  };
 
   return (
     <div className="space-y-4">
@@ -62,26 +64,25 @@ export function MediaLibraryHeader({
         </Select>
       </div>
       <div className="flex items-center gap-4">
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={onFileSelect}
-          className="max-w-[200px]"
-        />
-        <Button
-          onClick={onUpload}
-          disabled={!selectedFile || uploading}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Upload
-        </Button>
+        <div className="space-y-1">
+          <Input
+            type="file"
+            accept={allowedTypes.join(',')}
+            onChange={onFileSelect}
+            className="max-w-[300px]"
+            multiple
+          />
+          <p className="text-xs text-muted-foreground">
+            Max size: {maxFileSize / (1024 * 1024)}MB • Allowed types: {formatAllowedTypes(allowedTypes)}
+          </p>
+        </div>
         <Button
           variant="outline"
           onClick={toggleSelectionMode}
         >
           {isSelectionMode ? "Cancel Selection" : "Select Multiple"}
         </Button>
-        {isSelectionMode && selectedFiles.size > 0 && (
+        {isSelectionMode && selectedFiles.size > 0 && onBulkDelete && (
           <Button
             variant="destructive"
             onClick={onBulkDelete}
