@@ -18,6 +18,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Code,
+  Eye,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,11 +28,7 @@ import { Label } from '@/components/ui/label';
 import { MediaLibrary } from './MediaLibrary';
 import { mergeAttributes } from '@tiptap/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface RichTextEditorProps {
-  content: string;
-  onChange: (content: string) => void;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ImageSettings {
   alt: string;
@@ -107,12 +105,16 @@ const CustomImage = Image.extend({
   },
 });
 
-export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
   const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isImageSettingsOpen, setIsImageSettingsOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
+  const [linkTarget, setLinkTarget] = useState<'_blank' | '_self'>('_self');
+  const [editorMode, setEditorMode] = useState<'visual' | 'code'>('visual');
+  const [htmlContent, setHtmlContent] = useState(content);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     alt: '',
     caption: '',
@@ -128,11 +130,16 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       CustomImage,
       Link.configure({
         openOnClick: false,
+        HTMLAttributes: {
+          target: linkTarget,
+        },
       }),
     ],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      onChange(newContent);
+      setHtmlContent(newContent);
     },
   });
 
@@ -145,7 +152,10 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       editor
         .chain()
         .focus()
-        .setLink({ href: linkUrl })
+        .setLink({ 
+          href: linkUrl,
+          target: linkTarget 
+        })
         .run();
       
       setLinkUrl('');
@@ -192,96 +202,145 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     }
   };
 
+  const handleCodeModeChange = (content: string) => {
+    setHtmlContent(content);
+    if (editorMode === 'visual') {
+      editor.commands.setContent(content);
+    }
+  };
+
+  const togglePreviewMode = () => {
+    setIsPreviewMode(!isPreviewMode);
+  };
+
   return (
     <div className="border rounded-md">
       <div className="border-b p-2 flex gap-1 flex-wrap">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          data-active={editor.isActive('bold')}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          data-active={editor.isActive('italic')}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          data-active={editor.isActive('bulletList')}
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          data-active={editor.isActive('orderedList')}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          data-active={editor.isActive('blockquote')}
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          data-active={editor.isActive('heading', { level: 1 })}
-        >
-          <Heading1 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          data-active={editor.isActive('heading', { level: 2 })}
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsMediaDialogOpen(true)}
-        >
-          <ImageIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsLinkDialogOpen(true)}
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 w-full border-b pb-2 mb-2">
+          <Tabs value={editorMode} onValueChange={(value: 'visual' | 'code') => setEditorMode(value)}>
+            <TabsList>
+              <TabsTrigger value="visual">Visual</TabsTrigger>
+              <TabsTrigger value="code">Code</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={togglePreviewMode}
+            className="ml-auto"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
+        </div>
+        
+        {editorMode === 'visual' && !isPreviewMode && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              data-active={editor.isActive('bold')}
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              data-active={editor.isActive('italic')}
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              data-active={editor.isActive('bulletList')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              data-active={editor.isActive('orderedList')}
+            >
+              <ListOrdered className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              data-active={editor.isActive('blockquote')}
+            >
+              <Quote className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              data-active={editor.isActive('heading', { level: 1 })}
+            >
+              <Heading1 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              data-active={editor.isActive('heading', { level: 2 })}
+            >
+              <Heading2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMediaDialogOpen(true)}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsLinkDialogOpen(true)}
+            >
+              <LinkIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().undo().run()}
+            >
+              <Undo className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => editor.chain().focus().redo().run()}
+            >
+              <Redo className="h-4 w-4" />
+            </Button>
+          </>
+        )}
       </div>
 
-      <EditorContent editor={editor} className="prose max-w-none p-4" />
+      {editorMode === 'visual' && !isPreviewMode && (
+        <EditorContent editor={editor} className="prose max-w-none p-4 min-h-[400px]" />
+      )}
+
+      {editorMode === 'code' && !isPreviewMode && (
+        <div className="p-4">
+          <textarea
+            value={htmlContent}
+            onChange={(e) => handleCodeModeChange(e.target.value)}
+            className="w-full h-[400px] font-mono text-sm p-4 border rounded-md"
+          />
+        </div>
+      )}
+
+      {isPreviewMode && (
+        <div className="prose max-w-none p-4 min-h-[400px]" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+      )}
 
       <Dialog open={isImageSettingsOpen} onOpenChange={setIsImageSettingsOpen}>
         <DialogContent className="max-w-2xl">
@@ -335,50 +394,6 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                 </Select>
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="image-size">Image Size</Label>
-              <Select
-                value={imageSettings.size}
-                onValueChange={(value: 'small' | 'medium' | 'large' | 'full') => 
-                  setImageSettings({ ...imageSettings, size: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select image size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small (25%)</SelectItem>
-                  <SelectItem value="medium">Medium (50%)</SelectItem>
-                  <SelectItem value="large">Large (75%)</SelectItem>
-                  <SelectItem value="full">Full Width (100%)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Alignment</Label>
-              <div className="flex gap-2">
-                <Button
-                  variant={imageSettings.alignment === 'left' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'left' })}
-                >
-                  <AlignLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={imageSettings.alignment === 'center' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'center' })}
-                >
-                  <AlignCenter className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={imageSettings.alignment === 'right' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'right' })}
-                >
-                  <AlignRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
             <Button onClick={handleImageSettingsConfirm}>Insert Image</Button>
           </div>
         </DialogContent>
@@ -390,14 +405,41 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
             <DialogTitle>Insert Link</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Input
-              type="url"
-              placeholder="Enter URL"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label>URL</Label>
+              <Input
+                type="url"
+                placeholder="Enter URL"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Open in</Label>
+              <Select
+                value={linkTarget}
+                onValueChange={(value: '_blank' | '_self') => setLinkTarget(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select link target" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_blank">New Window</SelectItem>
+                  <SelectItem value="_self">Same Window</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={handleAddLink}>Add Link</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Media Library</DialogTitle>
+          </DialogHeader>
+          <MediaLibrary onSelect={handleImageSelect} onClose={() => setIsMediaDialogOpen(false)} />
         </DialogContent>
       </Dialog>
 
