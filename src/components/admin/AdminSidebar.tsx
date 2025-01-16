@@ -3,7 +3,8 @@ import {
   UsersIcon, 
   NewspaperIcon, 
   LayoutDashboardIcon,
-  Settings
+  Settings,
+  ImageIcon
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,11 @@ const menuItems = [
     title: "Blog Posts",
     icon: NewspaperIcon,
     href: "/admin/posts",
+  },
+  {
+    title: "Media Library",
+    icon: ImageIcon,
+    href: "/admin/media",
   },
   {
     title: "Settings",
