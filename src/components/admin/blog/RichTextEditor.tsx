@@ -32,19 +32,15 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
 }
 
-// Define the custom attributes interface
-interface CustomImageAttributes {
-  src: string;
-  alt?: string;
-  title?: string;
-  'data-caption'?: string;
-  'data-alignment'?: 'left' | 'center' | 'right';
-  'data-link'?: string;
-  'data-link-target'?: '_blank' | '_self';
-  'data-size'?: 'small' | 'medium' | 'large' | 'full';
+interface ImageSettings {
+  alt: string;
+  caption: string;
+  link: string;
+  linkTarget: '_blank' | '_self';
+  size: 'small' | 'medium' | 'large' | 'full';
+  alignment: 'left' | 'center' | 'right';
 }
 
-// Extend the Image extension with custom attributes
 const CustomImage = Image.extend({
   addAttributes() {
     return {
@@ -115,13 +111,15 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isImageSettingsOpen, setIsImageSettingsOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-  const [imageAlt, setImageAlt] = useState('');
-  const [imageCaption, setImageCaption] = useState('');
-  const [imageLink, setImageLink] = useState('');
-  const [imageLinkTarget, setImageLinkTarget] = useState<'_blank' | '_self'>('_blank');
-  const [imageSize, setImageSize] = useState<'small' | 'medium' | 'large' | 'full'>('medium');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageSettings, setImageSettings] = useState<ImageSettings>({
+    alt: '',
+    caption: '',
+    link: '',
+    linkTarget: '_blank',
+    size: 'medium',
+    alignment: 'left'
+  });
 
   const editor = useEditor({
     extensions: [
@@ -141,14 +139,6 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     return null;
   }
 
-  const handleAddLink = () => {
-    if (linkUrl) {
-      editor.chain().focus().setLink({ href: linkUrl }).run();
-      setIsLinkDialogOpen(false);
-      setLinkUrl('');
-    }
-  };
-
   const handleImageSelect = (url: string) => {
     setSelectedImage(url);
     setIsImageSettingsOpen(true);
@@ -157,15 +147,16 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   const handleImageSettingsConfirm = () => {
     if (selectedImage) {
-      const imageAttributes: CustomImageAttributes = {
+      const imageAttributes = {
         src: selectedImage,
-        alt: imageAlt,
-        title: imageAlt,
-        'data-caption': imageCaption,
-        'data-alignment': 'left',
-        'data-link': imageLink || undefined,
-        'data-link-target': imageLink ? imageLinkTarget : undefined,
-        'data-size': imageSize,
+        alt: imageSettings.alt,
+        title: imageSettings.alt,
+        'data-caption': imageSettings.caption,
+        'data-alignment': imageSettings.alignment,
+        'data-link': imageSettings.link || undefined,
+        'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
+        'data-size': imageSettings.size,
+        class: `image-${imageSettings.alignment} image-${imageSettings.size}`
       };
 
       editor
@@ -173,20 +164,18 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         .focus()
         .setImage(imageAttributes)
         .run();
+
       setIsImageSettingsOpen(false);
       setSelectedImage(null);
-      setImageAlt('');
-      setImageCaption('');
-      setImageLink('');
-      setImageLinkTarget('_blank');
-      setImageSize('medium');
+      setImageSettings({
+        alt: '',
+        caption: '',
+        link: '',
+        linkTarget: '_blank',
+        size: 'medium',
+        alignment: 'left'
+      });
     }
-  };
-
-  const setImageAlignment = (alignment: 'left' | 'center' | 'right') => {
-    editor.chain().focus().updateAttributes('image', {
-      'data-alignment': alignment,
-    }).run();
   };
 
   return (
@@ -280,48 +269,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
       <EditorContent editor={editor} className="prose max-w-none p-4" />
 
-      {editor.isActive('image') && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          <div className="flex gap-1 bg-white border rounded-lg shadow-lg p-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setImageAlignment('left')}
-            >
-              <AlignLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setImageAlignment('center')}
-            >
-              <AlignCenter className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setImageAlignment('right')}
-            >
-              <AlignRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </BubbleMenu>
-      )}
-
-      <Dialog open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Media Library</DialogTitle>
-          </DialogHeader>
-          <MediaLibrary
-            onSelect={handleImageSelect}
-            onClose={() => setIsMediaDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isImageSettingsOpen} onOpenChange={setIsImageSettingsOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Image Settings</DialogTitle>
           </DialogHeader>
@@ -330,8 +279,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
               <Label htmlFor="alt-text">Alt Text</Label>
               <Input
                 id="alt-text"
-                value={imageAlt}
-                onChange={(e) => setImageAlt(e.target.value)}
+                value={imageSettings.alt}
+                onChange={(e) => setImageSettings({ ...imageSettings, alt: e.target.value })}
                 placeholder="Describe the image for accessibility"
               />
             </div>
@@ -339,8 +288,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
               <Label htmlFor="caption">Caption</Label>
               <Input
                 id="caption"
-                value={imageCaption}
-                onChange={(e) => setImageCaption(e.target.value)}
+                value={imageSettings.caption}
+                onChange={(e) => setImageSettings({ ...imageSettings, caption: e.target.value })}
                 placeholder="Add a caption to the image"
               />
             </div>
@@ -349,17 +298,18 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
               <Input
                 id="image-link"
                 type="url"
-                value={imageLink}
-                onChange={(e) => setImageLink(e.target.value)}
+                value={imageSettings.link}
+                onChange={(e) => setImageSettings({ ...imageSettings, link: e.target.value })}
                 placeholder="https://example.com"
               />
             </div>
-            {imageLink && (
+            {imageSettings.link && (
               <div className="space-y-2">
                 <Label htmlFor="link-target">Link Target</Label>
                 <Select
-                  value={imageLinkTarget}
-                  onValueChange={(value: '_blank' | '_self') => setImageLinkTarget(value)}
+                  value={imageSettings.linkTarget}
+                  onValueChange={(value: '_blank' | '_self') => 
+                    setImageSettings({ ...imageSettings, linkTarget: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select link target" />
@@ -374,8 +324,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
             <div className="space-y-2">
               <Label htmlFor="image-size">Image Size</Label>
               <Select
-                value={imageSize}
-                onValueChange={(value: 'small' | 'medium' | 'large' | 'full') => setImageSize(value)}
+                value={imageSettings.size}
+                onValueChange={(value: 'small' | 'medium' | 'large' | 'full') => 
+                  setImageSettings({ ...imageSettings, size: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select image size" />
@@ -387,6 +338,32 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                   <SelectItem value="full">Full Width (100%)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Alignment</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={imageSettings.alignment === 'left' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'left' })}
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={imageSettings.alignment === 'center' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'center' })}
+                >
+                  <AlignCenter className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={imageSettings.alignment === 'right' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setImageSettings({ ...imageSettings, alignment: 'right' })}
+                >
+                  <AlignRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <Button onClick={handleImageSettingsConfirm}>Insert Image</Button>
           </div>
