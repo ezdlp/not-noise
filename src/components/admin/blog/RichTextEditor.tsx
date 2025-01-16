@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MediaLibrary } from './MediaLibrary';
 import { mergeAttributes } from '@tiptap/core';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RichTextEditorProps {
   content: string;
@@ -38,6 +39,9 @@ interface CustomImageAttributes {
   title?: string;
   'data-caption'?: string;
   'data-alignment'?: 'left' | 'center' | 'right';
+  'data-link'?: string;
+  'data-link-target'?: '_blank' | '_self';
+  'data-size'?: 'small' | 'medium' | 'large' | 'full';
 }
 
 // Extend the Image extension with custom attributes
@@ -79,6 +83,27 @@ const CustomImage = Image.extend({
           class: `image-${attributes['data-alignment']}`,
         }),
       },
+      'data-link': {
+        default: null,
+        parseHTML: element => element.getAttribute('data-link'),
+        renderHTML: attributes => ({
+          'data-link': attributes['data-link'],
+        }),
+      },
+      'data-link-target': {
+        default: '_blank',
+        parseHTML: element => element.getAttribute('data-link-target'),
+        renderHTML: attributes => ({
+          'data-link-target': attributes['data-link-target'],
+        }),
+      },
+      'data-size': {
+        default: 'medium',
+        parseHTML: element => element.getAttribute('data-size'),
+        renderHTML: attributes => ({
+          'data-size': attributes['data-size'],
+        }),
+      },
     };
   },
   renderHTML({ HTMLAttributes }) {
@@ -93,6 +118,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
   const [imageCaption, setImageCaption] = useState('');
+  const [imageLink, setImageLink] = useState('');
+  const [imageLinkTarget, setImageLinkTarget] = useState<'_blank' | '_self'>('_blank');
+  const [imageSize, setImageSize] = useState<'small' | 'medium' | 'large' | 'full'>('medium');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const editor = useEditor({
@@ -135,6 +163,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         title: imageAlt,
         'data-caption': imageCaption,
         'data-alignment': 'left',
+        'data-link': imageLink || undefined,
+        'data-link-target': imageLink ? imageLinkTarget : undefined,
+        'data-size': imageSize,
       };
 
       editor
@@ -146,6 +177,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       setSelectedImage(null);
       setImageAlt('');
       setImageCaption('');
+      setImageLink('');
+      setImageLinkTarget('_blank');
+      setImageSize('medium');
     }
   };
 
@@ -310,6 +344,50 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                 placeholder="Add a caption to the image"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="image-link">Link URL (optional)</Label>
+              <Input
+                id="image-link"
+                type="url"
+                value={imageLink}
+                onChange={(e) => setImageLink(e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+            {imageLink && (
+              <div className="space-y-2">
+                <Label htmlFor="link-target">Link Target</Label>
+                <Select
+                  value={imageLinkTarget}
+                  onValueChange={(value: '_blank' | '_self') => setImageLinkTarget(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select link target" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_blank">New Window</SelectItem>
+                    <SelectItem value="_self">Same Window</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="image-size">Image Size</Label>
+              <Select
+                value={imageSize}
+                onValueChange={(value: 'small' | 'medium' | 'large' | 'full') => setImageSize(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select image size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Small (25%)</SelectItem>
+                  <SelectItem value="medium">Medium (50%)</SelectItem>
+                  <SelectItem value="large">Large (75%)</SelectItem>
+                  <SelectItem value="full">Full Width (100%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={handleImageSettingsConfirm}>Insert Image</Button>
           </div>
         </DialogContent>
@@ -361,6 +439,18 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           margin-top: 0.5em;
           font-size: 0.875em;
           color: #666;
+        }
+        img[data-size="small"] {
+          max-width: 25%;
+        }
+        img[data-size="medium"] {
+          max-width: 50%;
+        }
+        img[data-size="large"] {
+          max-width: 75%;
+        }
+        img[data-size="full"] {
+          max-width: 100%;
         }
         `}
       </style>
