@@ -11,10 +11,42 @@ interface ImportMediaProps {
   onComplete?: () => void;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+
 export function ImportMedia({ onComplete }: ImportMediaProps) {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
+
+  const uploadFileInChunks = async (file: File, filePath: string) => {
+    const chunks = Math.ceil(file.size / CHUNK_SIZE);
+    const fileStream = file.stream();
+    const reader = fileStream.getReader();
+    
+    let uploadedSize = 0;
+    const chunks: Uint8Array[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      chunks.push(value);
+      uploadedSize += value.length;
+      const currentProgress = (uploadedSize / file.size) * 100;
+      setProgress(currentProgress);
+    }
+
+    const finalBlob = new Blob(chunks, { type: file.type });
+    const { error: uploadError } = await supabase.storage
+      .from('media-library')
+      .upload(filePath, finalBlob, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -30,37 +62,48 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`File ${file.name} exceeds the maximum size limit of 5MB`);
+          continue;
+        }
+
         const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('media-library')
-          .upload(filePath, file);
+        try {
+          await uploadFileInChunks(file, filePath);
 
-        if (uploadError) throw uploadError;
+          const { data: { publicUrl } } = supabase.storage
+            .from('media-library')
+            .getPublicUrl(filePath);
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('media-library')
-          .getPublicUrl(filePath);
+          const { error: dbError } = await supabase
+            .from('media_files')
+            .insert({
+              filename: file.name,
+              file_path: filePath,
+              mime_type: file.type,
+              size: file.size,
+              uploaded_by: user.id
+            });
 
-        const { error: dbError } = await supabase
-          .from('media_files')
-          .insert({
-            filename: file.name,
-            file_path: filePath,
-            mime_type: file.type,
-            size: file.size,
-            uploaded_by: user.id
-          });
+          if (dbError) throw dbError;
 
-        if (dbError) throw dbError;
-
-        newImportedFiles.push(file.name);
-        setProgress(((i + 1) / files.length) * 100);
+          newImportedFiles.push(file.name);
+          setProgress(((i + 1) / files.length) * 100);
+        } catch (error) {
+          console.error('Error uploading file:', file.name, error);
+          toast.error(`Failed to upload ${file.name}`);
+          continue;
+        }
       }
 
       setImportedFiles(prev => [...prev, ...newImportedFiles]);
-      toast.success(`Successfully imported ${files.length} files`);
-      if (onComplete) onComplete();
+      if (newImportedFiles.length > 0) {
+        toast.success(`Successfully imported ${newImportedFiles.length} files`);
+        if (onComplete) onComplete();
+      }
     } catch (error) {
       console.error('Error importing media:', error);
       toast.error('Failed to import media files');
