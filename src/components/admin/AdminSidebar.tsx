@@ -4,7 +4,8 @@ import {
   NewspaperIcon, 
   LayoutDashboardIcon,
   Settings,
-  ImageIcon
+  ImageIcon,
+  DownloadIcon
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,11 @@ const menuItems = [
     title: "Media Library",
     icon: ImageIcon,
     href: "/admin/media",
+  },
+  {
+    title: "Import",
+    icon: DownloadIcon,
+    href: "/admin/import",
   },
   {
     title: "Settings",

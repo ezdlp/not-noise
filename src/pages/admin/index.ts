@@ -4,3 +4,4 @@ export { default as Posts } from "./Posts";
 export { default as Settings } from "./Settings";
 export { default as UserLinks } from "./UserLinks";
 export { MediaLibraryPage as Media } from "./MediaLibrary";
+export { default as Import } from "./Import";
