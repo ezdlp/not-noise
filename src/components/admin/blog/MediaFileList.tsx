@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
@@ -26,6 +27,36 @@ interface MediaMetadata {
   caption: string;
   filename: string;
 }
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getOptimizationSuggestions = (file: any): string[] => {
+  const suggestions: string[] = [];
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+  const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
+
+  if (file.mime_type.startsWith('image/')) {
+    if (file.size > MAX_IMAGE_SIZE) {
+      suggestions.push('Consider compressing this image to improve load times');
+      if (file.dimensions && (file.dimensions.width > 2000 || file.dimensions.height > 2000)) {
+        suggestions.push('Image dimensions are very large. Consider resizing to max 2000px');
+      }
+      if (!file.mime_type.includes('webp')) {
+        suggestions.push('Convert to WebP format for better compression');
+      }
+    }
+  } else if (file.mime_type.startsWith('video/')) {
+    if (file.size > MAX_VIDEO_SIZE) {
+      suggestions.push('Video file is large. Consider compressing or using a streaming service');
+    }
+  }
+
+  return suggestions;
+};
 
 const getFileIcon = (mimeType: string) => {
   if (mimeType.startsWith('image/')) return <Image className="h-4 w-4" />;
@@ -88,6 +119,7 @@ export function MediaFileList({
 }: MediaFileListProps) {
   const { toggleFileSelection } = useMediaLibrary();
   const [editingMetadata, setEditingMetadata] = useState<MediaMetadata | null>(null);
+  const [showOptimizationDetails, setShowOptimizationDetails] = useState<string | null>(null);
 
   const handleMetadataSubmit = async () => {
     if (!editingMetadata) return;
@@ -132,7 +164,8 @@ export function MediaFileList({
           .from("media-library")
           .getPublicUrl(file.file_path);
 
-        const isLargeFile = checkFileSize(file.size);
+        const suggestions = getOptimizationSuggestions(file);
+        const needsOptimization = suggestions.length > 0;
 
         return (
           <div
@@ -148,9 +181,19 @@ export function MediaFileList({
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 relative flex-shrink-0">
                 <FilePreview file={file} publicUrl={publicUrl} />
-                {isLargeFile && (
-                  <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-800 px-1 rounded-sm text-xs">
-                    Large
+                {needsOptimization && (
+                  <div className="absolute -top-2 -right-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 bg-yellow-100 hover:bg-yellow-200 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowOptimizationDetails(showOptimizationDetails === file.id ? null : file.id);
+                      }}
+                    >
+                      <AlertTriangle className="h-4 w-4 text-yellow-700" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -163,12 +206,24 @@ export function MediaFileList({
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(file.created_at), 'PPp')} • 
                   {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
-                  {(file.size / 1024).toFixed(1)}KB
+                  {formatFileSize(file.size)}
                 </p>
                 {file.alt_text && (
                   <p className="text-sm text-muted-foreground truncate">
                     Alt: {file.alt_text}
                   </p>
+                )}
+                {showOptimizationDetails === file.id && suggestions.length > 0 && (
+                  <Alert className="mt-2 bg-yellow-50 text-yellow-800 border-yellow-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <ul className="list-disc list-inside space-y-1">
+                        {suggestions.map((suggestion, index) => (
+                          <li key={index} className="text-sm">{suggestion}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
 
