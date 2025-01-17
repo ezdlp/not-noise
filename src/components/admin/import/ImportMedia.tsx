@@ -6,6 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload } from "lucide-react";
+import imageCompression from "browser-image-compression";
+import { CompressionLevel, getCompressionSettings } from "@/utils/imageCompression";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ImportMediaProps {
   onComplete?: () => void;
@@ -18,6 +33,9 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
+  const [compressionEnabled, setCompressionEnabled] = useState(true);
+  const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>('medium');
+  const [compressionProgress, setCompressionProgress] = useState(0);
 
   const uploadFileInChunks = async (file: File, filePath: string) => {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -50,12 +68,33 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
     if (uploadError) throw uploadError;
   };
 
+  const compressImage = async (file: File): Promise<File> => {
+    if (!file.type.startsWith('image/')) return file;
+    
+    const settings = getCompressionSettings(compressionLevel);
+    const options = {
+      ...settings,
+      onProgress: (progress: number) => {
+        setCompressionProgress(progress);
+      },
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      return compressedFile;
+    } catch (error) {
+      console.error('Compression failed:', error);
+      return file;
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files?.length) return;
 
     setIsImporting(true);
     setProgress(0);
+    setCompressionProgress(0);
     const newImportedFiles: string[] = [];
 
     try {
@@ -63,12 +102,17 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
       if (!user) throw new Error("Not authenticated");
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        let file = files[i];
 
         // Validate file size
         if (file.size > MAX_FILE_SIZE) {
           toast.error(`File ${file.name} exceeds the maximum size limit of 5MB`);
           continue;
+        }
+
+        // Compress image if enabled
+        if (compressionEnabled && file.type.startsWith('image/')) {
+          file = await compressImage(file);
         }
 
         const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
@@ -111,12 +155,38 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
       toast.error('Failed to import media files');
     } finally {
       setIsImporting(false);
+      setCompressionProgress(0);
       event.target.value = '';
     }
   };
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="compression"
+              checked={compressionEnabled}
+              onCheckedChange={setCompressionEnabled}
+            />
+            <Label htmlFor="compression">Enable Image Compression</Label>
+          </div>
+          {compressionEnabled && (
+            <Select value={compressionLevel} onValueChange={(value: CompressionLevel) => setCompressionLevel(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Compression Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low (Larger files, better quality)</SelectItem>
+                <SelectItem value="medium">Medium (Balanced)</SelectItem>
+                <SelectItem value="high">High (Smaller files, lower quality)</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center gap-2">
         <Input
           type="file"
@@ -132,11 +202,21 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
       </div>
 
       {isImporting && (
-        <div className="space-y-2">
-          <Progress value={progress} className="w-[300px]" />
-          <p className="text-sm text-muted-foreground">
-            Importing media files... {Math.round(progress)}%
-          </p>
+        <div className="space-y-4">
+          {compressionEnabled && compressionProgress > 0 && (
+            <div className="space-y-2">
+              <Progress value={compressionProgress} className="w-[300px]" />
+              <p className="text-sm text-muted-foreground">
+                Compressing image... {Math.round(compressionProgress)}%
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Progress value={progress} className="w-[300px]" />
+            <p className="text-sm text-muted-foreground">
+              Uploading files... {Math.round(progress)}%
+            </p>
+          </div>
         </div>
       )}
 
