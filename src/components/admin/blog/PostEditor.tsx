@@ -10,6 +10,7 @@ import { PostContent } from "./PostContent";
 import { PostSettings } from "./PostSettings";
 import { PostActions } from "./PostActions";
 import { isFuture, isPast } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -39,6 +40,7 @@ interface PostEditorProps {
 
 export function PostEditor({ post, onClose }: PostEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const form = useForm<PostFormValues>({
@@ -58,11 +60,21 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     },
   });
 
+  const isDirty = form.formState.isDirty;
+
   const createSlug = (title: string) => {
     return title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+  };
+
+  const handleClose = () => {
+    if (isDirty) {
+      setShowUnsavedChangesDialog(true);
+    } else {
+      onClose();
+    }
   };
 
   async function onSubmit(values: PostFormValues) {
@@ -128,9 +140,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           ? `Post scheduled for ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
           : isPast(publishDate)
           ? `Post backdated to ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
-          : "Post published successfully";
+          : "Post updated successfully";
 
         toast.success(message);
+        form.reset(values);
       } else {
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
@@ -166,22 +179,44 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <PostActions 
-          isSubmitting={isSubmitting}
-          onClose={onClose}
-          isEditing={!!post}
-        />
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2">
-            <PostContent form={form} />
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <PostActions 
+            isSubmitting={isSubmitting}
+            onClose={handleClose}
+            isEditing={!!post}
+          />
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2">
+              <PostContent form={form} />
+            </div>
+            <div>
+              <PostSettings form={form} />
+            </div>
           </div>
-          <div>
-            <PostSettings form={form} />
-          </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+
+      <AlertDialog open={showUnsavedChangesDialog} onOpenChange={setShowUnsavedChangesDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setShowUnsavedChangesDialog(false);
+              onClose();
+            }}>
+              Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
