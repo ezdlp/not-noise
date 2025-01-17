@@ -24,7 +24,19 @@ export function PostSettings({ form }: PostSettingsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Status</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select 
+              onValueChange={(value) => {
+                field.onChange(value);
+                if (value === 'published') {
+                  // Set published_at to current date if publishing for the first time
+                  const currentPublishedAt = form.getValues('published_at');
+                  if (!currentPublishedAt) {
+                    form.setValue('published_at', new Date());
+                  }
+                }
+              }} 
+              defaultValue={field.value}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -35,6 +47,45 @@ export function PostSettings({ form }: PostSettingsProps) {
                 <SelectItem value="published">Published</SelectItem>
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="published_at"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel>Publication Date</FormLabel>
+            <Popover>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full pl-3 text-left font-normal",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    {field.value ? (
+                      format(field.value, "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={field.value}
+                  onSelect={field.onChange}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
             <FormMessage />
           </FormItem>
         )}
@@ -126,9 +177,6 @@ export function PostSettings({ form }: PostSettingsProps) {
                   mode="single"
                   selected={field.value}
                   onSelect={field.onChange}
-                  disabled={(date) =>
-                    date < new Date()
-                  }
                   initialFocus
                 />
               </PopoverContent>

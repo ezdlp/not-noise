@@ -20,6 +20,7 @@ const formSchema = z.object({
   category_id: z.string().optional(),
   visibility: z.enum(["public", "private", "password"]).default("public"),
   password: z.string().optional(),
+  published_at: z.date().optional(),
   scheduled_for: z.date().optional(),
   allow_comments: z.boolean().default(true),
   is_sticky: z.boolean().default(false),
@@ -52,6 +53,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       allow_comments: true,
       is_sticky: false,
       format: "standard",
+      published_at: undefined,
     },
   });
 
@@ -76,6 +78,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         slug: createSlug(values.title),
         visibility: values.visibility,
         password: values.password,
+        published_at: values.status === 'published' ? (values.published_at || new Date()).toISOString() : null,
         scheduled_for: values.scheduled_for?.toISOString(),
         allow_comments: values.allow_comments,
         is_sticky: values.is_sticky,
@@ -103,6 +106,12 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .from("blog_post_categories")
             .insert({ post_id: post.id, category_id: values.category_id });
         }
+
+        toast.success(
+          values.status === "published" 
+            ? "Post published successfully" 
+            : "Post updated successfully"
+        );
       } else {
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
@@ -117,14 +126,19 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .from("blog_post_categories")
             .insert({ post_id: newPost.id, category_id: values.category_id });
         }
+
+        toast.success(
+          values.status === "published" 
+            ? "Post published successfully" 
+            : "Post saved as draft"
+        );
       }
 
-      toast.success(post ? "Post updated successfully" : "Post created successfully");
       queryClient.invalidateQueries({ queryKey: ["adminPosts"] });
       onClose();
     } catch (error) {
       console.error("Error saving post:", error);
-      toast.error("Failed to save post");
+      toast.error("Failed to save post. Please check all required fields.");
     } finally {
       setIsSubmitting(false);
     }
@@ -133,6 +147,11 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <PostActions 
+          isSubmitting={isSubmitting}
+          onClose={onClose}
+          isEditing={!!post}
+        />
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
             <PostContent form={form} />
@@ -141,11 +160,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             <PostSettings form={form} />
           </div>
         </div>
-        <PostActions 
-          isSubmitting={isSubmitting}
-          onClose={onClose}
-          isEditing={!!post}
-        />
       </form>
     </Form>
   );

@@ -8,12 +8,12 @@ interface PostActionsProps {
 
 export function PostActions({ isSubmitting, onClose, isEditing }: PostActionsProps) {
   return (
-    <div className="flex justify-end space-x-4">
+    <div className="flex justify-end space-x-4 mb-6">
       <Button variant="outline" onClick={onClose}>
         Cancel
       </Button>
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : (isEditing ? "Update" : "Create")}
+        {isSubmitting ? "Saving..." : (isEditing ? "Update" : "Publish")}
       </Button>
     </div>
   );
