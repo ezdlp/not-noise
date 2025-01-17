@@ -25,6 +25,9 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
     const newImportedFiles: string[] = [];
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
@@ -46,6 +49,7 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
             file_path: filePath,
             mime_type: file.type,
             size: file.size,
+            uploaded_by: user.id
           });
 
         if (dbError) throw dbError;
