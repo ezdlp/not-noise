@@ -1,169 +1,100 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface MediaItem {
-  id: string;
-  url: string;
-  title?: string;
-  alt?: string;
-  caption?: string;
-  description?: string;
-  metadata?: Record<string, any>;
-}
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const formData = await req.formData()
-    const file = formData.get('file')
-
-    if (!file) {
-      throw new Error('No file uploaded')
+    const formData = await req.formData();
+    const file = formData.get('file');
+    
+    if (!file || !(file instanceof File)) {
+      throw new Error('No file uploaded');
     }
 
-    const xmlContent = await file.text()
-    console.log("Received XML content length:", xmlContent.length)
+    const text = await file.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/xml');
+    
+    const items = doc.querySelectorAll('item');
+    const posts = [];
+    const mediaItems = [];
+    const missingMedia = new Set();
 
-    const doc = parse(xmlContent)
-    console.log("Parsed XML document")
-
-    if (!doc) {
-      throw new Error('Invalid XML file')
-    }
-
-    const items = doc.rss?.channel?.item || []
-    console.log("Found items:", items.length)
-
-    // Track media items and their usage
-    const mediaItems = new Map<string, MediaItem>();
-    const missingMedia: string[] = [];
-
-    const posts = items.map(item => {
-      // Extract content from CDATA if present
-      const getContent = (field: string) => {
-        const content = item[field]
-        if (typeof content === 'object' && content?._cdata) {
-          return content._cdata
-        }
-        return content || ''
-      }
-
-      const title = getContent('title')
-      let content = getContent('content:encoded')
-      const excerpt = getContent('excerpt:encoded')
-      const status = item['wp:status'] === 'publish' ? 'published' : 'draft'
+    for (const item of items) {
+      const postType = item.querySelector('wp\\:post_type')?.textContent;
       
-      // Process attachments and media
-      const attachments = Array.isArray(item['wp:attachment_url']) 
-        ? item['wp:attachment_url'] 
-        : [item['wp:attachment_url']].filter(Boolean);
-
-      // Process post meta
-      const postmeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [];
-      
-      // Extract featured image
-      const featuredImageMeta = postmeta.find(meta => 
-        meta['wp:meta_key'] === '_thumbnail_id'
-      );
-
-      // Process media in content
-      const mediaRegex = /<img[^>]+src="([^">]+)"/g;
-      const mediaMatches = [...content.matchAll(mediaRegex)];
-      
-      mediaMatches.forEach(match => {
-        const url = match[1];
-        const id = url.split('/').pop() || crypto.randomUUID();
-        
-        if (!mediaItems.has(id)) {
-          mediaItems.set(id, {
+      if (postType === 'attachment') {
+        const url = item.querySelector('wp\\:attachment_url')?.textContent;
+        if (url) {
+          const id = item.querySelector('wp\\:post_id')?.textContent || crypto.randomUUID();
+          const title = item.querySelector('title')?.textContent;
+          const description = item.querySelector('description')?.textContent;
+          
+          // Extract alt text and other metadata from content
+          const content = item.querySelector('content\\:encoded')?.textContent || '';
+          const altMatch = content.match(/alt="([^"]*)"/);
+          const captionMatch = content.match(/caption="([^"]*)"/);
+          
+          mediaItems.push({
             id,
             url,
-            alt: match[0].match(/alt="([^"]*)"/?/)?.[1],
-            title: match[0].match(/title="([^"]*)"/?/)?.[1],
+            title,
+            alt: altMatch?.[1],
+            caption: captionMatch?.[1],
+            description,
           });
         }
-      });
-
-      // Add placeholders for missing media
-      content = content.replace(mediaRegex, (match, url) => {
-        const id = url.split('/').pop() || '';
-        if (!mediaItems.has(id)) {
-          missingMedia.push(url);
-          return `<!-- Missing media: ${url} -->`;
+      } else if (postType === 'post') {
+        const content = item.querySelector('content\\:encoded')?.textContent || '';
+        
+        // Find all img tags and collect their sources
+        const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
+        let match;
+        
+        while ((match = imgRegex.exec(content)) !== null) {
+          const imgUrl = match[1];
+          if (!mediaItems.some(item => item.url === imgUrl)) {
+            missingMedia.add(imgUrl);
+          }
         }
-        return match;
-      });
 
-      // Get categories and tags
-      const categories = Array.isArray(item.category) ? item.category : []
-      const processedCategories = categories.map(cat => ({
-        domain: cat?._attributes?.domain,
-        name: cat?._text || cat
-      })).filter(cat => cat.name)
-
-      return {
-        title: title || 'Untitled',
-        content,
-        excerpt: excerpt || '',
-        status: status,
-        meta_description: excerpt?.substring(0, 160) || '',
-        visibility: 'public',
-        allow_comments: true,
-        is_featured: false,
-        is_sticky: false,
-        format: 'standard',
-        categories: processedCategories
-          .filter(cat => cat.domain === 'category')
-          .map(cat => cat.name),
-        tags: processedCategories
-          .filter(cat => cat.domain === 'post_tag')
-          .map(cat => cat.name),
-        mediaItems: Array.from(mediaItems.values()),
-        missingMedia,
+        posts.push({
+          title: item.querySelector('title')?.textContent,
+          content,
+          excerpt: item.querySelector('excerpt\\:encoded')?.textContent,
+          status: item.querySelector('wp\\:status')?.textContent || 'draft',
+          featured_image: item.querySelector('wp\\:featured_image')?.textContent,
+        });
       }
-    })
-
-    console.log(`Successfully processed ${posts.length} posts and found ${mediaItems.size} media items`)
-    console.log(`Found ${missingMedia.length} missing media references`)
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         posts,
-        mediaItems: Array.from(mediaItems.values()),
-        missingMedia,
-        message: `Successfully converted ${posts.length} posts` 
+        mediaItems,
+        missingMedia: Array.from(missingMedia),
       }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
-    )
-
+    );
   } catch (error) {
-    console.error("Error processing WordPress XML:", error)
+    console.error('Error processing WordPress import:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to process WordPress XML', 
-        details: error.message 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        }, 
-        status: 400 
+      JSON.stringify({ error: error.message }),
+      {
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
-    )
+    );
   }
-})
+});

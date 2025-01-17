@@ -39,65 +39,66 @@ function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDi
   const [duplicateStrategy, setDuplicateStrategy] = useState<'skip' | 'overwrite' | 'rename'>('skip');
 
   return (
-    <DialogContent className="max-w-3xl">
-      <DialogHeader>
-        <DialogTitle>WordPress Media Import</DialogTitle>
-        <DialogDescription>
-          We found media files referenced in your WordPress export. Please review the details below.
-        </DialogDescription>
-      </DialogHeader>
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>WordPress Media Import</DialogTitle>
+          <DialogDescription>
+            We found media files referenced in your WordPress export. Please review the details below.
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-medium mb-2">Media Files ({mediaItems.length})</h3>
-          <ScrollArea className="h-[200px] border rounded-md p-4">
-            {mediaItems.map((item) => (
-              <div key={item.id} className="py-2 border-b last:border-0">
-                <p className="font-medium">{item.url.split('/').pop()}</p>
-                {item.alt && <p className="text-sm text-muted-foreground">Alt: {item.alt}</p>}
-                {item.title && <p className="text-sm text-muted-foreground">Title: {item.title}</p>}
-              </div>
-            ))}
-          </ScrollArea>
-        </div>
-
-        {missingMedia.length > 0 && (
+        <div className="space-y-4">
           <div>
-            <h3 className="font-medium mb-2 text-yellow-600">Missing Media ({missingMedia.length})</h3>
-            <ScrollArea className="h-[100px] border rounded-md p-4">
-              {missingMedia.map((url, index) => (
-                <p key={index} className="text-sm text-yellow-600">{url}</p>
+            <h3 className="font-medium mb-2">Media Files ({mediaItems.length})</h3>
+            <ScrollArea className="h-[200px] border rounded-md p-4">
+              {mediaItems.map((item) => (
+                <div key={item.id} className="py-2 border-b last:border-0">
+                  <p className="font-medium">{item.url.split('/').pop()}</p>
+                  {item.alt && <p className="text-sm text-muted-foreground">Alt: {item.alt}</p>}
+                  {item.title && <p className="text-sm text-muted-foreground">Title: {item.title}</p>}
+                </div>
               ))}
             </ScrollArea>
           </div>
-        )}
 
-        <div className="space-y-4">
-          <h3 className="font-medium">Duplicate File Handling</h3>
-          <RadioGroup value={duplicateStrategy} onValueChange={(value: 'skip' | 'overwrite' | 'rename') => setDuplicateStrategy(value)}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="skip" id="skip" />
-              <Label htmlFor="skip">Skip duplicate files</Label>
+          {missingMedia.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-2 text-yellow-600">Missing Media ({missingMedia.length})</h3>
+              <ScrollArea className="h-[100px] border rounded-md p-4">
+                {missingMedia.map((url, index) => (
+                  <p key={index} className="text-sm text-yellow-600">{url}</p>
+                ))}
+              </ScrollArea>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="overwrite" id="overwrite" />
-              <Label htmlFor="overwrite">Overwrite existing files</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="rename" id="rename" />
-              <Label htmlFor="rename">Rename imported files</Label>
-            </div>
-          </RadioGroup>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="font-medium">Duplicate File Handling</h3>
+            <RadioGroup value={duplicateStrategy} onValueChange={(value: 'skip' | 'overwrite' | 'rename') => setDuplicateStrategy(value)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="skip" id="skip" />
+                <Label htmlFor="skip">Skip duplicate files</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="overwrite" id="overwrite" />
+                <Label htmlFor="overwrite">Overwrite existing files</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="rename" id="rename" />
+                <Label htmlFor="rename">Rename imported files</Label>
+              </div>
+            </RadioGroup>
+          </div>
         </div>
-      </div>
 
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={() => onConfirm(duplicateStrategy)}>Continue Import</Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onConfirm(duplicateStrategy)}>Continue Import</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function ImportPosts() {
@@ -343,3 +344,4 @@ export function ImportPosts() {
     </>
   );
 }
+
