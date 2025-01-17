@@ -10,13 +10,101 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+interface MediaItem {
+  id: string;
+  url: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+  description?: string;
+  metadata?: Record<string, any>;
+}
+
+interface ImportDialogProps {
+  mediaItems: MediaItem[];
+  missingMedia: string[];
+  onClose: () => void;
+  onConfirm: (duplicateStrategy: 'skip' | 'overwrite' | 'rename') => void;
+}
+
+function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDialogProps) {
+  const [duplicateStrategy, setDuplicateStrategy] = useState<'skip' | 'overwrite' | 'rename'>('skip');
+
+  return (
+    <DialogContent className="max-w-3xl">
+      <DialogHeader>
+        <DialogTitle>WordPress Media Import</DialogTitle>
+        <DialogDescription>
+          We found media files referenced in your WordPress export. Please review the details below.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-medium mb-2">Media Files ({mediaItems.length})</h3>
+          <ScrollArea className="h-[200px] border rounded-md p-4">
+            {mediaItems.map((item) => (
+              <div key={item.id} className="py-2 border-b last:border-0">
+                <p className="font-medium">{item.url.split('/').pop()}</p>
+                {item.alt && <p className="text-sm text-muted-foreground">Alt: {item.alt}</p>}
+                {item.title && <p className="text-sm text-muted-foreground">Title: {item.title}</p>}
+              </div>
+            ))}
+          </ScrollArea>
+        </div>
+
+        {missingMedia.length > 0 && (
+          <div>
+            <h3 className="font-medium mb-2 text-yellow-600">Missing Media ({missingMedia.length})</h3>
+            <ScrollArea className="h-[100px] border rounded-md p-4">
+              {missingMedia.map((url, index) => (
+                <p key={index} className="text-sm text-yellow-600">{url}</p>
+              ))}
+            </ScrollArea>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <h3 className="font-medium">Duplicate File Handling</h3>
+          <RadioGroup value={duplicateStrategy} onValueChange={(value: 'skip' | 'overwrite' | 'rename') => setDuplicateStrategy(value)}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="skip" id="skip" />
+              <Label htmlFor="skip">Skip duplicate files</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="overwrite" id="overwrite" />
+              <Label htmlFor="overwrite">Overwrite existing files</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="rename" id="rename" />
+              <Label htmlFor="rename">Rename imported files</Label>
+            </div>
+          </RadioGroup>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button onClick={() => onConfirm(duplicateStrategy)}>Continue Import</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+);
+}
 
 export function ImportPosts() {
   const [isImporting, setIsImporting] = useState(false);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
-  const [mediaItems, setMediaItems] = useState<string[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [missingMedia, setMissingMedia] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const queryClient = useQueryClient();
 
@@ -31,17 +119,81 @@ export function ImportPosts() {
 
       if (error) throw error;
 
-      const { posts, mediaItems } = data;
+      const { posts, mediaItems, missingMedia } = data;
       
       if (mediaItems?.length > 0) {
         setMediaItems(mediaItems);
+        setMissingMedia(missingMedia || []);
         setShowMediaDialog(true);
+        return posts;
       }
 
       await importPosts(posts);
     } catch (error) {
       console.error('WordPress import error:', error);
       toast.error('Failed to process WordPress file');
+    }
+  };
+
+  const handleMediaImport = async (posts: any[], duplicateStrategy: 'skip' | 'overwrite' | 'rename') => {
+    try {
+      setIsImporting(true);
+      let successCount = 0;
+      let errorCount = 0;
+      const total = mediaItems.length;
+
+      for (const [index, item] of mediaItems.entries()) {
+        try {
+          const response = await fetch(item.url);
+          if (!response.ok) throw new Error(`Failed to fetch ${item.url}`);
+
+          const blob = await response.blob();
+          const file = new File([blob], item.url.split('/').pop() || 'file', { type: blob.type });
+
+          const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('media-library')
+            .upload(filePath, file, {
+              contentType: file.type,
+              upsert: duplicateStrategy === 'overwrite',
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('media-library')
+            .getPublicUrl(filePath);
+
+          // Update content in posts to use new URL
+          posts = posts.map(post => ({
+            ...post,
+            content: post.content.replace(item.url, publicUrl)
+          }));
+
+          successCount++;
+        } catch (error) {
+          console.error(`Error importing media ${item.url}:`, error);
+          errorCount++;
+        }
+        setProgress((index + 1) / total * 100);
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully imported ${successCount} media files`);
+      }
+      if (errorCount > 0) {
+        toast.error(`Failed to import ${errorCount} media files`);
+      }
+
+      await importPosts(posts);
+    } catch (error) {
+      console.error('Error importing media:', error);
+      toast.error('Failed to import media files');
+    } finally {
+      setIsImporting(false);
+      setProgress(0);
+      setShowMediaDialog(false);
     }
   };
 
@@ -142,7 +294,10 @@ export function ImportPosts() {
     if (!file) return;
 
     if (file.name.endsWith('.xml')) {
-      await handleWordPressImport(file);
+      const posts = await handleWordPressImport(file);
+      if (posts) {
+        setShowMediaDialog(true);
+      }
     } else {
       try {
         const text = await file.text();
@@ -177,30 +332,14 @@ export function ImportPosts() {
         </div>
       )}
 
-      <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>WordPress Media Files</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              The following media files were found in your WordPress export. You'll need to:
-              1. Download these files from your WordPress site
-              2. Upload them to your media library
-              3. Update the URLs in your post content
-            </p>
-            <div className="max-h-[300px] overflow-y-auto space-y-2">
-              {mediaItems.map((url, index) => (
-                <div key={index} className="text-sm">
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                    {url}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showMediaDialog && (
+        <ImportDialog
+          mediaItems={mediaItems}
+          missingMedia={missingMedia}
+          onClose={() => setShowMediaDialog(false)}
+          onConfirm={(strategy) => handleMediaImport([], strategy)}
+        />
+      )}
     </>
   );
 }
