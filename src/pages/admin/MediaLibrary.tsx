@@ -1,5 +1,4 @@
 import { MediaLibrary } from "@/components/admin/blog/MediaLibrary";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 export function MediaLibraryPage() {
@@ -14,6 +13,7 @@ export function MediaLibraryPage() {
       <MediaLibrary 
         onSelect={(url) => setSelectedUrl(url)}
         onClose={() => setIsOpen(false)}
+        showInsertButton={false}
       />
     </div>
   );
