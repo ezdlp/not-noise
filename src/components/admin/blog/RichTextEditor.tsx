@@ -167,9 +167,12 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       handleClick: (view, pos, event) => {
         // Ensure cursor is placed at click position
         const coordinates = view.coordsAtPos(pos);
-        view.dispatch(view.state.tr.setSelection(view.state.selection.empty 
-          ? view.state.selection 
-          : view.state.selection.map((range) => range)).scrollIntoView());
+        const transaction = view.state.tr.setSelection(
+          view.state.selection.empty 
+            ? view.state.selection.constructor.near(view.state.doc.resolve(pos))
+            : view.state.selection
+        );
+        view.dispatch(transaction);
         return false; // Allow default click behavior
       },
     },
