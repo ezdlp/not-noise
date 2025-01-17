@@ -31,7 +31,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [sortBy, setSortBy] = useState("date-desc");
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Changed default to 'list'
 
   const { selectedFiles, isSelectionMode } = useMediaLibrary();
 

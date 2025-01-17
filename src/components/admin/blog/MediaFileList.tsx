@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Trash2, Plus, Pencil, Copy } from "lucide-react";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, FilePdf, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
@@ -26,6 +26,57 @@ interface MediaMetadata {
   caption: string;
   filename: string;
 }
+
+const getFileIcon = (mimeType: string) => {
+  if (mimeType.startsWith('image/')) return <Image className="h-4 w-4" />;
+  if (mimeType.startsWith('video/')) return <FileVideo className="h-4 w-4" />;
+  if (mimeType.startsWith('audio/')) return <FileAudio className="h-4 w-4" />;
+  if (mimeType === 'application/pdf') return <FilePdf className="h-4 w-4" />;
+  return <Image className="h-4 w-4" />;
+};
+
+const FilePreview = ({ file, publicUrl }: { file: any; publicUrl: string }) => {
+  if (file.mime_type.startsWith('image/')) {
+    return (
+      <img
+        src={publicUrl}
+        alt={file.alt_text || file.filename}
+        className="w-full h-full object-cover rounded"
+      />
+    );
+  }
+
+  if (file.mime_type.startsWith('video/')) {
+    return (
+      <video
+        src={publicUrl}
+        controls
+        className="w-full h-full object-cover rounded"
+      />
+    );
+  }
+
+  if (file.mime_type.startsWith('audio/')) {
+    return (
+      <audio
+        src={publicUrl}
+        controls
+        className="w-full"
+      />
+    );
+  }
+
+  if (file.mime_type === 'application/pdf') {
+    return (
+      <iframe
+        src={publicUrl}
+        className="w-full h-full min-h-[200px] rounded"
+      />
+    );
+  }
+
+  return getFileIcon(file.mime_type);
+};
 
 export function MediaFileList({
   files,
@@ -96,11 +147,7 @@ export function MediaFileList({
           >
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 relative flex-shrink-0">
-                <img
-                  src={publicUrl}
-                  alt={file.alt_text || file.filename}
-                  className="w-full h-full object-cover rounded"
-                />
+                <FilePreview file={file} publicUrl={publicUrl} />
                 {isLargeFile && (
                   <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-800 px-1 rounded-sm text-xs">
                     Large
@@ -109,7 +156,10 @@ export function MediaFileList({
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate">{file.filename}</h3>
+                <h3 className="font-medium truncate flex items-center gap-2">
+                  {getFileIcon(file.mime_type)}
+                  {file.filename}
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(file.created_at), 'PPp')} • 
                   {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
