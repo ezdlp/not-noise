@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, FilePdf, Image } from "lucide-react";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
@@ -31,7 +31,7 @@ const getFileIcon = (mimeType: string) => {
   if (mimeType.startsWith('image/')) return <Image className="h-4 w-4" />;
   if (mimeType.startsWith('video/')) return <FileVideo className="h-4 w-4" />;
   if (mimeType.startsWith('audio/')) return <FileAudio className="h-4 w-4" />;
-  if (mimeType === 'application/pdf') return <FilePdf className="h-4 w-4" />;
+  if (mimeType === 'application/pdf') return <FileVideo className="h-4 w-4" />; // Using FileVideo as fallback for PDF
   return <Image className="h-4 w-4" />;
 };
 
