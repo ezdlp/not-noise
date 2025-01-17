@@ -34,6 +34,7 @@ import { mergeAttributes } from '@tiptap/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { TextSelection } from 'prosemirror-state';
 
 interface ImageSettings {
   alt: string;
@@ -169,7 +170,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
         const coordinates = view.coordsAtPos(pos);
         const transaction = view.state.tr.setSelection(
           view.state.selection.empty 
-            ? view.state.selection.constructor.near(view.state.doc.resolve(pos))
+            ? TextSelection.near(view.state.doc.resolve(pos))
             : view.state.selection
         );
         view.dispatch(transaction);
