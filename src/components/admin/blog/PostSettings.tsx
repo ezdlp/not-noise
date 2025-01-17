@@ -6,52 +6,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, isFuture, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
 import { UseFormReturn } from "react-hook-form";
 import { PostFormValues } from "./PostEditor";
+import { toast } from "sonner";
 
 interface PostSettingsProps {
   form: UseFormReturn<PostFormValues>;
 }
 
 export function PostSettings({ form }: PostSettingsProps) {
+  const handleDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    // Update the published_at date
+    form.setValue('published_at', date);
+
+    // Determine status based on the selected date
+    if (isFuture(date)) {
+      form.setValue('status', 'draft');
+      form.setValue('scheduled_for', date);
+      toast.info(`Post will be published on ${format(date, 'PPP p')}`);
+    } else {
+      form.setValue('status', 'published');
+      form.setValue('scheduled_for', undefined);
+      if (isPast(date)) {
+        toast.info(`Post will be backdated to ${format(date, 'PPP p')}`);
+      } else {
+        toast.info('Post will be published immediately');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <FormField
-        control={form.control}
-        name="status"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Status</FormLabel>
-            <Select 
-              onValueChange={(value) => {
-                field.onChange(value);
-                if (value === 'published') {
-                  // Set published_at to current date if publishing for the first time
-                  const currentPublishedAt = form.getValues('published_at');
-                  if (!currentPublishedAt) {
-                    form.setValue('published_at', new Date());
-                  }
-                }
-              }} 
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <FormField
         control={form.control}
         name="published_at"
@@ -69,7 +58,7 @@ export function PostSettings({ form }: PostSettingsProps) {
                     )}
                   >
                     {field.value ? (
-                      format(field.value, "PPP")
+                      format(field.value, "PPP p")
                     ) : (
                       <span>Pick a date</span>
                     )}
@@ -81,7 +70,10 @@ export function PostSettings({ form }: PostSettingsProps) {
                 <Calendar
                   mode="single"
                   selected={field.value}
-                  onSelect={field.onChange}
+                  onSelect={(date) => {
+                    field.onChange(date);
+                    handleDateChange(date);
+                  }}
                   initialFocus
                 />
               </PopoverContent>
@@ -146,45 +138,6 @@ export function PostSettings({ form }: PostSettingsProps) {
           )}
         />
       )}
-
-      <FormField
-        control={form.control}
-        name="scheduled_for"
-        render={({ field }) => (
-          <FormItem className="flex flex-col">
-            <FormLabel>Schedule Publication</FormLabel>
-            <Popover>
-              <PopoverTrigger asChild>
-                <FormControl>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full pl-3 text-left font-normal",
-                      !field.value && "text-muted-foreground"
-                    )}
-                  >
-                    {field.value ? (
-                      format(field.value, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </FormControl>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={field.value}
-                  onSelect={field.onChange}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 }

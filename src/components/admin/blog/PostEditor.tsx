@@ -9,6 +9,7 @@ import { useState } from "react";
 import { PostContent } from "./PostContent";
 import { PostSettings } from "./PostSettings";
 import { PostActions } from "./PostActions";
+import { isFuture, isPast } from "date-fns";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -53,7 +54,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       allow_comments: true,
       is_sticky: false,
       format: "standard",
-      published_at: undefined,
+      published_at: new Date(),
     },
   });
 
@@ -68,18 +69,34 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     setIsSubmitting(true);
     try {
       const user = await supabase.auth.getUser();
+      
+      // Determine the correct status and dates based on the selected publication date
+      const now = new Date();
+      const publishDate = values.published_at || now;
+      
+      let status = values.status;
+      let scheduledFor = values.scheduled_for;
+      
+      if (isFuture(publishDate)) {
+        status = 'draft';
+        scheduledFor = publishDate;
+      } else {
+        status = 'published';
+        scheduledFor = null;
+      }
+
       const postData = {
         title: values.title,
         content: values.content,
         excerpt: values.excerpt,
         meta_description: values.meta_description,
         meta_keywords: values.meta_keywords,
-        status: values.status,
+        status: status,
         slug: createSlug(values.title),
         visibility: values.visibility,
         password: values.password,
-        published_at: values.status === 'published' ? (values.published_at || new Date()).toISOString() : null,
-        scheduled_for: values.scheduled_for?.toISOString(),
+        published_at: publishDate.toISOString(),
+        scheduled_for: scheduledFor?.toISOString(),
         allow_comments: values.allow_comments,
         is_sticky: values.is_sticky,
         format: values.format,
@@ -107,11 +124,13 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: post.id, category_id: values.category_id });
         }
 
-        toast.success(
-          values.status === "published" 
-            ? "Post published successfully" 
-            : "Post updated successfully"
-        );
+        const message = isFuture(publishDate)
+          ? `Post scheduled for ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
+          : isPast(publishDate)
+          ? `Post backdated to ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
+          : "Post published successfully";
+
+        toast.success(message);
       } else {
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
@@ -127,11 +146,13 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: newPost.id, category_id: values.category_id });
         }
 
-        toast.success(
-          values.status === "published" 
-            ? "Post published successfully" 
-            : "Post saved as draft"
-        );
+        const message = isFuture(publishDate)
+          ? `Post scheduled for ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
+          : isPast(publishDate)
+          ? `Post backdated to ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
+          : "Post published successfully";
+
+        toast.success(message);
       }
 
       queryClient.invalidateQueries({ queryKey: ["adminPosts"] });
