@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { MediaLibraryHeader } from "./MediaLibraryHeader";
 import { MediaLibraryProvider, useMediaLibrary } from "./MediaLibraryContext";
 import { UploadProgress } from "./UploadProgress";
+import { MediaFileList } from "./MediaFileList";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -30,6 +31,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [sortBy, setSortBy] = useState("date-desc");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { selectedFiles, isSelectionMode } = useMediaLibrary();
 
@@ -328,6 +330,8 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         onSortChange={setSortBy}
         maxFileSize={MAX_FILE_SIZE}
         allowedTypes={ALLOWED_TYPES}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {uploadingFiles.size > 0 && (
@@ -347,14 +351,25 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       )}
 
       <ScrollArea className="h-[400px] border rounded-md p-4">
-        <MediaFileGrid
-          files={mediaFiles}
-          isSelectionMode={isSelectionMode}
-          selectedFiles={selectedFiles}
-          onSelect={onSelect}
-          onDelete={handleDelete}
-          showInsertButton={showInsertButton}
-        />
+        {viewMode === 'grid' ? (
+          <MediaFileGrid
+            files={mediaFiles}
+            isSelectionMode={isSelectionMode}
+            selectedFiles={selectedFiles}
+            onSelect={onSelect}
+            onDelete={handleDelete}
+            showInsertButton={showInsertButton}
+          />
+        ) : (
+          <MediaFileList
+            files={mediaFiles}
+            isSelectionMode={isSelectionMode}
+            selectedFiles={selectedFiles}
+            onSelect={onSelect}
+            onDelete={handleDelete}
+            showInsertButton={showInsertButton}
+          />
+        )}
       </ScrollArea>
     </div>
   );

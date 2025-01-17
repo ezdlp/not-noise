@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Upload } from "lucide-react";
+import { LayoutGrid, List, Search } from "lucide-react";
 import { useMediaLibrary } from "./MediaLibraryContext";
 
 interface MediaLibraryHeaderProps {
@@ -19,6 +19,8 @@ interface MediaLibraryHeaderProps {
   onSortChange: (value: string) => void;
   maxFileSize: number;
   allowedTypes: string[];
+  viewMode: 'grid' | 'list';
+  onViewModeChange: (mode: 'grid' | 'list') => void;
 }
 
 export function MediaLibraryHeader({
@@ -30,6 +32,8 @@ export function MediaLibraryHeader({
   onSortChange,
   maxFileSize,
   allowedTypes,
+  viewMode,
+  onViewModeChange,
 }: MediaLibraryHeaderProps) {
   const { isSelectionMode, selectedFiles, toggleSelectionMode } = useMediaLibrary();
 
@@ -48,6 +52,22 @@ export function MediaLibraryHeader({
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => onViewModeChange('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => onViewModeChange('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
         </div>
         <Select value={sortBy} onValueChange={onSortChange}>
           <SelectTrigger className="w-[180px]">

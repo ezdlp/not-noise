@@ -1,0 +1,230 @@
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import { useMediaLibrary } from "./MediaLibraryContext";
+import { useState } from "react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+interface MediaFileListProps {
+  files: any[];
+  isSelectionMode: boolean;
+  selectedFiles: Set<string>;
+  onSelect: (url: string) => void;
+  onDelete: (id: string, filePath: string) => void;
+  showInsertButton?: boolean;
+}
+
+interface MediaMetadata {
+  id: string;
+  alt_text: string;
+  caption: string;
+  filename: string;
+}
+
+export function MediaFileList({
+  files,
+  isSelectionMode,
+  selectedFiles,
+  onSelect,
+  onDelete,
+  showInsertButton = false,
+}: MediaFileListProps) {
+  const { toggleFileSelection } = useMediaLibrary();
+  const [editingMetadata, setEditingMetadata] = useState<MediaMetadata | null>(null);
+
+  const handleMetadataSubmit = async () => {
+    if (!editingMetadata) return;
+
+    try {
+      const { error } = await supabase
+        .from("media_files")
+        .update({
+          alt_text: editingMetadata.alt_text,
+          caption: editingMetadata.caption,
+          filename: editingMetadata.filename,
+        })
+        .eq("id", editingMetadata.id);
+
+      if (error) throw error;
+      toast.success("Metadata updated successfully");
+      setEditingMetadata(null);
+    } catch (error) {
+      console.error("Error updating metadata:", error);
+      toast.error("Failed to update metadata");
+    }
+  };
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("URL copied to clipboard");
+    } catch (error) {
+      toast.error("Failed to copy URL");
+    }
+  };
+
+  const checkFileSize = (size: number) => {
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    return size > MAX_SIZE;
+  };
+
+  return (
+    <div className="space-y-2">
+      {files?.map((file) => {
+        const { data: { publicUrl } } = supabase.storage
+          .from("media-library")
+          .getPublicUrl(file.file_path);
+
+        const isLargeFile = checkFileSize(file.size);
+
+        return (
+          <div
+            key={file.id}
+            className={cn(
+              "relative group border rounded-md p-4",
+              isSelectionMode && "cursor-pointer",
+              selectedFiles.has(file.id) && "ring-2 ring-primary",
+              "hover:bg-accent transition-colors duration-200"
+            )}
+            onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 relative flex-shrink-0">
+                <img
+                  src={publicUrl}
+                  alt={file.alt_text || file.filename}
+                  className="w-full h-full object-cover rounded"
+                />
+                {isLargeFile && (
+                  <div className="absolute top-0 right-0 bg-yellow-100 text-yellow-800 px-1 rounded-sm text-xs">
+                    Large
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium truncate">{file.filename}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(file.created_at), 'PPp')} • 
+                  {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
+                  {(file.size / 1024).toFixed(1)}KB
+                </p>
+                {file.alt_text && (
+                  <p className="text-sm text-muted-foreground truncate">
+                    Alt: {file.alt_text}
+                  </p>
+                )}
+              </div>
+
+              {!isSelectionMode && (
+                <div className="flex items-center gap-2">
+                  {showInsertButton && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(publicUrl);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Insert
+                    </Button>
+                  )}
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingMetadata({
+                            id: file.id,
+                            alt_text: file.alt_text || "",
+                            caption: file.caption || "",
+                            filename: file.filename,
+                          });
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Media Details</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="filename">Filename</Label>
+                          <Input
+                            id="filename"
+                            value={editingMetadata?.filename || ""}
+                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, filename: e.target.value } : null)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="alt">Alt Text</Label>
+                          <Input
+                            id="alt"
+                            value={editingMetadata?.alt_text || ""}
+                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="caption">Caption</Label>
+                          <Textarea
+                            id="caption"
+                            value={editingMetadata?.caption || ""}
+                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, caption: e.target.value } : null)}
+                          />
+                        </div>
+                        <Button onClick={handleMetadataSubmit}>Save Changes</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(publicUrl);
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy URL
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(file.id, file.file_path);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {isSelectionMode && selectedFiles.has(file.id) && (
+                <div className="flex-shrink-0">
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
