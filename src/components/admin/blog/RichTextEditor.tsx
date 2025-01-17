@@ -25,7 +25,7 @@ import {
   Text as TextIcon,
   SeparatorHorizontal,
 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -135,7 +135,11 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2]
+        }
+      }),
       CustomImage,
       Link.configure({
         openOnClick: false,
@@ -155,6 +159,19 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       const words = text.trim().split(/\s+/).length;
       setWordCount(words);
       setReadingTime(Math.ceil(words / 200)); // Assuming average reading speed of 200 words per minute
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose max-w-none p-4 min-h-[400px] focus:outline-none',
+      },
+      handleClick: (view, pos, event) => {
+        // Ensure cursor is placed at click position
+        const coordinates = view.coordsAtPos(pos);
+        view.dispatch(view.state.tr.setSelection(view.state.selection.empty 
+          ? view.state.selection 
+          : view.state.selection.map((range) => range)).scrollIntoView());
+        return false; // Allow default click behavior
+      },
     },
   });
 

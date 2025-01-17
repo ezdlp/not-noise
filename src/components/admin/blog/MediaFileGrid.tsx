@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { CheckCircle2, Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
@@ -54,7 +54,18 @@ export function MediaFileGrid({
               </div>
             )}
             {!isSelectionMode && (
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(publicUrl);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Insert
+                </Button>
                 <Button
                   variant="destructive"
                   size="icon"
