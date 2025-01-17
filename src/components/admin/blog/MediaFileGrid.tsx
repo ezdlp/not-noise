@@ -29,11 +29,12 @@ interface MediaMetadata {
 export function MediaFileGrid({
   files,
   isSelectionMode,
+  selectedFiles,
   onSelect,
   onDelete,
   showInsertButton = false,
 }: MediaFileGridProps) {
-  const { selectedFiles, toggleFileSelection } = useMediaLibrary();
+  const { toggleFileSelection } = useMediaLibrary();
   const [editingMetadata, setEditingMetadata] = useState<MediaMetadata | null>(null);
 
   const handleMetadataSubmit = async () => {

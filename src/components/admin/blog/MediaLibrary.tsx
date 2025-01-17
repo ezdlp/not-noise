@@ -21,9 +21,10 @@ interface UploadingFile {
 interface MediaLibraryProps {
   onSelect: (url: string) => void;
   onClose: () => void;
+  showInsertButton?: boolean;
 }
 
-function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) {
+function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: string) => void; showInsertButton?: boolean }) {
   const [uploadingFiles, setUploadingFiles] = useState<Map<string, UploadingFile>>(new Map());
   const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -352,16 +353,17 @@ function MediaLibraryContent({ onSelect }: { onSelect: (url: string) => void }) 
           selectedFiles={selectedFiles}
           onSelect={onSelect}
           onDelete={handleDelete}
+          showInsertButton={showInsertButton}
         />
       </ScrollArea>
     </div>
   );
 }
 
-export function MediaLibrary(props: MediaLibraryProps) {
+export function MediaLibrary({ onSelect, onClose, showInsertButton = false }: MediaLibraryProps) {
   return (
     <MediaLibraryProvider>
-      <MediaLibraryContent {...props} />
+      <MediaLibraryContent onSelect={onSelect} showInsertButton={showInsertButton} />
     </MediaLibraryProvider>
   );
 }
