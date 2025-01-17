@@ -9,6 +9,16 @@ import {
 } from "@/components/ui/select";
 import { LayoutGrid, List, Search } from "lucide-react";
 import { useMediaLibrary } from "./MediaLibraryContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface MediaLibraryHeaderProps {
   searchTerm: string;
@@ -35,7 +45,7 @@ export function MediaLibraryHeader({
   viewMode,
   onViewModeChange,
 }: MediaLibraryHeaderProps) {
-  const { isSelectionMode, selectedFiles, toggleSelectionMode } = useMediaLibrary();
+  const { isSelectionMode, selectedFiles, toggleSelectionMode, clearSelection } = useMediaLibrary();
 
   const formatAllowedTypes = (types: string[]) => {
     return types.map(type => type.replace('image/', '.')).join(', ');
@@ -98,17 +108,37 @@ export function MediaLibraryHeader({
         </div>
         <Button
           variant="outline"
-          onClick={toggleSelectionMode}
+          onClick={() => {
+            toggleSelectionMode();
+            if (isSelectionMode) {
+              clearSelection();
+            }
+          }}
         >
           {isSelectionMode ? "Cancel Selection" : "Select Multiple"}
         </Button>
         {isSelectionMode && selectedFiles.size > 0 && onBulkDelete && (
-          <Button
-            variant="destructive"
-            onClick={onBulkDelete}
-          >
-            Delete Selected ({selectedFiles.size})
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                Delete Selected ({selectedFiles.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete {selectedFiles.size} selected files.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onBulkDelete} className="bg-destructive text-destructive-foreground">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
     </div>

@@ -246,6 +246,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
     if (selectedFiles.size === 0) return;
 
     try {
+      // Check if any files are in use
       const { data: usageData, error: usageError } = await supabase
         .from("media_usage")
         .select("media_id")
@@ -258,6 +259,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         return;
       }
 
+      // Get file paths for selected files
       const { data: fileData, error: fileError } = await supabase
         .from("media_files")
         .select("file_path")
@@ -266,12 +268,14 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       if (fileError) throw fileError;
       if (!fileData) return;
 
+      // Delete files from storage
       const { error: storageError } = await supabase.storage
         .from("media-library")
         .remove(fileData.map(f => f.file_path));
 
       if (storageError) throw storageError;
 
+      // Delete records from database
       const { error: dbError } = await supabase
         .from("media_files")
         .delete()
@@ -332,6 +336,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         allowedTypes={ALLOWED_TYPES}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onBulkDelete={handleBulkDelete}
       />
 
       {uploadingFiles.size > 0 && (
