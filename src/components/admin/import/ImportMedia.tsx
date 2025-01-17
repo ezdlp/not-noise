@@ -20,7 +20,7 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
 
   const uploadFileInChunks = async (file: File, filePath: string) => {
-    const chunks = Math.ceil(file.size / CHUNK_SIZE);
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const fileStream = file.stream();
     const reader = fileStream.getReader();
     
@@ -31,10 +31,12 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
       const { done, value } = await reader.read();
       if (done) break;
       
-      chunks.push(value);
-      uploadedSize += value.length;
-      const currentProgress = (uploadedSize / file.size) * 100;
-      setProgress(currentProgress);
+      if (value) {
+        chunks.push(value);
+        uploadedSize += value.length;
+        const currentProgress = (uploadedSize / file.size) * 100;
+        setProgress(currentProgress);
+      }
     }
 
     const finalBlob = new Blob(chunks, { type: file.type });
