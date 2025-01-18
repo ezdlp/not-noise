@@ -21,11 +21,11 @@ import { Label } from "@/components/ui/label";
 interface MediaItem {
   id: string;
   url: string;
+  filename: string;
   title?: string;
   alt?: string;
   caption?: string;
   description?: string;
-  metadata?: Record<string, any>;
 }
 
 interface ImportDialogProps {
@@ -42,9 +42,9 @@ function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDi
     <Dialog open={true} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>WordPress Media Import</DialogTitle>
+          <DialogTitle>WordPress Import Review</DialogTitle>
           <DialogDescription>
-            We found media files referenced in your WordPress export. Please review the details below.
+            Please review the media files referenced in your WordPress export.
           </DialogDescription>
         </DialogHeader>
 
@@ -54,9 +54,9 @@ function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDi
             <ScrollArea className="h-[200px] border rounded-md p-4">
               {mediaItems.map((item) => (
                 <div key={item.id} className="py-2 border-b last:border-0">
-                  <p className="font-medium">{item.url.split('/').pop()}</p>
+                  <p className="font-medium">{item.filename}</p>
                   {item.alt && <p className="text-sm text-muted-foreground">Alt: {item.alt}</p>}
-                  {item.title && <p className="text-sm text-muted-foreground">Title: {item.title}</p>}
+                  {item.caption && <p className="text-sm text-muted-foreground">Caption: {item.caption}</p>}
                 </div>
               ))}
             </ScrollArea>
@@ -74,11 +74,11 @@ function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDi
           )}
 
           <div className="space-y-4">
-            <h3 className="font-medium">Duplicate File Handling</h3>
+            <h3 className="font-medium">Media File Handling</h3>
             <RadioGroup value={duplicateStrategy} onValueChange={(value: 'skip' | 'overwrite' | 'rename') => setDuplicateStrategy(value)}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="skip" id="skip" />
-                <Label htmlFor="skip">Skip duplicate files</Label>
+                <Label htmlFor="skip">Skip existing files</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="overwrite" id="overwrite" />
@@ -86,7 +86,7 @@ function ImportDialog({ mediaItems, missingMedia, onClose, onConfirm }: ImportDi
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="rename" id="rename" />
-                <Label htmlFor="rename">Rename imported files</Label>
+                <Label htmlFor="rename">Rename new files</Label>
               </div>
             </RadioGroup>
           </div>
@@ -107,6 +107,7 @@ export function ImportPosts() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [missingMedia, setMissingMedia] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [importedPosts, setImportedPosts] = useState<any[]>([]);
   const queryClient = useQueryClient();
 
   const handleWordPressImport = async (file: File) => {
@@ -114,6 +115,7 @@ export function ImportPosts() {
     formData.append('file', file);
 
     try {
+      setIsImporting(true);
       const { data, error } = await supabase.functions.invoke('wordpress-import', {
         body: formData,
       });
@@ -121,80 +123,20 @@ export function ImportPosts() {
       if (error) throw error;
 
       const { posts, mediaItems, missingMedia } = data;
+      setImportedPosts(posts);
       
       if (mediaItems?.length > 0) {
         setMediaItems(mediaItems);
         setMissingMedia(missingMedia || []);
         setShowMediaDialog(true);
-        return posts;
+      } else {
+        await importPosts(posts);
       }
-
-      await importPosts(posts);
     } catch (error) {
       console.error('WordPress import error:', error);
       toast.error('Failed to process WordPress file');
-    }
-  };
-
-  const handleMediaImport = async (posts: any[], duplicateStrategy: 'skip' | 'overwrite' | 'rename') => {
-    try {
-      setIsImporting(true);
-      let successCount = 0;
-      let errorCount = 0;
-      const total = mediaItems.length;
-
-      for (const [index, item] of mediaItems.entries()) {
-        try {
-          const response = await fetch(item.url);
-          if (!response.ok) throw new Error(`Failed to fetch ${item.url}`);
-
-          const blob = await response.blob();
-          const file = new File([blob], item.url.split('/').pop() || 'file', { type: blob.type });
-
-          const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('media-library')
-            .upload(filePath, file, {
-              contentType: file.type,
-              upsert: duplicateStrategy === 'overwrite',
-            });
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('media-library')
-            .getPublicUrl(filePath);
-
-          // Update content in posts to use new URL
-          posts = posts.map(post => ({
-            ...post,
-            content: post.content.replace(item.url, publicUrl)
-          }));
-
-          successCount++;
-        } catch (error) {
-          console.error(`Error importing media ${item.url}:`, error);
-          errorCount++;
-        }
-        setProgress((index + 1) / total * 100);
-      }
-
-      if (successCount > 0) {
-        toast.success(`Successfully imported ${successCount} media files`);
-      }
-      if (errorCount > 0) {
-        toast.error(`Failed to import ${errorCount} media files`);
-      }
-
-      await importPosts(posts);
-    } catch (error) {
-      console.error('Error importing media:', error);
-      toast.error('Failed to import media files');
     } finally {
       setIsImporting(false);
-      setProgress(0);
-      setShowMediaDialog(false);
     }
   };
 
@@ -209,7 +151,6 @@ export function ImportPosts() {
       .single();
     
     if (data) {
-      // If still duplicate (very unlikely), try again with a different timestamp
       return createUniqueSlug(baseSlug);
     }
     
@@ -233,14 +174,12 @@ export function ImportPosts() {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
-          // Try to use the base slug first
           let { data: existingPost } = await supabase
             .from("blog_posts")
             .select("slug")
             .eq("slug", baseSlug)
             .single();
 
-          // If slug exists, create a unique one
           const slug = existingPost ? await createUniqueSlug(baseSlug) : baseSlug;
 
           const { error: postError } = await supabase
@@ -249,20 +188,14 @@ export function ImportPosts() {
               title: post.title,
               content: post.content,
               excerpt: post.excerpt,
-              meta_description: post.meta_description,
-              meta_keywords: post.meta_keywords,
               status: post.status || "draft",
               slug: slug,
-              visibility: post.visibility || "public",
               author_id: user.data.user.id,
+              published_at: post.post_date ? new Date(post.post_date) : null,
+              created_at: post.post_date ? new Date(post.post_date) : new Date(),
+              updated_at: new Date(),
               featured_image: post.featured_image,
-              cover_image: post.cover_image,
-              is_featured: post.is_featured || false,
-              allow_comments: post.allow_comments ?? true,
-              is_sticky: post.is_sticky || false,
-              format: post.format || "standard",
-              seo_title: post.seo_title,
-              focus_keyword: post.focus_keyword,
+              visibility: "public",
             });
 
           if (postError) throw postError;
@@ -282,11 +215,12 @@ export function ImportPosts() {
         toast.error(`Failed to import ${errorCount} posts`);
       }
     } catch (error) {
-      console.error("Error parsing file:", error);
-      toast.error("Failed to parse import file");
+      console.error("Error importing posts:", error);
+      toast.error("Failed to import posts");
     } finally {
       setIsImporting(false);
       setProgress(0);
+      setShowMediaDialog(false);
     }
   };
 
@@ -295,53 +229,53 @@ export function ImportPosts() {
     if (!file) return;
 
     if (file.name.endsWith('.xml')) {
-      const posts = await handleWordPressImport(file);
-      if (posts) {
-        setShowMediaDialog(true);
-      }
+      await handleWordPressImport(file);
     } else {
-      try {
-        const text = await file.text();
-        const posts = JSON.parse(text);
-        await importPosts(posts);
-      } catch (error) {
-        console.error("Error parsing file:", error);
-        toast.error("Failed to parse import file");
-      }
+      toast.error('Please upload a valid WordPress XML export file');
     }
     event.target.value = '';
   };
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <Input
-          type="file"
-          accept=".json,.xml"
-          onChange={handleFileUpload}
-          disabled={isImporting}
-          className="max-w-[300px]"
-        />
-        <Button disabled={isImporting} variant="outline" size="icon">
-          <Upload className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {isImporting && (
-        <div className="mt-4">
-          <Progress value={progress} className="w-[300px]" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept=".xml"
+            onChange={handleFileUpload}
+            disabled={isImporting}
+            className="max-w-[300px]"
+          />
+          <Button disabled={isImporting} variant="outline" size="icon">
+            <Upload className="h-4 w-4" />
+          </Button>
         </div>
-      )}
+
+        {isImporting && (
+          <div className="space-y-2">
+            <Progress value={progress} className="w-[300px]" />
+            <p className="text-sm text-muted-foreground">
+              Importing posts... {Math.round(progress)}%
+            </p>
+          </div>
+        )}
+      </div>
 
       {showMediaDialog && (
         <ImportDialog
           mediaItems={mediaItems}
           missingMedia={missingMedia}
-          onClose={() => setShowMediaDialog(false)}
-          onConfirm={(strategy) => handleMediaImport([], strategy)}
+          onClose={() => {
+            setShowMediaDialog(false);
+            importPosts(importedPosts);
+          }}
+          onConfirm={(strategy) => {
+            setShowMediaDialog(false);
+            importPosts(importedPosts);
+          }}
         />
       )}
     </>
   );
 }
-
