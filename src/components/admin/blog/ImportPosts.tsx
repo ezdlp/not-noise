@@ -120,23 +120,24 @@ export function ImportPosts() {
       setProgress(10);
 
       console.log('Starting WordPress import...');
-      const { data, error } = await supabase.functions.invoke('wordpress-import', {
+      const response = await supabase.functions.invoke('wordpress-import', {
         body: formData,
       });
 
-      if (error) {
-        console.error('WordPress import error:', error);
-        toast.error(`Import failed: ${error.message}`);
+      if (response.error) {
+        console.error('WordPress import error:', response.error);
+        toast.error(`Import failed: ${response.error.message}`);
         return;
       }
 
+      const { data } = response;
       if (!data) {
         toast.error('No data received from import');
         return;
       }
 
       console.log('Import response:', data);
-      const { posts, mediaItems, missingMedia, errors, stats } = data;
+      const { posts, mediaItems, missingMedia, errors } = data;
 
       if (errors?.length > 0) {
         console.warn('Import completed with errors:', errors);
@@ -144,14 +145,18 @@ export function ImportPosts() {
       }
 
       setProgress(30);
-      setImportedPosts(posts || []);
       
-      if (mediaItems?.length > 0) {
-        setMediaItems(mediaItems);
-        setMissingMedia(missingMedia || []);
-        setShowMediaDialog(true);
+      if (posts?.length > 0) {
+        setImportedPosts(posts);
+        if (mediaItems?.length > 0) {
+          setMediaItems(mediaItems);
+          setMissingMedia(missingMedia || []);
+          setShowMediaDialog(true);
+        } else {
+          await importPosts(posts);
+        }
       } else {
-        await importPosts(posts || []);
+        toast.error('No posts found in the import file');
       }
 
       setProgress(50);
@@ -204,26 +209,20 @@ export function ImportPosts() {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
-          let { data: existingPost } = await supabase
-            .from("blog_posts")
-            .select("slug")
-            .eq("slug", baseSlug)
-            .maybeSingle();
-
-          const slug = existingPost ? await createUniqueSlug(baseSlug) : baseSlug;
+          const slug = await createUniqueSlug(baseSlug);
 
           const postData: TablesInsert<"blog_posts"> = {
+            title: post.title,
             content: post.content,
             excerpt: post.excerpt || null,
             status: post.status || "draft",
-            slug: slug,
+            slug,
             author_id: user.data.user.id,
             published_at: post.post_date ? new Date(post.post_date).toISOString() : null,
             created_at: post.post_date ? new Date(post.post_date).toISOString() : new Date().toISOString(),
             updated_at: new Date().toISOString(),
             featured_image: post.featured_image || null,
             visibility: "public",
-            title: post.title,
             allow_comments: true,
             is_featured: false,
             is_sticky: false,

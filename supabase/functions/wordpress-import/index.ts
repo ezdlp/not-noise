@@ -25,17 +25,15 @@ serve(async (req) => {
     
     try {
       xmlDoc = parse(text);
-      console.log('XML Structure:', JSON.stringify(xmlDoc, null, 2));
+      console.log('Successfully parsed XML file');
       
       if (!xmlDoc.rss?.channel) {
         throw new Error('Invalid WordPress export file structure');
       }
     } catch (parseError) {
       console.error('XML parsing error:', parseError);
-      throw new Error('Failed to parse WordPress export file. Please ensure it is a valid WordPress export XML.');
+      throw new Error('Failed to parse WordPress export file');
     }
-
-    console.log('Successfully parsed WordPress XML file');
 
     // Initialize arrays to store parsed data
     const posts = [];
@@ -49,31 +47,24 @@ serve(async (req) => {
     
     console.log(`Found ${items.length} items in the XML file`);
 
-    let processedItems = 0;
-    const totalItems = items.length;
-
     for (const item of items) {
       try {
-        processedItems++;
-        console.log(`Processing item ${processedItems} of ${totalItems}:`, JSON.stringify(item, null, 2));
-        
         const postType = item['wp:post_type']?.[0];
-        console.log('Post type:', postType);
+        console.log('Processing item of type:', postType);
         
         if (postType === 'attachment') {
           const url = item['wp:attachment_url']?.[0];
           if (url) {
             const id = item['wp:post_id']?.[0] || crypto.randomUUID();
-            const title = item.title?.[0];
-            const description = item['content:encoded']?.[0];
+            const title = item.title?.[0] || '';
+            const description = item['content:encoded']?.[0] || '';
             const filename = url.split('/').pop();
             
-            // Extract metadata
             const metadata = {
               alt: item['wp:postmeta']?.find(meta => 
                 meta['wp:meta_key']?.[0] === '_wp_attachment_image_alt'
-              )?.[0]?.['wp:meta_value']?.[0],
-              caption: item['excerpt:encoded']?.[0],
+              )?.[0]?.['wp:meta_value']?.[0] || '',
+              caption: item['excerpt:encoded']?.[0] || '',
             };
             
             mediaItems.push({
@@ -89,39 +80,41 @@ serve(async (req) => {
         } else if (postType === 'post') {
           console.log('Processing post:', item.title?.[0]);
           
-          let content = item['content:encoded']?.[0] || '';
+          const title = item.title?.[0] || '';
+          const content = item['content:encoded']?.[0] || '';
+          const excerpt = item['excerpt:encoded']?.[0] || '';
           const postDate = item['wp:post_date']?.[0];
-          const status = item['wp:status']?.[0];
+          const status = item['wp:status']?.[0] || 'draft';
           
           // Process images in content
           const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
           let match;
           while ((match = imgRegex.exec(content)) !== null) {
             const imgUrl = match[1];
-            const filename = imgUrl.split('/').pop();
-            if (filename) {
+            if (imgUrl) {
               missingMedia.add(imgUrl);
             }
           }
 
           // Process categories and tags
-          const categories = (item.category || []).map(cat => ({
-            domain: cat?.['@domain'],
-            name: cat?.['#text']
+          const categories = Array.isArray(item.category) ? item.category : [item.category].filter(Boolean);
+          const processedCategories = categories.map(cat => ({
+            domain: cat?.['@domain'] || '',
+            name: cat?.['#text'] || ''
           }));
 
           const featuredImage = item['wp:postmeta']?.find(
             meta => meta['wp:meta_key']?.[0] === '_thumbnail_id'
           )?.[0]?.['wp:meta_value']?.[0];
 
-          posts.push({
-            title: item.title?.[0],
+          const postData = {
+            title,
             content,
-            excerpt: item['excerpt:encoded']?.[0],
-            status: status || 'draft',
+            excerpt,
+            status,
             post_date: postDate,
-            categories: categories.filter(cat => cat.domain === 'category').map(cat => cat.name),
-            tags: categories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
+            categories: processedCategories.filter(cat => cat.domain === 'category').map(cat => cat.name),
+            tags: processedCategories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
             featured_image: featuredImage,
             meta_description: item['wp:postmeta']?.find(
               meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_metadesc'
@@ -129,24 +122,19 @@ serve(async (req) => {
             focus_keyword: item['wp:postmeta']?.find(
               meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
             )?.[0]?.['wp:meta_value']?.[0],
-          });
-          
-          console.log('Post processed successfully:', posts[posts.length - 1].title);
+          };
+
+          posts.push(postData);
+          console.log('Successfully processed post:', title);
         }
       } catch (itemError) {
-        console.error(`Error processing item ${processedItems}:`, itemError);
-        errors.push({
-          item: processedItems,
-          error: itemError.message
-        });
+        console.error('Error processing item:', itemError);
+        errors.push(itemError.message);
       }
     }
 
-    console.log(`Successfully processed ${posts.length} posts and found ${mediaItems.length} media items`);
-    if (errors.length > 0) {
-      console.log(`Encountered ${errors.length} errors during processing`);
-    }
-
+    console.log(`Successfully processed ${posts.length} posts and ${mediaItems.length} media items`);
+    
     return new Response(
       JSON.stringify({
         posts,
@@ -154,7 +142,6 @@ serve(async (req) => {
         missingMedia: Array.from(missingMedia),
         errors: errors.length > 0 ? errors : undefined,
         stats: {
-          totalItems,
           processedPosts: posts.length,
           processedMedia: mediaItems.length,
           errors: errors.length
@@ -172,8 +159,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import', 
-        details: error.message,
-        stack: error.stack
+        details: error.message 
       }),
       {
         status: 400,
