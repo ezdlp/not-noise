@@ -117,27 +117,51 @@ export function ImportPosts() {
 
     try {
       setIsImporting(true);
+      setProgress(10); // Show initial progress
+
       const { data, error } = await supabase.functions.invoke('wordpress-import', {
         body: formData,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('WordPress import error:', error);
+        toast.error(`Import failed: ${error.message}`);
+        return;
+      }
 
-      const { posts, mediaItems, missingMedia } = data;
-      setImportedPosts(posts);
+      if (!data) {
+        toast.error('No data received from import');
+        return;
+      }
+
+      console.log('Import response:', data);
+      const { posts, mediaItems, missingMedia, errors, stats } = data;
+
+      if (errors?.length > 0) {
+        console.warn('Import completed with errors:', errors);
+        toast.warning(`Import completed with ${errors.length} errors. Check console for details.`);
+      }
+
+      setProgress(30);
+      setImportedPosts(posts || []);
       
       if (mediaItems?.length > 0) {
         setMediaItems(mediaItems);
         setMissingMedia(missingMedia || []);
         setShowMediaDialog(true);
       } else {
-        await importPosts(posts);
+        await importPosts(posts || []);
       }
+
+      setProgress(50);
     } catch (error) {
       console.error('WordPress import error:', error);
       toast.error('Failed to process WordPress file');
     } finally {
-      setIsImporting(false);
+      if (!showMediaDialog) {
+        setIsImporting(false);
+        setProgress(0);
+      }
     }
   };
 
@@ -149,7 +173,7 @@ export function ImportPosts() {
       .from("blog_posts")
       .select("slug")
       .eq("slug", uniqueSlug)
-      .single();
+      .maybeSingle();
     
     if (data) {
       return createUniqueSlug(baseSlug);
@@ -170,6 +194,8 @@ export function ImportPosts() {
 
       for (const [index, post] of posts.entries()) {
         try {
+          console.log(`Importing post ${index + 1} of ${total}: ${post.title}`);
+          
           let baseSlug = post.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -179,7 +205,7 @@ export function ImportPosts() {
             .from("blog_posts")
             .select("slug")
             .eq("slug", baseSlug)
-            .single();
+            .maybeSingle();
 
           const slug = existingPost ? await createUniqueSlug(baseSlug) : baseSlug;
 
@@ -199,15 +225,21 @@ export function ImportPosts() {
             is_featured: false,
             is_sticky: false,
             format: "standard",
+            meta_description: post.meta_description || null,
+            focus_keyword: post.focus_keyword || null,
           };
 
           const { error: postError } = await supabase
             .from("blog_posts")
             .insert(postData);
 
-          if (postError) throw postError;
+          if (postError) {
+            console.error("Error importing post:", postError);
+            throw postError;
+          }
+          
           successCount++;
-          setProgress((index + 1) / total * 100);
+          setProgress(50 + ((index + 1) / total * 50));
         } catch (error) {
           console.error("Error importing post:", error);
           errorCount++;
