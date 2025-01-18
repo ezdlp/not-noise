@@ -37,10 +37,10 @@ export function PostSettings({ post, onUpdate }: PostSettingsProps) {
         </div>
 
         <div className="space-y-2">
-          <Label>Categories</Label>
+          <Label>Category</Label>
           <CategorySelect
-            selectedCategories={post.categories || []}
-            onCategoriesChange={(categories) => onUpdate('categories', categories)}
+            value={post.category_id}
+            onChange={(value) => onUpdate('category_id', value)}
           />
         </div>
 

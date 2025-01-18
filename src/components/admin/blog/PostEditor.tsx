@@ -82,7 +82,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     try {
       const user = await supabase.auth.getUser();
       
-      // Determine the correct status and dates based on the selected publication date
       const now = new Date();
       const publishDate = values.published_at || now;
       
@@ -192,7 +191,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
               <PostContent form={form} />
             </div>
             <div>
-              <PostSettings form={form} />
+              <PostSettings 
+                post={form.getValues()} 
+                onUpdate={(key, value) => form.setValue(key as any, value, { shouldDirty: true })}
+              />
             </div>
           </div>
         </form>
