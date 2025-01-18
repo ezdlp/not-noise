@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -21,10 +22,9 @@ serve(async (req) => {
     }
 
     const text = await file.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/xml');
+    const xmlDoc = parse(text);
     
-    if (!doc.querySelector('rss')) {
+    if (!xmlDoc.rss) {
       throw new Error('Invalid WordPress export file format');
     }
 
@@ -36,26 +36,26 @@ serve(async (req) => {
     const missingMedia = new Set();
 
     // Parse channel information
-    const channel = doc.querySelector('channel');
+    const channel = xmlDoc.rss.channel;
     if (!channel) throw new Error('Invalid WordPress export file structure');
 
     // Parse items (posts and media)
-    const items = doc.querySelectorAll('item');
+    const items = channel.item || [];
     console.log(`Found ${items.length} items in the XML file`);
 
     for (const item of items) {
-      const postType = item.querySelector('wp\\:post_type')?.textContent;
+      const postType = item['wp:post_type']?.[0];
       
       if (postType === 'attachment') {
-        const url = item.querySelector('wp\\:attachment_url')?.textContent;
+        const url = item['wp:attachment_url']?.[0];
         if (url) {
-          const id = item.querySelector('wp\\:post_id')?.textContent || crypto.randomUUID();
-          const title = item.querySelector('title')?.textContent;
-          const description = item.querySelector('description')?.textContent;
+          const id = item['wp:post_id']?.[0] || crypto.randomUUID();
+          const title = item.title?.[0];
+          const description = item.description?.[0];
           const filename = url.split('/').pop();
           
           // Extract alt text and other metadata from content
-          const content = item.querySelector('content\\:encoded')?.textContent || '';
+          const content = item['content:encoded']?.[0] || '';
           const altMatch = content.match(/alt="([^"]*)"/);
           const captionMatch = content.match(/caption="([^"]*)"/);
           
@@ -70,10 +70,10 @@ serve(async (req) => {
           });
         }
       } else if (postType === 'post') {
-        let content = item.querySelector('content\\:encoded')?.textContent || '';
-        const postDate = item.querySelector('wp\\:post_date')?.textContent;
-        const status = item.querySelector('wp\\:status')?.textContent;
-        const author = item.querySelector('dc\\:creator')?.textContent;
+        let content = item['content:encoded']?.[0] || '';
+        const postDate = item['wp:post_date']?.[0];
+        const status = item['wp:status']?.[0];
+        const author = item['dc:creator']?.[0];
         
         // Find all img tags and collect their sources
         const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
@@ -81,50 +81,25 @@ serve(async (req) => {
         while ((match = imgRegex.exec(content)) !== null) {
           const imgUrl = match[1];
           const filename = imgUrl.split('/').pop();
-          
-          // Replace WordPress URLs with local media library URLs
-          const { data: mediaFile } = await supabase
-            .from('media_files')
-            .select('file_path')
-            .eq('filename', filename)
-            .single();
-
-          if (mediaFile) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('media-library')
-              .getPublicUrl(mediaFile.file_path);
-            
-            content = content.replace(imgUrl, publicUrl);
-          } else {
-            missingMedia.add(imgUrl);
-          }
+          missingMedia.add(imgUrl);
         }
 
-        // Parse categories
-        const categories = Array.from(item.querySelectorAll('category')).map(cat => ({
-          domain: cat.getAttribute('domain'),
-          name: cat.textContent
+        // Parse categories and tags
+        const categories = (item.category || []).map(cat => ({
+          domain: cat?.['@domain'],
+          name: cat?.['#text']
         }));
 
-        // Parse post meta
-        const postMeta = Array.from(item.querySelectorAll('wp\\:postmeta')).reduce((acc, meta) => {
-          const key = meta.querySelector('wp\\:meta_key')?.textContent;
-          const value = meta.querySelector('wp\\:meta_value')?.textContent;
-          if (key) acc[key] = value;
-          return acc;
-        }, {});
-
         posts.push({
-          title: item.querySelector('title')?.textContent,
+          title: item.title?.[0],
           content,
-          excerpt: item.querySelector('excerpt\\:encoded')?.textContent,
+          excerpt: item['excerpt:encoded']?.[0],
           status: status || 'draft',
           author,
           post_date: postDate,
           categories: categories.filter(cat => cat.domain === 'category').map(cat => cat.name),
           tags: categories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
-          meta: postMeta,
-          featured_image: postMeta['_thumbnail_id'] ? item.querySelector(`wp\\:attachment_url`)?.textContent : null
+          featured_image: item['wp:attachment_url']?.[0]
         });
       }
     }
