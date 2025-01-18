@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { TablesInsert } from "@/integrations/supabase/types";
 
 interface MediaItem {
   id: string;
@@ -182,21 +183,27 @@ export function ImportPosts() {
 
           const slug = existingPost ? await createUniqueSlug(baseSlug) : baseSlug;
 
+          const postData: TablesInsert<"blog_posts"> = {
+            content: post.content,
+            excerpt: post.excerpt || null,
+            status: post.status || "draft",
+            slug: slug,
+            author_id: user.data.user.id,
+            published_at: post.post_date ? new Date(post.post_date).toISOString() : null,
+            created_at: post.post_date ? new Date(post.post_date).toISOString() : new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            featured_image: post.featured_image || null,
+            visibility: "public",
+            title: post.title,
+            allow_comments: true,
+            is_featured: false,
+            is_sticky: false,
+            format: "standard",
+          };
+
           const { error: postError } = await supabase
             .from("blog_posts")
-            .insert({
-              title: post.title,
-              content: post.content,
-              excerpt: post.excerpt,
-              status: post.status || "draft",
-              slug: slug,
-              author_id: user.data.user.id,
-              published_at: post.post_date ? new Date(post.post_date) : null,
-              created_at: post.post_date ? new Date(post.post_date) : new Date(),
-              updated_at: new Date(),
-              featured_image: post.featured_image,
-              visibility: "public",
-            });
+            .insert(postData);
 
           if (postError) throw postError;
           successCount++;
