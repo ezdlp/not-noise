@@ -117,8 +117,9 @@ export function ImportPosts() {
 
     try {
       setIsImporting(true);
-      setProgress(10); // Show initial progress
+      setProgress(10);
 
+      console.log('Starting WordPress import...');
       const { data, error } = await supabase.functions.invoke('wordpress-import', {
         body: formData,
       });
@@ -192,6 +193,8 @@ export function ImportPosts() {
       let errorCount = 0;
       const total = posts.length;
 
+      console.log(`Starting to import ${total} posts...`);
+
       for (const [index, post] of posts.entries()) {
         try {
           console.log(`Importing post ${index + 1} of ${total}: ${post.title}`);
@@ -229,6 +232,8 @@ export function ImportPosts() {
             focus_keyword: post.focus_keyword || null,
           };
 
+          console.log('Inserting post with data:', postData);
+
           const { error: postError } = await supabase
             .from("blog_posts")
             .insert(postData);
@@ -240,6 +245,7 @@ export function ImportPosts() {
           
           successCount++;
           setProgress(50 + ((index + 1) / total * 50));
+          console.log(`Successfully imported post: ${post.title}`);
         } catch (error) {
           console.error("Error importing post:", error);
           errorCount++;

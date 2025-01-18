@@ -25,6 +25,8 @@ serve(async (req) => {
     
     try {
       xmlDoc = parse(text);
+      console.log('XML Structure:', JSON.stringify(xmlDoc, null, 2));
+      
       if (!xmlDoc.rss?.channel) {
         throw new Error('Invalid WordPress export file structure');
       }
@@ -43,7 +45,8 @@ serve(async (req) => {
 
     // Parse channel information
     const channel = xmlDoc.rss.channel;
-    const items = channel.item || [];
+    const items = Array.isArray(channel.item) ? channel.item : [channel.item].filter(Boolean);
+    
     console.log(`Found ${items.length} items in the XML file`);
 
     let processedItems = 0;
@@ -52,9 +55,10 @@ serve(async (req) => {
     for (const item of items) {
       try {
         processedItems++;
-        console.log(`Processing item ${processedItems} of ${totalItems}`);
+        console.log(`Processing item ${processedItems} of ${totalItems}:`, JSON.stringify(item, null, 2));
         
         const postType = item['wp:post_type']?.[0];
+        console.log('Post type:', postType);
         
         if (postType === 'attachment') {
           const url = item['wp:attachment_url']?.[0];
@@ -66,7 +70,9 @@ serve(async (req) => {
             
             // Extract metadata
             const metadata = {
-              alt: item['wp:postmeta']?.find(meta => meta['wp:meta_key']?.[0] === '_wp_attachment_image_alt')?.[0]?.['wp:meta_value']?.[0],
+              alt: item['wp:postmeta']?.find(meta => 
+                meta['wp:meta_key']?.[0] === '_wp_attachment_image_alt'
+              )?.[0]?.['wp:meta_value']?.[0],
               caption: item['excerpt:encoded']?.[0],
             };
             
@@ -81,6 +87,8 @@ serve(async (req) => {
             });
           }
         } else if (postType === 'post') {
+          console.log('Processing post:', item.title?.[0]);
+          
           let content = item['content:encoded']?.[0] || '';
           const postDate = item['wp:post_date']?.[0];
           const status = item['wp:status']?.[0];
@@ -122,6 +130,8 @@ serve(async (req) => {
               meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
             )?.[0]?.['wp:meta_value']?.[0],
           });
+          
+          console.log('Post processed successfully:', posts[posts.length - 1].title);
         }
       } catch (itemError) {
         console.error(`Error processing item ${processedItems}:`, itemError);
