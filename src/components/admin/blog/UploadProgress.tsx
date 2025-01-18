@@ -6,28 +6,38 @@ interface UploadProgressProps {
   file: File;
   progress: number;
   onCancel: () => void;
+  originalSize?: number;
+  compressedSize?: number;
 }
 
-export function UploadProgress({ file, progress, onCancel }: UploadProgressProps) {
+export function UploadProgress({ file, progress, onCancel, originalSize, compressedSize }: UploadProgressProps) {
+  const formatSize = (bytes?: number) => {
+    if (!bytes) return '';
+    return `${(bytes / 1024).toFixed(1)}KB`;
+  };
+
+  const compressionInfo = originalSize && compressedSize ? (
+    <span className="text-xs text-muted-foreground">
+      {formatSize(originalSize)} → {formatSize(compressedSize)} ({Math.round((1 - compressedSize/originalSize) * 100)}% smaller)
+    </span>
+  ) : null;
+
   return (
-    <div className="space-y-2 w-full">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-          {file.name}
-        </span>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{file.name}</p>
+          {compressionInfo}
+        </div>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onCancel}
-          className="h-6 w-6 p-0"
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <Progress value={progress} className="h-2" />
-      <span className="text-xs text-muted-foreground">
-        {Math.round(progress)}% • {(file.size / (1024 * 1024)).toFixed(2)} MB
-      </span>
+      <Progress value={progress} />
     </div>
   );
 }

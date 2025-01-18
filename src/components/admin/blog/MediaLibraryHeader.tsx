@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/select";
 import { LayoutGrid, List, Search } from "lucide-react";
 import { useMediaLibrary } from "./MediaLibraryContext";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { CompressionLevel } from "@/utils/imageCompression";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +35,10 @@ interface MediaLibraryHeaderProps {
   allowedTypes: string[];
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
+  compressionEnabled: boolean;
+  onCompressionChange: (enabled: boolean) => void;
+  compressionLevel: CompressionLevel;
+  onCompressionLevelChange: (level: CompressionLevel) => void;
 }
 
 export function MediaLibraryHeader({
@@ -45,6 +52,10 @@ export function MediaLibraryHeader({
   allowedTypes,
   viewMode,
   onViewModeChange,
+  compressionEnabled,
+  onCompressionChange,
+  compressionLevel,
+  onCompressionLevelChange,
 }: MediaLibraryHeaderProps) {
   const { isSelectionMode, selectedFiles, toggleSelectionMode, clearSelection } = useMediaLibrary();
 
@@ -94,6 +105,32 @@ export function MediaLibraryHeader({
           </SelectContent>
         </Select>
       </div>
+
+      <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="compression"
+              checked={compressionEnabled}
+              onCheckedChange={onCompressionChange}
+            />
+            <Label htmlFor="compression">Enable Image Compression</Label>
+          </div>
+          {compressionEnabled && (
+            <Select value={compressionLevel} onValueChange={onCompressionLevelChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Compression Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low (Larger files, better quality)</SelectItem>
+                <SelectItem value="medium">Medium (Balanced)</SelectItem>
+                <SelectItem value="high">High (Smaller files, lower quality)</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center gap-4">
         <div className="space-y-1">
           <Input

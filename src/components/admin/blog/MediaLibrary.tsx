@@ -9,6 +9,7 @@ import { MediaLibraryHeader } from "./MediaLibraryHeader";
 import { MediaLibraryProvider, useMediaLibrary } from "./MediaLibraryContext";
 import { UploadProgress } from "./UploadProgress";
 import { MediaFileList } from "./MediaFileList";
+import { compressImage, CompressionLevel } from "@/utils/imageCompression";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -17,6 +18,8 @@ interface UploadingFile {
   file: File;
   progress: number;
   controller?: AbortController;
+  originalSize?: number;
+  compressedSize?: number;
 }
 
 interface MediaLibraryProps {
@@ -31,7 +34,9 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
   const [searchTerm, setSearchTerm] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [sortBy, setSortBy] = useState("date-desc");
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Changed default to 'list'
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [compressionEnabled, setCompressionEnabled] = useState(true);
+  const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>('medium');
 
   const { selectedFiles, isSelectionMode } = useMediaLibrary();
 
@@ -54,7 +59,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         query = query.ilike("filename", `%${searchTerm}%`);
       }
 
-      // Apply sorting
       switch (sortBy) {
         case "date-desc":
           query = query.order("created_at", { ascending: false });
@@ -109,13 +113,54 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
     }));
 
     try {
-      const fileExt = fileToUpload.name.split(".").pop();
+      let fileToProcess = fileToUpload;
+      let originalSize = fileToUpload.size;
+      let compressedSize = fileToUpload.size;
+
+      // Compress image if enabled and it's an image file
+      if (compressionEnabled && fileToUpload.type.startsWith('image/')) {
+        const result = await compressImage(
+          fileToUpload,
+          compressionLevel,
+          (progress) => {
+            setUploadingFiles(prev => {
+              const updated = new Map(prev);
+              const file = updated.get(fileId);
+              if (file) {
+                updated.set(fileId, { ...file, progress: progress * 0.5 }); // First 50% is compression
+              }
+              return updated;
+            });
+          }
+        );
+        
+        fileToProcess = result.compressedFile;
+        originalSize = result.originalSize;
+        compressedSize = result.compressedSize;
+
+        // Update file info with compression results
+        setUploadingFiles(prev => {
+          const updated = new Map(prev);
+          const file = updated.get(fileId);
+          if (file) {
+            updated.set(fileId, { 
+              ...file, 
+              originalSize,
+              compressedSize,
+              progress: 50 // Compression complete, starting upload
+            });
+          }
+          return updated;
+        });
+      }
+
+      const fileExt = fileToProcess.name.split(".").pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
 
       // Create a ReadableStream from the file
-      const stream = fileToUpload.stream();
+      const stream = fileToProcess.stream();
       const reader = stream.getReader();
-      const totalSize = fileToUpload.size;
+      const totalSize = fileToProcess.size;
       let uploadedSize = 0;
 
       // Read the file in chunks and update progress
@@ -125,7 +170,9 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         if (done) break;
         chunks.push(value);
         uploadedSize += value.length;
-        const progress = (uploadedSize / totalSize) * 100;
+        const progress = compressionEnabled ? 
+          50 + ((uploadedSize / totalSize) * 50) : // Second 50% is upload if compression was enabled
+          (uploadedSize / totalSize) * 100; // Full 100% is upload if no compression
         
         setUploadingFiles(prev => {
           const updated = new Map(prev);
@@ -138,11 +185,11 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       }
 
       // Combine chunks and upload
-      const file = new Blob(chunks, { type: fileToUpload.type });
+      const file = new Blob(chunks, { type: fileToProcess.type });
       const { error: uploadError } = await supabase.storage
         .from("media-library")
         .upload(filePath, file, {
-          contentType: fileToUpload.type,
+          contentType: fileToProcess.type,
           upsert: false
         });
 
@@ -164,10 +211,10 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       const { error: dbError } = await supabase
         .from("media_files")
         .insert({
-          filename: fileToUpload.name,
+          filename: fileToProcess.name,
           file_path: filePath,
-          mime_type: fileToUpload.type,
-          size: fileToUpload.size,
+          mime_type: fileToProcess.type,
+          size: fileToProcess.size,
           uploaded_by: userId,
           dimensions,
           usage_count: 0,
@@ -176,7 +223,11 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
 
       if (dbError) throw dbError;
 
-      toast.success("File uploaded successfully");
+      const compressionMessage = compressionEnabled ? 
+        ` (Compressed from ${(originalSize / 1024).toFixed(1)}KB to ${(compressedSize / 1024).toFixed(1)}KB)` : 
+        '';
+      
+      toast.success(`File uploaded successfully${compressionMessage}`);
       refetch();
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -337,18 +388,24 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onBulkDelete={handleBulkDelete}
+        compressionEnabled={compressionEnabled}
+        onCompressionChange={setCompressionEnabled}
+        compressionLevel={compressionLevel}
+        onCompressionLevelChange={setCompressionLevel}
       />
 
       {uploadingFiles.size > 0 && (
         <div className="space-y-4 border rounded-md p-4">
           <h3 className="text-sm font-medium">Uploading {uploadingFiles.size} file(s)</h3>
           <div className="space-y-4">
-            {Array.from(uploadingFiles.entries()).map(([id, { file, progress }]) => (
+            {Array.from(uploadingFiles.entries()).map(([id, { file, progress, originalSize, compressedSize }]) => (
               <UploadProgress
                 key={id}
                 file={file}
                 progress={progress}
                 onCancel={() => cancelUpload(id)}
+                originalSize={originalSize}
+                compressedSize={compressedSize}
               />
             ))}
           </div>
