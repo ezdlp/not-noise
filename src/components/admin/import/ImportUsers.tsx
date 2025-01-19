@@ -93,29 +93,29 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     // Check email (required)
     const email = user[fieldMapping.email];
     if (!email) {
-      errors.push(`Row ${rowIndex}: Email is required`);
+      errors.push(`Row ${rowIndex}: Email is required (column: ${fieldMapping.email})`);
     } else if (!validateEmail(email)) {
-      errors.push(`Row ${rowIndex}: Invalid email format`);
+      errors.push(`Row ${rowIndex}: Invalid email format (${email})`);
     }
 
     // Check name (required)
     if (!user[fieldMapping.name]) {
-      errors.push(`Row ${rowIndex}: Name is required`);
+      errors.push(`Row ${rowIndex}: Name is required (column: ${fieldMapping.name})`);
     }
 
     // Check artist name (required)
     if (!user[fieldMapping.artistName]) {
-      errors.push(`Row ${rowIndex}: Artist Name is required`);
+      errors.push(`Row ${rowIndex}: Artist Name is required (column: ${fieldMapping.artistName})`);
     }
 
     // Check country (required)
     if (!user[fieldMapping.country]) {
-      errors.push(`Row ${rowIndex}: Country is required`);
+      errors.push(`Row ${rowIndex}: Country is required (column: ${fieldMapping.country})`);
     }
 
     // Genre is optional, will default to "Unknown"
     if (!user[fieldMapping.genre]) {
-      warnings.push(`Row ${rowIndex}: Genre is missing, will use "Unknown"`);
+      warnings.push(`Row ${rowIndex}: Genre is missing (column: ${fieldMapping.genre}), will use "Unknown"`);
     }
 
     return {
