@@ -149,14 +149,13 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       return false;
     }
 
-    // Check if user already exists using the correct parameter structure
+    // Check if user already exists
     const { data: existingUsersData } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 1,
-      query: email
+      perPage: 1
     });
 
-    const existingUsers = existingUsersData?.users || [];
+    const existingUsers = existingUsersData?.users?.filter(u => u.email === email) || [];
     
     if (existingUsers.length > 0) {
       stats.warnings.push({
