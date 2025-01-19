@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { User } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 interface UserRole {
   role: 'admin' | 'user';
@@ -41,6 +42,12 @@ interface Profile {
   }[];
   email?: string;
 }
+
+// Create a Supabase client with the service role key
+const serviceRoleClient = createClient(
+  process.env.VITE_SUPABASE_URL || '',
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 export default function Users() {
   const navigate = useNavigate();
@@ -64,7 +71,7 @@ export default function Users() {
         throw new Error("Not authorized");
       }
 
-      // Get all users with their profiles and emails
+      // Get profiles with their roles
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select(`
@@ -84,8 +91,8 @@ export default function Users() {
         throw error;
       }
 
-      // Get emails from auth.users
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
+      // Get emails using the service role client
+      const { data: authData, error: authError } = await serviceRoleClient.auth.admin.listUsers({
         page: currentPage + 1,
         perPage: pageSize,
       });
