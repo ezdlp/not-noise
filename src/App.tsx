@@ -55,7 +55,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
         .select("role")
         .eq("user_id", session.user.id)
         .eq("role", "admin")
-        .single();
+        .maybeSingle();
 
       setIsAdmin(!!roles);
     };
