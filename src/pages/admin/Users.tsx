@@ -47,7 +47,7 @@ export default function Users() {
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState<number>(0);
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ["adminUsers", pageSize, currentPage],
     queryFn: async () => {
       try {
@@ -69,8 +69,8 @@ export default function Users() {
           throw new Error("Not authorized");
         }
 
-        // Get profiles with their roles
-        const { data: profiles, error } = await supabase
+        // Get profiles with their roles and smart links
+        const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
           .select(`
             *,
@@ -84,38 +84,24 @@ export default function Users() {
           `)
           .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
-        if (error) {
-          console.error("Error fetching profiles:", error);
-          throw error;
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+          throw profilesError;
         }
 
-        // Get emails using the auth admin API
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
-          page: currentPage + 1,
-          perPage: pageSize,
-        });
-
-        if (authError) {
-          console.error("Error fetching auth users:", authError);
-          throw authError;
+        if (!profiles) {
+          return [];
         }
 
-        const authUsers = authData?.users || [];
-        console.log("Auth users fetched:", authUsers.length);
-
-        // Merge profiles with emails
-        const profilesWithEmail = profiles.map(profile => ({
-          ...profile,
-          email: authUsers.find(user => user.id === profile.id)?.email
-        }));
-
-        return profilesWithEmail as Profile[];
+        console.log("Fetched profiles:", profiles.length);
+        return profiles as Profile[];
       } catch (error) {
         console.error("Error in query function:", error);
         toast.error("Failed to load users");
         throw error;
       }
     },
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
   });
 
   const handleEditUser = async (updatedProfile: Partial<Profile>) => {
@@ -136,6 +122,11 @@ export default function Users() {
   };
 
   if (isLoading) return <div>Loading...</div>;
+
+  if (error) {
+    console.error("Error loading users:", error);
+    return <div>Error loading users. Please try again.</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -176,7 +167,6 @@ export default function Users() {
             <TableHead>Artist Name</TableHead>
             <TableHead>Genre</TableHead>
             <TableHead>Country</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Smart Links</TableHead>
             <TableHead>Actions</TableHead>
@@ -189,10 +179,6 @@ export default function Users() {
               <TableCell>{user.artist_name}</TableCell>
               <TableCell>{user.music_genre}</TableCell>
               <TableCell>{user.country}</TableCell>
-              <TableCell className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                {user.email}
-              </TableCell>
               <TableCell>{user.user_roles?.[0]?.role || "user"}</TableCell>
               <TableCell>
                 <Button 
