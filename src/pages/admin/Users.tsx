@@ -45,8 +45,8 @@ interface Profile {
 
 // Create a Supabase client with the service role key
 const serviceRoleClient = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
+  import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  import.meta.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 export default function Users() {
