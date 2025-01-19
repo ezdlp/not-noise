@@ -43,10 +43,10 @@ interface Profile {
   email?: string;
 }
 
-// Create a Supabase client with the service role key
+// Create a single service role client instance
 const serviceRoleClient = createClient(
-  "https://owtufhdsuuyrgmxytclj.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNTY2NzYzNiwiZXhwIjoyMDUxMjQzNjM2fQ.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc"
+  import.meta.env.VITE_SUPABASE_URL || "https://owtufhdsuuyrgmxytclj.supabase.co",
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
 export default function Users() {
@@ -58,41 +58,46 @@ export default function Users() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["adminUsers", pageSize, currentPage],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const { data: userRoles, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin');
-
-      if (roleError || !userRoles?.length) {
-        throw new Error("Not authorized");
-      }
-
-      // Get profiles with their roles
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select(`
-          *,
-          user_roles (
-            role
-          ),
-          smart_links (
-            id,
-            title
-          )
-        `)
-        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
-
-      if (error) {
-        console.error("Error fetching profiles:", error);
-        throw error;
-      }
-
-      // Get emails using the service role client
       try {
+        // Check admin role first
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.error("Not authenticated");
+          throw new Error("Not authenticated");
+        }
+
+        const { data: userRoles, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin');
+
+        if (roleError || !userRoles?.length) {
+          console.error("Not authorized");
+          throw new Error("Not authorized");
+        }
+
+        // Get profiles with their roles
+        const { data: profiles, error } = await supabase
+          .from("profiles")
+          .select(`
+            *,
+            user_roles (
+              role
+            ),
+            smart_links (
+              id,
+              title
+            )
+          `)
+          .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+
+        if (error) {
+          console.error("Error fetching profiles:", error);
+          throw error;
+        }
+
+        // Get emails using the service role client
         const { data: authData, error: authError } = await serviceRoleClient.auth.admin.listUsers({
           page: currentPage + 1,
           perPage: pageSize,
@@ -103,17 +108,19 @@ export default function Users() {
           throw authError;
         }
 
-        const authUsers = authData?.users as User[];
+        const authUsers = authData?.users || [];
+        console.log("Auth users fetched:", authUsers.length);
 
         // Merge profiles with emails
         const profilesWithEmail = profiles.map(profile => ({
           ...profile,
-          email: authUsers?.find(user => user.id === profile.id)?.email
+          email: authUsers.find(user => user.id === profile.id)?.email
         }));
 
         return profilesWithEmail as Profile[];
       } catch (error) {
-        console.error("Error fetching auth users:", error);
+        console.error("Error in query function:", error);
+        toast.error("Failed to load users");
         throw error;
       }
     },
