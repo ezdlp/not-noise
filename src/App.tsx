@@ -47,16 +47,18 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        console.log('No session found');
         setIsAdmin(false);
         return;
       }
 
+      console.log('Checking admin role for user:', session.user.id);
+
       const { data: userRoles, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('*')
         .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .eq('role', 'admin');
 
       if (error) {
         console.error('Error checking admin role:', error);
@@ -64,7 +66,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      setIsAdmin(!!userRoles);
+      console.log('User roles found:', userRoles);
+      setIsAdmin(userRoles && userRoles.length > 0);
     };
 
     checkAdminRole();
