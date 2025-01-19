@@ -92,25 +92,30 @@ export default function Users() {
       }
 
       // Get emails using the service role client
-      const { data: authData, error: authError } = await serviceRoleClient.auth.admin.listUsers({
-        page: currentPage + 1,
-        perPage: pageSize,
-      });
+      try {
+        const { data: authData, error: authError } = await serviceRoleClient.auth.admin.listUsers({
+          page: currentPage + 1,
+          perPage: pageSize,
+        });
 
-      if (authError) {
-        console.error("Error fetching auth users:", authError);
-        throw authError;
+        if (authError) {
+          console.error("Error fetching auth users:", authError);
+          throw authError;
+        }
+
+        const authUsers = authData?.users as User[];
+
+        // Merge profiles with emails
+        const profilesWithEmail = profiles.map(profile => ({
+          ...profile,
+          email: authUsers?.find(user => user.id === profile.id)?.email
+        }));
+
+        return profilesWithEmail as Profile[];
+      } catch (error) {
+        console.error("Error fetching auth users:", error);
+        throw error;
       }
-
-      const authUsers = authData?.users as User[];
-
-      // Merge profiles with emails
-      const profilesWithEmail = profiles.map(profile => ({
-        ...profile,
-        email: authUsers?.find(user => user.id === profile.id)?.email
-      }));
-
-      return profilesWithEmail as Profile[];
     },
   });
 
