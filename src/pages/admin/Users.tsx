@@ -43,10 +43,10 @@ interface Profile {
   email?: string;
 }
 
-// Create a single service role client instance
+// Create a single service role client instance with the service role key
 const serviceRoleClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL || "https://owtufhdsuuyrgmxytclj.supabase.co",
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ""
+  "https://owtufhdsuuyrgmxytclj.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNTY2NzYzNiwiZXhwIjoyMDUxMjQzNjM2fQ.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc"
 );
 
 export default function Users() {
@@ -142,8 +142,6 @@ export default function Users() {
     toast.success("User updated successfully");
     setSelectedUser(null);
   };
-
-  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div className="space-y-6">
