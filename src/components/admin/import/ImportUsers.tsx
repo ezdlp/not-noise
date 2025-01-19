@@ -62,11 +62,11 @@ const DEFAULT_FIELD_MAPPING = {
   links: "custom_links_count",
 };
 
-// Reduced batch size and increased delays
-const BATCH_SIZE = 5; // Reduced from 10 to 5 users per batch
-const DELAY_BETWEEN_USERS = 1000; // Increased from 500ms to 1000ms
-const MAX_RETRIES = 3;
-const INITIAL_RATE_LIMIT_DELAY = 2000; // Initial delay when rate limit is hit
+// Reduced batch size and increased delays for better rate limit handling
+const BATCH_SIZE = 3; // Process fewer users per batch
+const DELAY_BETWEEN_USERS = 2000; // 2 second delay between users
+const MAX_RETRIES = 5; // Increased max retries
+const INITIAL_RATE_LIMIT_DELAY = 5000; // Initial 5 second delay when rate limit is hit
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -160,20 +160,21 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
                 artistName: user[fieldMapping.artistName]?.trim() || "-",
                 musicGenre: user[fieldMapping.genre]?.trim() || "Unknown",
                 country: user[fieldMapping.country]?.trim() || "-",
-                email_confirm: true,
+                email_confirm: true, // Mark email as confirmed to bypass verification
               },
             },
           };
 
+          console.log(`Attempting to create user: ${email}`);
           const { data: authData, error: authError } = await supabase.auth.signUp(userData);
 
           if (authError) {
             if (authError.status === 429) {
-              console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms...`);
+              console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms... (${retries} retries left)`);
               stats.retried++;
               await delay(currentDelay);
-              // Exponential backoff
-              currentDelay *= 2;
+              // Exponential backoff with a maximum delay of 30 seconds
+              currentDelay = Math.min(currentDelay * 2, 30000);
               retries--;
               continue;
             }
@@ -181,6 +182,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           }
 
           if (authData.user) {
+            console.log(`Successfully created user: ${email}`);
             const { error: roleError } = await supabase
               .from("user_roles")
               .insert({
@@ -193,7 +195,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
             stats.totalLinks += linkCount;
             
-            // Add delay after successful creation
+            // Add increased delay after successful creation
             await delay(DELAY_BETWEEN_USERS);
           }
         }
@@ -202,7 +204,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         return true;
       } catch (error) {
         if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
-          console.error("Error importing user:", error);
+          console.error(`Error importing user ${email}:`, error);
           stats.errors.push({
             row: index + 1,
             error: error instanceof Error ? error.message : "Unknown error occurred",
@@ -211,7 +213,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         }
         retries--;
         await delay(currentDelay);
-        currentDelay *= 2; // Exponential backoff
+        currentDelay = Math.min(currentDelay * 2, 30000); // Exponential backoff with max delay
         stats.retried++;
       }
     }
