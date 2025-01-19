@@ -6,7 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const CHUNK_SIZE = 50; // Process posts in chunks of 50
+const CHUNK_SIZE = 50;
+
+interface WordPressPost {
+  title: string;
+  content: string;
+  excerpt?: string;
+  post_date?: string;
+  status?: string;
+  categories?: string[];
+  tags?: string[];
+  featured_image?: string;
+  meta_description?: string;
+  focus_keyword?: string;
+}
+
+interface MediaItem {
+  id: string;
+  url: string;
+  filename: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+  description?: string;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,25 +52,40 @@ serve(async (req) => {
       xmlDoc = parse(text);
       console.log('Successfully parsed XML file');
       
+      // Validate WordPress XML structure
       if (!xmlDoc.rss?.channel) {
-        throw new Error('Invalid WordPress export file structure');
+        console.error('Invalid XML structure:', JSON.stringify(xmlDoc, null, 2));
+        throw new Error('Invalid WordPress export file structure - missing rss or channel elements');
       }
+
+      // Log channel information for debugging
+      console.log('Channel information:', {
+        title: xmlDoc.rss.channel.title,
+        link: xmlDoc.rss.channel.link,
+        description: xmlDoc.rss.channel.description,
+      });
     } catch (parseError) {
       console.error('XML parsing error:', parseError);
       throw new Error('Failed to parse WordPress export file');
     }
 
-    // Initialize arrays to store parsed data
-    const posts = [];
-    const mediaItems = [];
-    const missingMedia = new Set();
-    const errors = [];
+    const posts: WordPressPost[] = [];
+    const mediaItems: MediaItem[] = [];
+    const missingMedia = new Set<string>();
+    const errors: string[] = [];
 
     // Parse channel information
     const channel = xmlDoc.rss.channel;
+    
+    // Ensure items exist and convert to array if single item
     const items = Array.isArray(channel.item) ? channel.item : [channel.item].filter(Boolean);
     
     console.log(`Found ${items.length} items in the XML file`);
+
+    if (items.length === 0) {
+      console.error('No items found in the XML file');
+      throw new Error('No items found in the WordPress export file');
+    }
 
     // Process items in chunks to optimize memory usage
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
@@ -56,6 +94,9 @@ serve(async (req) => {
 
       for (const item of chunk) {
         try {
+          // Log item type for debugging
+          console.log('Processing item type:', item['wp:post_type']?.[0]);
+
           const postType = item['wp:post_type']?.[0];
           
           if (postType === 'attachment') {
@@ -90,7 +131,7 @@ serve(async (req) => {
             const postDate = item['wp:post_date']?.[0];
             const status = item['wp:status']?.[0] || 'draft';
             
-            // Process images in content with memory-efficient regex
+            // Process images in content
             const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
             let match;
             const contentStr = content.toString();
@@ -98,7 +139,7 @@ serve(async (req) => {
               if (match[1]) missingMedia.add(match[1]);
             }
 
-            // Process categories and tags efficiently
+            // Process categories and tags
             const categories = Array.isArray(item.category) ? item.category : [item.category].filter(Boolean);
             const processedCategories = categories.map(cat => ({
               domain: cat?.['@domain'] || '',
@@ -125,6 +166,8 @@ serve(async (req) => {
                 meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
               )?.[0]?.['wp:meta_value']?.[0],
             });
+
+            console.log(`Processed post: ${title}`);
           }
         } catch (itemError) {
           console.error('Error processing item:', itemError);
@@ -133,7 +176,7 @@ serve(async (req) => {
 
         // Free up memory after processing each item
         if (i % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 0)); // Allow garbage collection
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
       }
     }
@@ -164,7 +207,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import', 
-        details: error.message 
+        details: error.message,
+        stack: error.stack
       }),
       {
         status: 400,
