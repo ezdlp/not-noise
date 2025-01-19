@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Papa from "papaparse";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -62,15 +63,15 @@ const DEFAULT_FIELD_MAPPING = {
   links: "custom_links_count",
 };
 
-// Reduced batch size and increased delays for better rate limit handling
-const BATCH_SIZE = 3; // Process fewer users per batch
-const DELAY_BETWEEN_USERS = 2000; // 2 second delay between users
-const MAX_RETRIES = 5; // Increased max retries
-const INITIAL_RATE_LIMIT_DELAY = 5000; // Initial 5 second delay when rate limit is hit
+// Optimized batch settings for disabled email confirmation
+const BATCH_SIZE = 10; // Increased batch size since email confirmation is disabled
+const MAX_RETRIES = 3;
+const INITIAL_RATE_LIMIT_DELAY = 2000;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ImportUsers({ onComplete }: ImportUsersProps) {
+  const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -160,12 +161,12 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
                 artistName: user[fieldMapping.artistName]?.trim() || "-",
                 musicGenre: user[fieldMapping.genre]?.trim() || "Unknown",
                 country: user[fieldMapping.country]?.trim() || "-",
-                email_confirm: true, // Mark email as confirmed to bypass verification
+                email_confirm: true,
               },
             },
           };
 
-          console.log(`Attempting to create user: ${email}`);
+          console.log(`Creating user: ${email}`);
           const { data: authData, error: authError } = await supabase.auth.signUp(userData);
 
           if (authError) {
@@ -173,8 +174,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms... (${retries} retries left)`);
               stats.retried++;
               await delay(currentDelay);
-              // Exponential backoff with a maximum delay of 30 seconds
-              currentDelay = Math.min(currentDelay * 2, 30000);
+              currentDelay = Math.min(currentDelay * 2, 5000);
               retries--;
               continue;
             }
@@ -192,11 +192,11 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             if (roleError) throw roleError;
 
+            // Update React Query cache with the new user
+            queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
             stats.totalLinks += linkCount;
-            
-            // Add increased delay after successful creation
-            await delay(DELAY_BETWEEN_USERS);
           }
         }
         
@@ -213,7 +213,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         }
         retries--;
         await delay(currentDelay);
-        currentDelay = Math.min(currentDelay * 2, 30000); // Exponential backoff with max delay
+        currentDelay = Math.min(currentDelay * 2, 5000);
         stats.retried++;
       }
     }
@@ -226,41 +226,21 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     stats: ImportStats,
     processedEmails: Set<string>
   ) => {
-    for (const [index, user] of batch.entries()) {
-      const validation = validateUser(user, startIndex + index + 1);
-      
-      validation.warnings.forEach(warning => {
-        stats.warnings.push({ row: startIndex + index + 1, warning });
-      });
+    const promises = batch.map((user, index) =>
+      processUserWithRetry(user, startIndex + index, stats, processedEmails)
+    );
 
-      if (!validation.isValid) {
-        validation.errors.forEach(error => {
-          stats.errors.push({ row: startIndex + index + 1, error });
-        });
-        stats.failed++;
-        continue;
-      }
-
-      const success = await processUserWithRetry(
-        user,
-        startIndex + index,
-        stats,
-        processedEmails
-      );
-
+    const results = await Promise.all(promises);
+    
+    results.forEach((success) => {
       if (success) {
         stats.success++;
       } else {
         stats.failed++;
       }
+    });
 
-      // Add delay between users to avoid rate limits
-      if (!isDryRun && index < batch.length - 1) {
-        await delay(DELAY_BETWEEN_USERS);
-      }
-
-      setProgress(((startIndex + index + 1) / stats.total) * 100);
-    }
+    setProgress(((startIndex + batch.length) / stats.total) * 100);
   };
 
   const processUsers = async (users: CSVUser[]): Promise<ImportStats> => {
@@ -280,6 +260,11 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     for (let i = 0; i < users.length; i += BATCH_SIZE) {
       const batch = users.slice(i, i + BATCH_SIZE);
       await processBatch(batch, i, stats, processedEmails);
+      
+      // Update React Query cache after each batch
+      if (!isDryRun) {
+        queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      }
     }
 
     return stats;
@@ -421,16 +406,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           </Button>
         </div>
 
-      {isImporting && (
-        <div className="space-y-2">
-          <Progress value={progress} className="w-[300px]" />
-          <p className="text-sm text-muted-foreground">
-            {isDryRun ? "Validating" : "Importing"} users... {Math.round(progress)}%
-            {stats.retried > 0 && ` (${stats.retried} retries due to rate limits)`}
-          </p>
-        </div>
-      )}
-
         {csvHeaders.length > 0 && (
           <div className="space-y-4 border p-4 rounded-md">
             <h3 className="font-medium">Map CSV Fields</h3>
@@ -470,6 +445,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           <Progress value={progress} className="w-[300px]" />
           <p className="text-sm text-muted-foreground">
             {isDryRun ? "Validating" : "Importing"} users... {Math.round(progress)}%
+            {stats.retried > 0 && ` (${stats.retried} retries due to rate limits)`}
           </p>
         </div>
       )}
