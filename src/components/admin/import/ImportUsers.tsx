@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { AuthError } from "@supabase/supabase-js";
+import { AuthError, User } from "@supabase/supabase-js";
 
 interface ImportUsersProps {
   onComplete?: () => void;
@@ -155,7 +155,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       perPage: 1
     });
 
-    const existingUsers = existingUsersData?.users?.filter(u => u.email === email) || [];
+    const existingUsers = existingUsersData?.users?.filter((u: User) => u.email === email) || [];
     
     if (existingUsers.length > 0) {
       stats.warnings.push({
