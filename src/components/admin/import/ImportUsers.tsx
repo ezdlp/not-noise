@@ -42,12 +42,21 @@ interface FieldMapping {
 }
 
 const REQUIRED_FIELDS = {
-  email: "Email",
+  email: "E-mail",
   name: "Name",
   artistName: "Artist Name",
   genre: "Genre",
   country: "Country",
   links: "Nr of Links",
+};
+
+const DEFAULT_FIELD_MAPPING = {
+  email: "user_email",
+  name: "first_name",
+  artistName: "nickname",
+  genre: "music_genre",
+  country: "country",
+  links: "custom_links_count",
 };
 
 export function ImportUsers({ onComplete }: ImportUsersProps) {
@@ -63,12 +72,12 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
   });
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [fieldMapping, setFieldMapping] = useState<FieldMapping>({
-    email: "",
-    name: "",
-    artistName: "",
-    genre: "",
-    country: "",
-    links: "",
+    email: DEFAULT_FIELD_MAPPING.email,
+    name: DEFAULT_FIELD_MAPPING.name,
+    artistName: DEFAULT_FIELD_MAPPING.artistName,
+    genre: DEFAULT_FIELD_MAPPING.genre,
+    country: DEFAULT_FIELD_MAPPING.country,
+    links: DEFAULT_FIELD_MAPPING.links,
   });
 
   const validateEmail = (email: string): boolean => {
@@ -117,7 +126,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         }
 
         if (!isDryRun) {
-          // Create auth user
+          // Create auth user with random password
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: user[fieldMapping.email],
             password: crypto.randomUUID(),
@@ -145,7 +154,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             if (profileError) throw profileError;
 
-            // Set user role
+            // Set user role as "user" (Free User)
             const { error: roleError } = await supabase
               .from("user_roles")
               .insert({
@@ -155,6 +164,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             if (roleError) throw roleError;
 
+            // Track link count if provided
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
             stats.totalLinks += linkCount;
           }
@@ -179,7 +189,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     if (!file) return;
 
     try {
-      // First pass: get headers and set up field mapping
       Papa.parse(file, {
         header: true,
         preview: 1,
@@ -188,16 +197,15 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           const headers = results.meta.fields || [];
           setCsvHeaders(headers);
           
-          // Try to auto-map fields based on common patterns
+          // Try to auto-map fields based on default mapping
           const mapping: Partial<FieldMapping> = {};
           headers.forEach(header => {
             const headerLower = header.toLowerCase();
-            if (headerLower.includes('email')) mapping.email = header;
-            if (headerLower.includes('name') && !headerLower.includes('artist')) mapping.name = header;
-            if (headerLower.includes('artist')) mapping.artistName = header;
-            if (headerLower.includes('genre')) mapping.genre = header;
-            if (headerLower.includes('country')) mapping.country = header;
-            if (headerLower.includes('links')) mapping.links = header;
+            Object.entries(DEFAULT_FIELD_MAPPING).forEach(([key, value]) => {
+              if (headerLower === value.toLowerCase()) {
+                mapping[key as keyof FieldMapping] = header;
+              }
+            });
           });
           
           setFieldMapping(prev => ({ ...prev, ...mapping }));
