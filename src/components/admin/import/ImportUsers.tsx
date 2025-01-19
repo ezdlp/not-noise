@@ -30,6 +30,7 @@ interface ImportStats {
   failed: number;
   totalLinks: number;
   errors: Array<{ row: number; error: string }>;
+  warnings: Array<{ row: number; warning: string }>;
 }
 
 interface FieldMapping {
@@ -69,6 +70,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     failed: 0,
     totalLinks: 0,
     errors: [],
+    warnings: [],
   });
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [fieldMapping, setFieldMapping] = useState<FieldMapping>({
@@ -84,29 +86,41 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const validateUser = (user: CSVUser, rowIndex: number): string | null => {
+  const validateUser = (user: CSVUser, rowIndex: number): { isValid: boolean; errors: string[]; warnings: string[] } => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    // Check email
     const email = user[fieldMapping.email];
     if (!email) {
-      return `Row ${rowIndex}: Email is required`;
-    }
-    if (!validateEmail(email)) {
-      return `Row ${rowIndex}: Invalid email format`;
+      errors.push(`Row ${rowIndex}: Email is required`);
+    } else if (!validateEmail(email)) {
+      errors.push(`Row ${rowIndex}: Invalid email format`);
     }
     
+    // Check other required fields
     const requiredFields = [
       { key: "name", label: "Name" },
       { key: "artistName", label: "Artist Name" },
-      { key: "genre", label: "Genre" },
       { key: "country", label: "Country" },
     ];
 
     for (const field of requiredFields) {
       if (!user[fieldMapping[field.key as keyof FieldMapping]]) {
-        return `Row ${rowIndex}: ${field.label} is required`;
+        errors.push(`Row ${rowIndex}: ${field.label} is required`);
       }
     }
 
-    return null;
+    // Special handling for genre
+    if (!user[fieldMapping.genre]) {
+      warnings.push(`Row ${rowIndex}: Genre is missing, will use "Unknown"`);
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+    };
   };
 
   const processUsers = async (users: CSVUser[]): Promise<ImportStats> => {
@@ -116,13 +130,26 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       failed: 0,
       totalLinks: 0,
       errors: [],
+      warnings: [],
     };
 
     for (const [index, user] of users.entries()) {
       try {
-        const validationError = validateUser(user, index + 1);
-        if (validationError) {
-          throw new Error(validationError);
+        const validation = validateUser(user, index + 1);
+        
+        // Add warnings to stats
+        validation.warnings.forEach(warning => {
+          stats.warnings.push({ row: index + 1, warning });
+          console.log(warning);
+        });
+
+        if (!validation.isValid) {
+          validation.errors.forEach(error => {
+            stats.errors.push({ row: index + 1, error });
+            console.log(error);
+          });
+          stats.failed++;
+          continue; // Skip this row but continue processing
         }
 
         if (!isDryRun) {
@@ -147,7 +174,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               .update({
                 name: user[fieldMapping.name],
                 artist_name: user[fieldMapping.artistName],
-                music_genre: user[fieldMapping.genre],
+                music_genre: user[fieldMapping.genre] || "Unknown",
                 country: user[fieldMapping.country],
               })
               .eq("id", authData.user.id);
@@ -222,7 +249,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
   const handleImport = async (file: File) => {
     try {
       setIsImporting(true);
-      setStats({ total: 0, success: 0, failed: 0, totalLinks: 0, errors: [] });
+      setStats({ total: 0, success: 0, failed: 0, totalLinks: 0, errors: [], warnings: [] });
 
       Papa.parse(file, {
         header: true,
@@ -248,6 +275,23 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             if (stats.failed > 0) {
               console.error("Import errors:", stats.errors);
               toast.error(`${stats.failed} users had validation errors`);
+            }
+
+            // Log summary
+            console.log("\nImport Summary:");
+            console.log(`Total rows processed: ${stats.total}`);
+            console.log(`Successfully imported: ${stats.success}`);
+            console.log(`Failed/Skipped: ${stats.failed}`);
+            console.log(`Total links: ${stats.totalLinks}`);
+            
+            if (stats.warnings.length > 0) {
+              console.log("\nWarnings:");
+              stats.warnings.forEach(({ row, warning }) => console.log(warning));
+            }
+            
+            if (stats.errors.length > 0) {
+              console.log("\nErrors:");
+              stats.errors.forEach(({ row, error }) => console.log(error));
             }
           } catch (error) {
             console.error("Error processing users:", error);
@@ -350,16 +394,33 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         </div>
       )}
 
-      {stats.errors.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <h3 className="font-medium">Import Errors:</h3>
-          <ul className="list-disc pl-5 space-y-1">
-            {stats.errors.map((error, index) => (
-              <li key={index} className="text-sm text-destructive">
-                {error.error}
-              </li>
-            ))}
-          </ul>
+      {(stats.errors.length > 0 || stats.warnings.length > 0) && (
+        <div className="mt-4 space-y-4">
+          {stats.warnings.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-medium">Import Warnings:</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {stats.warnings.map((warning, index) => (
+                  <li key={index} className="text-sm text-yellow-600">
+                    {warning.warning}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {stats.errors.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-medium">Import Errors:</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {stats.errors.map((error, index) => (
+                  <li key={index} className="text-sm text-destructive">
+                    {error.error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
