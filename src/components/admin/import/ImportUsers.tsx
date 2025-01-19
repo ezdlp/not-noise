@@ -90,7 +90,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    // Check email (required)
+    // Only validate email as it's the only truly required field for auth
     const email = user[fieldMapping.email];
     if (!email) {
       errors.push(`Row ${rowIndex}: Email is required (column: ${fieldMapping.email})`);
@@ -98,24 +98,18 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       errors.push(`Row ${rowIndex}: Invalid email format (${email})`);
     }
 
-    // Check name (required)
-    if (!user[fieldMapping.name]) {
-      errors.push(`Row ${rowIndex}: Name is required (column: ${fieldMapping.name})`);
+    // Add warnings for empty fields
+    if (!user[fieldMapping.name]?.trim()) {
+      warnings.push(`Row ${rowIndex}: Name is empty (column: ${fieldMapping.name}), will use "-"`);
     }
-
-    // Check artist name (required)
-    if (!user[fieldMapping.artistName]) {
-      errors.push(`Row ${rowIndex}: Artist Name is required (column: ${fieldMapping.artistName})`);
+    if (!user[fieldMapping.artistName]?.trim()) {
+      warnings.push(`Row ${rowIndex}: Artist Name is empty (column: ${fieldMapping.artistName}), will use "-"`);
     }
-
-    // Check country (required)
-    if (!user[fieldMapping.country]) {
-      errors.push(`Row ${rowIndex}: Country is required (column: ${fieldMapping.country})`);
+    if (!user[fieldMapping.country]?.trim()) {
+      warnings.push(`Row ${rowIndex}: Country is empty (column: ${fieldMapping.country}), will use "-"`);
     }
-
-    // Genre is optional, will default to "Unknown"
-    if (!user[fieldMapping.genre]) {
-      warnings.push(`Row ${rowIndex}: Genre is missing (column: ${fieldMapping.genre}), will use "Unknown"`);
+    if (!user[fieldMapping.genre]?.trim()) {
+      warnings.push(`Row ${rowIndex}: Genre is empty (column: ${fieldMapping.genre}), will use "Unknown"`);
     }
 
     return {
