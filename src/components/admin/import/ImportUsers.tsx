@@ -62,10 +62,11 @@ const DEFAULT_FIELD_MAPPING = {
   links: "custom_links_count",
 };
 
-const BATCH_SIZE = 10; // Process users in batches of 10
-const DELAY_BETWEEN_USERS = 500; // 500ms delay between users
-const MAX_RETRIES = 3; // Maximum number of retries per user
-const RATE_LIMIT_DELAY = 2000; // Wait 2 seconds when rate limit is hit
+// Reduced batch size and increased delays
+const BATCH_SIZE = 5; // Reduced from 10 to 5 users per batch
+const DELAY_BETWEEN_USERS = 1000; // Increased from 500ms to 1000ms
+const MAX_RETRIES = 3;
+const INITIAL_RATE_LIMIT_DELAY = 2000; // Initial delay when rate limit is hit
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -137,8 +138,8 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
   ): Promise<boolean> => {
     const email = user[fieldMapping.email];
     let retries = MAX_RETRIES;
+    let currentDelay = INITIAL_RATE_LIMIT_DELAY;
 
-    // Skip duplicate emails
     if (processedEmails.has(email)) {
       stats.warnings.push({
         row: index + 1,
@@ -168,9 +169,11 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
           if (authError) {
             if (authError.status === 429) {
-              console.warn(`Rate limit reached for ${email}. Retrying...`);
+              console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms...`);
               stats.retried++;
-              await delay(RATE_LIMIT_DELAY);
+              await delay(currentDelay);
+              // Exponential backoff
+              currentDelay *= 2;
               retries--;
               continue;
             }
@@ -189,6 +192,9 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
             stats.totalLinks += linkCount;
+            
+            // Add delay after successful creation
+            await delay(DELAY_BETWEEN_USERS);
           }
         }
         
@@ -204,7 +210,8 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           return false;
         }
         retries--;
-        await delay(RATE_LIMIT_DELAY);
+        await delay(currentDelay);
+        currentDelay *= 2; // Exponential backoff
         stats.retried++;
       }
     }
