@@ -54,20 +54,26 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
       console.log('Checking admin role for user:', session.user.id);
 
-      const { data: userRoles, error } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin');
+      try {
+        const { data: userRoles, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
 
-      if (error) {
-        console.error('Error checking admin role:', error);
+        if (error) {
+          console.error('Error checking admin role:', error);
+          setIsAdmin(false);
+          return;
+        }
+
+        console.log('User role found:', userRoles);
+        setIsAdmin(!!userRoles);
+      } catch (error) {
+        console.error('Error in admin check:', error);
         setIsAdmin(false);
-        return;
       }
-
-      console.log('User roles found:', userRoles);
-      setIsAdmin(userRoles && userRoles.length > 0);
     };
 
     checkAdminRole();
