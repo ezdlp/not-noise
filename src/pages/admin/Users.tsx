@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -15,6 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserRole {
   role: 'admin' | 'user';
@@ -31,16 +38,18 @@ interface Profile {
     id: string;
     title: string;
   }[];
+  email?: string;
 }
 
 export default function Users() {
   const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(0);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["adminUsers"],
     queryFn: async () => {
-      // First check if the current user is an admin
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
@@ -54,7 +63,7 @@ export default function Users() {
         throw new Error("Not authorized");
       }
 
-      // If admin, fetch all profiles with their roles and smart links
+      // Get all users with their profiles and emails
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select(`
@@ -66,14 +75,32 @@ export default function Users() {
             id,
             title
           )
-        `);
+        `)
+        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
       if (error) {
         console.error("Error fetching profiles:", error);
         throw error;
       }
 
-      return profiles as Profile[];
+      // Get emails from auth.users
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
+        page: currentPage + 1,
+        perPage: pageSize,
+      });
+
+      if (authError) {
+        console.error("Error fetching auth users:", authError);
+        throw authError;
+      }
+
+      // Merge profiles with emails
+      const profilesWithEmail = profiles.map(profile => ({
+        ...profile,
+        email: authUsers.users.find(user => user.id === profile.id)?.email
+      }));
+
+      return profilesWithEmail as Profile[];
     },
   });
 
@@ -109,6 +136,25 @@ export default function Users() {
         </Button>
       </div>
 
+      <div className="flex justify-end mb-4">
+        <Select
+          value={pageSize.toString()}
+          onValueChange={(value) => {
+            setPageSize(Number(value));
+            setCurrentPage(0);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select page size" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="20">20 per page</SelectItem>
+            <SelectItem value="50">50 per page</SelectItem>
+            <SelectItem value="100">100 per page</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -116,6 +162,7 @@ export default function Users() {
             <TableHead>Artist Name</TableHead>
             <TableHead>Genre</TableHead>
             <TableHead>Country</TableHead>
+            <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Smart Links</TableHead>
             <TableHead>Actions</TableHead>
@@ -128,6 +175,10 @@ export default function Users() {
               <TableCell>{user.artist_name}</TableCell>
               <TableCell>{user.music_genre}</TableCell>
               <TableCell>{user.country}</TableCell>
+              <TableCell className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                {user.email}
+              </TableCell>
               <TableCell>{user.user_roles?.[0]?.role || "user"}</TableCell>
               <TableCell>
                 <Button 
@@ -198,6 +249,25 @@ export default function Users() {
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex justify-end mt-4">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+            disabled={currentPage === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            disabled={!users || users.length < pageSize}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
