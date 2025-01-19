@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { AuthError } from "@supabase/supabase-js";
 
 interface ImportUsersProps {
   onComplete?: () => void;
@@ -29,6 +30,7 @@ interface ImportStats {
   success: number;
   failed: number;
   totalLinks: number;
+  retried: number;
   errors: Array<{ row: number; error: string }>;
   warnings: Array<{ row: number; warning: string }>;
 }
@@ -59,6 +61,13 @@ const DEFAULT_FIELD_MAPPING = {
   country: "country",
   links: "custom_links_count",
 };
+
+const BATCH_SIZE = 10; // Process users in batches of 10
+const DELAY_BETWEEN_USERS = 500; // 500ms delay between users
+const MAX_RETRIES = 3; // Maximum number of retries per user
+const RATE_LIMIT_DELAY = 2000; // Wait 2 seconds when rate limit is hit
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ImportUsers({ onComplete }: ImportUsersProps) {
   const [isImporting, setIsImporting] = useState(false);
@@ -119,49 +128,27 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     };
   };
 
-  const processUsers = async (users: CSVUser[]): Promise<ImportStats> => {
-    const stats: ImportStats = {
-      total: users.length,
-      success: 0,
-      failed: 0,
-      totalLinks: 0,
-      errors: [],
-      warnings: [],
-    };
+  const processUserWithRetry = async (
+    user: CSVUser,
+    index: number,
+    stats: ImportStats,
+    processedEmails: Set<string>
+  ): Promise<boolean> => {
+    const email = user[fieldMapping.email];
+    let retries = MAX_RETRIES;
 
-    const processedEmails = new Set<string>();
+    // Skip duplicate emails
+    if (processedEmails.has(email)) {
+      stats.warnings.push({
+        row: index + 1,
+        warning: `Duplicate email ${email}, skipping`,
+      });
+      return false;
+    }
 
-    for (const [index, user] of users.entries()) {
+    while (retries > 0) {
       try {
-        const validation = validateUser(user, index + 1);
-        
-        validation.warnings.forEach(warning => {
-          stats.warnings.push({ row: index + 1, warning });
-        });
-
-        if (!validation.isValid) {
-          validation.errors.forEach(error => {
-            stats.errors.push({ row: index + 1, error });
-          });
-          stats.failed++;
-          continue;
-        }
-
-        const email = user[fieldMapping.email];
-        
-        // Skip duplicate emails
-        if (processedEmails.has(email)) {
-          stats.warnings.push({ 
-            row: index + 1, 
-            warning: `Duplicate email ${email}, skipping` 
-          });
-          continue;
-        }
-        
-        processedEmails.add(email);
-
         if (!isDryRun) {
-          // Replace empty values with "-" before saving
           const userData = {
             email: email,
             password: crypto.randomUUID(),
@@ -178,10 +165,18 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
           const { data: authData, error: authError } = await supabase.auth.signUp(userData);
 
-          if (authError) throw authError;
+          if (authError) {
+            if (authError.status === 429) {
+              console.warn(`Rate limit reached for ${email}. Retrying...`);
+              stats.retried++;
+              await delay(RATE_LIMIT_DELAY);
+              retries--;
+              continue;
+            }
+            throw authError;
+          }
 
           if (authData.user) {
-            // Set user role as "user" (Free User)
             const { error: roleError } = await supabase
               .from("user_roles")
               .insert({
@@ -191,21 +186,90 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             if (roleError) throw roleError;
 
-            // Track link count if provided
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
             stats.totalLinks += linkCount;
           }
         }
-        stats.success++;
+        
+        processedEmails.add(email);
+        return true;
       } catch (error) {
-        console.error("Error importing user:", error);
-        stats.failed++;
-        stats.errors.push({
-          row: index + 1,
-          error: error instanceof Error ? error.message : "Unknown error occurred",
-        });
+        if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
+          console.error("Error importing user:", error);
+          stats.errors.push({
+            row: index + 1,
+            error: error instanceof Error ? error.message : "Unknown error occurred",
+          });
+          return false;
+        }
+        retries--;
+        await delay(RATE_LIMIT_DELAY);
+        stats.retried++;
       }
-      setProgress(((index + 1) / users.length) * 100);
+    }
+    return false;
+  };
+
+  const processBatch = async (
+    batch: CSVUser[],
+    startIndex: number,
+    stats: ImportStats,
+    processedEmails: Set<string>
+  ) => {
+    for (const [index, user] of batch.entries()) {
+      const validation = validateUser(user, startIndex + index + 1);
+      
+      validation.warnings.forEach(warning => {
+        stats.warnings.push({ row: startIndex + index + 1, warning });
+      });
+
+      if (!validation.isValid) {
+        validation.errors.forEach(error => {
+          stats.errors.push({ row: startIndex + index + 1, error });
+        });
+        stats.failed++;
+        continue;
+      }
+
+      const success = await processUserWithRetry(
+        user,
+        startIndex + index,
+        stats,
+        processedEmails
+      );
+
+      if (success) {
+        stats.success++;
+      } else {
+        stats.failed++;
+      }
+
+      // Add delay between users to avoid rate limits
+      if (!isDryRun && index < batch.length - 1) {
+        await delay(DELAY_BETWEEN_USERS);
+      }
+
+      setProgress(((startIndex + index + 1) / stats.total) * 100);
+    }
+  };
+
+  const processUsers = async (users: CSVUser[]): Promise<ImportStats> => {
+    const stats: ImportStats = {
+      total: users.length,
+      success: 0,
+      failed: 0,
+      totalLinks: 0,
+      retried: 0,
+      errors: [],
+      warnings: [],
+    };
+
+    const processedEmails = new Set<string>();
+
+    // Process users in batches
+    for (let i = 0; i < users.length; i += BATCH_SIZE) {
+      const batch = users.slice(i, i + BATCH_SIZE);
+      await processBatch(batch, i, stats, processedEmails);
     }
 
     return stats;
@@ -346,6 +410,16 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             <Upload className="h-4 w-4" />
           </Button>
         </div>
+
+      {isImporting && (
+        <div className="space-y-2">
+          <Progress value={progress} className="w-[300px]" />
+          <p className="text-sm text-muted-foreground">
+            {isDryRun ? "Validating" : "Importing"} users... {Math.round(progress)}%
+            {stats.retried > 0 && ` (${stats.retried} retries due to rate limits)`}
+          </p>
+        </div>
+      )}
 
         {csvHeaders.length > 0 && (
           <div className="space-y-4 border p-4 rounded-md">
