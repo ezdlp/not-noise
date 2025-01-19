@@ -49,24 +49,35 @@ serve(async (req) => {
     let xmlDoc;
     
     try {
+      console.log('Attempting to parse XML file...');
       xmlDoc = parse(text);
-      console.log('Successfully parsed XML file');
+      console.log('XML parsing successful');
       
       // Validate WordPress XML structure
-      if (!xmlDoc.rss?.channel) {
-        console.error('Invalid XML structure:', JSON.stringify(xmlDoc, null, 2));
-        throw new Error('Invalid WordPress export file structure - missing rss or channel elements');
+      if (!xmlDoc.rss) {
+        console.error('Missing RSS element in XML structure');
+        throw new Error('Invalid WordPress export file - missing RSS element');
       }
 
-      // Log channel information for debugging
+      if (!xmlDoc.rss.channel) {
+        console.error('Missing channel element in RSS structure');
+        throw new Error('Invalid WordPress export file - missing channel element');
+      }
+
+      // Log full XML structure for debugging
+      console.log('XML Structure:', JSON.stringify(xmlDoc, null, 2));
+
+      // Log channel information
       console.log('Channel information:', {
         title: xmlDoc.rss.channel.title,
         link: xmlDoc.rss.channel.link,
         description: xmlDoc.rss.channel.description,
+        'wp:wxr_version': xmlDoc.rss.channel['wp:wxr_version']?.[0],
       });
     } catch (parseError) {
       console.error('XML parsing error:', parseError);
-      throw new Error('Failed to parse WordPress export file');
+      console.error('Raw file content:', text.substring(0, 1000) + '...'); // Log first 1000 chars
+      throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
     const posts: WordPressPost[] = [];
@@ -77,8 +88,11 @@ serve(async (req) => {
     // Parse channel information
     const channel = xmlDoc.rss.channel;
     
+    // Log raw items data for debugging
+    console.log('Raw channel items:', JSON.stringify(channel.item, null, 2));
+    
     // Ensure items exist and convert to array if single item
-    const items = Array.isArray(channel.item) ? channel.item : [channel.item].filter(Boolean);
+    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
     
     console.log(`Found ${items.length} items in the XML file`);
 
@@ -87,17 +101,18 @@ serve(async (req) => {
       throw new Error('No items found in the WordPress export file');
     }
 
-    // Process items in chunks to optimize memory usage
+    // Process items in chunks
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
       console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
 
       for (const item of chunk) {
         try {
-          // Log item type for debugging
-          console.log('Processing item type:', item['wp:post_type']?.[0]);
+          // Log raw item data for debugging
+          console.log('Processing item:', JSON.stringify(item, null, 2));
 
           const postType = item['wp:post_type']?.[0];
+          console.log('Post type:', postType);
           
           if (postType === 'attachment') {
             const url = item['wp:attachment_url']?.[0];
@@ -123,6 +138,8 @@ serve(async (req) => {
                 caption: metadata.caption,
                 description,
               });
+
+              console.log('Added media item:', { id, filename });
             }
           } else if (postType === 'post') {
             const title = item.title?.[0] || '';
@@ -208,7 +225,8 @@ serve(async (req) => {
       JSON.stringify({ 
         error: 'Failed to process WordPress import', 
         details: error.message,
-        stack: error.stack
+        stack: error.stack,
+        type: error.constructor.name
       }),
       {
         status: 400,
