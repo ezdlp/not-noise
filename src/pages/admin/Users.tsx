@@ -46,7 +46,7 @@ interface Profile {
 // Create a Supabase client with the service role key using the existing configuration
 const serviceRoleClient = createClient(
   "https://owtufhdsuuyrgmxytclj.supabase.co",
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNTY2NzYzNiwiZXhwIjoyMDUxMjQzNjM2fQ.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc"
 );
 
 export default function Users() {
