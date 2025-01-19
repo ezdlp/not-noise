@@ -90,28 +90,30 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    // Check email
+    // Check email (required)
     const email = user[fieldMapping.email];
     if (!email) {
       errors.push(`Row ${rowIndex}: Email is required`);
     } else if (!validateEmail(email)) {
       errors.push(`Row ${rowIndex}: Invalid email format`);
     }
-    
-    // Check other required fields
-    const requiredFields = [
-      { key: "name", label: "Name" },
-      { key: "artistName", label: "Artist Name" },
-      { key: "country", label: "Country" },
-    ];
 
-    for (const field of requiredFields) {
-      if (!user[fieldMapping[field.key as keyof FieldMapping]]) {
-        errors.push(`Row ${rowIndex}: ${field.label} is required`);
-      }
+    // Check name (required)
+    if (!user[fieldMapping.name]) {
+      errors.push(`Row ${rowIndex}: Name is required`);
     }
 
-    // Special handling for genre
+    // Check artist name (required)
+    if (!user[fieldMapping.artistName]) {
+      errors.push(`Row ${rowIndex}: Artist Name is required`);
+    }
+
+    // Check country (required)
+    if (!user[fieldMapping.country]) {
+      errors.push(`Row ${rowIndex}: Country is required`);
+    }
+
+    // Genre is optional, will default to "Unknown"
     if (!user[fieldMapping.genre]) {
       warnings.push(`Row ${rowIndex}: Genre is missing, will use "Unknown"`);
     }
@@ -133,6 +135,8 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       warnings: [],
     };
 
+    const processedEmails = new Set<string>();
+
     for (const [index, user] of users.entries()) {
       try {
         const validation = validateUser(user, index + 1);
@@ -140,26 +144,39 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         // Add warnings to stats
         validation.warnings.forEach(warning => {
           stats.warnings.push({ row: index + 1, warning });
-          console.log(warning);
         });
 
         if (!validation.isValid) {
           validation.errors.forEach(error => {
             stats.errors.push({ row: index + 1, error });
-            console.log(error);
           });
           stats.failed++;
-          continue; // Skip this row but continue processing
+          continue;
         }
 
+        const email = user[fieldMapping.email];
+        
+        // Skip duplicate emails
+        if (processedEmails.has(email)) {
+          stats.warnings.push({ 
+            row: index + 1, 
+            warning: `Duplicate email ${email}, skipping` 
+          });
+          continue;
+        }
+        
+        processedEmails.add(email);
+
         if (!isDryRun) {
-          // Create auth user with random password
           const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: user[fieldMapping.email],
+            email: email,
             password: crypto.randomUUID(),
             options: {
               data: {
                 name: user[fieldMapping.name],
+                artistName: user[fieldMapping.artistName],
+                musicGenre: user[fieldMapping.genre] || "Unknown",
+                country: user[fieldMapping.country],
                 email_confirm: true,
               },
             },
@@ -168,19 +185,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           if (authError) throw authError;
 
           if (authData.user) {
-            // Set user profile data
-            const { error: profileError } = await supabase
-              .from("profiles")
-              .update({
-                name: user[fieldMapping.name],
-                artist_name: user[fieldMapping.artistName],
-                music_genre: user[fieldMapping.genre] || "Unknown",
-                country: user[fieldMapping.country],
-              })
-              .eq("id", authData.user.id);
-
-            if (profileError) throw profileError;
-
             // Set user role as "user" (Free User)
             const { error: roleError } = await supabase
               .from("user_roles")
@@ -224,7 +228,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           const headers = results.meta.fields || [];
           setCsvHeaders(headers);
           
-          // Try to auto-map fields based on default mapping
+          // Auto-map fields based on default mapping
           const mapping: Partial<FieldMapping> = {};
           headers.forEach(header => {
             const headerLower = header.toLowerCase();
@@ -271,11 +275,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
                 `Dry run completed. ${stats.success} users valid for import, ${stats.failed} with errors`
               );
             }
-            
-            if (stats.failed > 0) {
-              console.error("Import errors:", stats.errors);
-              toast.error(`${stats.failed} users had validation errors`);
-            }
 
             // Log summary
             console.log("\nImport Summary:");
@@ -286,12 +285,13 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             
             if (stats.warnings.length > 0) {
               console.log("\nWarnings:");
-              stats.warnings.forEach(({ row, warning }) => console.log(warning));
+              stats.warnings.forEach(({ warning }) => console.log(warning));
             }
             
             if (stats.errors.length > 0) {
               console.log("\nErrors:");
-              stats.errors.forEach(({ row, error }) => console.log(error));
+              stats.errors.forEach(({ error }) => console.log(error));
+              toast.error(`${stats.failed} users had validation errors`);
             }
           } catch (error) {
             console.error("Error processing users:", error);
