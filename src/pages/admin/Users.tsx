@@ -22,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User } from '@supabase/supabase-js';
-import { createClient } from '@supabase/supabase-js';
 
 interface UserRole {
   role: 'admin' | 'user';
@@ -42,12 +40,6 @@ interface Profile {
   }[];
   email?: string;
 }
-
-// Create a single service role client instance with the service role key
-const serviceRoleClient = createClient(
-  "https://owtufhdsuuyrgmxytclj.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNTY2NzYzNiwiZXhwIjoyMDUxMjQzNjM2fQ.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc"
-);
 
 export default function Users() {
   const navigate = useNavigate();
@@ -97,8 +89,8 @@ export default function Users() {
           throw error;
         }
 
-        // Get emails using the service role client
-        const { data: authData, error: authError } = await serviceRoleClient.auth.admin.listUsers({
+        // Get emails using the auth admin API
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
           page: currentPage + 1,
           perPage: pageSize,
         });
@@ -142,6 +134,8 @@ export default function Users() {
     toast.success("User updated successfully");
     setSelectedUser(null);
   };
+
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div className="space-y-6">
