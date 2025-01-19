@@ -40,6 +40,21 @@ export default function Users() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["adminUsers"],
     queryFn: async () => {
+      // First check if the current user is an admin
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin');
+
+      if (roleError || !userRoles?.length) {
+        throw new Error("Not authorized");
+      }
+
+      // If admin, fetch all profiles
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select(`
