@@ -149,6 +149,21 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       return false;
     }
 
+    // Check if user already exists
+    const { data: existingUser } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
+    });
+
+    if (existingUser?.users?.length > 0) {
+      stats.warnings.push({
+        row: index + 1,
+        warning: `User with email ${email} already exists, skipping`,
+      });
+      return false;
+    }
+
     while (retries > 0) {
       try {
         if (!isDryRun) {
@@ -178,6 +193,16 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               retries--;
               continue;
             }
+
+            // Handle user already exists error
+            if (authError.message.includes('user_already_exists')) {
+              stats.warnings.push({
+                row: index + 1,
+                warning: `User with email ${email} already exists, skipping`,
+              });
+              return false;
+            }
+
             throw authError;
           }
 
@@ -205,6 +230,16 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       } catch (error) {
         if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
           console.error(`Error importing user ${email}:`, error);
+          
+          // Check if error is due to user already existing
+          if (error instanceof Error && error.message.includes('user_already_exists')) {
+            stats.warnings.push({
+              row: index + 1,
+              warning: `User with email ${email} already exists, skipping`,
+            });
+            return false;
+          }
+          
           stats.errors.push({
             row: index + 1,
             error: error instanceof Error ? error.message : "Unknown error occurred",
