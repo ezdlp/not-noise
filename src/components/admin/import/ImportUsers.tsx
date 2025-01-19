@@ -141,7 +141,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       try {
         const validation = validateUser(user, index + 1);
         
-        // Add warnings to stats
         validation.warnings.forEach(warning => {
           stats.warnings.push({ row: index + 1, warning });
         });
@@ -168,19 +167,22 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         processedEmails.add(email);
 
         if (!isDryRun) {
-          const { data: authData, error: authError } = await supabase.auth.signUp({
+          // Replace empty values with "-" before saving
+          const userData = {
             email: email,
             password: crypto.randomUUID(),
             options: {
               data: {
-                name: user[fieldMapping.name],
-                artistName: user[fieldMapping.artistName],
-                musicGenre: user[fieldMapping.genre] || "Unknown",
-                country: user[fieldMapping.country],
+                name: user[fieldMapping.name]?.trim() || "-",
+                artistName: user[fieldMapping.artistName]?.trim() || "-",
+                musicGenre: user[fieldMapping.genre]?.trim() || "Unknown",
+                country: user[fieldMapping.country]?.trim() || "-",
                 email_confirm: true,
               },
             },
-          });
+          };
+
+          const { data: authData, error: authError } = await supabase.auth.signUp(userData);
 
           if (authError) throw authError;
 
