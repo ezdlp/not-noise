@@ -78,6 +78,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     success: 0,
     failed: 0,
     totalLinks: 0,
+    retried: 0,
     errors: [],
     warnings: [],
   });
@@ -313,7 +314,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
   const handleImport = async (file: File) => {
     try {
       setIsImporting(true);
-      setStats({ total: 0, success: 0, failed: 0, totalLinks: 0, errors: [], warnings: [] });
+      setStats({ total: 0, success: 0, failed: 0, totalLinks: 0, retried: 0, errors: [], warnings: [] });
 
       Papa.parse(file, {
         header: true,
