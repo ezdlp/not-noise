@@ -43,10 +43,10 @@ interface Profile {
   email?: string;
 }
 
-// Create a Supabase client with the service role key
+// Create a Supabase client with the service role key using the existing configuration
 const serviceRoleClient = createClient(
-  import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  import.meta.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
+  "https://owtufhdsuuyrgmxytclj.supabase.co",
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 export default function Users() {
