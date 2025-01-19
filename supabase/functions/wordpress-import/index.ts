@@ -53,7 +53,6 @@ serve(async (req) => {
       xmlDoc = parse(text);
       console.log('XML parsing successful');
       
-      // Validate WordPress XML structure
       if (!xmlDoc.rss) {
         console.error('Missing RSS element in XML structure');
         throw new Error('Invalid WordPress export file - missing RSS element');
@@ -64,10 +63,6 @@ serve(async (req) => {
         throw new Error('Invalid WordPress export file - missing channel element');
       }
 
-      // Log full XML structure for debugging
-      console.log('XML Structure:', JSON.stringify(xmlDoc, null, 2));
-
-      // Log channel information
       console.log('Channel information:', {
         title: xmlDoc.rss.channel.title,
         link: xmlDoc.rss.channel.link,
@@ -85,13 +80,7 @@ serve(async (req) => {
     const missingMedia = new Set<string>();
     const errors: string[] = [];
 
-    // Parse channel information
     const channel = xmlDoc.rss.channel;
-    
-    // Log raw items data for debugging
-    console.log('Raw channel items:', JSON.stringify(channel.item, null, 2));
-    
-    // Ensure items exist and convert to array if single item
     const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
     
     console.log(`Found ${items.length} items in the XML file`);
@@ -108,11 +97,13 @@ serve(async (req) => {
 
       for (const item of chunk) {
         try {
-          // Log raw item data for debugging
-          console.log('Processing item:', JSON.stringify(item, null, 2));
-
+          console.log('Processing item type:', item['wp:post_type']?.[0]);
+          
           const postType = item['wp:post_type']?.[0];
-          console.log('Post type:', postType);
+          if (!postType) {
+            console.warn('Item missing post type:', item);
+            continue;
+          }
           
           if (postType === 'attachment') {
             const url = item['wp:attachment_url']?.[0];
@@ -120,7 +111,7 @@ serve(async (req) => {
               const id = item['wp:post_id']?.[0] || crypto.randomUUID();
               const title = item.title?.[0] || '';
               const description = item['content:encoded']?.[0] || '';
-              const filename = url.split('/').pop();
+              const filename = url.split('/').pop() || '';
               
               const metadata = {
                 alt: item['wp:postmeta']?.find(meta => 
@@ -142,44 +133,64 @@ serve(async (req) => {
               console.log('Added media item:', { id, filename });
             }
           } else if (postType === 'post') {
-            const title = item.title?.[0] || '';
-            const content = item['content:encoded']?.[0] || '';
+            console.log('Processing post:', item.title?.[0]);
+            
+            const title = item.title?.[0];
+            const content = item['content:encoded']?.[0];
+            
+            if (!title || !content) {
+              console.warn('Post missing required fields:', { title, content });
+              errors.push(`Post "${title || 'Untitled'}" missing required fields`);
+              continue;
+            }
+
             const excerpt = item['excerpt:encoded']?.[0] || '';
             const postDate = item['wp:post_date']?.[0];
             const status = item['wp:status']?.[0] || 'draft';
             
-            // Process images in content
-            const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
-            let match;
-            const contentStr = content.toString();
-            while ((match = imgRegex.exec(contentStr)) !== null) {
-              if (match[1]) missingMedia.add(match[1]);
-            }
-
             // Process categories and tags
-            const categories = Array.isArray(item.category) ? item.category : [item.category].filter(Boolean);
+            const categories = Array.isArray(item.category) ? item.category : item.category ? [item.category] : [];
             const processedCategories = categories.map(cat => ({
               domain: cat?.['@domain'] || '',
               name: cat?.['#text'] || ''
             }));
 
-            const featuredImage = item['wp:postmeta']?.find(
+            // Process featured image
+            let featuredImage = null;
+            const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
+            const thumbnailId = postMeta?.find(
               meta => meta['wp:meta_key']?.[0] === '_thumbnail_id'
             )?.[0]?.['wp:meta_value']?.[0];
+
+            if (thumbnailId) {
+              const attachmentItem = items.find(
+                i => i['wp:post_type']?.[0] === 'attachment' && i['wp:post_id']?.[0] === thumbnailId
+              );
+              if (attachmentItem) {
+                featuredImage = attachmentItem['wp:attachment_url']?.[0];
+              }
+            }
+
+            // Process images in content
+            const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
+            let match;
+            while ((match = imgRegex.exec(content)) !== null) {
+              if (match[1]) missingMedia.add(match[1]);
+            }
 
             posts.push({
               title,
               content,
               excerpt,
-              status,
               post_date: postDate,
+              status,
               categories: processedCategories.filter(cat => cat.domain === 'category').map(cat => cat.name),
               tags: processedCategories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
               featured_image: featuredImage,
-              meta_description: item['wp:postmeta']?.find(
+              meta_description: postMeta?.find(
                 meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_metadesc'
               )?.[0]?.['wp:meta_value']?.[0],
-              focus_keyword: item['wp:postmeta']?.find(
+              focus_keyword: postMeta?.find(
                 meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
               )?.[0]?.['wp:meta_value']?.[0],
             });
