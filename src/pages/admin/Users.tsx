@@ -54,7 +54,7 @@ export default function Users() {
         throw new Error("Not authorized");
       }
 
-      // If admin, fetch all profiles
+      // If admin, fetch all profiles with their roles and smart links
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select(`
@@ -62,13 +62,17 @@ export default function Users() {
           user_roles (
             role
           ),
-          smart_links:smart_links (
+          smart_links (
             id,
             title
           )
         `);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profiles:", error);
+        throw error;
+      }
+
       return profiles as Profile[];
     },
   });
