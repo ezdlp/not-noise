@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { User } from '@supabase/supabase-js';
 
 interface UserRole {
   role: 'admin' | 'user';
@@ -48,7 +49,7 @@ export default function Users() {
   const [currentPage, setCurrentPage] = useState<number>(0);
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ["adminUsers"],
+    queryKey: ["adminUsers", pageSize, currentPage],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -84,7 +85,7 @@ export default function Users() {
       }
 
       // Get emails from auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
         page: currentPage + 1,
         perPage: pageSize,
       });
@@ -94,10 +95,12 @@ export default function Users() {
         throw authError;
       }
 
+      const authUsers = authData?.users as User[];
+
       // Merge profiles with emails
       const profilesWithEmail = profiles.map(profile => ({
         ...profile,
-        email: authUsers.users.find(user => user.id === profile.id)?.email
+        email: authUsers?.find(user => user.id === profile.id)?.email
       }));
 
       return profilesWithEmail as Profile[];
