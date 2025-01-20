@@ -19,9 +19,18 @@ interface PlatformLink {
   url: string;
 }
 
+function logError(error: unknown, context?: string) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  
+  console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
+  if (errorStack) {
+    console.error('Stack trace:', errorStack);
+  }
+}
+
 function parsePlatformLinks(linksStr: string): PlatformLink[] {
   try {
-    // Extract URLs using regex
     const urlMatches = linksStr.match(/https?:\/\/[^\s"';]+/g) || [];
     return urlMatches.map(url => {
       let platform = '';
@@ -30,13 +39,12 @@ function parsePlatformLinks(linksStr: string): PlatformLink[] {
       else if (url.includes('deezer.com')) platform = 'deezer';
       else if (url.includes('music.amazon.com')) platform = 'amazonmusic';
       else if (url.includes('soundcloud.com')) platform = 'soundcloud';
-      else if (url.includes('youtube.com')) platform = 'youtube';
-      else if (url.includes('youtu.be')) platform = 'youtube';
+      else if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'youtube';
       
       return { platform, url };
     }).filter(link => link.platform !== '');
   } catch (error) {
-    console.error('Error parsing platform links:', error);
+    logError(error, 'parsePlatformLinks');
     return [];
   }
 }
@@ -46,117 +54,114 @@ async function processSmartLink(
   supabase: any,
   summary: ImportSummary
 ): Promise<void> {
-  const title = item.title?.[0];
-  const creator = item['dc:creator']?.[0];
-  
-  if (!title || !creator) {
-    throw new Error(`Missing required fields: ${!title ? 'title' : 'creator'}`);
-  }
-
-  console.log(`Processing smart link: "${title}" by ${creator}`);
-
-  // Get user ID from email
-  const { data: userData, error: userError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', creator)
-    .single();
-
-  if (userError || !userData) {
-    console.log('User not found for email:', creator);
-    summary.unassigned.push(title);
-    throw new Error(`User not found for email: ${creator}`);
-  }
-
-  const userId = userData.id;
-
-  // Extract metadata
-  const postMeta = Array.isArray(item['wp:postmeta']) 
-    ? item['wp:postmeta'] 
-    : item['wp:postmeta'] 
-    ? [item['wp:postmeta']] 
-    : [];
-
-  const metadata = new Map();
-  
-  for (const meta of postMeta) {
-    const key = meta['wp:meta_key']?.[0];
-    const value = meta['wp:meta_value']?.[0];
-    if (key && value) {
-      metadata.set(key, value);
-    }
-  }
-
-  // Check for required Spotify URL
-  const spotifyUrl = metadata.get('_url');
-  if (!spotifyUrl) {
-    throw new Error('Missing Spotify URL');
-  }
-
-  // Create smart link
-  const { data: smartLink, error: smartLinkError } = await supabase
-    .from('smart_links')
-    .insert({
-      user_id: userId,
-      title: title,
-      artwork_url: metadata.get('_default_image'),
-      artist_name: metadata.get('_artist_name') || '',
-      email_capture_enabled: false,
-    })
-    .select()
-    .single();
-
-  if (smartLinkError || !smartLink) {
-    throw new Error(`Failed to create smart link: ${smartLinkError?.message}`);
-  }
-
-  console.log('Smart link created:', smartLink.id);
-
-  // Parse and add platform links
-  const linksStr = metadata.get('_links');
-  if (linksStr) {
-    const platformLinks = parsePlatformLinks(linksStr);
+  try {
+    const title = item.title?.[0];
+    const creator = item['dc:creator']?.[0];
     
-    for (const { platform, url } of platformLinks) {
-      const { error: platformError } = await supabase
-        .from('platform_links')
-        .insert({
-          smart_link_id: smartLink.id,
-          platform_id: platform,
-          platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
-          url: url,
-        });
+    if (!title || !creator) {
+      throw new Error(`Missing required fields: ${!title ? 'title' : 'creator'}`);
+    }
 
-      if (platformError) {
-        console.error('Error adding platform link:', platformError);
-      } else {
-        console.log('Added platform link:', platform);
+    console.log(`Processing smart link: "${title}" by ${creator}`);
+
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', creator)
+      .single();
+
+    if (userError || !userData) {
+      console.log('User not found for email:', creator);
+      summary.unassigned.push(title);
+      throw new Error(`User not found for email: ${creator}`);
+    }
+
+    const userId = userData.id;
+    const postMeta = Array.isArray(item['wp:postmeta']) 
+      ? item['wp:postmeta'] 
+      : item['wp:postmeta'] 
+      ? [item['wp:postmeta']] 
+      : [];
+
+    const metadata = new Map();
+    for (const meta of postMeta) {
+      const key = meta['wp:meta_key']?.[0];
+      const value = meta['wp:meta_value']?.[0];
+      if (key && value) {
+        metadata.set(key, value);
       }
     }
-  }
 
-  // Import metrics if available
-  const views = parseInt(metadata.get('_link_views') || '0');
-  const clicks = parseInt(metadata.get('_link_clicks') || '0');
+    const spotifyUrl = metadata.get('_url');
+    if (!spotifyUrl) {
+      throw new Error('Missing Spotify URL');
+    }
 
-  if (views > 0) {
-    const viewPromises = Array(views).fill(null).map(() => 
-      supabase.from('link_views').insert({
-        smart_link_id: smartLink.id,
+    const { data: smartLink, error: smartLinkError } = await supabase
+      .from('smart_links')
+      .insert({
+        user_id: userId,
+        title: title,
+        artwork_url: metadata.get('_default_image'),
+        artist_name: metadata.get('_artist_name') || '',
+        email_capture_enabled: false,
       })
-    );
-    await Promise.allSettled(viewPromises);
-    console.log('Added', views, 'views');
-  }
+      .select()
+      .single();
 
-  if (clicks > 0) {
-    const clickPromises = Array(clicks).fill(null).map(() => 
-      supabase.from('platform_clicks').insert({
-        platform_link_id: smartLink.id,
-      })
-    );
-    await Promise.allSettled(clickPromises);
-    console.log('Added', clicks, 'clicks');
+    if (smartLinkError || !smartLink) {
+      throw new Error(`Failed to create smart link: ${smartLinkError?.message}`);
+    }
+
+    console.log('Smart link created:', smartLink.id);
+
+    const linksStr = metadata.get('_links');
+    if (linksStr) {
+      const platformLinks = parsePlatformLinks(linksStr);
+      
+      for (const { platform, url } of platformLinks) {
+        const { error: platformError } = await supabase
+          .from('platform_links')
+          .insert({
+            smart_link_id: smartLink.id,
+            platform_id: platform,
+            platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
+            url: url,
+          });
+
+        if (platformError) {
+          console.error('Error adding platform link:', platformError);
+        } else {
+          console.log('Added platform link:', platform);
+        }
+      }
+    }
+
+    const views = parseInt(metadata.get('_link_views') || '0');
+    const clicks = parseInt(metadata.get('_link_clicks') || '0');
+
+    if (views > 0) {
+      const viewPromises = Array(views).fill(null).map(() => 
+        supabase.from('link_views').insert({
+          smart_link_id: smartLink.id,
+        })
+      );
+      await Promise.allSettled(viewPromises);
+      console.log('Added', views, 'views');
+    }
+
+    if (clicks > 0) {
+      const clickPromises = Array(clicks).fill(null).map(() => 
+        supabase.from('platform_clicks').insert({
+          platform_link_id: smartLink.id,
+        })
+      );
+      await Promise.allSettled(clickPromises);
+      console.log('Added', clicks, 'clicks');
+    }
+  } catch (error) {
+    logError(error, 'processSmartLink');
+    throw error;
   }
 }
 
@@ -170,7 +175,7 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file');
 
-    if (!file) {
+    if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
 
@@ -189,7 +194,7 @@ serve(async (req) => {
       
       console.log('XML parsing successful');
     } catch (parseError) {
-      console.error('XML parsing error:', parseError);
+      logError(parseError, 'XML parsing');
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
@@ -220,10 +225,11 @@ serve(async (req) => {
         await processSmartLink(item, supabase, summary);
         summary.success++;
       } catch (error) {
-        console.error('Error processing item:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('Error processing item:', errorMessage);
         summary.errors.push({
           link: item.title?.[0] || 'Unknown',
-          error: error.message,
+          error: errorMessage,
         });
       }
     }
@@ -236,11 +242,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Fatal error:', error);
+    logError(error, 'Fatal error');
     return new Response(
       JSON.stringify({ 
         error: 'Import process failed', 
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
         summary: { total: 0, success: 0, errors: [], unassigned: [] }
       }),
       { 
