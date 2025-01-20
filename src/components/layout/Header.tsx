@@ -2,14 +2,16 @@ import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { CTAButton } from "@/components/ui/cta-button";
-import { User, LogIn } from "lucide-react";
+import { User, LogIn, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -24,55 +26,74 @@ const Header = () => {
     navigate("/login");
   };
 
+  const NavLinks = () => (
+    <ul className="flex flex-col md:flex-row md:space-x-10 space-y-4 md:space-y-0">
+      <li>
+        <Link 
+          to="/pricing" 
+          className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
+        >
+          Pricing
+        </Link>
+      </li>
+      <li>
+        <Link 
+          to="/blog" 
+          className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
+        >
+          Blog
+        </Link>
+      </li>
+      <li>
+        <Link 
+          to="/help" 
+          className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
+        >
+          Help
+        </Link>
+      </li>
+    </ul>
+  );
+
   return (
     <header className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          <img src="/lovable-uploads/d104a2a7-bcdb-4c86-9761-3528acceee41.png" alt="notnoise" className="h-8" />
+          <img 
+            src="/lovable-uploads/soundraiser-logo/Logo A low.png" 
+            alt="Soundraiser" 
+            className="h-6 md:h-8"
+          />
         </Link>
 
-        <nav className="flex-1 flex justify-center">
-          <ul className="flex space-x-10">
-            <li>
-              <Link 
-                to="/pricing" 
-                className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
-              >
-                Pricing
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/blog" 
-                className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
-              >
-                Blog
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/help" 
-                className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins"
-              >
-                Help
-              </Link>
-            </li>
-          </ul>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex flex-1 justify-center">
+          <NavLinks />
         </nav>
 
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           {!isAuthenticated ? (
-            <CTAButton 
-              onClick={() => navigate("/register")}
-              className="!py-2 !px-4 !text-sm"
-            >
-              Get Started
-            </CTAButton>
+            <>
+              <CTAButton 
+                onClick={() => navigate("/register")}
+                className="hidden md:flex !py-2 !px-4 !text-sm"
+              >
+                Get Started
+              </CTAButton>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/login")}
+                className="hidden md:flex"
+              >
+                <LogIn className="h-5 w-5 mr-2" />
+                Login
+              </Button>
+            </>
           ) : (
             <>
               <CTAButton 
                 onClick={() => navigate("/create")}
-                className="!py-2 !px-4 !text-sm"
+                className="hidden md:flex !py-2 !px-4 !text-sm"
               >
                 Create Smart Link
               </CTAButton>
@@ -109,6 +130,58 @@ const Header = () => {
               </DropdownMenu>
             </>
           )}
+
+          {/* Mobile Menu Trigger */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <div className="flex flex-col gap-6 py-4">
+                <NavLinks />
+                {!isAuthenticated ? (
+                  <div className="flex flex-col gap-4">
+                    <CTAButton onClick={() => navigate("/register")}>
+                      Get Started
+                    </CTAButton>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/login")}
+                      className="w-full"
+                    >
+                      <LogIn className="h-5 w-5 mr-2" />
+                      Login
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <CTAButton onClick={() => navigate("/create")}>
+                      Create Smart Link
+                    </CTAButton>
+                    <div className="flex flex-col gap-2">
+                      <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary">
+                        Dashboard
+                      </Link>
+                      <Link to="/profile" className="text-sm font-medium text-gray-600 hover:text-primary">
+                        Profile
+                      </Link>
+                      <Link to="/settings" className="text-sm font-medium text-gray-600 hover:text-primary">
+                        Account Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="text-sm font-medium text-gray-600 hover:text-primary text-left"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
