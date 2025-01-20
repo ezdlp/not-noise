@@ -21,12 +21,25 @@ interface PlatformLink {
 
 function logError(error: unknown, context?: string) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorStack = error instanceof Error ? error.stack : undefined;
-  
   console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
-  if (errorStack) {
-    console.error('Stack trace:', errorStack);
+}
+
+function validateXMLStructure(xmlContent: string): boolean {
+  // Basic XML validation
+  const openingTag = '<rss';
+  const closingTag = '</rss>';
+  
+  if (!xmlContent.includes(openingTag) || !xmlContent.includes(closingTag)) {
+    return false;
   }
+
+  // Ensure there's only one RSS tag
+  const rssCount = (xmlContent.match(/<rss/g) || []).length;
+  if (rssCount !== 1) {
+    return false;
+  }
+
+  return true;
 }
 
 function parsePlatformLinks(linksStr: string): PlatformLink[] {
@@ -182,6 +195,10 @@ serve(async (req) => {
     console.log('File received:', file.name);
     const xmlContent = await file.text();
     console.log('XML content length:', xmlContent.length);
+
+    if (!validateXMLStructure(xmlContent)) {
+      throw new Error('Invalid WordPress export file structure');
+    }
 
     let xmlDoc;
     try {
