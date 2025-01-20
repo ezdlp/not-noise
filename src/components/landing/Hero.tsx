@@ -27,7 +27,7 @@ export const Hero = () => {
         <div className="relative order-first md:order-last">
           <div className="relative w-full aspect-square">
             <img
-              src="/lovable-uploads/soundraiser-logo/Iso A.svg"
+              src="/lovable-uploads/home/Hero.png"
               alt="Smart Link Preview"
               className="w-full h-full object-contain animate-float"
             />
