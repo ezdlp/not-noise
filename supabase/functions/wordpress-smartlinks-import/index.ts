@@ -24,6 +24,11 @@ function logError(error: unknown, context?: string) {
   console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
 }
 
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 function validateAndWrapXML(xmlContent: string): string {
   if (xmlContent.includes('<rss')) {
     return xmlContent;
@@ -77,22 +82,37 @@ async function processSmartLink(
     // Extract and clean up the email from dc:creator
     const creatorRaw = item['dc:creator']?.[0];
     console.log('Raw creator value:', creatorRaw);
+    console.log('Full item structure:', JSON.stringify(item, null, 2));
     
-    // Handle both CDATA and plain text formats, ensuring we get the full email
+    // Handle both CDATA and plain text formats
     const creator = creatorRaw
       ?.replace(/<!\[CDATA\[|\]\]>/g, '')  // Remove CDATA wrapper if present
       ?.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '') // Trim whitespace and special characters
-      ?.toString(); // Ensure we have a string
+      ?.toString();
     
-    console.log('Processed creator email:', creator);
+    console.log('Processed creator value:', creator);
 
-    if (!title || !creator) {
-      throw new Error(`Missing required fields: ${!title ? 'title' : 'creator'}`);
+    if (!title) {
+      throw new Error('Missing title');
+    }
+
+    if (!creator) {
+      throw new Error('Missing creator email');
+    }
+
+    if (!validateEmail(creator)) {
+      console.error(`Invalid email format for item "${title}": ${creator}`);
+      summary.unassigned.push(title);
+      summary.errors.push({
+        link: title,
+        error: `Invalid email format: ${creator}`
+      });
+      return;
     }
 
     console.log(`Processing smart link: "${title}" by ${creator}`);
 
-    // Query for user profile using the full email
+    // Query for user profile using the validated email
     const { data: userData, error: userError } = await supabase
       .from('profiles')
       .select('id')
@@ -100,9 +120,13 @@ async function processSmartLink(
       .single();
 
     if (userError || !userData) {
-      console.log('User not found for email:', creator);
+      console.log('User lookup failed:', { error: userError, email: creator });
       summary.unassigned.push(title);
-      throw new Error(`User not found for email: ${creator}`);
+      summary.errors.push({
+        link: title,
+        error: `User not found for email: ${creator}`
+      });
+      return;
     }
 
     const userId = userData.id;
@@ -166,6 +190,7 @@ async function processSmartLink(
       }
     }
 
+    // Process views and clicks
     const views = parseInt(metadata.get('_link_views') || '0');
     const clicks = parseInt(metadata.get('_link_clicks') || '0');
 
@@ -188,6 +213,8 @@ async function processSmartLink(
       await Promise.allSettled(clickPromises);
       console.log('Added', clicks, 'clicks');
     }
+
+    summary.success++;
   } catch (error) {
     logError(error, 'processSmartLink');
     throw error;
@@ -256,7 +283,6 @@ serve(async (req) => {
     for (const item of items) {
       try {
         await processSmartLink(item, supabase, summary);
-        summary.success++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Error processing item:', errorMessage);
