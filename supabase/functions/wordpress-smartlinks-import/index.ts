@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,11 +32,32 @@ serve(async (req) => {
     const xmlContent = await file.text()
     console.log('XML content length:', xmlContent.length)
 
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml')
+    let xmlDoc;
+    
+    try {
+      console.log('Attempting to parse XML file...');
+      xmlDoc = parse(xmlContent);
+      console.log('XML parsing successful');
+      
+      if (!xmlDoc.rss) {
+        console.error('Missing RSS element in XML structure');
+        throw new Error('Invalid WordPress export file - missing RSS element');
+      }
 
-    if (!xmlDoc) {
-      throw new Error('Failed to parse XML')
+      if (!xmlDoc.rss.channel) {
+        console.error('Missing channel element in RSS structure');
+        throw new Error('Invalid WordPress export file - missing channel element');
+      }
+
+      console.log('Channel information:', {
+        title: xmlDoc.rss.channel.title,
+        link: xmlDoc.rss.channel.link,
+        description: xmlDoc.rss.channel.description,
+      });
+    } catch (parseError) {
+      console.error('XML parsing error:', parseError);
+      console.error('Raw file content:', xmlContent.substring(0, 1000) + '...'); // Log first 1000 chars
+      throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
     const supabase = createClient(
@@ -51,14 +72,21 @@ serve(async (req) => {
       unassigned: [],
     }
 
-    const items = xmlDoc.querySelectorAll('item')
-    summary.total = items.length
-    console.log('Total items found:', summary.total)
+    const channel = xmlDoc.rss.channel;
+    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+    
+    summary.total = items.length;
+    console.log(`Found ${items.length} items in the XML file`);
+
+    if (items.length === 0) {
+      console.error('No items found in the XML file');
+      throw new Error('No items found in the WordPress export file');
+    }
 
     for (const item of items) {
       try {
-        const title = item.querySelector('title')?.textContent
-        const creator = item.querySelector('dc\\:creator')?.textContent
+        const title = item.title;
+        const creator = item['dc:creator'];
         
         if (!title || !creator) {
           throw new Error('Missing required fields')
@@ -82,14 +110,14 @@ serve(async (req) => {
         const userId = userData.id
 
         // Extract metadata
-        const metaElements = item.querySelectorAll('wp\\:postmeta')
-        const metadata = new Map()
+        const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
+        const metadata = new Map();
         
-        for (const meta of metaElements) {
-          const key = meta.querySelector('wp\\:meta_key')?.textContent
-          const value = meta.querySelector('wp\\:meta_value')?.textContent
+        for (const meta of postMeta) {
+          const key = meta['wp:meta_key'];
+          const value = meta['wp:meta_value'];
           if (key && value) {
-            metadata.set(key, value)
+            metadata.set(key, value);
           }
         }
 
