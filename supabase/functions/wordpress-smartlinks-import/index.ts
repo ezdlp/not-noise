@@ -27,7 +27,11 @@ serve(async (req) => {
       throw new Error('No file uploaded')
     }
 
+    console.log('File received:', file.name)
+
     const xmlContent = await file.text()
+    console.log('XML content length:', xmlContent.length)
+
     const parser = new DOMParser()
     const xmlDoc = parser.parseFromString(xmlContent, 'text/xml')
 
@@ -49,6 +53,7 @@ serve(async (req) => {
 
     const items = xmlDoc.querySelectorAll('item')
     summary.total = items.length
+    console.log('Total items found:', summary.total)
 
     for (const item of items) {
       try {
@@ -59,6 +64,8 @@ serve(async (req) => {
           throw new Error('Missing required fields')
         }
 
+        console.log('Processing item:', title, 'by', creator)
+
         // Get user ID from email
         const { data: userData, error: userError } = await supabase
           .from('profiles')
@@ -67,6 +74,7 @@ serve(async (req) => {
           .single()
 
         if (userError || !userData) {
+          console.log('User not found for email:', creator)
           summary.unassigned.push(title)
           continue
         }
@@ -98,7 +106,7 @@ serve(async (req) => {
             user_id: userId,
             title: title,
             artwork_url: metadata.get('_default_image'),
-            artist_name: metadata.get('_artist_name'),
+            artist_name: metadata.get('_artist_name') || '',
             email_capture_enabled: false,
           })
           .select()
@@ -107,6 +115,8 @@ serve(async (req) => {
         if (smartLinkError || !smartLink) {
           throw new Error(`Failed to create smart link: ${smartLinkError?.message}`)
         }
+
+        console.log('Smart link created:', smartLink.id)
 
         // Parse and add platform links
         const linksStr = metadata.get('_links')
@@ -137,7 +147,7 @@ serve(async (req) => {
               }
 
               if (platformId && platformName) {
-                await supabase
+                const { error: platformError } = await supabase
                   .from('platform_links')
                   .insert({
                     smart_link_id: smartLink.id,
@@ -145,6 +155,12 @@ serve(async (req) => {
                     platform_name: platformName,
                     url: url,
                   })
+
+                if (platformError) {
+                  console.error('Error adding platform link:', platformError)
+                } else {
+                  console.log('Added platform link:', platformName)
+                }
               }
             }
           } catch (error) {
@@ -152,7 +168,7 @@ serve(async (req) => {
           }
         }
 
-        // Import metrics
+        // Import metrics if available
         const views = parseInt(metadata.get('_link_views') || '0')
         const clicks = parseInt(metadata.get('_link_clicks') || '0')
 
@@ -162,7 +178,8 @@ serve(async (req) => {
               smart_link_id: smartLink.id,
             })
           )
-          await Promise.all(viewPromises)
+          await Promise.allSettled(viewPromises)
+          console.log('Added', views, 'views')
         }
 
         if (clicks > 0) {
@@ -171,11 +188,13 @@ serve(async (req) => {
               platform_link_id: smartLink.id,
             })
           )
-          await Promise.all(clickPromises)
+          await Promise.allSettled(clickPromises)
+          console.log('Added', clicks, 'clicks')
         }
 
         summary.success++
       } catch (error) {
+        console.error('Error processing item:', error)
         summary.errors.push({
           link: item.querySelector('title')?.textContent || 'Unknown',
           error: error.message,
@@ -183,12 +202,15 @@ serve(async (req) => {
       }
     }
 
+    console.log('Import summary:', summary)
+
     return new Response(
       JSON.stringify(summary),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
+    console.error('Fatal error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
