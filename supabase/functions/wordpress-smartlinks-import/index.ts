@@ -75,7 +75,9 @@ async function processSmartLink(
 ): Promise<void> {
   try {
     const title = item.title?.[0];
-    const creator = item['dc:creator']?.[0];
+    // Extract email from dc:creator, removing CDATA wrapper and trimming
+    const creatorRaw = item['dc:creator']?.[0];
+    const creator = creatorRaw?.replace(/<!\[CDATA\[|\]\]>/g, '').trim();
     
     if (!title || !creator) {
       throw new Error(`Missing required fields: ${!title ? 'title' : 'creator'}`);
