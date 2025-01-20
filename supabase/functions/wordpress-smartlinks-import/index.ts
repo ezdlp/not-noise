@@ -19,6 +19,28 @@ interface PlatformLink {
   url: string;
 }
 
+interface SmartLinkData {
+  title: string;
+  link: string;
+  pubDate: string;
+  creator: string;
+  guid: {
+    isPermaLink: boolean;
+    value: string;
+  };
+  description: string;
+  postId: number;
+  postDate: string;
+  postModified: string;
+  postType: string;
+  artistName: string;
+  defaultImage: string;
+  url: string;
+  linkViews: number;
+  linkClicks: number;
+  links: Record<string, string>;
+}
+
 function logError(error: unknown, context?: string) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
@@ -51,112 +73,140 @@ function validateAndWrapXML(xmlContent: string): string {
   throw new Error('Invalid WordPress export file - no items found');
 }
 
-function parsePlatformLinks(linksStr: string): PlatformLink[] {
+function extractSmartLinkData(item: any): SmartLinkData {
+  // Extract basic fields
+  const title = item.title?.[0] || '';
+  const link = item.link?.[0] || '';
+  const pubDate = item.pubDate?.[0] || '';
+  const creator = item['dc:creator']?.[0]?.replace(/<!\[CDATA\[|\]\]>/g, '').trim() || '';
+  const description = item.description?.[0] || '';
+  
+  // Extract GUID
+  const guidElement = item.guid?.[0];
+  const guid = {
+    isPermaLink: guidElement?.['@isPermaLink'] === 'true',
+    value: typeof guidElement === 'string' ? guidElement : guidElement?.['#text'] || ''
+  };
+
+  // Extract WordPress specific fields
+  const postId = parseInt(item['wp:post_id']?.[0] || '0');
+  const postDate = item['wp:post_date']?.[0] || '';
+  const postModified = item['wp:post_modified']?.[0] || '';
+  const postType = item['wp:post_type']?.[0] || '';
+
+  // Process postmeta elements
+  const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
+  const metadata = new Map();
+  
+  postMeta.forEach((meta: any) => {
+    const key = meta['wp:meta_key']?.[0];
+    const value = meta['wp:meta_value']?.[0];
+    if (key && value) {
+      metadata.set(key, value);
+    }
+  });
+
+  // Extract metadata values
+  const artistName = metadata.get('_artist_name') || '';
+  const defaultImage = metadata.get('_default_image') || '';
+  const url = metadata.get('_url') || '';
+  const linkViews = parseInt(metadata.get('_link_views') || '0');
+  const linkClicks = parseInt(metadata.get('_link_clicks') || '0');
+
+  // Parse links
+  let links: Record<string, string> = {};
   try {
-    const urlMatches = linksStr.match(/https?:\/\/[^\s"';]+/g) || [];
-    return urlMatches.map(url => {
-      let platform = '';
-      if (url.includes('spotify.com')) platform = 'spotify';
-      else if (url.includes('music.apple.com')) platform = 'applemusic';
-      else if (url.includes('deezer.com')) platform = 'deezer';
-      else if (url.includes('music.amazon.com')) platform = 'amazonmusic';
-      else if (url.includes('soundcloud.com')) platform = 'soundcloud';
-      else if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'youtube';
-      
-      return { platform, url };
-    }).filter(link => link.platform !== '');
+    const linksStr = metadata.get('_links');
+    if (linksStr) {
+      // Parse platform links from the serialized string
+      const urlMatches = linksStr.match(/https?:\/\/[^\s"';]+/g) || [];
+      urlMatches.forEach(url => {
+        if (url.includes('spotify.com')) links.spotify = url;
+        else if (url.includes('music.apple.com')) links.appleMusic = url;
+        else if (url.includes('deezer.com')) links.deezer = url;
+        else if (url.includes('music.amazon.com')) links.amazonMusic = url;
+        else if (url.includes('soundcloud.com')) links.soundcloud = url;
+        else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          links.youtube = url;
+          links.youtubeMusic = url;
+        }
+        else if (url.includes('tidal.com')) links.tidal = url;
+      });
+    }
   } catch (error) {
-    logError(error, 'parsePlatformLinks');
-    return [];
+    console.error('Error parsing links:', error);
   }
+
+  return {
+    title,
+    link,
+    pubDate,
+    creator,
+    guid,
+    description,
+    postId,
+    postDate,
+    postModified,
+    postType,
+    artistName,
+    defaultImage,
+    url,
+    linkViews,
+    linkClicks,
+    links
+  };
 }
 
-async function processSmartLink(
-  item: any,
-  supabase: any,
-  summary: ImportSummary
-): Promise<void> {
+async function processSmartLink(item: any, supabase: any, summary: ImportSummary): Promise<void> {
   try {
-    const title = item.title?.[0];
-    
-    // Extract and clean up the email from dc:creator
-    const creatorRaw = item['dc:creator']?.[0];
-    console.log('Raw creator value:', creatorRaw);
-    console.log('Full item structure:', JSON.stringify(item, null, 2));
-    
-    // Handle both CDATA and plain text formats
-    const creator = creatorRaw
-      ?.replace(/<!\[CDATA\[|\]\]>/g, '')  // Remove CDATA wrapper if present
-      ?.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '') // Trim whitespace and special characters
-      ?.toString();
-    
-    console.log('Processed creator value:', creator);
+    const data = extractSmartLinkData(item);
+    console.log('Extracted data:', JSON.stringify(data, null, 2));
 
-    if (!title) {
+    if (!data.title) {
       throw new Error('Missing title');
     }
 
-    if (!creator) {
+    if (!data.creator) {
       throw new Error('Missing creator email');
     }
 
-    if (!validateEmail(creator)) {
-      console.error(`Invalid email format for item "${title}": ${creator}`);
-      summary.unassigned.push(title);
+    if (!validateEmail(data.creator)) {
+      console.error(`Invalid email format for item "${data.title}": ${data.creator}`);
+      summary.unassigned.push(data.title);
       summary.errors.push({
-        link: title,
-        error: `Invalid email format: ${creator}`
+        link: data.title,
+        error: `Invalid email format: ${data.creator}`
       });
       return;
     }
-
-    console.log(`Processing smart link: "${title}" by ${creator}`);
 
     // Query for user profile using the validated email
     const { data: userData, error: userError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('email', creator)
-      .single();
+      .eq('email', data.creator)
+      .maybeSingle();
 
     if (userError || !userData) {
-      console.log('User lookup failed:', { error: userError, email: creator });
-      summary.unassigned.push(title);
+      console.log('User lookup failed:', { error: userError, email: data.creator });
+      summary.unassigned.push(data.title);
       summary.errors.push({
-        link: title,
-        error: `User not found for email: ${creator}`
+        link: data.title,
+        error: `User not found for email: ${data.creator}`
       });
       return;
     }
 
     const userId = userData.id;
-    const postMeta = Array.isArray(item['wp:postmeta']) 
-      ? item['wp:postmeta'] 
-      : item['wp:postmeta'] 
-      ? [item['wp:postmeta']] 
-      : [];
 
-    const metadata = new Map();
-    for (const meta of postMeta) {
-      const key = meta['wp:meta_key']?.[0];
-      const value = meta['wp:meta_value']?.[0];
-      if (key && value) {
-        metadata.set(key, value);
-      }
-    }
-
-    const spotifyUrl = metadata.get('_url');
-    if (!spotifyUrl) {
-      throw new Error('Missing Spotify URL');
-    }
-
+    // Create smart link
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
       .insert({
         user_id: userId,
-        title: title,
-        artwork_url: metadata.get('_default_image'),
-        artist_name: metadata.get('_artist_name') || '',
+        title: data.title,
+        artwork_url: data.defaultImage,
+        artist_name: data.artistName,
         email_capture_enabled: false,
       })
       .select()
@@ -166,52 +216,41 @@ async function processSmartLink(
       throw new Error(`Failed to create smart link: ${smartLinkError?.message}`);
     }
 
-    console.log('Smart link created:', smartLink.id);
+    // Create platform links
+    for (const [platform, url] of Object.entries(data.links)) {
+      if (!url) continue;
 
-    const linksStr = metadata.get('_links');
-    if (linksStr) {
-      const platformLinks = parsePlatformLinks(linksStr);
-      
-      for (const { platform, url } of platformLinks) {
-        const { error: platformError } = await supabase
-          .from('platform_links')
-          .insert({
-            smart_link_id: smartLink.id,
-            platform_id: platform,
-            platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
-            url: url,
-          });
+      const { error: platformError } = await supabase
+        .from('platform_links')
+        .insert({
+          smart_link_id: smartLink.id,
+          platform_id: platform.toLowerCase(),
+          platform_name: platform,
+          url: url,
+        });
 
-        if (platformError) {
-          console.error('Error adding platform link:', platformError);
-        } else {
-          console.log('Added platform link:', platform);
-        }
+      if (platformError) {
+        console.error('Error adding platform link:', platformError);
       }
     }
 
     // Process views and clicks
-    const views = parseInt(metadata.get('_link_views') || '0');
-    const clicks = parseInt(metadata.get('_link_clicks') || '0');
-
-    if (views > 0) {
-      const viewPromises = Array(views).fill(null).map(() => 
+    if (data.linkViews > 0) {
+      const viewPromises = Array(data.linkViews).fill(null).map(() => 
         supabase.from('link_views').insert({
           smart_link_id: smartLink.id,
         })
       );
       await Promise.allSettled(viewPromises);
-      console.log('Added', views, 'views');
     }
 
-    if (clicks > 0) {
-      const clickPromises = Array(clicks).fill(null).map(() => 
+    if (data.linkClicks > 0) {
+      const clickPromises = Array(data.linkClicks).fill(null).map(() => 
         supabase.from('platform_clicks').insert({
           platform_link_id: smartLink.id,
         })
       );
       await Promise.allSettled(clickPromises);
-      console.log('Added', clicks, 'clicks');
     }
 
     summary.success++;
@@ -235,23 +274,13 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    console.log('File received:', file.name);
     const xmlContent = await file.text();
-    console.log('XML content length:', xmlContent.length);
-
-    // Validate and wrap XML content if needed
     const wrappedXML = validateAndWrapXML(xmlContent);
-    console.log('XML structure validated and wrapped if needed');
-
+    
     let xmlDoc;
     try {
       console.log('Parsing XML file...');
       xmlDoc = parse(wrappedXML);
-      
-      if (!xmlDoc.rss?.channel) {
-        throw new Error('Invalid WordPress export file structure');
-      }
-      
       console.log('XML parsing successful');
     } catch (parseError) {
       logError(parseError, 'XML parsing');
