@@ -2,17 +2,30 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface ImportLinksProps {
-  onComplete?: () => void;
+interface ImportSummary {
+  total: number;
+  success: number;
+  errors: { link: string; error: string }[];
+  unassigned: string[];
 }
 
-export function ImportLinks({ onComplete }: ImportLinksProps) {
+export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -20,101 +33,36 @@ export function ImportLinks({ onComplete }: ImportLinksProps) {
 
     try {
       setIsImporting(true);
+      setProgress(10);
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const { data, error } = await supabase.functions.invoke('wordpress-import', {
+      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
         body: formData,
       });
 
       if (error) throw error;
 
-      const { customLinks } = data;
-      
-      if (customLinks?.length > 0) {
-        let successCount = 0;
-        let errorCount = 0;
-        const total = customLinks.length;
+      setProgress(100);
+      setSummary(data as ImportSummary);
 
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) throw new Error("User not authenticated");
+      if (data.success > 0) {
+        toast.success(`Successfully imported ${data.success} smart links`);
+      }
 
-        for (const [index, link] of customLinks.entries()) {
-          try {
-            // Create smart link
-            const { data: smartLinkData, error: linkError } = await supabase
-              .from('smart_links')
-              .insert({
-                user_id: userData.user.id,
-                title: link.title,
-                artist_name: link.author || 'Unknown Artist'
-              })
-              .select()
-              .single();
+      if (data.errors.length > 0) {
+        toast.error(`Failed to import ${data.errors.length} smart links`);
+      }
 
-            if (linkError) throw linkError;
-
-            if (smartLinkData) {
-              // Add platform links
-              for (const platform of link.platforms) {
-                const { error: platformError } = await supabase
-                  .from('platform_links')
-                  .insert({
-                    smart_link_id: smartLinkData.id,
-                    platform_id: platform.platform,
-                    platform_name: platform.platform,
-                    url: platform.url
-                  });
-
-                if (platformError) throw platformError;
-              }
-
-              // Import stats if available
-              if (link.stats) {
-                // Add views
-                for (let i = 0; i < link.stats.views; i++) {
-                  await supabase
-                    .from('link_views')
-                    .insert({
-                      smart_link_id: smartLinkData.id,
-                      viewed_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                    });
-                }
-
-                // Add clicks
-                for (let i = 0; i < link.stats.clicks; i++) {
-                  await supabase
-                    .from('platform_clicks')
-                    .insert({
-                      platform_link_id: smartLinkData.id,
-                      clicked_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                    });
-                }
-              }
-
-              successCount++;
-            }
-          } catch (error) {
-            console.error("Error importing link:", error);
-            errorCount++;
-          }
-          setProgress((index + 1) / total * 100);
-        }
-
-        if (successCount > 0) {
-          toast.success(`Successfully imported ${successCount} custom links`);
-          if (onComplete) onComplete();
-        }
-        if (errorCount > 0) {
-          toast.error(`Failed to import ${errorCount} custom links`);
-        }
+      if (data.unassigned.length > 0) {
+        toast.warning(`${data.unassigned.length} smart links were unassigned`);
       }
     } catch (error) {
-      console.error("Error importing custom links:", error);
-      toast.error("Failed to import custom links");
+      console.error("Error importing smart links:", error);
+      toast.error("Failed to import smart links");
     } finally {
       setIsImporting(false);
-      setProgress(0);
       event.target.value = '';
     }
   };
@@ -138,9 +86,68 @@ export function ImportLinks({ onComplete }: ImportLinksProps) {
         <div className="space-y-2">
           <Progress value={progress} className="w-[300px]" />
           <p className="text-sm text-muted-foreground">
-            Importing custom links... {Math.round(progress)}%
+            Importing smart links... {Math.round(progress)}%
           </p>
         </div>
+      )}
+
+      {summary && (
+        <Dialog open={!!summary} onOpenChange={() => setSummary(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Import Summary</DialogTitle>
+              <DialogDescription>
+                Results of the smart links import process
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm font-medium">Total Processed</p>
+                  <p className="text-2xl font-bold">{summary.total}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm font-medium">Successfully Imported</p>
+                  <p className="text-2xl font-bold text-green-600">{summary.success}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm font-medium">Failed</p>
+                  <p className="text-2xl font-bold text-red-600">{summary.errors.length}</p>
+                </div>
+              </div>
+
+              {summary.errors.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-2">Errors</h3>
+                  <ScrollArea className="h-[200px] border rounded-md p-4">
+                    {summary.errors.map((error, index) => (
+                      <div key={index} className="py-2 border-b last:border-0">
+                        <p className="font-medium">{error.link}</p>
+                        <p className="text-sm text-red-600">{error.error}</p>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
+
+              {summary.unassigned.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-2">Unassigned Smart Links</h3>
+                  <ScrollArea className="h-[200px] border rounded-md p-4">
+                    {summary.unassigned.map((link, index) => (
+                      <p key={index} className="py-2 border-b last:border-0">{link}</p>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button onClick={() => setSummary(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
