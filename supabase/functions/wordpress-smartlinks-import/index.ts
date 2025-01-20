@@ -25,12 +25,10 @@ function logError(error: unknown, context?: string) {
 }
 
 function validateAndWrapXML(xmlContent: string): string {
-  // Check if content already has RSS tags
   if (xmlContent.includes('<rss')) {
     return xmlContent;
   }
 
-  // If it's just items, wrap them in proper RSS structure
   if (xmlContent.includes('<item>')) {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
@@ -75,10 +73,18 @@ async function processSmartLink(
 ): Promise<void> {
   try {
     const title = item.title?.[0];
-    // Extract email from dc:creator, removing CDATA wrapper and trimming
-    const creatorRaw = item['dc:creator']?.[0];
-    const creator = creatorRaw?.replace(/<!\[CDATA\[|\]\]>/g, '').trim();
     
+    // Extract and clean up the email from dc:creator
+    const creatorRaw = item['dc:creator']?.[0];
+    console.log('Raw creator value:', creatorRaw);
+    
+    // Handle both CDATA and plain text formats
+    const creator = creatorRaw
+      ?.replace(/<!\[CDATA\[|\]\]>/g, '')  // Remove CDATA wrapper if present
+      ?.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''); // Trim whitespace and special characters
+    
+    console.log('Processed creator email:', creator);
+
     if (!title || !creator) {
       throw new Error(`Missing required fields: ${!title ? 'title' : 'creator'}`);
     }
