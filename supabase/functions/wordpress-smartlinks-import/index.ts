@@ -78,10 +78,11 @@ async function processSmartLink(
     const creatorRaw = item['dc:creator']?.[0];
     console.log('Raw creator value:', creatorRaw);
     
-    // Handle both CDATA and plain text formats
+    // Handle both CDATA and plain text formats, ensuring we get the full email
     const creator = creatorRaw
       ?.replace(/<!\[CDATA\[|\]\]>/g, '')  // Remove CDATA wrapper if present
-      ?.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''); // Trim whitespace and special characters
+      ?.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '') // Trim whitespace and special characters
+      ?.toString(); // Ensure we have a string
     
     console.log('Processed creator email:', creator);
 
@@ -91,6 +92,7 @@ async function processSmartLink(
 
     console.log(`Processing smart link: "${title}" by ${creator}`);
 
+    // Query for user profile using the full email
     const { data: userData, error: userError } = await supabase
       .from('profiles')
       .select('id')
