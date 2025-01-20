@@ -24,22 +24,28 @@ function logError(error: unknown, context?: string) {
   console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
 }
 
-function validateXMLStructure(xmlContent: string): boolean {
-  // Basic XML validation
-  const openingTag = '<rss';
-  const closingTag = '</rss>';
-  
-  if (!xmlContent.includes(openingTag) || !xmlContent.includes(closingTag)) {
-    return false;
+function validateAndWrapXML(xmlContent: string): string {
+  // Check if content already has RSS tags
+  if (xmlContent.includes('<rss')) {
+    return xmlContent;
   }
 
-  // Ensure there's only one RSS tag
-  const rssCount = (xmlContent.match(/<rss/g) || []).length;
-  if (rssCount !== 1) {
-    return false;
+  // If it's just items, wrap them in proper RSS structure
+  if (xmlContent.includes('<item>')) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+  <channel>
+    ${xmlContent}
+  </channel>
+</rss>`;
   }
 
-  return true;
+  throw new Error('Invalid WordPress export file - no items found');
 }
 
 function parsePlatformLinks(linksStr: string): PlatformLink[] {
@@ -196,14 +202,14 @@ serve(async (req) => {
     const xmlContent = await file.text();
     console.log('XML content length:', xmlContent.length);
 
-    if (!validateXMLStructure(xmlContent)) {
-      throw new Error('Invalid WordPress export file structure');
-    }
+    // Validate and wrap XML content if needed
+    const wrappedXML = validateAndWrapXML(xmlContent);
+    console.log('XML structure validated and wrapped if needed');
 
     let xmlDoc;
     try {
       console.log('Parsing XML file...');
-      xmlDoc = parse(xmlContent);
+      xmlDoc = parse(wrappedXML);
       
       if (!xmlDoc.rss?.channel) {
         throw new Error('Invalid WordPress export file structure');
