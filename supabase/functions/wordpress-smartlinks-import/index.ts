@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { parse } from "npm:fast-xml-parser";
+import { XMLParser } from 'npm:fast-xml-parser'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +37,7 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -54,14 +55,14 @@ serve(async (req) => {
     console.log(`File content length: ${fileContent.length}`);
 
     // Parse XML with fast-xml-parser
-    const options = {
+    const parser = new XMLParser({
       attributeNamePrefix: "@_",
       ignoreAttributes: false,
       parseAttributeValue: true,
       trimValues: true,
-    };
+    });
 
-    const result = parse(fileContent, options);
+    const result = parser.parse(fileContent);
     if (!result.rss?.channel?.item) {
       throw new Error("Invalid WordPress export file structure");
     }
