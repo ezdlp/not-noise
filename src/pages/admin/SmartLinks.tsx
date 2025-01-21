@@ -34,12 +34,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface ViewOrClick {
-  id: string;
-  viewed_at?: string | null;
-  clicked_at?: string | null;
-}
-
 interface LinkView {
   id: string;
   viewed_at: string | null;
@@ -60,7 +54,7 @@ interface SmartLink {
     email: string | null;
   };
   link_views?: LinkView[];
-  platform_clicks?: PlatformClick[];
+  platform_clicks?: PlatformClick[] | { error: true };
   email_subscribers?: { id: string }[];
 }
 
@@ -101,7 +95,7 @@ export default function SmartLinks() {
         throw error;
       }
 
-      return data as SmartLink[];
+      return data as unknown as SmartLink[];
     },
   });
 
@@ -129,7 +123,7 @@ export default function SmartLinks() {
 
     const csvData = filteredLinks.map((link) => {
       const views = link.link_views?.length || 0;
-      const clicks = link.platform_clicks?.length || 0;
+      const clicks = Array.isArray(link.platform_clicks) ? link.platform_clicks.length : 0;
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
       
       const allActivities = [
@@ -137,10 +131,10 @@ export default function SmartLinks() {
           date: view.viewed_at,
           type: 'view' 
         })),
-        ...(link.platform_clicks || []).map((click) => ({ 
+        ...(Array.isArray(link.platform_clicks) ? link.platform_clicks.map((click) => ({ 
           date: click.clicked_at,
           type: 'click' 
-        }))
+        })) : [])
       ].filter(activity => activity.date !== null);
       
       const lastActivity = allActivities.length > 0 
@@ -218,7 +212,7 @@ export default function SmartLinks() {
         <TableBody>
           {filteredLinks?.map((link) => {
             const views = link.link_views?.length || 0;
-            const clicks = link.platform_clicks?.length || 0;
+            const clicks = Array.isArray(link.platform_clicks) ? link.platform_clicks.length : 0;
             const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
             
             const allActivities = [
@@ -226,10 +220,10 @@ export default function SmartLinks() {
                 date: view.viewed_at,
                 type: 'view' 
               })),
-              ...(link.platform_clicks || []).map((click) => ({ 
+              ...(Array.isArray(link.platform_clicks) ? link.platform_clicks.map((click) => ({ 
                 date: click.clicked_at,
                 type: 'click' 
-              }))
+              })) : [])
             ].filter(activity => activity.date !== null);
             
             const lastActivity = allActivities.length > 0 
