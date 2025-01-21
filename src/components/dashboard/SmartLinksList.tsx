@@ -13,7 +13,9 @@ import {
   TrashIcon, 
   ExternalLinkIcon, 
   CopyIcon,
-  BarChart2Icon
+  BarChart2Icon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -28,10 +30,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -41,6 +51,7 @@ interface SmartLinksListProps {
 export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [sortBy, setSortBy] = useState<string>("newest");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -61,6 +72,24 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
     navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard");
   };
+
+  const sortedLinks = [...links].sort((a, b) => {
+    switch (sortBy) {
+      case "most-views":
+        return (b.link_views?.length || 0) - (a.link_views?.length || 0);
+      case "most-clicks":
+        return (b.platform_clicks?.length || 0) - (a.platform_clicks?.length || 0);
+      case "highest-ctr": {
+        const ctrA = a.link_views?.length ? (a.platform_clicks?.length || 0) / a.link_views.length : 0;
+        const ctrB = b.link_views?.length ? (b.platform_clicks?.length || 0) / b.link_views.length : 0;
+        return ctrB - ctrA;
+      }
+      case "oldest":
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      default: // "newest"
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
 
   if (isLoading) {
     return (
@@ -89,151 +118,168 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
 
   return (
     <TooltipProvider>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">Title</TableHead>
-            <TableHead>Views</TableHead>
-            <TableHead>Clicks</TableHead>
-            <TableHead>CTR</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {links.map((link) => {
-            const views = link.link_views?.length || 0;
-            const clicks = link.platform_clicks?.length || 0;
-            const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-            const smartLinkUrl = `${window.location.origin}/link/${link.id}`;
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="most-views">Most Views</SelectItem>
+              <SelectItem value="most-clicks">Most Clicks</SelectItem>
+              <SelectItem value="highest-ctr">Highest CTR</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            return (
-              <TableRow key={link.id}>
-                <TableCell>
-                  <div className="flex items-start gap-4">
-                    {link.artwork_url && (
-                      <img
-                        src={link.artwork_url}
-                        alt={link.title}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">{link.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {link.artist_name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {smartLinkUrl}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => copyToClipboard(smartLinkUrl)}
-                        >
-                          <CopyIcon className="h-4 w-4" />
-                        </Button>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[300px]">Title</TableHead>
+              <TableHead>Views</TableHead>
+              <TableHead>Clicks</TableHead>
+              <TableHead>CTR</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedLinks.map((link) => {
+              const views = link.link_views?.length || 0;
+              const clicks = link.platform_clicks?.length || 0;
+              const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
+              const smartLinkUrl = `${window.location.origin}/link/${link.id}`;
+
+              return (
+                <TableRow key={link.id}>
+                  <TableCell>
+                    <div className="flex items-start gap-4">
+                      {link.artwork_url && (
+                        <img
+                          src={link.artwork_url}
+                          alt={link.title}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{link.title}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {link.artist_name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                            {smartLinkUrl}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(smartLinkUrl)}
+                          >
+                            <CopyIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>{views}</TableCell>
-                <TableCell>{clicks}</TableCell>
-                <TableCell>{ctr}%</TableCell>
-                <TableCell>
-                  {formatDistanceToNow(new Date(link.created_at), {
-                    addSuffix: true,
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/link/${link.id}`)}
-                        >
-                          <ExternalLinkIcon className="w-4 h-4" />
-                          <span className="sr-only">View</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View Smart Link</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/links/${link.id}/analytics`)}
-                        >
-                          <BarChart2Icon className="w-4 h-4" />
-                          <span className="sr-only">Analytics</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View Analytics</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/links/${link.id}/edit`)}
-                        >
-                          <EditIcon className="w-4 h-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Edit Smart Link</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-600"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{link.title}"? This action
-                            cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(link.id)}
-                            className="bg-red-500 hover:bg-red-600"
+                  </TableCell>
+                  <TableCell>{views}</TableCell>
+                  <TableCell>{clicks}</TableCell>
+                  <TableCell>{ctr}%</TableCell>
+                  <TableCell>
+                    {formatDistanceToNow(new Date(link.created_at), {
+                      addSuffix: true,
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/link/${link.id}`)}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                            <ExternalLinkIcon className="w-4 h-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View Smart Link</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/links/${link.id}/analytics`)}
+                          >
+                            <BarChart2Icon className="w-4 h-4" />
+                            <span className="sr-only">Analytics</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View Analytics</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/links/${link.id}/edit`)}
+                          >
+                            <EditIcon className="w-4 h-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Smart Link</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{link.title}"? This action
+                              cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMutation.mutate(link.id)}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </TooltipProvider>
   );
 }
