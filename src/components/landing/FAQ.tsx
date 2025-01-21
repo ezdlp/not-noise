@@ -7,7 +7,7 @@ import {
 
 const faqs = [
   {
-    question: "What makes notnoise's Smart Links different?",
+    question: "What makes Soundraiser's Smart Links different?",
     answer: "Our Smart Links are built for modern music marketing, featuring Meta Pixel integration for retargeting, email capture capabilities, and comprehensive analytics - all in one streamlined solution that takes less than 3 minutes to set up."
   },
   {
@@ -30,7 +30,7 @@ const faqs = [
 
 export const FAQ = () => {
   return (
-    <section className="py-20 px-4 bg-onyx">
+    <section className="py-20 px-4 bg-gradient-to-b from-onyx to-primary">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold mb-12 text-white text-center">
           Frequently Asked Questions
@@ -40,7 +40,7 @@ export const FAQ = () => {
             <AccordionItem 
               key={index} 
               value={`item-${index}`}
-              className="bg-white rounded-lg px-6"
+              className="bg-white/95 backdrop-blur-sm rounded-xl px-6 border-none shadow-lg"
             >
               <AccordionTrigger className="text-left hover:text-primary">
                 {faq.question}
