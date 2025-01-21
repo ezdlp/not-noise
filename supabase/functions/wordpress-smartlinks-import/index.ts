@@ -1,222 +1,183 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-interface SmartLink {
-  title: string;
-  creator: string;
-  artistName: string;
-  defaultImage: string;
-  links: Record<string, string>;
+interface ImportSummary {
+  total: number;
+  success: number;
+  errors: { link: string; error: string }[];
+  unassigned: string[];
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      }
-    });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    console.log('Starting smart links import process');
-    const formData = await req.formData();
-    const file = formData.get('file');
+    console.log("Starting smart links import process");
     
-    if (!file || !(file instanceof File)) {
-      throw new Error('No file uploaded');
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    if (!file) {
+      throw new Error('No file provided');
     }
+
+    const fileContent = await file.text();
+    console.log(`File content length: ${fileContent.length}`);
+
+    // Wrap items in a root element
+    const wrappedXml = `<?xml version="1.0" encoding="UTF-8"?><root>${fileContent}</root>`;
+    console.log("XML wrapped with root element");
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(wrappedXml, "text/xml");
+    if (!doc) {
+      throw new Error("Failed to parse XML document");
+    }
+
+    const items = doc.getElementsByTagName("item");
+    console.log(`Found ${items.length} items to process`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const text = await file.text();
-    console.log('File content length:', text.length);
-    
-    // Clean up XML before parsing
-    const cleanXml = text.trim()
-      .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
-      .replace(/\n\s*\n/g, '\n') // Remove empty lines
-      .replace(/^\s*[\r\n]/gm, '') // Remove empty lines
-      .replace(/&(?!(amp;|lt;|gt;|quot;|apos;))/g, '&amp;'); // Fix unescaped ampersands
-    
-    console.log('Cleaned XML length:', cleanXml.length);
-    
-    // Log the first 500 characters to check structure
-    console.log('XML start:', cleanXml.substring(0, 500));
-    
-    let xmlDoc;
-    try {
-      xmlDoc = parse(cleanXml);
-      console.log('XML structure:', Object.keys(xmlDoc));
-    } catch (parseError) {
-      console.error('XML parsing error details:', {
-        error: String(parseError),
-        message: parseError instanceof Error ? parseError.message : 'Unknown error',
-        name: parseError instanceof Error ? parseError.name : 'Unknown type'
-      });
-      throw new Error(`Invalid WordPress export file: ${String(parseError)}`);
-    }
-
-    if (!xmlDoc.rss?.channel?.item) {
-      console.error('Invalid XML structure:', JSON.stringify(xmlDoc, null, 2).substring(0, 500));
-      throw new Error('Invalid WordPress export file structure');
-    }
-
-    const items = Array.isArray(xmlDoc.rss.channel.item) 
-      ? xmlDoc.rss.channel.item 
-      : [xmlDoc.rss.channel.item];
-
-    console.log(`Found ${items.length} items in XML file`);
-
-    const errors: Array<{ link: string; error: string }> = [];
-    const unassigned: string[] = [];
-    let successCount = 0;
+    const summary: ImportSummary = {
+      total: items.length,
+      success: 0,
+      errors: [],
+      unassigned: [],
+    };
 
     for (const item of items) {
       try {
-        const title = item.title?.[0] || '';
-        const creator = item['dc:creator']?.[0] || '';
-        console.log('Processing item:', { title, creator });
+        const title = item.querySelector("title")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
+        const userEmail = item.querySelector("dc\\:creator")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
+        const slug = item.querySelector("wp\\:post_name")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
         
-        if (!creator) {
-          throw new Error('Missing creator email');
+        // Find user by email
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single();
+
+        if (userError || !userData) {
+          console.log(`User not found for email: ${userEmail}`);
+          summary.unassigned.push(`${title} (${userEmail})`);
+          continue;
         }
 
         // Extract metadata
-        const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
-        const getMetaValue = (key: string) => {
-          const meta = postMeta.find(m => m['wp:meta_key']?.[0] === key);
-          return meta?.['wp:meta_value']?.[0] || '';
-        };
-
-        const artistName = getMetaValue('_artist_name');
-        const defaultImage = getMetaValue('_default_image');
-        const linksStr = getMetaValue('_links');
+        const metaElements = item.getElementsByTagName("wp:postmeta");
+        let artistName = "", artworkUrl = "", spotifyUrl = "", linksData = "";
         
-        let links = {};
-        try {
-          links = linksStr ? JSON.parse(linksStr) : {};
-        } catch (parseError) {
-          console.log('Error parsing links JSON:', linksStr);
-          throw new Error('Invalid links format');
+        for (const meta of metaElements) {
+          const key = meta.querySelector("wp\\:meta_key")?.textContent?.replace("<![CDATA[", "").replace("]]>", "");
+          const value = meta.querySelector("wp\\:meta_value")?.textContent?.replace("<![CDATA[", "").replace("]]>", "");
+          
+          if (key === "_artist_name") artistName = value || "";
+          if (key === "_default_image") artworkUrl = value || "";
+          if (key === "_url") spotifyUrl = value || "";
+          if (key === "_links") linksData = value || "";
         }
 
-        console.log('Extracted metadata:', { artistName, defaultImage });
-
-        // Look up user by email in profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', creator)
-          .single();
-
-        if (profileError || !profile) {
-          console.log('User lookup failed:', { error: profileError, email: creator });
-          throw new Error(`User not found for email: ${creator}`);
-        }
-
-        // Create smart link
-        const { error: insertError } = await supabase
-          .from('smart_links')
-          .insert({
-            user_id: profile.id,
-            title: title,
-            artist_name: artistName.trim(),
-            artwork_url: defaultImage,
-            slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-          });
-
-        if (insertError) {
-          throw new Error(`Failed to create smart link: ${insertError.message}`);
-        }
-
-        // Get the created smart link to add platform links
-        const { data: smartLink, error: fetchError } = await supabase
-          .from('smart_links')
-          .select('id')
-          .eq('title', title)
-          .eq('user_id', profile.id)
-          .single();
-
-        if (fetchError || !smartLink) {
-          throw new Error('Failed to fetch created smart link');
-        }
-
-        // Add platform links
-        const platformInserts = Object.entries(links).map(([platform, url]) => ({
-          smart_link_id: smartLink.id,
-          platform_id: platform,
-          platform_name: platform,
-          url: url as string
-        })).filter(link => link.url);
-
-        if (platformInserts.length > 0) {
-          const { error: platformError } = await supabase
-            .from('platform_links')
-            .insert(platformInserts);
-
-          if (platformError) {
-            throw new Error(`Failed to create platform links: ${platformError.message}`);
+        // Parse PHP serialized links
+        const linksMatch = linksData.match(/a:9:\{(.*?)\}/);
+        const platformLinks: Record<string, string> = {};
+        
+        if (linksMatch) {
+          const linksPairs = linksMatch[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
+          if (linksPairs) {
+            for (const pair of linksPairs) {
+              const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
+                s.replace(/s:\d+:"/, '').replace('";', '')
+              ) || [];
+              if (key && value) platformLinks[key] = value;
+            }
           }
         }
 
-        successCount++;
-        console.log(`Successfully imported smart link: ${title}`);
+        // Create smart link
+        const { data: smartLink, error: smartLinkError } = await supabase
+          .from('smart_links')
+          .insert({
+            user_id: userData.id,
+            title,
+            artwork_url: artworkUrl,
+            slug,
+            artist_name: artistName,
+          })
+          .select()
+          .single();
+
+        if (smartLinkError) {
+          throw smartLinkError;
+        }
+
+        // Create platform links
+        const platformMappings = {
+          spotify: { id: 'spotify', name: 'Spotify' },
+          appleMusic: { id: 'appleMusic', name: 'Apple Music' },
+          amazonMusic: { id: 'amazonMusic', name: 'Amazon Music' },
+          deezer: { id: 'deezer', name: 'Deezer' },
+          youtube: { id: 'youtube', name: 'YouTube' },
+          youtubeMusic: { id: 'youtubeMusic', name: 'YouTube Music' },
+        };
+
+        for (const [platform, url] of Object.entries(platformLinks)) {
+          if (url && platformMappings[platform as keyof typeof platformMappings]) {
+            const mapping = platformMappings[platform as keyof typeof platformMappings];
+            await supabase
+              .from('platform_links')
+              .insert({
+                smart_link_id: smartLink.id,
+                platform_id: mapping.id,
+                platform_name: mapping.name,
+                url,
+              });
+          }
+        }
+
+        summary.success++;
+        console.log(`Successfully imported: ${title}`);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error('Error processing item:', errorMessage);
-        errors.push({
-          link: item.title?.[0] || 'Unknown',
-          error: errorMessage
+        console.error(`Error processing item:`, error);
+        summary.errors.push({
+          link: item.querySelector("title")?.textContent || "Unknown",
+          error: error.message,
         });
-        unassigned.push(item.title?.[0] || 'Unknown');
       }
     }
-
-    const summary = {
-      total: items.length,
-      success: successCount,
-      errors,
-      unassigned
-    };
-
-    console.log('Import summary:', JSON.stringify(summary, null, 2));
 
     return new Response(
       JSON.stringify(summary),
       { 
-        headers: {
+        headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-      }
-    );
+      },
+    )
 
   } catch (error) {
-    console.error('Error processing WordPress import:', String(error));
+    console.error("Error processing WordPress import:", error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to process WordPress import',
-        details: error instanceof Error ? error.message : String(error)
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         status: 500,
-        headers: {
+        headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-      }
-    );
+      },
+    )
   }
-});
+})
