@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
@@ -74,8 +74,18 @@ function validateAndWrapXML(xmlContent: string): string {
 }
 
 function extractSmartLinkData(item: any): SmartLinkData {
-  // Extract basic fields, ensuring we get full text content
-  const title = Array.isArray(item.title) ? item.title[0] : '';
+  // Extract title with proper CDATA handling
+  let title = '';
+  if (item.title) {
+    const rawTitle = Array.isArray(item.title) ? item.title[0] : item.title;
+    title = typeof rawTitle === 'string' 
+      ? rawTitle.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
+      : rawTitle?.['#text'] || '';
+  }
+  console.log('Raw title value:', item.title);
+  console.log('Processed title:', title);
+
+  // Extract link with proper handling
   const link = Array.isArray(item.link) ? item.link[0] : '';
   const pubDate = Array.isArray(item.pubDate) ? item.pubDate[0] : '';
   
@@ -83,7 +93,6 @@ function extractSmartLinkData(item: any): SmartLinkData {
   let creator = '';
   if (Array.isArray(item['dc:creator'])) {
     const rawCreator = item['dc:creator'][0];
-    // Handle CDATA wrapped content
     creator = typeof rawCreator === 'string' 
       ? rawCreator.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
       : rawCreator?.['#text'] || '';
