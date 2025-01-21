@@ -1,86 +1,64 @@
 import { Card } from "@/components/ui/card";
-import { ChartBarIcon, UsersIcon, MousePointerClickIcon, PercentIcon, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatDistanceToNow, subDays } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ArrowUpIcon, ArrowDownIcon, EyeIcon, MousePointerClickIcon, TargetIcon } from "lucide-react";
 
-interface DashboardStatsProps {
-  data?: any[];
-}
-
-export function DashboardStats({ data = [] }: DashboardStatsProps) {
-  const now = new Date();
-  const sevenDaysAgo = subDays(now, 7);
-  
-  // Calculate current period metrics
+export function DashboardStats({ data }: { data: any[] }) {
   const totalViews = data?.reduce((acc, link) => acc + (link.link_views?.length || 0), 0) || 0;
-  const totalClicks = data?.reduce((acc, link) => acc + (link.platform_clicks?.length || 0), 0) || 0;
-  const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : "0";
-
-  // Calculate previous period metrics
-  const previousViews = data?.reduce((acc, link) => {
-    const oldViews = link.link_views?.filter((view: any) => 
-      new Date(view.viewed_at) < sevenDaysAgo
-    ).length || 0;
-    return acc + oldViews;
-  }, 0);
-
-  const previousClicks = data?.reduce((acc, link) => {
-    const oldClicks = link.platform_clicks?.filter((click: any) => 
-      new Date(click.clicked_at) < sevenDaysAgo
-    ).length || 0;
-    return acc + oldClicks;
-  }, 0);
-
-  const previousCtr = previousViews > 0 ? ((previousClicks / previousViews) * 100).toFixed(1) : "0";
-
-  // Calculate trends
-  const viewsTrend = ((totalViews - previousViews) / (previousViews || 1)) * 100;
-  const clicksTrend = ((totalClicks - previousClicks) / (previousClicks || 1)) * 100;
-  const ctrTrend = parseFloat(ctr) - parseFloat(previousCtr);
+  const totalClicks = data?.reduce(
+    (acc, link) =>
+      acc + (link.platform_links?.reduce((sum: number, pl: any) => sum + (pl.clicks?.length || 0), 0) || 0),
+    0
+  ) || 0;
+  const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
   const stats = [
     {
       name: "Total Views",
       value: totalViews,
-      trend: viewsTrend,
-      icon: UsersIcon,
       description: "Total number of smart link views",
-      color: "bg-blue-500/10",
+      icon: EyeIcon,
+      color: "bg-blue-50",
       iconColor: "text-blue-500",
+      trend: 0,
     },
     {
       name: "Total Clicks",
       value: totalClicks,
-      trend: clicksTrend,
-      icon: MousePointerClickIcon,
       description: "Total number of platform clicks",
-      color: "bg-green-500/10",
-      iconColor: "text-green-500",
+      icon: MousePointerClickIcon,
+      color: "bg-purple-50",
+      iconColor: "text-purple-500",
+      trend: 0,
     },
     {
       name: "CTR",
-      value: `${ctr}%`,
-      trend: ctrTrend,
-      icon: PercentIcon,
-      description: "Click-through rate (Clicks/Views)",
-      color: "bg-purple-500/10",
-      iconColor: "text-purple-500",
+      value: `${ctr.toFixed(1)}%`,
+      description: "Click-through rate",
+      icon: TargetIcon,
+      color: "bg-green-50",
+      iconColor: "text-green-500",
+      trend: 0,
     },
   ];
 
   return (
     <>
       {stats.map((stat) => (
-        <Card key={stat.name} className="p-6 aspect-square">
+        <Card key={stat.name} className="relative overflow-hidden">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${stat.color}`}>
-                      <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                <div className="p-4 cursor-help">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-lg ${stat.color}`}>
+                      <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
                     </div>
-                    <div className="flex-1">
+                    <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         {stat.name}
                       </p>

@@ -35,16 +35,14 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <div>
         <h2 className="text-2xl font-bold mb-4">Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DashboardStats data={links} />
         </div>
       </div>
-      <div className="mt-8">
-        <SmartLinksList links={links} isLoading={isLoading} />
-      </div>
+      <SmartLinksList links={links} isLoading={isLoading} />
     </div>
   );
 }
