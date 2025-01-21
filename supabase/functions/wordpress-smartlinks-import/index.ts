@@ -16,6 +16,7 @@ interface SmartLink {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -57,13 +58,11 @@ serve(async (req) => {
       try {
         const title = item.title?.[0] || '';
         const creator = item['dc:creator']?.[0] || '';
-        console.log('Raw creator value:', creator);
+        console.log('Processing item:', { title, creator });
         
         if (!creator) {
           throw new Error('Missing creator email');
         }
-
-        console.log('Processed creator:', creator);
 
         // Extract metadata
         const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
@@ -75,16 +74,9 @@ serve(async (req) => {
         const artistName = getMetaValue('_artist_name');
         const defaultImage = getMetaValue('_default_image');
         const linksStr = getMetaValue('_links');
-        const links = linksStr ? eval(`(${linksStr})`) : {};
+        const links = linksStr ? JSON.parse(linksStr) : {};
 
-        const data = {
-          title,
-          creator,
-          artistName,
-          defaultImage,
-          links,
-        };
-        console.log('Extracted data:', data);
+        console.log('Extracted metadata:', { artistName, defaultImage });
 
         // Look up user by email in profiles table
         const { data: profile, error: profileError } = await supabase
@@ -144,11 +136,13 @@ serve(async (req) => {
         }
 
         successCount++;
+        console.log(`Successfully imported smart link: ${title}`);
       } catch (error) {
-        console.error('Error processing item:', error.message);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.log('Error processing item:', errorMessage);
         errors.push({
           link: item.title?.[0] || 'Unknown',
-          error: error.message
+          error: errorMessage
         });
         unassigned.push(item.title?.[0] || 'Unknown');
       }
@@ -174,11 +168,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing WordPress import:', error);
+    console.log('Error processing WordPress import:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import',
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         status: 400,
