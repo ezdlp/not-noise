@@ -1,20 +1,7 @@
-import { MediaLibrary } from "@/components/admin/blog/MediaLibrary";
-import { useState } from "react";
+import { MediaLibrary as MediaLibraryComponent } from "@/components/admin/blog/MediaLibrary";
 
-export function MediaLibraryPage() {
-  const [selectedUrl, setSelectedUrl] = useState<string>("");
-  const [isOpen, setIsOpen] = useState(true);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Media Library</h1>
-      </div>
-      <MediaLibrary 
-        onSelect={(url) => setSelectedUrl(url)}
-        onClose={() => setIsOpen(false)}
-        showInsertButton={false}
-      />
-    </div>
-  );
+function MediaLibrary() {
+  return <MediaLibraryComponent />;
 }
+
+export default MediaLibrary;

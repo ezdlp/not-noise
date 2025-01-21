@@ -34,6 +34,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+interface ViewOrClick {
+  id: string;
+  viewed_at?: string | null;
+  clicked_at?: string | null;
+}
+
 export default function SmartLinks() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -102,7 +108,7 @@ export default function SmartLinks() {
       const clicks = link.platform_clicks?.length || 0;
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
       const lastActivity = [...(link.link_views || []), ...(link.platform_clicks || [])]
-        .map((item) => new Date(item.viewed_at || item.clicked_at))
+        .map((item: ViewOrClick) => new Date(item.viewed_at || item.clicked_at || ''))
         .sort((a, b) => b.getTime() - a.getTime())[0];
 
       return [
@@ -176,7 +182,7 @@ export default function SmartLinks() {
             const clicks = link.platform_clicks?.length || 0;
             const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
             const lastActivity = [...(link.link_views || []), ...(link.platform_clicks || [])]
-              .map((item) => new Date(item.viewed_at || item.clicked_at))
+              .map((item: ViewOrClick) => new Date(item.viewed_at || item.clicked_at || ''))
               .sort((a, b) => b.getTime() - a.getTime())[0];
 
             return (
