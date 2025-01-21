@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { ChartBarIcon, UsersIcon, LinkIcon } from "lucide-react";
+import { ChartBarIcon, UsersIcon, MousePointerClickIcon, PercentIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardStatsProps {
   data?: any[];
@@ -7,8 +8,8 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ data = [] }: DashboardStatsProps) {
   const totalViews = data?.reduce((acc, link) => acc + (link.link_views?.length || 0), 0) || 0;
-  const totalLinks = data?.length || 0;
-  const activeLinks = data?.filter(link => link.platform_links?.length > 0).length || 0;
+  const totalClicks = data?.reduce((acc, link) => acc + (link.platform_clicks?.length || 0), 0) || 0;
+  const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : "0";
 
   const stats = [
     {
@@ -16,41 +17,51 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
       value: totalViews,
       icon: UsersIcon,
       description: "Total number of smart link views",
+      color: "bg-blue-500/10",
+      iconColor: "text-blue-500",
     },
     {
-      name: "Smart Links",
-      value: totalLinks,
-      icon: LinkIcon,
-      description: "Total number of smart links created",
+      name: "Total Clicks",
+      value: totalClicks,
+      icon: MousePointerClickIcon,
+      description: "Total number of platform clicks",
+      color: "bg-green-500/10",
+      iconColor: "text-green-500",
     },
     {
-      name: "Active Links",
-      value: activeLinks,
-      icon: ChartBarIcon,
-      description: "Smart links with active platforms",
+      name: "CTR",
+      value: `${ctr}%`,
+      icon: PercentIcon,
+      description: "Click-through rate (Clicks/Views)",
+      color: "bg-purple-500/10",
+      iconColor: "text-purple-500",
     },
   ];
 
   return (
-    <>
+    <TooltipProvider>
       {stats.map((stat) => (
         <Card key={stat.name} className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <stat.icon className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {stat.name}
-              </p>
-              <h3 className="text-2xl font-bold">{stat.value}</h3>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {stat.description}
-          </p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-4 cursor-help">
+                <div className={`p-3 rounded-lg ${stat.color}`}>
+                  <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {stat.name}
+                  </p>
+                  <h3 className="text-2xl font-bold">{stat.value}</h3>
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{stat.description}</p>
+            </TooltipContent>
+          </Tooltip>
         </Card>
       ))}
-    </>
+    </TooltipProvider>
   );
 }
