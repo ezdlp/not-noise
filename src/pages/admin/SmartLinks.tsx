@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -32,12 +31,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface ViewOrClick {
   id: string;
   viewed_at?: string | null;
   clicked_at?: string | null;
+}
+
+interface LinkView {
+  id: string;
+  viewed_at: string;
+}
+
+interface PlatformClick {
+  id: string;
+  clicked_at: string;
 }
 
 export default function SmartLinks() {
@@ -107,9 +117,24 @@ export default function SmartLinks() {
       const views = link.link_views?.length || 0;
       const clicks = link.platform_clicks?.length || 0;
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-      const lastActivity = [...(link.link_views || []), ...(link.platform_clicks || [])]
-        .map((item: ViewOrClick) => new Date(item.viewed_at || item.clicked_at || ''))
-        .sort((a, b) => b.getTime() - a.getTime())[0];
+      
+      const allActivities = [
+        ...(link.link_views || []).map((view: LinkView) => ({ 
+          ...view, 
+          type: 'view' 
+        })),
+        ...(link.platform_clicks || []).map((click: PlatformClick) => ({ 
+          ...click, 
+          type: 'click' 
+        }))
+      ];
+      
+      const lastActivity = allActivities.length > 0 
+        ? new Date(allActivities.reduce((latest, current) => {
+            const currentDate = new Date(current.viewed_at || current.clicked_at || '');
+            return currentDate > latest ? currentDate : latest;
+          }, new Date(0)))
+        : null;
 
       return [
         link.title,
