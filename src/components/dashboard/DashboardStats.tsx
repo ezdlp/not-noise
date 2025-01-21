@@ -45,8 +45,8 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
       trend: viewsTrend,
       icon: UsersIcon,
       description: "Total number of smart link views",
-      color: "bg-primary/10",
-      iconColor: "text-primary",
+      color: "bg-blue-500/10",
+      iconColor: "text-blue-500",
     },
     {
       name: "Total Clicks",
@@ -54,8 +54,8 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
       trend: clicksTrend,
       icon: MousePointerClickIcon,
       description: "Total number of platform clicks",
-      color: "bg-secondary/10",
-      iconColor: "text-secondary",
+      color: "bg-green-500/10",
+      iconColor: "text-green-500",
     },
     {
       name: "CTR",
@@ -63,22 +63,19 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
       trend: ctrTrend,
       icon: PercentIcon,
       description: "Click-through rate (Clicks/Views)",
-      color: "bg-success/10",
-      iconColor: "text-success",
+      color: "bg-purple-500/10",
+      iconColor: "text-purple-500",
     },
   ];
 
   return (
     <TooltipProvider>
       {stats.map((stat) => (
-        <Card 
-          key={stat.name} 
-          className="p-6 transition-all duration-200 hover:shadow-lg hover:shadow-primary/20 group"
-        >
+        <Card key={stat.name} className="p-6">
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-4 cursor-help">
-                <div className={`p-3 rounded-lg ${stat.color} transition-colors duration-200 group-hover:bg-primary/20`}>
+                <div className={`p-3 rounded-lg ${stat.color}`}>
                   <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
                 </div>
                 <div className="flex-1">
@@ -86,9 +83,9 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
                     {stat.name}
                   </p>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-2xl font-bold font-heading">{stat.value}</h3>
+                    <h3 className="text-2xl font-bold">{stat.value}</h3>
                     {stat.trend !== 0 && (
-                      <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-success' : 'text-red-500'}`}>
+                      <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {stat.trend > 0 ? (
                           <ArrowUpIcon className="w-4 h-4" />
                         ) : (

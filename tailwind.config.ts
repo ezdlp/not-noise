@@ -27,15 +27,13 @@ export default {
         primary: {
           DEFAULT: "#6851FB",
           foreground: "#FFFFFF",
-          hover: "#7B66FF",
         },
         secondary: {
-          DEFAULT: "#BBB3FC",
+          DEFAULT: "#D6BCFA",
           foreground: "#0F0F0F",
-          hover: "#CEC8FD",
         },
-        success: {
-          DEFAULT: "#30FF8F",
+        accent: {
+          DEFAULT: "#F5F3FF",
           foreground: "#0F0F0F",
         },
         onyx: "#0F0F0F",
@@ -69,21 +67,39 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
-        glow: {
-          "0%, 100%": { boxShadow: "0 0 5px rgba(104, 81, 251, 0)" },
-          "50%": { boxShadow: "0 0 20px rgba(104, 81, 251, 0.5)" },
-        },
-        scale: {
-          "0%": { transform: "scale(1)" },
-          "100%": { transform: "scale(0.95)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 3s ease-in-out infinite",
-        glow: "glow 2s ease-in-out infinite",
-        scale: "scale 0.2s ease-out",
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'inherit',
+            a: {
+              color: 'inherit',
+              textDecoration: 'none',
+              fontWeight: '500',
+            },
+            strong: {
+              color: 'inherit',
+            },
+            h1: {
+              color: 'inherit',
+            },
+            h2: {
+              color: 'inherit',
+            },
+            h3: {
+              color: 'inherit',
+            },
+            h4: {
+              color: 'inherit',
+            },
+          },
+        },
       },
     },
   },

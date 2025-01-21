@@ -45,16 +45,13 @@ export default function Dashboard() {
     <div className="container py-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-heading">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             Manage your smart links and track their performance
           </p>
         </div>
-        <Button 
-          onClick={() => navigate("/create")} 
-          className="gap-2 bg-primary hover:bg-primary-hover transition-colors"
-        >
-          <PlusIcon className="w-5 h-5" />
+        <Button onClick={() => navigate("/create")} className="gap-2">
+          <PlusIcon />
           Create Smart Link
         </Button>
       </div>
@@ -63,15 +60,15 @@ export default function Dashboard() {
         <DashboardStats data={smartLinks} />
       </div>
 
-      <Card className="p-6 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10">
+      <Card className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <Link2Icon className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-semibold font-heading">Your Smart Links</h2>
+          <h2 className="text-xl font-semibold">Your Smart Links</h2>
         </div>
         <SmartLinksList links={smartLinks} isLoading={isLoading} />
       </Card>
 
-      <Card className="p-6 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10">
+      <Card className="p-6">
         <EmailSubscribersList />
       </Card>
     </div>

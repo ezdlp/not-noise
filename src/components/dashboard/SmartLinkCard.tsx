@@ -41,52 +41,45 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   };
 
   return (
-    <Card className="p-4 flex flex-col h-full transition-all duration-200 hover:shadow-lg hover:shadow-primary/20">
+    <Card className="p-4 flex flex-col h-full">
       <div className="flex gap-4">
         {link.artwork_url && (
           <img
             src={link.artwork_url}
             alt={link.title}
-            className="w-24 h-24 object-cover rounded-lg shadow-md"
+            className="w-24 h-24 object-cover rounded"
           />
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-lg font-heading truncate hover:text-primary transition-colors">{link.title}</h3>
+          <h3 className="font-medium truncate">{link.title}</h3>
           <p className="text-sm text-muted-foreground">{link.artist_name}</p>
           <div className="flex items-center gap-2 mt-2">
-            <code className="text-xs bg-secondary/10 px-2 py-1 rounded flex-1 truncate">
+            <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
               {smartLinkUrl}
             </code>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 flex-shrink-0 hover:text-primary transition-colors"
-                  onClick={() => copyToClipboard(smartLinkUrl)}
-                >
-                  <CopyIcon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copy link</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 flex-shrink-0"
+              onClick={() => copyToClipboard(smartLinkUrl)}
+            >
+              <CopyIcon className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 my-4 text-center">
-        <div className="bg-primary/5 p-3 rounded-lg">
-          <div className="text-2xl font-bold font-heading">{views}</div>
+        <div>
+          <div className="text-2xl font-semibold">{views}</div>
           <div className="text-sm text-muted-foreground">Views</div>
         </div>
-        <div className="bg-secondary/5 p-3 rounded-lg">
-          <div className="text-2xl font-bold font-heading">{clicks}</div>
+        <div>
+          <div className="text-2xl font-semibold">{clicks}</div>
           <div className="text-sm text-muted-foreground">Clicks</div>
         </div>
-        <div className="bg-success/5 p-3 rounded-lg">
-          <div className="text-2xl font-bold font-heading text-success">{ctr}%</div>
+        <div>
+          <div className="text-2xl font-semibold">{ctr}%</div>
           <div className="text-sm text-muted-foreground">CTR</div>
         </div>
       </div>
@@ -103,7 +96,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/link/${link.id}`)}
-                  className="hover:text-primary transition-colors"
                 >
                   <ExternalLinkIcon className="w-4 h-4" />
                   <span className="sr-only">View</span>
@@ -120,7 +112,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/links/${link.id}/analytics`)}
-                  className="hover:text-primary transition-colors"
                 >
                   <BarChart2Icon className="w-4 h-4" />
                   <span className="sr-only">Analytics</span>
@@ -137,7 +128,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/links/${link.id}/edit`)}
-                  className="hover:text-primary transition-colors"
                 >
                   <EditIcon className="w-4 h-4" />
                   <span className="sr-only">Edit</span>
@@ -153,7 +143,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-500 hover:text-red-600 transition-colors"
+                  className="text-red-500 hover:text-red-600"
                 >
                   <TrashIcon className="w-4 h-4" />
                   <span className="sr-only">Delete</span>
