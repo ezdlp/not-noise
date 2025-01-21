@@ -16,7 +16,6 @@ interface SmartLink {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: {
@@ -42,8 +41,20 @@ serve(async (req) => {
     );
 
     const text = await file.text();
-    const xmlDoc = parse(text);
-    console.log('XML parsing successful');
+    
+    // Clean up XML before parsing
+    const cleanXml = text.trim()
+      .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
+      .replace(/\n\s*\n/g, '\n'); // Remove empty lines
+    
+    let xmlDoc;
+    try {
+      xmlDoc = parse(cleanXml);
+      console.log('XML parsing successful');
+    } catch (parseError) {
+      console.error('XML parsing error:', String(parseError));
+      throw new Error(`Invalid WordPress export file: ${String(parseError)}`);
+    }
 
     if (!xmlDoc.rss?.channel?.item) {
       throw new Error('Invalid WordPress export file structure');
@@ -167,7 +178,7 @@ serve(async (req) => {
       unassigned
     };
 
-    console.log('Import summary:', JSON.stringify(summary));
+    console.log('Import summary:', JSON.stringify(summary, null, 2));
 
     return new Response(
       JSON.stringify(summary),
@@ -180,7 +191,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.log('Error processing WordPress import:', String(error));
+    console.error('Error processing WordPress import:', String(error));
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import',
