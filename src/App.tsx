@@ -44,23 +44,22 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAdminRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.log('No session found');
-        setIsAdmin(false);
-        return;
-      }
-
-      console.log('Checking admin role for user:', session.user.id);
-
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.log('No session found');
+          setIsAdmin(false);
+          return;
+        }
+
+        console.log('Checking admin role for user:', session.user.id);
+
         const { data: userRoles, error } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error checking admin role:', error);
@@ -68,8 +67,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        console.log('User role found:', userRoles);
-        setIsAdmin(!!userRoles);
+        setIsAdmin(userRoles?.role === 'admin');
       } catch (error) {
         console.error('Error in admin check:', error);
         setIsAdmin(false);

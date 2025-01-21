@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface EmailSubscriber {
   id: string;
@@ -24,7 +25,7 @@ interface EmailSubscriber {
 }
 
 export function EmailSubscribersList() {
-  const { data: subscribers, isLoading } = useQuery({
+  const { data: subscribers, isLoading, error } = useQuery({
     queryKey: ["emailSubscribers"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,9 +40,18 @@ export function EmailSubscribersList() {
         `)
         .order("subscribed_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching subscribers:", error);
+        throw error;
+      }
+
       return data as EmailSubscriber[];
     },
+    retry: 1,
+    onError: (error) => {
+      console.error("Error in email subscribers query:", error);
+      toast.error("Failed to load email subscribers");
+    }
   });
 
   const handleExportCSV = () => {
@@ -75,6 +85,14 @@ export function EmailSubscribersList() {
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-6">
+        <p className="text-muted-foreground">Failed to load subscribers</p>
       </div>
     );
   }
