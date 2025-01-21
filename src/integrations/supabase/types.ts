@@ -488,6 +488,7 @@ export type Database = {
           artist_name: string
           country: string
           created_at: string | null
+          email: string | null
           id: string
           music_genre: string
           name: string
@@ -497,6 +498,7 @@ export type Database = {
           artist_name: string
           country: string
           created_at?: string | null
+          email?: string | null
           id: string
           music_genre: string
           name: string
@@ -506,6 +508,7 @@ export type Database = {
           artist_name?: string
           country?: string
           created_at?: string | null
+          email?: string | null
           id?: string
           music_genre?: string
           name?: string

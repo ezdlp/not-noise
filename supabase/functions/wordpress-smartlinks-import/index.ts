@@ -1,287 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-interface ImportSummary {
-  total: number;
-  success: number;
-  errors: { link: string; error: string }[];
-  unassigned: string[];
-}
-
-interface PlatformLink {
-  platform: string;
-  url: string;
-}
-
-interface SmartLinkData {
+interface SmartLink {
   title: string;
-  link: string;
-  pubDate: string;
   creator: string;
-  guid: {
-    isPermaLink: boolean;
-    value: string;
-  };
-  description: string;
-  postId: number;
-  postDate: string;
-  postModified: string;
-  postType: string;
   artistName: string;
   defaultImage: string;
-  url: string;
-  linkViews: number;
-  linkClicks: number;
   links: Record<string, string>;
-}
-
-function logError(error: unknown, context?: string) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error(`Error${context ? ` in ${context}` : ''}: ${errorMessage}`);
-}
-
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function validateAndWrapXML(xmlContent: string): string {
-  if (xmlContent.includes('<rss')) {
-    return xmlContent;
-  }
-
-  if (xmlContent.includes('<item>')) {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"
-  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
-  xmlns:content="http://purl.org/rss/1.0/modules/content/"
-  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
-  xmlns:dc="http://purl.org/dc/elements/1.1/"
-  xmlns:wp="http://wordpress.org/export/1.2/">
-  <channel>
-    ${xmlContent}
-  </channel>
-</rss>`;
-  }
-
-  throw new Error('Invalid WordPress export file - no items found');
-}
-
-function extractSmartLinkData(item: any): SmartLinkData {
-  // Extract title with proper CDATA handling
-  let title = '';
-  if (item.title) {
-    const rawTitle = Array.isArray(item.title) ? item.title[0] : item.title;
-    title = typeof rawTitle === 'string' 
-      ? rawTitle.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
-      : rawTitle?.['#text'] || '';
-  }
-  console.log('Raw title value:', item.title);
-  console.log('Processed title:', title);
-
-  // Extract link with proper handling
-  const link = Array.isArray(item.link) ? item.link[0] : '';
-  const pubDate = Array.isArray(item.pubDate) ? item.pubDate[0] : '';
-  
-  // Properly extract creator from CDATA section
-  let creator = '';
-  if (item['dc:creator']) {
-    const rawCreator = Array.isArray(item['dc:creator']) ? item['dc:creator'][0] : item['dc:creator'];
-    creator = typeof rawCreator === 'string' 
-      ? rawCreator.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
-      : rawCreator?.['#text'] || '';
-  }
-  console.log('Raw creator value:', item['dc:creator']);
-  console.log('Processed creator:', creator);
-
-  // Extract description
-  const description = Array.isArray(item.description) ? item.description[0] : '';
-  
-  // Extract GUID with proper handling of attributes
-  const guidElement = item.guid?.[0];
-  const guid = {
-    isPermaLink: guidElement?.['@isPermaLink'] === 'true',
-    value: typeof guidElement === 'string' ? guidElement : guidElement?.['#text'] || ''
-  };
-
-  // Extract WordPress specific fields with proper array handling
-  const postId = parseInt(Array.isArray(item['wp:post_id']) ? item['wp:post_id'][0] : '0');
-  const postDate = Array.isArray(item['wp:post_date']) ? item['wp:post_date'][0] : '';
-  const postModified = Array.isArray(item['wp:post_modified']) ? item['wp:post_modified'][0] : '';
-  const postType = Array.isArray(item['wp:post_type']) ? item['wp:post_type'][0] : '';
-
-  // Process postmeta elements with proper array handling
-  const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
-  const metadata = new Map();
-  
-  postMeta.forEach((meta: any) => {
-    if (!meta) return;
-    const key = Array.isArray(meta['wp:meta_key']) ? meta['wp:meta_key'][0] : '';
-    const value = Array.isArray(meta['wp:meta_value']) ? meta['wp:meta_value'][0] : '';
-    if (key && value) {
-      metadata.set(key.replace(/<!\[CDATA\[|\]\]>/g, '').trim(), 
-                   value.replace(/<!\[CDATA\[|\]\]>/g, '').trim());
-    }
-  });
-
-  // Extract metadata values with proper null handling
-  const artistName = metadata.get('_artist_name') || '';
-  const defaultImage = metadata.get('_default_image') || '';
-  const url = metadata.get('_url') || '';
-  const linkViews = parseInt(metadata.get('_link_views') || '0');
-  const linkClicks = parseInt(metadata.get('_link_clicks') || '0');
-
-  // Parse links with proper error handling
-  let links: Record<string, string> = {};
-  try {
-    const linksStr = metadata.get('_links');
-    if (linksStr) {
-      // Parse platform links from the serialized string
-      const urlMatches = linksStr.match(/https?:\/\/[^\s"';]+/g) || [];
-      urlMatches.forEach(url => {
-        if (url.includes('spotify.com')) links.spotify = url;
-        else if (url.includes('music.apple.com')) links.appleMusic = url;
-        else if (url.includes('deezer.com')) links.deezer = url;
-        else if (url.includes('music.amazon.com')) links.amazonMusic = url;
-        else if (url.includes('soundcloud.com')) links.soundcloud = url;
-        else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          links.youtube = url;
-          links.youtubeMusic = url;
-        }
-        else if (url.includes('tidal.com')) links.tidal = url;
-      });
-    }
-  } catch (error) {
-    console.error('Error parsing links:', error);
-  }
-
-  return {
-    title,
-    link,
-    pubDate,
-    creator,
-    guid,
-    description,
-    postId,
-    postDate,
-    postModified,
-    postType,
-    artistName,
-    defaultImage,
-    url,
-    linkViews,
-    linkClicks,
-    links
-  };
-}
-
-async function processSmartLink(item: any, supabase: any, summary: ImportSummary): Promise<void> {
-  try {
-    const data = extractSmartLinkData(item);
-    console.log('Extracted data:', JSON.stringify(data, null, 2));
-
-    if (!data.title) {
-      throw new Error('Missing title');
-    }
-
-    if (!data.creator) {
-      throw new Error('Missing creator email');
-    }
-
-    if (!validateEmail(data.creator)) {
-      console.error(`Invalid email format for item "${data.title}": ${data.creator}`);
-      summary.unassigned.push(data.title);
-      summary.errors.push({
-        link: data.title,
-        error: `Invalid email format: ${data.creator}`
-      });
-      return;
-    }
-
-    // Query for user profile using the validated email
-    const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', data.creator)
-      .maybeSingle();
-
-    if (userError || !userData) {
-      console.log('User lookup failed:', { error: userError, email: data.creator });
-      summary.unassigned.push(data.title);
-      summary.errors.push({
-        link: data.title,
-        error: `User not found for email: ${data.creator}`
-      });
-      return;
-    }
-
-    const userId = userData.id;
-
-    // Create smart link
-    const { data: smartLink, error: smartLinkError } = await supabase
-      .from('smart_links')
-      .insert({
-        user_id: userId,
-        title: data.title,
-        artwork_url: data.defaultImage,
-        artist_name: data.artistName,
-        email_capture_enabled: false,
-      })
-      .select()
-      .single();
-
-    if (smartLinkError || !smartLink) {
-      throw new Error(`Failed to create smart link: ${smartLinkError?.message}`);
-    }
-
-    // Create platform links
-    for (const [platform, url] of Object.entries(data.links)) {
-      if (!url) continue;
-
-      const { error: platformError } = await supabase
-        .from('platform_links')
-        .insert({
-          smart_link_id: smartLink.id,
-          platform_id: platform.toLowerCase(),
-          platform_name: platform,
-          url: url,
-        });
-
-      if (platformError) {
-        console.error('Error adding platform link:', platformError);
-      }
-    }
-
-    // Process views and clicks
-    if (data.linkViews > 0) {
-      const viewPromises = Array(data.linkViews).fill(null).map(() => 
-        supabase.from('link_views').insert({
-          smart_link_id: smartLink.id,
-        })
-      );
-      await Promise.allSettled(viewPromises);
-    }
-
-    if (data.linkClicks > 0) {
-      const clickPromises = Array(data.linkClicks).fill(null).map(() => 
-        supabase.from('platform_clicks').insert({
-          platform_link_id: smartLink.id,
-        })
-      );
-      await Promise.allSettled(clickPromises);
-    }
-
-    summary.success++;
-  } catch (error) {
-    logError(error, 'processSmartLink');
-    throw error;
-  }
 }
 
 serve(async (req) => {
@@ -293,77 +24,168 @@ serve(async (req) => {
     console.log('Starting smart links import process');
     const formData = await req.formData();
     const file = formData.get('file');
-
+    
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
 
-    const xmlContent = await file.text();
-    const wrappedXML = validateAndWrapXML(xmlContent);
-    
-    let xmlDoc;
-    try {
-      console.log('Parsing XML file...');
-      xmlDoc = parse(wrappedXML);
-      console.log('XML parsing successful');
-    } catch (parseError) {
-      logError(parseError, 'XML parsing');
-      throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
-    }
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
     );
 
-    const summary: ImportSummary = {
-      total: 0,
-      success: 0,
-      errors: [],
-      unassigned: [],
-    };
+    const text = await file.text();
+    const xmlDoc = parse(text);
+    console.log('XML parsing successful');
 
-    const channel = xmlDoc.rss.channel;
-    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
-    
-    summary.total = items.length;
+    if (!xmlDoc.rss?.channel?.item) {
+      throw new Error('Invalid WordPress export file structure');
+    }
+
+    const items = Array.isArray(xmlDoc.rss.channel.item) 
+      ? xmlDoc.rss.channel.item 
+      : [xmlDoc.rss.channel.item];
+
     console.log(`Found ${items.length} items in XML file`);
 
-    if (items.length === 0) {
-      throw new Error('No items found in WordPress export file');
-    }
+    const errors: Array<{ link: string; error: string }> = [];
+    const unassigned: string[] = [];
+    let successCount = 0;
 
     for (const item of items) {
       try {
-        await processSmartLink(item, supabase, summary);
+        const title = item.title?.[0] || '';
+        const creator = item['dc:creator']?.[0] || '';
+        console.log('Raw creator value:', creator);
+        
+        if (!creator) {
+          throw new Error('Missing creator email');
+        }
+
+        console.log('Processed creator:', creator);
+
+        // Extract metadata
+        const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
+        const getMetaValue = (key: string) => {
+          const meta = postMeta.find(m => m['wp:meta_key']?.[0] === key);
+          return meta?.['wp:meta_value']?.[0] || '';
+        };
+
+        const artistName = getMetaValue('_artist_name');
+        const defaultImage = getMetaValue('_default_image');
+        const linksStr = getMetaValue('_links');
+        const links = linksStr ? eval(`(${linksStr})`) : {};
+
+        const data = {
+          title,
+          creator,
+          artistName,
+          defaultImage,
+          links,
+        };
+        console.log('Extracted data:', data);
+
+        // Look up user by email in profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', creator)
+          .single();
+
+        if (profileError || !profile) {
+          console.log('User lookup failed:', { error: profileError, email: creator });
+          throw new Error(`User not found for email: ${creator}`);
+        }
+
+        // Create smart link
+        const { error: insertError } = await supabase
+          .from('smart_links')
+          .insert({
+            user_id: profile.id,
+            title: title,
+            artist_name: artistName.trim(),
+            artwork_url: defaultImage,
+            slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          });
+
+        if (insertError) {
+          throw new Error(`Failed to create smart link: ${insertError.message}`);
+        }
+
+        // Get the created smart link to add platform links
+        const { data: smartLink, error: fetchError } = await supabase
+          .from('smart_links')
+          .select('id')
+          .eq('title', title)
+          .eq('user_id', profile.id)
+          .single();
+
+        if (fetchError || !smartLink) {
+          throw new Error('Failed to fetch created smart link');
+        }
+
+        // Add platform links
+        const platformInserts = Object.entries(links).map(([platform, url]) => ({
+          smart_link_id: smartLink.id,
+          platform_id: platform,
+          platform_name: platform,
+          url: url as string
+        })).filter(link => link.url);
+
+        if (platformInserts.length > 0) {
+          const { error: platformError } = await supabase
+            .from('platform_links')
+            .insert(platformInserts);
+
+          if (platformError) {
+            throw new Error(`Failed to create platform links: ${platformError.message}`);
+          }
+        }
+
+        successCount++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error('Error processing item:', errorMessage);
-        summary.errors.push({
+        console.error('Error processing item:', error.message);
+        errors.push({
           link: item.title?.[0] || 'Unknown',
-          error: errorMessage,
+          error: error.message
         });
+        unassigned.push(item.title?.[0] || 'Unknown');
       }
     }
+
+    const summary = {
+      total: items.length,
+      success: successCount,
+      errors,
+      unassigned
+    };
 
     console.log('Import summary:', summary);
 
     return new Response(
       JSON.stringify(summary),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
     );
 
   } catch (error) {
-    logError(error, 'Fatal error');
+    console.error('Error processing WordPress import:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Import process failed', 
-        details: error instanceof Error ? error.message : String(error),
-        summary: { total: 0, success: 0, errors: [], unassigned: [] }
+        error: 'Failed to process WordPress import',
+        details: error.message
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+      {
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
     );
   }
