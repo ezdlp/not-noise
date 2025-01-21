@@ -37,11 +37,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
 import { SmartLinkCard } from "./SmartLinkCard";
 
 interface SmartLinksListProps {
@@ -122,8 +122,11 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
     <TooltipProvider>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Link2Icon className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold">Your Smart Links</h2>
+          </div>
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -131,7 +134,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
                     variant={viewMode === "list" ? "secondary" : "ghost"}
                     size="icon"
                     onClick={() => setViewMode("list")}
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 bg-gray-50"
                   >
                     <ListIcon className="h-4 w-4" />
                   </Button>
@@ -146,7 +149,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
                     variant={viewMode === "grid" ? "secondary" : "ghost"}
                     size="icon"
                     onClick={() => setViewMode("grid")}
-                    className="hover:bg-gray-100"
+                    className="hover:bg-gray-100 bg-gray-50"
                   >
                     <GridIcon className="h-4 w-4" />
                   </Button>
@@ -156,19 +159,19 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
                 </TooltipContent>
               </Tooltip>
             </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="most-views">Most Views</SelectItem>
+                <SelectItem value="most-clicks">Most Clicks</SelectItem>
+                <SelectItem value="highest-ctr">Highest CTR</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="most-views">Most Views</SelectItem>
-              <SelectItem value="most-clicks">Most Clicks</SelectItem>
-              <SelectItem value="highest-ctr">Highest CTR</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {viewMode === "grid" ? (

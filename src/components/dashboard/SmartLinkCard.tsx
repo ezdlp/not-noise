@@ -47,7 +47,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
           <img
             src={link.artwork_url}
             alt={link.title}
-            className="w-24 h-24 object-cover rounded"
+            className="w-20 h-20 object-cover rounded"
           />
         )}
         <div className="flex-1 min-w-0">
@@ -69,27 +69,27 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 my-4 text-center">
+      <div className="grid grid-cols-3 gap-2 my-3 text-center text-sm">
         <div>
-          <div className="text-2xl font-semibold">{views}</div>
-          <div className="text-sm text-muted-foreground">Views</div>
+          <div className="font-medium">{views}</div>
+          <div className="text-xs text-muted-foreground">Views</div>
         </div>
         <div>
-          <div className="text-2xl font-semibold">{clicks}</div>
-          <div className="text-sm text-muted-foreground">Clicks</div>
+          <div className="font-medium">{clicks}</div>
+          <div className="text-xs text-muted-foreground">Clicks</div>
         </div>
         <div>
-          <div className="text-2xl font-semibold">{ctr}%</div>
-          <div className="text-sm text-muted-foreground">CTR</div>
+          <div className="font-medium">{ctr}%</div>
+          <div className="text-xs text-muted-foreground">CTR</div>
         </div>
       </div>
 
-      <div className="mt-auto pt-4 border-t flex items-center justify-between">
+      <div className="mt-auto pt-3 border-t flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
         </div>
         <TooltipProvider>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -98,7 +98,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   onClick={() => navigate(`/link/${link.id}`)}
                 >
                   <ExternalLinkIcon className="w-4 h-4" />
-                  <span className="sr-only">View</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -114,7 +113,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   onClick={() => navigate(`/links/${link.id}/analytics`)}
                 >
                   <BarChart2Icon className="w-4 h-4" />
-                  <span className="sr-only">Analytics</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -130,7 +128,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   onClick={() => navigate(`/links/${link.id}/edit`)}
                 >
                   <EditIcon className="w-4 h-4" />
-                  <span className="sr-only">Edit</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -146,7 +143,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   className="text-red-500 hover:text-red-600"
                 >
                   <TrashIcon className="w-4 h-4" />
-                  <span className="sr-only">Delete</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
