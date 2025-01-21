@@ -74,46 +74,60 @@ function validateAndWrapXML(xmlContent: string): string {
 }
 
 function extractSmartLinkData(item: any): SmartLinkData {
-  // Extract basic fields
-  const title = item.title?.[0] || '';
-  const link = item.link?.[0] || '';
-  const pubDate = item.pubDate?.[0] || '';
-  const creator = item['dc:creator']?.[0]?.replace(/<!\[CDATA\[|\]\]>/g, '').trim() || '';
-  const description = item.description?.[0] || '';
+  // Extract basic fields, ensuring we get full text content
+  const title = Array.isArray(item.title) ? item.title[0] : '';
+  const link = Array.isArray(item.link) ? item.link[0] : '';
+  const pubDate = Array.isArray(item.pubDate) ? item.pubDate[0] : '';
   
-  // Extract GUID
+  // Properly extract creator from CDATA section
+  let creator = '';
+  if (Array.isArray(item['dc:creator'])) {
+    const rawCreator = item['dc:creator'][0];
+    // Handle CDATA wrapped content
+    creator = typeof rawCreator === 'string' 
+      ? rawCreator.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
+      : rawCreator?.['#text'] || '';
+  }
+  console.log('Raw creator value:', item['dc:creator']);
+  console.log('Processed creator:', creator);
+
+  // Extract description
+  const description = Array.isArray(item.description) ? item.description[0] : '';
+  
+  // Extract GUID with proper handling of attributes
   const guidElement = item.guid?.[0];
   const guid = {
     isPermaLink: guidElement?.['@isPermaLink'] === 'true',
     value: typeof guidElement === 'string' ? guidElement : guidElement?.['#text'] || ''
   };
 
-  // Extract WordPress specific fields
-  const postId = parseInt(item['wp:post_id']?.[0] || '0');
-  const postDate = item['wp:post_date']?.[0] || '';
-  const postModified = item['wp:post_modified']?.[0] || '';
-  const postType = item['wp:post_type']?.[0] || '';
+  // Extract WordPress specific fields with proper array handling
+  const postId = parseInt(Array.isArray(item['wp:post_id']) ? item['wp:post_id'][0] : '0');
+  const postDate = Array.isArray(item['wp:post_date']) ? item['wp:post_date'][0] : '';
+  const postModified = Array.isArray(item['wp:post_modified']) ? item['wp:post_modified'][0] : '';
+  const postType = Array.isArray(item['wp:post_type']) ? item['wp:post_type'][0] : '';
 
-  // Process postmeta elements
+  // Process postmeta elements with proper array handling
   const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
   const metadata = new Map();
   
   postMeta.forEach((meta: any) => {
-    const key = meta['wp:meta_key']?.[0];
-    const value = meta['wp:meta_value']?.[0];
+    if (!meta) return;
+    const key = Array.isArray(meta['wp:meta_key']) ? meta['wp:meta_key'][0] : '';
+    const value = Array.isArray(meta['wp:meta_value']) ? meta['wp:meta_value'][0] : '';
     if (key && value) {
       metadata.set(key, value);
     }
   });
 
-  // Extract metadata values
+  // Extract metadata values with proper null handling
   const artistName = metadata.get('_artist_name') || '';
   const defaultImage = metadata.get('_default_image') || '';
   const url = metadata.get('_url') || '';
   const linkViews = parseInt(metadata.get('_link_views') || '0');
   const linkClicks = parseInt(metadata.get('_link_clicks') || '0');
 
-  // Parse links
+  // Parse links with proper error handling
   let links: Record<string, string> = {};
   try {
     const linksStr = metadata.get('_links');
@@ -137,7 +151,7 @@ function extractSmartLinkData(item: any): SmartLinkData {
     console.error('Error parsing links:', error);
   }
 
-  return {
+  const data = {
     title,
     link,
     pubDate,
@@ -155,6 +169,9 @@ function extractSmartLinkData(item: any): SmartLinkData {
     linkClicks,
     links
   };
+
+  console.log('Extracted data:', JSON.stringify(data, null, 2));
+  return data;
 }
 
 async function processSmartLink(item: any, supabase: any, summary: ImportSummary): Promise<void> {
