@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { parse } from "npm:fast-xml-parser";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +12,28 @@ interface ImportSummary {
   success: number;
   errors: { link: string; error: string }[];
   unassigned: string[];
+}
+
+function parseSerializedPHPString(serialized: string): Record<string, string> {
+  const links: Record<string, string> = {};
+  
+  // Extract the serialized array content
+  const match = serialized.match(/a:\d+:\{(.*?)\}/);
+  if (!match) return links;
+  
+  // Split into key-value pairs
+  const pairs = match[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
+  if (!pairs) return links;
+  
+  // Process each pair
+  pairs.forEach(pair => {
+    const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
+      s.replace(/s:\d+:"/, '').replace('";', '')
+    ) || [];
+    if (key && value) links[key] = value;
+  });
+  
+  return links;
 }
 
 serve(async (req) => {
@@ -31,17 +53,25 @@ serve(async (req) => {
     const fileContent = await file.text();
     console.log(`File content length: ${fileContent.length}`);
 
-    // Wrap items in a root element
-    const wrappedXml = `<?xml version="1.0" encoding="UTF-8"?><root>${fileContent}</root>`;
-    console.log("XML wrapped with root element");
+    // Parse XML with fast-xml-parser
+    const options = {
+      attributeNamePrefix: "@_",
+      ignoreAttributes: false,
+      parseAttributeValue: true,
+      trimValues: true,
+    };
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(wrappedXml, "text/xml");
-    if (!doc) {
-      throw new Error("Failed to parse XML document");
+    const result = parse(fileContent, options);
+    if (!result.rss?.channel?.item) {
+      throw new Error("Invalid WordPress export file structure");
     }
 
-    const items = doc.getElementsByTagName("item");
+    console.log("XML parsed successfully");
+
+    const items = Array.isArray(result.rss.channel.item) 
+      ? result.rss.channel.item 
+      : [result.rss.channel.item];
+
     console.log(`Found ${items.length} items to process`);
 
     const supabase = createClient(
@@ -58,9 +88,14 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        const title = item.querySelector("title")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
-        const userEmail = item.querySelector("dc\\:creator")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
-        const slug = item.querySelector("wp\\:post_name")?.textContent?.replace("<![CDATA[", "").replace("]]>", "") || "";
+        if (item["wp:post_type"] !== "custom_links") {
+          console.log(`Skipping non-custom_links post type: ${item["wp:post_type"]}`);
+          continue;
+        }
+
+        const title = item.title;
+        const userEmail = item["dc:creator"];
+        const slug = item["wp:post_name"];
         
         // Find user by email
         const { data: userData, error: userError } = await supabase
@@ -75,35 +110,24 @@ serve(async (req) => {
           continue;
         }
 
-        // Extract metadata
-        const metaElements = item.getElementsByTagName("wp:postmeta");
-        let artistName = "", artworkUrl = "", spotifyUrl = "", linksData = "";
-        
-        for (const meta of metaElements) {
-          const key = meta.querySelector("wp\\:meta_key")?.textContent?.replace("<![CDATA[", "").replace("]]>", "");
-          const value = meta.querySelector("wp\\:meta_value")?.textContent?.replace("<![CDATA[", "").replace("]]>", "");
-          
-          if (key === "_artist_name") artistName = value || "";
-          if (key === "_default_image") artworkUrl = value || "";
-          if (key === "_url") spotifyUrl = value || "";
-          if (key === "_links") linksData = value || "";
-        }
+        // Extract metadata from postmeta array
+        const postmeta = Array.isArray(item["wp:postmeta"]) 
+          ? item["wp:postmeta"] 
+          : [item["wp:postmeta"]];
 
-        // Parse PHP serialized links
-        const linksMatch = linksData.match(/a:9:\{(.*?)\}/);
-        const platformLinks: Record<string, string> = {};
-        
-        if (linksMatch) {
-          const linksPairs = linksMatch[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
-          if (linksPairs) {
-            for (const pair of linksPairs) {
-              const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
-                s.replace(/s:\d+:"/, '').replace('";', '')
-              ) || [];
-              if (key && value) platformLinks[key] = value;
-            }
-          }
-        }
+        const getMeta = (key: string) => {
+          const meta = postmeta.find(m => m["wp:meta_key"] === key);
+          return meta ? meta["wp:meta_value"] : null;
+        };
+
+        const artistName = getMeta("_artist_name") || "";
+        const artworkUrl = getMeta("_default_image") || "";
+        const spotifyUrl = getMeta("_url") || "";
+        const linksData = getMeta("_links") || "";
+
+        // Parse serialized PHP links data
+        const platformLinks = parseSerializedPHPString(linksData);
+        console.log("Parsed platform links:", platformLinks);
 
         // Create smart link
         const { data: smartLink, error: smartLinkError } = await supabase
@@ -130,6 +154,8 @@ serve(async (req) => {
           deezer: { id: 'deezer', name: 'Deezer' },
           youtube: { id: 'youtube', name: 'YouTube' },
           youtubeMusic: { id: 'youtubeMusic', name: 'YouTube Music' },
+          soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
+          itunes: { id: 'itunes', name: 'iTunes' },
         };
 
         for (const [platform, url] of Object.entries(platformLinks)) {
@@ -151,7 +177,7 @@ serve(async (req) => {
       } catch (error) {
         console.error(`Error processing item:`, error);
         summary.errors.push({
-          link: item.querySelector("title")?.textContent || "Unknown",
+          link: item.title || "Unknown",
           error: error.message,
         });
       }
