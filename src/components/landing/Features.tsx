@@ -35,23 +35,23 @@ const features = [
 
 export const Features = () => {
   return (
-    <section className="py-20 px-4">
+    <section className="py-20 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
           From One Link to Endless Plays
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="p-8 rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              className="p-8 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="mb-6">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <feature.icon className="h-6 w-6 text-primary" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">{feature.title}</h3>
+              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
               <p className="text-gray-600 leading-relaxed">{feature.description}</p>
             </div>
           ))}
