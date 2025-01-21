@@ -41,22 +41,35 @@ serve(async (req) => {
     );
 
     const text = await file.text();
+    console.log('File content length:', text.length);
     
     // Clean up XML before parsing
     const cleanXml = text.trim()
       .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
-      .replace(/\n\s*\n/g, '\n'); // Remove empty lines
+      .replace(/\n\s*\n/g, '\n') // Remove empty lines
+      .replace(/^\s*[\r\n]/gm, '') // Remove empty lines
+      .replace(/&(?!(amp;|lt;|gt;|quot;|apos;))/g, '&amp;'); // Fix unescaped ampersands
+    
+    console.log('Cleaned XML length:', cleanXml.length);
+    
+    // Log the first 500 characters to check structure
+    console.log('XML start:', cleanXml.substring(0, 500));
     
     let xmlDoc;
     try {
       xmlDoc = parse(cleanXml);
-      console.log('XML parsing successful');
+      console.log('XML structure:', Object.keys(xmlDoc));
     } catch (parseError) {
-      console.error('XML parsing error:', String(parseError));
+      console.error('XML parsing error details:', {
+        error: String(parseError),
+        message: parseError instanceof Error ? parseError.message : 'Unknown error',
+        name: parseError instanceof Error ? parseError.name : 'Unknown type'
+      });
       throw new Error(`Invalid WordPress export file: ${String(parseError)}`);
     }
 
     if (!xmlDoc.rss?.channel?.item) {
+      console.error('Invalid XML structure:', JSON.stringify(xmlDoc, null, 2).substring(0, 500));
       throw new Error('Invalid WordPress export file structure');
     }
 
@@ -162,7 +175,7 @@ serve(async (req) => {
         console.log(`Successfully imported smart link: ${title}`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log('Error processing item:', errorMessage);
+        console.error('Error processing item:', errorMessage);
         errors.push({
           link: item.title?.[0] || 'Unknown',
           error: errorMessage
@@ -182,7 +195,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(summary),
-      {
+      { 
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
@@ -197,7 +210,7 @@ serve(async (req) => {
         error: 'Failed to process WordPress import',
         details: error instanceof Error ? error.message : String(error)
       }),
-      {
+      { 
         status: 500,
         headers: {
           ...corsHeaders,
