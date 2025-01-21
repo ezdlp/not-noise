@@ -69,44 +69,48 @@ export function DashboardStats({ data = [] }: DashboardStatsProps) {
   ];
 
   return (
-    <TooltipProvider>
+    <>
       {stats.map((stat) => (
-        <Card key={stat.name} className="p-6">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-4 cursor-help">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {stat.name}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-2xl font-bold">{stat.value}</h3>
-                    {stat.trend !== 0 && (
-                      <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {stat.trend > 0 ? (
-                          <ArrowUpIcon className="w-4 h-4" />
-                        ) : (
-                          <ArrowDownIcon className="w-4 h-4" />
+        <Card key={stat.name} className="p-6 aspect-square">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${stat.color}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.name}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-2xl font-bold">{stat.value}</h3>
+                        {stat.trend !== 0 && (
+                          <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {stat.trend > 0 ? (
+                              <ArrowUpIcon className="w-4 h-4" />
+                            ) : (
+                              <ArrowDownIcon className="w-4 h-4" />
+                            )}
+                            {Math.abs(stat.trend).toFixed(1)}%
+                          </span>
                         )}
-                        {Math.abs(stat.trend).toFixed(1)}%
-                      </span>
-                    )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{stat.description}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Compared to last 7 days
-              </p>
-            </TooltipContent>
-          </Tooltip>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{stat.description}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Compared to last 7 days
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </Card>
       ))}
-    </TooltipProvider>
+    </>
   );
 }
