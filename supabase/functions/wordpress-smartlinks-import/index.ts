@@ -75,19 +75,23 @@ serve(async (req) => {
 
     console.log(`Found ${items.length} items to process`);
 
+    // Limit to 10 items for testing
+    const itemsToProcess = items.slice(0, 10);
+    console.log(`Processing first ${itemsToProcess.length} items for testing`);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const summary: ImportSummary = {
-      total: items.length,
+      total: itemsToProcess.length,
       success: 0,
       errors: [],
       unassigned: [],
     };
 
-    for (const item of items) {
+    for (const item of itemsToProcess) {
       try {
         if (item["wp:post_type"] !== "custom_links") {
           console.log(`Skipping non-custom_links post type: ${item["wp:post_type"]}`);
@@ -98,15 +102,15 @@ serve(async (req) => {
         const userEmail = item["dc:creator"];
         const slug = item["wp:post_name"];
         
-        // Find user by email
-        const { data: userData, error: userError } = await supabase
+        // Find user by email in profiles table
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id')
           .eq('email', userEmail)
           .single();
 
-        if (userError || !userData) {
-          console.log(`User not found for email: ${userEmail}`);
+        if (profileError || !profileData) {
+          console.log(`Profile not found for email: ${userEmail}`);
           summary.unassigned.push(`${title} (${userEmail})`);
           continue;
         }
@@ -134,7 +138,7 @@ serve(async (req) => {
         const { data: smartLink, error: smartLinkError } = await supabase
           .from('smart_links')
           .insert({
-            user_id: userData.id,
+            user_id: profileData.id,
             title,
             artwork_url: artworkUrl,
             slug,
@@ -162,7 +166,7 @@ serve(async (req) => {
         for (const [platform, url] of Object.entries(platformLinks)) {
           if (url && platformMappings[platform as keyof typeof platformMappings]) {
             const mapping = platformMappings[platform as keyof typeof platformMappings];
-            await supabase
+            const { error: platformLinkError } = await supabase
               .from('platform_links')
               .insert({
                 smart_link_id: smartLink.id,
@@ -170,6 +174,10 @@ serve(async (req) => {
                 platform_name: mapping.name,
                 url,
               });
+
+            if (platformLinkError) {
+              console.error(`Error creating platform link for ${platform}:`, platformLinkError);
+            }
           }
         }
 
