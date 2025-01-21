@@ -91,8 +91,8 @@ function extractSmartLinkData(item: any): SmartLinkData {
   
   // Properly extract creator from CDATA section
   let creator = '';
-  if (Array.isArray(item['dc:creator'])) {
-    const rawCreator = item['dc:creator'][0];
+  if (item['dc:creator']) {
+    const rawCreator = Array.isArray(item['dc:creator']) ? item['dc:creator'][0] : item['dc:creator'];
     creator = typeof rawCreator === 'string' 
       ? rawCreator.replace(/<!\[CDATA\[|\]\]>/g, '').trim()
       : rawCreator?.['#text'] || '';
@@ -125,7 +125,8 @@ function extractSmartLinkData(item: any): SmartLinkData {
     const key = Array.isArray(meta['wp:meta_key']) ? meta['wp:meta_key'][0] : '';
     const value = Array.isArray(meta['wp:meta_value']) ? meta['wp:meta_value'][0] : '';
     if (key && value) {
-      metadata.set(key, value);
+      metadata.set(key.replace(/<!\[CDATA\[|\]\]>/g, '').trim(), 
+                   value.replace(/<!\[CDATA\[|\]\]>/g, '').trim());
     }
   });
 
@@ -160,7 +161,7 @@ function extractSmartLinkData(item: any): SmartLinkData {
     console.error('Error parsing links:', error);
   }
 
-  const data = {
+  return {
     title,
     link,
     pubDate,
@@ -178,9 +179,6 @@ function extractSmartLinkData(item: any): SmartLinkData {
     linkClicks,
     links
   };
-
-  console.log('Extracted data:', JSON.stringify(data, null, 2));
-  return data;
 }
 
 async function processSmartLink(item: any, supabase: any, summary: ImportSummary): Promise<void> {
