@@ -42,12 +42,26 @@ interface ViewOrClick {
 
 interface LinkView {
   id: string;
-  viewed_at: string;
+  viewed_at: string | null;
 }
 
 interface PlatformClick {
   id: string;
-  clicked_at: string;
+  clicked_at: string | null;
+}
+
+interface SmartLink {
+  id: string;
+  title: string;
+  artist_name: string;
+  created_at: string;
+  profiles?: {
+    name: string | null;
+    email: string | null;
+  };
+  link_views?: LinkView[];
+  platform_clicks?: PlatformClick[];
+  email_subscribers?: { id: string }[];
 }
 
 export default function SmartLinks() {
@@ -87,7 +101,7 @@ export default function SmartLinks() {
         throw error;
       }
 
-      return data;
+      return data as SmartLink[];
     },
   });
 
@@ -119,19 +133,19 @@ export default function SmartLinks() {
       const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
       
       const allActivities = [
-        ...(link.link_views || []).map((view: LinkView) => ({ 
-          ...view, 
+        ...(link.link_views || []).map((view) => ({ 
+          date: view.viewed_at,
           type: 'view' 
         })),
-        ...(link.platform_clicks || []).map((click: PlatformClick) => ({ 
-          ...click, 
+        ...(link.platform_clicks || []).map((click) => ({ 
+          date: click.clicked_at,
           type: 'click' 
         }))
-      ];
+      ].filter(activity => activity.date !== null);
       
       const lastActivity = allActivities.length > 0 
         ? new Date(allActivities.reduce((latest, current) => {
-            const currentDate = new Date(current.viewed_at || current.clicked_at || '');
+            const currentDate = new Date(current.date || '');
             return currentDate > latest ? currentDate : latest;
           }, new Date(0)))
         : null;
@@ -206,9 +220,24 @@ export default function SmartLinks() {
             const views = link.link_views?.length || 0;
             const clicks = link.platform_clicks?.length || 0;
             const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-            const lastActivity = [...(link.link_views || []), ...(link.platform_clicks || [])]
-              .map((item: ViewOrClick) => new Date(item.viewed_at || item.clicked_at || ''))
-              .sort((a, b) => b.getTime() - a.getTime())[0];
+            
+            const allActivities = [
+              ...(link.link_views || []).map((view) => ({ 
+                date: view.viewed_at,
+                type: 'view' 
+              })),
+              ...(link.platform_clicks || []).map((click) => ({ 
+                date: click.clicked_at,
+                type: 'click' 
+              }))
+            ].filter(activity => activity.date !== null);
+            
+            const lastActivity = allActivities.length > 0 
+              ? new Date(allActivities.reduce((latest, current) => {
+                  const currentDate = new Date(current.date || '');
+                  return currentDate > latest ? currentDate : latest;
+                }, new Date(0)))
+              : null;
 
             return (
               <TableRow key={link.id}>
