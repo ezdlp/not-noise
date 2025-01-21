@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -48,9 +47,11 @@ export function EmailSubscribersList() {
       return data as EmailSubscriber[];
     },
     retry: 1,
-    onError: (error) => {
-      console.error("Error in email subscribers query:", error);
-      toast.error("Failed to load email subscribers");
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error in email subscribers query:", error);
+        toast.error("Failed to load email subscribers");
+      }
     }
   });
 
