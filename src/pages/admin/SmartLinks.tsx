@@ -54,7 +54,7 @@ interface SmartLink {
     email: string | null;
   };
   link_views?: LinkView[];
-  platform_clicks?: PlatformClick[] | { error: true };
+  platform_clicks?: PlatformClick[];
   email_subscribers?: { id: string }[];
 }
 
@@ -74,15 +74,15 @@ export default function SmartLinks() {
             email
           ),
           platform_links (
-            id
+            id,
+            platform_clicks (
+              id,
+              clicked_at
+            )
           ),
           link_views (
             id,
             viewed_at
-          ),
-          platform_clicks (
-            id,
-            clicked_at
           ),
           email_subscribers (
             id
@@ -95,7 +95,13 @@ export default function SmartLinks() {
         throw error;
       }
 
-      return data as unknown as SmartLink[];
+      // Transform the data to match the expected format
+      const transformedData = data.map(link => ({
+        ...link,
+        platform_clicks: link.platform_links?.flatMap(pl => pl.platform_clicks || []) || []
+      }));
+
+      return transformedData as SmartLink[];
     },
   });
 
@@ -212,7 +218,7 @@ export default function SmartLinks() {
         <TableBody>
           {filteredLinks?.map((link) => {
             const views = link.link_views?.length || 0;
-            const clicks = Array.isArray(link.platform_clicks) ? link.platform_clicks.length : 0;
+            const clicks = link.platform_clicks?.length || 0;
             const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
             
             const allActivities = [
@@ -220,10 +226,10 @@ export default function SmartLinks() {
                 date: view.viewed_at,
                 type: 'view' 
               })),
-              ...(Array.isArray(link.platform_clicks) ? link.platform_clicks.map((click) => ({ 
+              ...(link.platform_clicks || []).map((click) => ({ 
                 date: click.clicked_at,
                 type: 'click' 
-              })) : [])
+              }))
             ].filter(activity => activity.date !== null);
             
             const lastActivity = allActivities.length > 0 
