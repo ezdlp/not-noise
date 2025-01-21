@@ -18,7 +18,12 @@ interface SmartLink {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      }
+    });
   }
 
   try {
@@ -74,7 +79,14 @@ serve(async (req) => {
         const artistName = getMetaValue('_artist_name');
         const defaultImage = getMetaValue('_default_image');
         const linksStr = getMetaValue('_links');
-        const links = linksStr ? JSON.parse(linksStr) : {};
+        
+        let links = {};
+        try {
+          links = linksStr ? JSON.parse(linksStr) : {};
+        } catch (parseError) {
+          console.log('Error parsing links JSON:', linksStr);
+          throw new Error('Invalid links format');
+        }
 
         console.log('Extracted metadata:', { artistName, defaultImage });
 
@@ -138,7 +150,7 @@ serve(async (req) => {
         successCount++;
         console.log(`Successfully imported smart link: ${title}`);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.log('Error processing item:', errorMessage);
         errors.push({
           link: item.title?.[0] || 'Unknown',
@@ -155,7 +167,7 @@ serve(async (req) => {
       unassigned
     };
 
-    console.log('Import summary:', summary);
+    console.log('Import summary:', JSON.stringify(summary));
 
     return new Response(
       JSON.stringify(summary),
@@ -168,14 +180,14 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.log('Error processing WordPress import:', error);
+    console.log('Error processing WordPress import:', String(error));
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : String(error)
       }),
       {
-        status: 400,
+        status: 500,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
