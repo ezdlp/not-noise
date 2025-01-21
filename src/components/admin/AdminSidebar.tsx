@@ -5,7 +5,8 @@ import {
   LayoutDashboardIcon,
   Settings,
   ImageIcon,
-  DownloadIcon
+  DownloadIcon,
+  Link2Icon
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +29,11 @@ const menuItems = [
     title: "Users",
     icon: UsersIcon,
     href: "/admin/users",
+  },
+  {
+    title: "Smart Links",
+    icon: Link2Icon,
+    href: "/admin/smart-links",
   },
   {
     title: "Blog Posts",

@@ -15,7 +15,7 @@ import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
-import { Overview, Users, Posts, Settings, UserLinks, Media, Import } from "./pages/admin";
+import { Overview, Users, Posts, Settings, UserLinks, Media, Import, SmartLinks } from "./pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -152,6 +152,7 @@ const AppContent = () => {
           <Route index element={<Overview />} />
           <Route path="users" element={<Users />} />
           <Route path="users/:userId/links" element={<UserLinks />} />
+          <Route path="smart-links" element={<SmartLinks />} />
           <Route path="posts" element={<Posts />} />
           <Route path="media" element={<Media />} />
           <Route path="import" element={<Import />} />
