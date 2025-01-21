@@ -53,7 +53,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<string>("newest");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -122,35 +122,40 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
     <TooltipProvider>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
-                  size="icon"
-                  onClick={() => setViewMode("list")}
-                >
-                  <ListIcon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>List View</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
-                  size="icon"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <GridIcon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Grid View</p>
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex items-center gap-6">
+            <h2 className="text-xl font-semibold">Your Smart Links</h2>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === "list" ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => setViewMode("list")}
+                    className="hover:bg-gray-100"
+                  >
+                    <ListIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>List View</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === "grid" ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => setViewMode("grid")}
+                    className="hover:bg-gray-100"
+                  >
+                    <GridIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Grid View</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[180px]">
