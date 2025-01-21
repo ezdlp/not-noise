@@ -14,8 +14,8 @@ import {
   ExternalLinkIcon, 
   CopyIcon,
   BarChart2Icon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  GridIcon,
+  ListIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -42,6 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
+import { SmartLinkCard } from "./SmartLinkCard";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -52,6 +53,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -119,7 +121,37 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                >
+                  <ListIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>List View</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <GridIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Grid View</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Sort by..." />
@@ -134,7 +166,18 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
           </Select>
         </div>
 
-        <Table>
+        {viewMode === "grid" ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedLinks.map((link) => (
+              <SmartLinkCard
+                key={link.id}
+                link={link}
+                onDelete={(id) => deleteMutation.mutate(id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[300px]">Title</TableHead>
@@ -278,7 +321,8 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
               );
             })}
           </TableBody>
-        </Table>
+          </Table>
+        )}
       </div>
     </TooltipProvider>
   );
