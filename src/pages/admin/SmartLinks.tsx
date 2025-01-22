@@ -44,6 +44,13 @@ interface PlatformClick {
   clicked_at: string | null;
 }
 
+interface PlatformLink {
+  id: string;
+  platform_id: string;
+  url: string;
+  platform_clicks: PlatformClick[];
+}
+
 interface SmartLink {
   id: string;
   title: string;
@@ -54,10 +61,7 @@ interface SmartLink {
     email: string | null;
   };
   link_views?: LinkView[];
-  platform_links?: {
-    id: string;
-    platform_clicks: PlatformClick[];
-  }[];
+  platform_links?: PlatformLink[];
   email_subscribers?: { id: string }[];
 }
 
@@ -68,6 +72,7 @@ export default function SmartLinks() {
   const { data: smartLinks, isLoading } = useQuery({
     queryKey: ["adminSmartLinks"],
     queryFn: async () => {
+      console.log("Fetching smart links with platform links...");
       const { data, error } = await supabase
         .from("smart_links")
         .select(`
@@ -78,6 +83,8 @@ export default function SmartLinks() {
           ),
           platform_links (
             id,
+            platform_id,
+            url,
             platform_clicks (
               id,
               clicked_at
@@ -99,6 +106,7 @@ export default function SmartLinks() {
         throw error;
       }
 
+      console.log("Fetched smart links:", data);
       return data as SmartLink[];
     },
   });
@@ -123,6 +131,7 @@ export default function SmartLinks() {
       "CTR",
       "Subscribers",
       "Last Activity",
+      "Platform Links"
     ];
 
     const csvData = filteredLinks.map((link) => {
@@ -153,6 +162,8 @@ export default function SmartLinks() {
           }, new Date(0)))
         : null;
 
+      const platformLinks = link.platform_links?.map(pl => pl.platform_id).join(", ") || "None";
+
       return [
         link.title,
         link.artist_name,
@@ -163,6 +174,7 @@ export default function SmartLinks() {
         `${ctr}%`,
         link.email_subscribers?.length || 0,
         lastActivity ? formatDistanceToNow(lastActivity, { addSuffix: true }) : "Never",
+        platformLinks
       ];
     });
 
@@ -214,6 +226,7 @@ export default function SmartLinks() {
             <TableHead>Clicks</TableHead>
             <TableHead>CTR</TableHead>
             <TableHead>Subscribers</TableHead>
+            <TableHead>Platforms</TableHead>
             <TableHead>Last Activity</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -274,6 +287,13 @@ export default function SmartLinks() {
                 <TableCell>{clicks}</TableCell>
                 <TableCell>{ctr}%</TableCell>
                 <TableCell>{link.email_subscribers?.length || 0}</TableCell>
+                <TableCell>
+                  <div className="text-sm">
+                    {link.platform_links && link.platform_links.length > 0 
+                      ? link.platform_links.map(pl => pl.platform_id).join(", ")
+                      : "None"}
+                  </div>
+                </TableCell>
                 <TableCell>
                   {lastActivity
                     ? formatDistanceToNow(lastActivity, { addSuffix: true })
