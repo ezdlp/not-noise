@@ -7,12 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface PlatformLink {
-  platform_id: string;
-  platform_name: string;
-  url: string;
-}
-
 const platformMappings = {
   'appleMusic': { id: 'apple_music', name: 'Apple Music' },
   'spotify': { id: 'spotify', name: 'Spotify' },
@@ -33,10 +27,7 @@ function isValidUrl(url: string): boolean {
 }
 
 function parsePHPSerializedString(input: string) {
-  console.log("Parsing PHP string:", input);
   const links: Record<string, string> = {};
-
-  // Extract key-value pairs using regex
   const pattern = /s:\d+:"([^"]+)"\s*;\s*s:\d+:"([^"]*)"/g;
   let match;
 
@@ -47,39 +38,7 @@ function parsePHPSerializedString(input: string) {
     }
   }
 
-  console.log("Parsed links:", links);
   return links;
-}
-
-function validateAndMapPlatformLinks(links: Record<string, string>): PlatformLink[] {
-  const validLinks: PlatformLink[] = [];
-
-  for (const [platformKey, url] of Object.entries(links)) {
-    // Skip empty URLs
-    if (!url) continue;
-
-    // Check if this is a valid platform
-    const platformMapping = platformMappings[platformKey as keyof typeof platformMappings];
-    if (!platformMapping) {
-      console.log(`Skipping invalid platform key: ${platformKey}`);
-      continue;
-    }
-
-    // Validate URL
-    if (!isValidUrl(url)) {
-      console.log(`Skipping invalid URL for ${platformKey}: ${url}`);
-      continue;
-    }
-
-    validLinks.push({
-      platform_id: platformMapping.id,
-      platform_name: platformMapping.name,
-      url: url,
-    });
-  }
-
-  console.log(`Found ${validLinks.length} valid links`);
-  return validLinks;
 }
 
 async function generateUniqueSlug(supabase: any, baseSlug: string): Promise<string> {
@@ -102,55 +61,71 @@ async function generateUniqueSlug(supabase: any, baseSlug: string): Promise<stri
 }
 
 async function processItem(supabase: any, item: any, userId: string) {
-  const platformLinks = item.platform_links;
-  if (!platformLinks) {
-    throw new Error("No platform links found");
+  try {
+    const platformLinks = item.platform_links;
+    if (!platformLinks) {
+      throw new Error("No platform links found");
+    }
+
+    const links = parsePHPSerializedString(platformLinks);
+    const validPlatformLinks = [];
+
+    for (const [platformKey, url] of Object.entries(links)) {
+      if (!url || !isValidUrl(url)) continue;
+
+      const mapping = platformMappings[platformKey as keyof typeof platformMappings];
+      if (!mapping) continue;
+
+      validPlatformLinks.push({
+        platform_id: mapping.id,
+        platform_name: mapping.name,
+        url: url,
+      });
+    }
+
+    if (validPlatformLinks.length === 0) {
+      throw new Error("No valid platform links found");
+    }
+
+    const baseSlug = item.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    
+    const uniqueSlug = await generateUniqueSlug(supabase, baseSlug);
+
+    const { data: smartLink, error: smartLinkError } = await supabase
+      .from('smart_links')
+      .insert({
+        title: item.title,
+        artist_name: item.artist_name || 'Unknown Artist',
+        artwork_url: item.artwork_url,
+        user_id: userId,
+        slug: uniqueSlug,
+      })
+      .select()
+      .single();
+
+    if (smartLinkError) throw smartLinkError;
+
+    const platformLinksToInsert = validPlatformLinks.map(link => ({
+      smart_link_id: smartLink.id,
+      platform_id: link.platform_id,
+      platform_name: link.platform_name,
+      url: link.url,
+    }));
+
+    const { error: platformLinksError } = await supabase
+      .from('platform_links')
+      .insert(platformLinksToInsert);
+
+    if (platformLinksError) throw platformLinksError;
+
+    return smartLink;
+  } catch (error) {
+    console.error("Error processing item:", error);
+    throw error;
   }
-
-  const links = parsePHPSerializedString(platformLinks);
-  const validPlatformLinks = validateAndMapPlatformLinks(links);
-
-  if (validPlatformLinks.length === 0) {
-    throw new Error("No valid platform links found");
-  }
-
-  // Generate a unique slug
-  const baseSlug = item.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  const uniqueSlug = await generateUniqueSlug(supabase, baseSlug);
-
-  // Insert smart link
-  const { data: smartLink, error: smartLinkError } = await supabase
-    .from('smart_links')
-    .insert({
-      title: item.title,
-      artist_name: item.artist_name || 'Unknown Artist',
-      artwork_url: item.artwork_url,
-      user_id: userId,
-      slug: uniqueSlug,
-    })
-    .select()
-    .single();
-
-  if (smartLinkError) throw smartLinkError;
-
-  // Insert platform links
-  const platformLinksToInsert = validPlatformLinks.map(link => ({
-    smart_link_id: smartLink.id,
-    platform_id: link.platform_id,
-    platform_name: link.platform_name,
-    url: link.url,
-  }));
-
-  const { error: platformLinksError } = await supabase
-    .from('platform_links')
-    .insert(platformLinksToInsert);
-
-  if (platformLinksError) throw platformLinksError;
-
-  return smartLink;
 }
 
 serve(async (req) => {
@@ -171,14 +146,10 @@ serve(async (req) => {
     let items;
     
     try {
-      // First try parsing as JSON
       items = JSON.parse(content);
     } catch (e) {
-      // If JSON parsing fails, try parsing as XML
-      console.log("JSON parsing failed, attempting XML parse");
       const xmlDoc = parse(content);
       
-      // Extract items from WordPress XML structure
       if (!xmlDoc.rss?.channel?.item) {
         throw new Error("Invalid WordPress export file structure");
       }
@@ -187,7 +158,6 @@ serve(async (req) => {
         ? xmlDoc.rss.channel.item 
         : [xmlDoc.rss.channel.item];
       
-      // Transform XML items to match expected format
       items = items.map(item => ({
         title: item.title?.[0] || '',
         artist_name: item['wp:postmeta']?.find(meta => 
@@ -201,8 +171,6 @@ serve(async (req) => {
         )?.[0]?.['wp:meta_value']?.[0] || '',
       }));
     }
-
-    console.log(`Starting import in ${testMode ? 'TEST' : 'PRODUCTION'} mode`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -219,14 +187,8 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    const chunkSize = 5;
-    const chunks = [];
-    const limitedItems = testMode ? items.slice(0, 10) : items;
-    
-    for (let i = 0; i < limitedItems.length; i += chunkSize) {
-      chunks.push(limitedItems.slice(i, i + chunkSize));
-    }
-
+    const batchSize = 2;
+    const limitedItems = testMode ? items.slice(0, 5) : items;
     const results = {
       total: limitedItems.length,
       success: 0,
@@ -234,21 +196,25 @@ serve(async (req) => {
       unassigned: [] as string[],
     };
 
-    for (let i = 0; i < chunks.length; i++) {
-      console.log(`Processing chunk ${i + 1} of ${chunks.length}`);
-      const chunk = chunks[i];
+    for (let i = 0; i < limitedItems.length; i += batchSize) {
+      const batch = limitedItems.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(limitedItems.length/batchSize)}`);
 
-      for (const item of chunk) {
+      for (const item of batch) {
         try {
           await processItem(supabase, item, adminUser.user_id);
           results.success++;
         } catch (error) {
-          console.error("Error processing item:", error);
           results.errors.push({
             link: item.title,
             error: error.message,
           });
         }
+      }
+
+      // Add a small delay between batches to prevent resource exhaustion
+      if (i + batchSize < limitedItems.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
