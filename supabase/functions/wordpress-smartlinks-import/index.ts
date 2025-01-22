@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,8 +42,9 @@ function parsePHPSerializedString(input: string) {
 
   while ((match = pattern.exec(input)) !== null) {
     const [, key, value] = match;
-    links[key] = value;
-    console.log(`Found link - ${key}: ${value}`);
+    if (key && value) {
+      links[key] = value;
+    }
   }
 
   console.log("Parsed links:", links);
@@ -51,7 +53,6 @@ function parsePHPSerializedString(input: string) {
 
 function validateAndMapPlatformLinks(links: Record<string, string>): PlatformLink[] {
   const validLinks: PlatformLink[] = [];
-  let validCount = 0;
 
   for (const [platformKey, url] of Object.entries(links)) {
     // Skip empty URLs
@@ -60,13 +61,13 @@ function validateAndMapPlatformLinks(links: Record<string, string>): PlatformLin
     // Check if this is a valid platform
     const platformMapping = platformMappings[platformKey as keyof typeof platformMappings];
     if (!platformMapping) {
-      console.log(`Invalid platform key: ${platformKey}`);
+      console.log(`Skipping invalid platform key: ${platformKey}`);
       continue;
     }
 
     // Validate URL
     if (!isValidUrl(url)) {
-      console.log(`Invalid URL for ${platformKey}: ${url}`);
+      console.log(`Skipping invalid URL for ${platformKey}: ${url}`);
       continue;
     }
 
@@ -75,10 +76,9 @@ function validateAndMapPlatformLinks(links: Record<string, string>): PlatformLin
       platform_name: platformMapping.name,
       url: url,
     });
-    validCount++;
   }
 
-  console.log(`Found ${validCount} valid links`);
+  console.log(`Found ${validLinks.length} valid links`);
   return validLinks;
 }
 
@@ -102,7 +102,12 @@ async function generateUniqueSlug(supabase: any, baseSlug: string): Promise<stri
 }
 
 async function processItem(supabase: any, item: any, userId: string) {
-  const links = parsePHPSerializedString(item.platform_links);
+  const platformLinks = item.platform_links;
+  if (!platformLinks) {
+    throw new Error("No platform links found");
+  }
+
+  const links = parsePHPSerializedString(platformLinks);
   const validPlatformLinks = validateAndMapPlatformLinks(links);
 
   if (validPlatformLinks.length === 0) {
@@ -110,7 +115,10 @@ async function processItem(supabase: any, item: any, userId: string) {
   }
 
   // Generate a unique slug
-  const baseSlug = item.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const baseSlug = item.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
   const uniqueSlug = await generateUniqueSlug(supabase, baseSlug);
 
   // Insert smart link
@@ -146,7 +154,6 @@ async function processItem(supabase: any, item: any, userId: string) {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -161,16 +168,46 @@ serve(async (req) => {
     }
 
     const content = await file.text();
-    const items = JSON.parse(content);
+    let items;
+    
+    try {
+      // First try parsing as JSON
+      items = JSON.parse(content);
+    } catch (e) {
+      // If JSON parsing fails, try parsing as XML
+      console.log("JSON parsing failed, attempting XML parse");
+      const xmlDoc = parse(content);
+      
+      // Extract items from WordPress XML structure
+      if (!xmlDoc.rss?.channel?.item) {
+        throw new Error("Invalid WordPress export file structure");
+      }
+      
+      items = Array.isArray(xmlDoc.rss.channel.item) 
+        ? xmlDoc.rss.channel.item 
+        : [xmlDoc.rss.channel.item];
+      
+      // Transform XML items to match expected format
+      items = items.map(item => ({
+        title: item.title?.[0] || '',
+        artist_name: item['wp:postmeta']?.find(meta => 
+          meta['wp:meta_key']?.[0] === '_artist_name'
+        )?.[0]?.['wp:meta_value']?.[0] || '',
+        artwork_url: item['wp:postmeta']?.find(meta => 
+          meta['wp:meta_key']?.[0] === '_artwork_url'
+        )?.[0]?.['wp:meta_value']?.[0] || '',
+        platform_links: item['wp:postmeta']?.find(meta => 
+          meta['wp:meta_key']?.[0] === '_platform_links'
+        )?.[0]?.['wp:meta_value']?.[0] || '',
+      }));
+    }
 
     console.log(`Starting import in ${testMode ? 'TEST' : 'PRODUCTION'} mode`);
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the first admin user as the owner of imported links
     const { data: adminUser } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -182,7 +219,6 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    // Process in chunks of 5
     const chunkSize = 5;
     const chunks = [];
     const limitedItems = testMode ? items.slice(0, 10) : items;
@@ -207,7 +243,7 @@ serve(async (req) => {
           await processItem(supabase, item, adminUser.user_id);
           results.success++;
         } catch (error) {
-          console.log("Error processing item:", error);
+          console.error("Error processing item:", error);
           results.errors.push({
             link: item.title,
             error: error.message,
