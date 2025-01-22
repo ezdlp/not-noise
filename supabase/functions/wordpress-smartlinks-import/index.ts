@@ -74,23 +74,32 @@ function validatePlatformLinks(links: Record<string, string>): boolean {
   }
 
   const validLinks = Object.entries(links).filter(([platform, url]) => {
-    const isValidPlatform = platformMappings[platform] || 
-                           Object.values(platformMappings).some(m => m.id === platform);
+    // Check if platform exists in mappings
+    const mapping = platformMappings[platform];
+    if (!mapping) {
+      console.log(`Invalid platform: ${platform}`);
+      return false;
+    }
+
+    // Validate URL
     const isValidUrl = url && url.trim().length > 0 && 
                       (url.startsWith('http://') || url.startsWith('https://'));
     
-    if (!isValidPlatform) {
-      console.log(`Invalid platform: ${platform}`);
-    }
     if (!isValidUrl) {
       console.log(`Invalid URL for ${platform}: ${url}`);
+      return false;
     }
     
-    return isValidPlatform && isValidUrl;
+    return true;
   });
 
   console.log(`Found ${validLinks.length} valid links`);
   return validLinks.length > 0;
+}
+
+function generateUniqueSlug(title: string, artist: string, attempt = 0): string {
+  const baseSlug = `${artist.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  return attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
 }
 
 async function processItem(
@@ -127,7 +136,6 @@ async function processItem(
     const artistName = getMeta("_artist_name") || "";
     const artworkUrl = getMeta("_default_image") || "";
     const linksData = getMeta("_links") || "";
-    const slug = item["wp:post_name"];
 
     const platformLinks = parseSerializedPHPString(linksData);
     
@@ -135,27 +143,38 @@ async function processItem(
       throw new Error("No valid platform links found");
     }
 
-    const { data: smartLink, error: smartLinkError } = await supabase
-      .from('smart_links')
-      .insert({
-        user_id: profileData.id,
-        title,
-        artwork_url: artworkUrl,
-        slug,
-        artist_name: artistName,
-      })
-      .select()
-      .single();
+    // Try to insert with incrementing slug numbers until we succeed
+    let attempt = 0;
+    let smartLink = null;
+    let error = null;
 
-    if (smartLinkError) throw smartLinkError;
+    do {
+      const slug = generateUniqueSlug(title, artistName, attempt);
+      const { data, error: insertError } = await supabase
+        .from('smart_links')
+        .insert({
+          user_id: profileData.id,
+          title,
+          artwork_url: artworkUrl,
+          slug,
+          artist_name: artistName,
+        })
+        .select()
+        .single();
+
+      error = insertError;
+      if (!error) {
+        smartLink = data;
+        break;
+      }
+      attempt++;
+    } while (error?.code === '23505' && attempt < 10); // Stop after 10 attempts
+
+    if (!smartLink) throw error || new Error("Failed to create smart link");
 
     for (const [platform, url] of Object.entries(platformLinks)) {
-      if (!url) continue;
-
-      const mapping = platformMappings[platform] || 
-                     Object.values(platformMappings).find(m => m.id === platform);
-
-      if (!mapping) continue;
+      const mapping = platformMappings[platform];
+      if (!mapping || !url) continue;
 
       await supabase
         .from('platform_links')
