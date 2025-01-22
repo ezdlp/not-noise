@@ -27,14 +27,16 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-function parsePHPSerializedString(input: string) {
+function parsePlatformLinks(input: string) {
+  console.log('Parsing platform links from:', input);
+  
   if (!input) {
-    console.log('Empty input for PHP serialized string');
+    console.log('Empty input for platform links');
     return {};
   }
 
   const links: Record<string, string> = {};
-  const pattern = /s:\d+:"([^"]+)"\s*;\s*s:\d+:"([^"]*)"/g;
+  const pattern = /s:\d+:"([^"]+)";s:\d+:"([^"]*)"/g;
   let match;
 
   try {
@@ -42,10 +44,11 @@ function parsePHPSerializedString(input: string) {
       const [, key, value] = match;
       if (key && value) {
         links[key] = value;
+        console.log(`Found link - Platform: ${key}, URL: ${value}`);
       }
     }
   } catch (error) {
-    console.error('Error parsing PHP serialized string:', error);
+    console.error('Error parsing platform links:', error);
   }
 
   return links;
@@ -74,16 +77,15 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
   try {
     console.log('Processing smart link:', item.title?.[0]);
     
-    // Extract platform links from postmeta
     const platformLinksData = extractPostMeta(item, '_platform_links');
-    console.log('Platform links data:', platformLinksData);
+    console.log('Raw platform links data:', platformLinksData);
 
     if (!platformLinksData) {
       console.warn('No platform links found for:', item.title?.[0]);
       throw new Error("No platform links found");
     }
 
-    const links = parsePHPSerializedString(platformLinksData);
+    const links = parsePlatformLinks(platformLinksData);
     console.log('Parsed platform links:', links);
 
     const validPlatformLinks = [];
@@ -121,7 +123,7 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    console.log('Creating smart link with slug:', slug);
+    console.log('Creating smart link with:', { title, artistName, slug });
 
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
@@ -185,34 +187,29 @@ serve(async (req) => {
     const text = await file.text();
     let items;
     
-    try {
-      console.log('Attempting to parse file as JSON...');
-      items = JSON.parse(text);
-    } catch (e) {
-      console.log('JSON parse failed, attempting XML parse...');
-      const xmlDoc = parse(text);
-      
-      if (!xmlDoc?.rss?.channel?.item) {
-        console.error('Invalid WordPress export file structure');
-        throw new Error("Invalid WordPress export file structure");
-      }
-      
-      items = Array.isArray(xmlDoc.rss.channel.item) 
-        ? xmlDoc.rss.channel.item 
-        : [xmlDoc.rss.channel.item];
-      
-      // Filter only smart link post types
-      items = items.filter((item: any) => 
-        item['wp:post_type']?.[0] === 'smart-link' || 
-        item['wp:post_type']?.[0] === 'smartlink'
-      );
+    console.log('Parsing XML file...');
+    const xmlDoc = parse(text);
+    
+    if (!xmlDoc?.rss?.channel?.item) {
+      console.error('Invalid WordPress export file structure');
+      throw new Error("Invalid WordPress export file structure");
     }
+    
+    items = Array.isArray(xmlDoc.rss.channel.item) 
+      ? xmlDoc.rss.channel.item 
+      : [xmlDoc.rss.channel.item];
+    
+    // Filter only smart link post types
+    items = items.filter((item: any) => 
+      item['wp:post_type']?.[0] === 'smart-link' || 
+      item['wp:post_type']?.[0] === 'smartlink'
+    );
+
+    console.log(`Found ${items.length} smart link items to process`);
 
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error('No valid items found in the import file');
     }
-
-    console.log(`Found ${items.length} items to process`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
