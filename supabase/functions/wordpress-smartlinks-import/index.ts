@@ -182,24 +182,59 @@ serve(async (req) => {
             }
           }
 
-          const formattedPlatformLinks = Object.entries(platformLinks).map(([platform, url]) => ({
-            platform_id: platform,
-            platform_name: platform
-              .replace(/([A-Z])/g, ' $1')
-              .trim()
-              .split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' '),
-            url
-          }));
+          const formattedPlatformLinks = Object.entries(platformLinks)
+            .filter(([_, url]) => url && url.trim() !== '') // Only include platforms with non-empty URLs
+            .map(([platform, url]) => ({
+              platform_id: platform,
+              platform_name: platform
+                .replace(/([A-Z])/g, ' $1')
+                .trim()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' '),
+              url: url.trim()
+            }));
 
           console.log('Formatted platform links:', formattedPlatformLinks);
+
+          if (!testMode) {
+            // Create the smart link first
+            const { data: smartLink, error: smartLinkError } = await supabaseClient
+              .from('smart_links')
+              .insert({
+                title,
+                artist_name: artistName,
+                artwork_url: artworkUrl,
+                user_id: userId
+              })
+              .select()
+              .single();
+
+            if (smartLinkError) throw smartLinkError;
+
+            // Now insert platform links if we have any
+            if (formattedPlatformLinks.length > 0 && smartLink) {
+              const platformLinksWithSmartLinkId = formattedPlatformLinks.map(pl => ({
+                ...pl,
+                smart_link_id: smartLink.id
+              }));
+
+              const { error: platformLinksError } = await supabaseClient
+                .from('platform_links')
+                .insert(platformLinksWithSmartLinkId);
+
+              if (platformLinksError) {
+                console.error('Error inserting platform links:', platformLinksError);
+                throw platformLinksError;
+              }
+
+              console.log(`Successfully inserted ${platformLinksWithSmartLinkId.length} platform links for "${title}"`);
+            }
+          }
 
           validItems.push({
             title,
             artist_name: artistName,
-            artwork_url: artworkUrl,
-            user_id: userId,
             platform_links: formattedPlatformLinks
           });
           console.log(`Successfully processed item: ${title}`);
@@ -216,63 +251,11 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Found ${validItems.length} valid items and ${invalidItems.length} invalid items`);
-
-    if (validItems.length === 0) {
-      throw new Error(`No valid items found in the import file. Invalid items: ${JSON.stringify(invalidItems)}`);
-    }
-
-    const importedItems = [];
-    const errors = [];
-
-    for (const item of validItems) {
-      try {
-        console.log(`Importing smart link: ${item.title}`);
-        const { data: smartLink, error: smartLinkError } = await supabaseClient
-          .from('smart_links')
-          .insert({
-            title: item.title,
-            artist_name: item.artist_name,
-            artwork_url: item.artwork_url,
-            user_id: item.user_id
-          })
-          .select()
-          .single();
-
-        if (smartLinkError) throw smartLinkError;
-
-        if (item.platform_links.length > 0) {
-          console.log(`Inserting ${item.platform_links.length} platform links for ${item.title}`);
-          const platformLinksToInsert = item.platform_links.map(pl => ({
-            ...pl,
-            smart_link_id: smartLink.id
-          }));
-
-          const { error: platformLinksError } = await supabaseClient
-            .from('platform_links')
-            .insert(platformLinksToInsert);
-
-          if (platformLinksError) throw platformLinksError;
-          console.log(`Successfully inserted platform links for ${item.title}`);
-        }
-
-        importedItems.push(smartLink);
-        console.log(`Successfully imported: ${item.title}`);
-      } catch (error) {
-        console.error('Error importing item:', error);
-        errors.push({
-          title: item.title,
-          error: error.message
-        });
-      }
-    }
-
     return new Response(
       JSON.stringify({
-        success: importedItems.length,
-        errors,
-        total: validItems.length,
-        invalidItems
+        success: validItems.length,
+        errors: invalidItems,
+        total: validItems.length + invalidItems.length
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
