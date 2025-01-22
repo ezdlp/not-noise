@@ -1,310 +1,200 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const platformMappings = {
-  'appleMusic': { id: 'apple_music', name: 'Apple Music' },
-  'spotify': { id: 'spotify', name: 'Spotify' },
-  'soundcloud': { id: 'soundcloud', name: 'SoundCloud' },
-  'itunes': { id: 'itunes', name: 'iTunes' },
-  'deezer': { id: 'deezer', name: 'Deezer' },
-  'amazonMusic': { id: 'amazon_music', name: 'Amazon Music' },
-  'youtube': { id: 'youtube', name: 'YouTube' },
-  'youtubeMusic': { id: 'youtube_music', name: 'YouTube Music' },
-};
-
-function extractCData(node: any): string {
-  if (!node) return '';
-  
-  const text = Array.isArray(node) ? node[0] : node;
-  
-  if (typeof text === 'string') {
-    return text.trim();
-  }
-  
-  if (text['#text']) {
-    return text['#text'].trim();
-  }
-  
-  const stringValue = String(text);
-  const match = stringValue.match(/<!\[CDATA\[(.*?)\]\]>/s);
-  return match ? match[1].trim() : stringValue.trim();
-}
-
-function getMetaValue(item: any, key: string): string | null {
-  if (!item['wp:postmeta']) return null;
-  
-  const postmeta = Array.isArray(item['wp:postmeta']) 
-    ? item['wp:postmeta'] 
-    : [item['wp:postmeta']];
-
-  const meta = postmeta.find((meta: any) => {
-    const metaKey = extractCData(meta['wp:meta_key']);
-    console.log(`Comparing meta key: "${metaKey}" with "${key}"`);
-    return metaKey === key;
-  });
-
-  if (meta) {
-    const value = extractCData(meta['wp:meta_value']);
-    console.log(`Found meta value for ${key}:`, value);
-    return value;
-  }
-  
-  return null;
-}
-
-function parsePlatformLinks(input: string): Record<string, string> {
-  console.log('Parsing platform links from:', input);
-  
-  if (!input) {
-    console.log('Empty input for platform links');
-    return {};
-  }
-
-  const links: Record<string, string> = {};
-  
-  try {
-    const arrayMatch = input.match(/a:\d+:{(.*?)}/s);
-    if (!arrayMatch) {
-      console.log('No serialized array structure found');
-      return links;
-    }
-
-    const content = arrayMatch[1];
-    console.log('Extracted content:', content);
-
-    const pairRegex = /s:\d+:"([^"]+)";s:\d+:"([^"]*)";/g;
-    let match;
-    
-    while ((match = pairRegex.exec(content)) !== null) {
-      const [, key, value] = match;
-      if (key && value) {
-        links[key] = value;
-        console.log(`Found platform link: ${key} -> ${value}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing platform links:', error);
-  }
-
-  console.log('Parsed links:', links);
-  return links;
-}
-
-async function processSmartLink(supabase: any, item: any, userId: string) {
-  try {
-    const title = extractCData(item.title);
-    console.log('Processing smart link:', title);
-    
-    const postType = extractCData(item['wp:post_type']);
-    console.log('Raw post type:', item['wp:post_type']);
-    console.log('Extracted post type:', postType);
-    
-    if (postType !== 'custom_links') {
-      console.warn('Not a custom link post type:', postType);
-      return null;
-    }
-
-    const platformLinksData = getMetaValue(item, '_links');
-    console.log('Raw platform links data:', platformLinksData);
-
-    if (!platformLinksData) {
-      console.warn('No platform links found');
-      return null;
-    }
-
-    const links = parsePlatformLinks(platformLinksData);
-    console.log('Parsed platform links:', links);
-
-    const validPlatformLinks = [];
-    for (const [platformKey, url] of Object.entries(links)) {
-      if (!url) continue;
-
-      const mapping = platformMappings[platformKey as keyof typeof platformMappings];
-      if (!mapping) {
-        console.warn(`No mapping found for platform: ${platformKey}`);
-        continue;
-      }
-
-      validPlatformLinks.push({
-        platform_id: mapping.id,
-        platform_name: mapping.name,
-        url: url,
-      });
-    }
-
-    if (validPlatformLinks.length === 0) {
-      console.warn('No valid platform links found');
-      return null;
-    }
-
-    const artistName = getMetaValue(item, '_artist_name') || 'Unknown Artist';
-    const artworkUrl = getMetaValue(item, '_default_image');
-    const postName = extractCData(item['wp:post_name']);
-    
-    const metaPixelEnabled = getMetaValue(item, '_fb_pixel') === '1';
-    const metaPixelId = getMetaValue(item, '_fb_pixel_id');
-    const metaViewEvent = getMetaValue(item, '_fb_pixel_page_load_event');
-    const metaClickEvent = getMetaValue(item, '_fb_pixel_link_click_event');
-
-    console.log('Creating smart link with:', { 
-      title, 
-      artistName, 
-      postName,
-      metaPixelEnabled,
-      platformCount: validPlatformLinks.length 
-    });
-
-    const { data: smartLink, error: smartLinkError } = await supabase
-      .from('smart_links')
-      .insert({
-        title,
-        artist_name: artistName,
-        artwork_url: artworkUrl,
-        user_id: userId,
-        slug: postName,
-        meta_pixel_id: metaPixelEnabled ? metaPixelId : null,
-        meta_view_event: metaPixelEnabled ? metaViewEvent : null,
-        meta_click_event: metaPixelEnabled ? metaClickEvent : null,
-      })
-      .select()
-      .single();
-
-    if (smartLinkError) {
-      console.error('Error creating smart link:', smartLinkError);
-      throw smartLinkError;
-    }
-
-    console.log('Smart link created:', smartLink.id);
-
-    const platformLinksToInsert = validPlatformLinks.map(link => ({
-      smart_link_id: smartLink.id,
-      platform_id: link.platform_id,
-      platform_name: link.platform_name,
-      url: link.url,
-    }));
-
-    const { error: platformLinksError } = await supabase
-      .from('platform_links')
-      .insert(platformLinksToInsert);
-
-    if (platformLinksError) {
-      console.error('Error creating platform links:', platformLinksError);
-      throw platformLinksError;
-    }
-
-    console.log('Platform links created:', platformLinksToInsert.length);
-    return smartLink;
-  } catch (error) {
-    console.error("Error processing smart link:", error);
-    throw error;
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    { auth: { persistSession: false } }
+  );
+
   try {
-    console.log('Starting import process...');
+    console.log("Starting import process...");
     const formData = await req.formData();
     const file = formData.get('file');
-    const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
 
-    console.log('File received:', file.name);
+    console.log(`File received: ${file.name}`);
     const text = await file.text();
     
-    console.log('Parsing XML file...');
+    console.log("Parsing XML file...");
     const xmlDoc = parse(text);
     
-    if (!xmlDoc?.rss?.channel?.item) {
-      console.error('Invalid WordPress export file structure');
-      throw new Error("Invalid WordPress export file structure");
+    if (!xmlDoc.rss?.channel?.item) {
+      throw new Error('Invalid WordPress export file structure');
     }
-    
+
     const items = Array.isArray(xmlDoc.rss.channel.item) 
       ? xmlDoc.rss.channel.item 
       : [xmlDoc.rss.channel.item];
 
-    // Filter only custom_links post types
-    const smartLinkItems = items.filter((item: any) => {
-      const rawPostType = item['wp:post_type'];
-      const postType = extractCData(rawPostType);
-      console.log('Raw post type value:', rawPostType);
-      console.log('Extracted post type:', postType);
-      return postType === 'custom_links';
-    });
+    const extractCData = (node: any): string => {
+      if (!node) return '';
+      if (Array.isArray(node)) return node[0];
+      if (typeof node === 'string') return node;
+      return '';
+    };
 
-    console.log(`Found ${smartLinkItems.length} smart link items to process`);
+    const validItems = [];
+    
+    for (const item of items) {
+      const postType = extractCData(item['wp:post_type']);
+      console.log("Raw post type value:", postType);
+      console.log("Extracted post type:", postType);
 
-    if (smartLinkItems.length === 0) {
+      if (postType === 'custom_links') {
+        const creator = extractCData(item['dc:creator']);
+        console.log("Found creator email:", creator);
+
+        // First try to find the user by email
+        let userId = null;
+        if (creator) {
+          const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .eq('email', creator)
+            .maybeSingle();
+
+          if (profile) {
+            userId = profile.id;
+            console.log("Found matching user:", userId);
+          }
+        }
+
+        // If no user found, fallback to admin
+        if (!userId) {
+          const { data: adminUser } = await supabaseClient
+            .from('user_roles')
+            .select('user_id')
+            .eq('role', 'admin')
+            .limit(1)
+            .single();
+          
+          if (!adminUser) {
+            throw new Error('No admin user found');
+          }
+          
+          userId = adminUser.user_id;
+          console.log("Using admin user as fallback:", userId);
+        }
+
+        const title = extractCData(item.title);
+        const content = extractCData(item['content:encoded']);
+        const artistName = extractCData(item['wp:postmeta']?.find((meta: any) => 
+          extractCData(meta['wp:meta_key']) === 'artist_name'
+        )?.['wp:meta_value']) || 'Unknown Artist';
+
+        const artworkUrl = extractCData(item['wp:postmeta']?.find((meta: any) => 
+          extractCData(meta['wp:meta_key']) === 'artwork_url'
+        )?.['wp:meta_value']);
+
+        const platformLinks = [];
+        const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
+        
+        for (const meta of postMeta) {
+          const metaKey = extractCData(meta['wp:meta_key']);
+          if (metaKey.startsWith('platform_')) {
+            const platformId = metaKey.replace('platform_', '');
+            const url = extractCData(meta['wp:meta_value']);
+            if (url) {
+              platformLinks.push({
+                platform_id: platformId,
+                platform_name: platformId.charAt(0).toUpperCase() + platformId.slice(1),
+                url
+              });
+            }
+          }
+        }
+
+        if (title && platformLinks.length > 0) {
+          validItems.push({
+            title,
+            content,
+            artist_name: artistName,
+            artwork_url: artworkUrl,
+            user_id: userId,
+            platform_links: platformLinks
+          });
+        }
+      }
+    }
+
+    if (validItems.length === 0) {
       throw new Error('No valid items found in the import file');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log(`Found ${validItems.length} valid items to import`);
 
-    const { data: adminUser } = await supabase
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'admin')
-      .limit(1)
-      .single();
+    const importedItems = [];
+    const errors = [];
 
-    if (!adminUser?.user_id) {
-      console.error('No admin user found');
-      throw new Error('No admin user found');
-    }
-
-    const limitedItems = testMode ? smartLinkItems.slice(0, 10) : smartLinkItems;
-    console.log(`Processing ${limitedItems.length} items...`);
-
-    const results = {
-      total: limitedItems.length,
-      success: 0,
-      errors: [] as { link: string; error: string }[],
-      unassigned: [] as string[],
-    };
-
-    for (const item of limitedItems) {
+    for (const item of validItems) {
       try {
-        const smartLink = await processSmartLink(supabase, item, adminUser.user_id);
-        if (smartLink) {
-          results.success++;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        const { data: smartLink, error: smartLinkError } = await supabaseClient
+          .from('smart_links')
+          .insert({
+            title: item.title,
+            artist_name: item.artist_name,
+            artwork_url: item.artwork_url,
+            user_id: item.user_id
+          })
+          .select()
+          .single();
+
+        if (smartLinkError) throw smartLinkError;
+
+        const platformLinksToInsert = item.platform_links.map(pl => ({
+          ...pl,
+          smart_link_id: smartLink.id
+        }));
+
+        const { error: platformLinksError } = await supabaseClient
+          .from('platform_links')
+          .insert(platformLinksToInsert);
+
+        if (platformLinksError) throw platformLinksError;
+
+        importedItems.push(smartLink);
       } catch (error) {
-        console.error('Error processing item:', extractCData(item.title), error);
-        results.errors.push({
-          link: extractCData(item.title),
-          error: error.message,
+        console.error('Error importing item:', error);
+        errors.push({
+          title: item.title,
+          error: error.message
         });
       }
     }
 
-    console.log('Import completed:', results);
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        success: importedItems.length,
+        errors,
+        total: validItems.length
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    );
   } catch (error) {
-    console.error('Import error:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      },
+    );
   }
 });
