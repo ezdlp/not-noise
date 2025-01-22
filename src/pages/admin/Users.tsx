@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Pencil, Trash2, Mail } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -46,12 +46,12 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const { data: users, isLoading, error } = useQuery({
-    queryKey: ["adminUsers", pageSize, currentPage],
+    queryKey: ["adminUsers", pageSize, currentPage, searchQuery],
     queryFn: async () => {
       try {
-        // Check admin role first
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           console.error("Not authenticated");
@@ -69,8 +69,7 @@ export default function Users() {
           throw new Error("Not authorized");
         }
 
-        // Get profiles with their roles and smart links
-        const { data: profiles, error: profilesError } = await supabase
+        let query = supabase
           .from("profiles")
           .select(`
             *,
@@ -83,6 +82,12 @@ export default function Users() {
             )
           `)
           .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+
+        if (searchQuery) {
+          query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
+        }
+
+        const { data: profiles, error: profilesError } = await query;
 
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);
@@ -101,7 +106,7 @@ export default function Users() {
         throw error;
       }
     },
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    refetchInterval: 5000,
   });
 
   const handleEditUser = async (updatedProfile: Partial<Profile>) => {
@@ -141,7 +146,16 @@ export default function Users() {
         </Button>
       </div>
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative w-72">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Select
           value={pageSize.toString()}
           onValueChange={(value) => {
