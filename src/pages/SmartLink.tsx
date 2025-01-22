@@ -12,11 +12,18 @@ const SmartLink = () => {
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
+      console.log("Fetching smart link with slug or ID:", slug);
+      
       let { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
-          platform_links (*)
+          platform_links (
+            id,
+            platform_id,
+            platform_name,
+            url
+          )
         `)
         .eq('slug', slug)
         .maybeSingle();
@@ -27,11 +34,17 @@ const SmartLink = () => {
       }
 
       if (!smartLinkData) {
+        console.log("No smart link found with slug, trying ID...");
         const { data: idData, error: idError } = await supabase
           .from('smart_links')
           .select(`
             *,
-            platform_links (*)
+            platform_links (
+              id,
+              platform_id,
+              platform_name,
+              url
+            )
           `)
           .eq('id', slug)
           .maybeSingle();
@@ -48,6 +61,8 @@ const SmartLink = () => {
 
         smartLinkData = idData;
       }
+
+      console.log("Found smart link:", smartLinkData);
 
       await supabase.from('link_views').insert({
         smart_link_id: smartLinkData.id,
@@ -115,16 +130,26 @@ const SmartLink = () => {
     );
   }
 
-  const platforms = [
-    { id: "spotify", name: "Spotify", icon: "/lovable-uploads/spotify.png" },
-    { id: "youtubeMusic", name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" },
-    { id: "youtube", name: "YouTube", icon: "/lovable-uploads/youtube.png" },
-    { id: "appleMusic", name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
-    { id: "amazonMusic", name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" },
-    { id: "deezer", name: "Deezer", icon: "/lovable-uploads/deezer.png" },
-    { id: "soundcloud", name: "SoundCloud", icon: "/lovable-uploads/soundcloud.png" },
-    { id: "itunes", name: "iTunes Store", icon: "/lovable-uploads/itunes.png" },
-  ];
+  console.log("Platform links:", smartLink.platform_links);
+
+  const platformIcons: { [key: string]: string } = {
+    spotify: "/lovable-uploads/spotify.png",
+    youtubeMusic: "/lovable-uploads/youtubemusic.png",
+    youtube: "/lovable-uploads/youtube.png",
+    appleMusic: "/lovable-uploads/applemusic.png",
+    amazonMusic: "/lovable-uploads/amazonmusic.png",
+    deezer: "/lovable-uploads/deezer.png",
+    soundcloud: "/lovable-uploads/soundcloud.png",
+    itunes: "/lovable-uploads/itunes.png",
+    tidal: "/lovable-uploads/tidal.png",
+    anghami: "/lovable-uploads/anghami.png",
+    napster: "/lovable-uploads/napster.png",
+    boomplay: "/lovable-uploads/boomplay.png",
+    yandex: "/lovable-uploads/yandex.png",
+    beatport: "/lovable-uploads/beatport.png",
+    bandcamp: "/lovable-uploads/bandcamp.png",
+    audius: "/lovable-uploads/audius.png",
+  };
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
@@ -146,15 +171,18 @@ const SmartLink = () => {
           />
           
           <div className="space-y-4">
-            {smartLink.platform_links.map((platformLink: any) => {
-              const platform = platforms.find(p => p.id === platformLink.platform_id);
-              if (!platform) return null;
+            {smartLink.platform_links && smartLink.platform_links.map((platformLink) => {
+              const icon = platformIcons[platformLink.platform_id];
+              if (!icon) {
+                console.warn(`No icon found for platform: ${platformLink.platform_id}`);
+                return null;
+              }
 
               return (
                 <PlatformButton
                   key={platformLink.id}
-                  name={platform.name}
-                  icon={platform.icon}
+                  name={platformLink.platform_name || platformLink.platform_id}
+                  icon={icon}
                   action="Play"
                   url={platformLink.url}
                   onClick={() => handlePlatformClick(platformLink.id)}
