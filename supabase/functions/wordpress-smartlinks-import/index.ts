@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,14 +28,13 @@ serve(async (req) => {
     }
 
     const text = await file.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/xml");
+    const xmlDoc = parse(text);
 
-    if (!xmlDoc || !xmlDoc.documentElement) {
-      throw new Error('Invalid XML file');
+    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
+      throw new Error('Invalid XML file structure');
     }
 
-    const items = Array.from(xmlDoc.getElementsByTagName('item'));
+    const items = xmlDoc.rss.channel.item || [];
     console.log(`Found ${items.length} items in XML`);
 
     if (testMode) {
@@ -93,13 +92,12 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        const postType = item.querySelector('wp\\:post_type')?.textContent;
-        if (postType !== 'custom_links') continue;
+        if (item['wp:post_type']?.[0] !== 'custom_links') continue;
 
-        const title = item.querySelector('title')?.textContent || '';
+        const title = item.title?.[0] || '';
         console.log(`Processing custom link: ${title}`);
 
-        const creatorEmail = item.querySelector('dc\\:creator')?.textContent;
+        const creatorEmail = item['dc:creator']?.[0];
         console.log(`Found creator email: ${creatorEmail}`);
 
         const { data: userData, error: userError } = await supabase
@@ -116,7 +114,7 @@ serve(async (req) => {
 
         console.log(`Found matching user: ${userData.id}`);
 
-        const metas = Array.from(item.querySelectorAll('wp\\:postmeta'));
+        const metas = item['wp:postmeta'] || [];
         console.log(`Found ${metas.length} meta fields`);
 
         const platformLinks: PlatformLink[] = [];
@@ -124,8 +122,8 @@ serve(async (req) => {
         let artworkUrl = '';
 
         for (const meta of metas) {
-          const key = meta.querySelector('wp\\:meta_key')?.textContent;
-          const value = meta.querySelector('wp\\:meta_value')?.textContent;
+          const key = meta['wp:meta_key']?.[0];
+          const value = meta['wp:meta_value']?.[0];
 
           if (key === '_links' && value) {
             console.log('Found links meta value:', value);
@@ -206,7 +204,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error processing item:', error);
         results.errors.push({
-          link: item.querySelector('title')?.textContent || 'Unknown',
+          link: item.title?.[0] || 'Unknown',
           error: error.message
         });
       }
