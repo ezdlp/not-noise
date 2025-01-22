@@ -36,11 +36,14 @@ function parsePlatformLinks(input: string) {
   }
 
   const links: Record<string, string> = {};
-  const pattern = /s:\d+:"([^"]+)";s:\d+:"([^"]*)"/g;
-  let match;
-
+  
   try {
-    while ((match = pattern.exec(input)) !== null) {
+    // Remove the string length prefix and array length prefix
+    const cleanInput = input.replace(/^s:\d+:"/, '').replace(/^a:\d+:{/, '');
+    const pattern = /s:\d+:"([^"]+)";s:\d+:"([^"]*)"/g;
+    let match;
+
+    while ((match = pattern.exec(cleanInput)) !== null) {
       const [, key, value] = match;
       if (key && value) {
         links[key] = value;
@@ -70,14 +73,14 @@ function extractPostMeta(item: any, metaKey: string): string | null {
 
 async function processSmartLink(supabase: any, item: any, userId: string) {
   if (!item || !userId) {
-    console.error('Invalid input:', { item, userId });
+    console.error('Invalid input:', { item: !!item, userId });
     throw new Error('Invalid input for processing smart link');
   }
 
   try {
     console.log('Processing smart link:', item.title?.[0]);
     
-    const platformLinksData = extractPostMeta(item, '_platform_links');
+    const platformLinksData = extractPostMeta(item, '_links');
     console.log('Raw platform links data:', platformLinksData);
 
     if (!platformLinksData) {
@@ -116,9 +119,9 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
 
     const title = item.title?.[0] || 'Untitled';
     const artistName = extractPostMeta(item, '_artist_name') || 'Unknown Artist';
-    const artworkUrl = extractPostMeta(item, '_artwork_url');
+    const artworkUrl = extractPostMeta(item, '_default_image');
 
-    const slug = title
+    const slug = item['wp:post_name']?.[0] || title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
@@ -199,11 +202,12 @@ serve(async (req) => {
       ? xmlDoc.rss.channel.item 
       : [xmlDoc.rss.channel.item];
     
-    // Filter only smart link post types
-    items = items.filter((item: any) => 
-      item['wp:post_type']?.[0] === 'smart-link' || 
-      item['wp:post_type']?.[0] === 'smartlink'
-    );
+    // Filter only custom_links post types
+    items = items.filter((item: any) => {
+      const postType = item['wp:post_type']?.[0];
+      console.log('Found post type:', postType);
+      return postType === 'custom_links';
+    });
 
     console.log(`Found ${items.length} smart link items to process`);
 
