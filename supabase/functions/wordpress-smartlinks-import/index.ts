@@ -1,285 +1,229 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { XMLParser } from 'npm:fast-xml-parser'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const CHUNK_SIZE = 5;
-const DELAY_BETWEEN_CHUNKS = 1000;
-const TEST_MODE_LIMIT = 10;
-
-const platformMappings: Record<string, { id: string; name: string }> = {
-  spotify: { id: 'spotify', name: 'Spotify' },
-  apple_music: { id: 'apple_music', name: 'Apple Music' },
-  amazon_music: { id: 'amazon_music', name: 'Amazon Music' },
-  youtube_music: { id: 'youtube_music', name: 'YouTube Music' },
-  deezer: { id: 'deezer', name: 'Deezer' },
-  soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
-  youtube: { id: 'youtube', name: 'YouTube' },
-  itunes: { id: 'itunes', name: 'iTunes Store' },
-  // WordPress specific mappings
-  appleMusic: { id: 'apple_music', name: 'Apple Music' },
-  amazonMusic: { id: 'amazon_music', name: 'Amazon Music' },
-  youtubeMusic: { id: 'youtube_music', name: 'YouTube Music' },
 };
 
-function parseSerializedPHPString(serialized: string): Record<string, string> {
-  const links: Record<string, string> = {};
-  
+interface PlatformLink {
+  platform_id: string;
+  platform_name: string;
+  url: string;
+}
+
+const platformMappings = {
+  'appleMusic': { id: 'apple_music', name: 'Apple Music' },
+  'spotify': { id: 'spotify', name: 'Spotify' },
+  'soundcloud': { id: 'soundcloud', name: 'SoundCloud' },
+  'itunes': { id: 'itunes', name: 'iTunes' },
+  'deezer': { id: 'deezer', name: 'Deezer' },
+  'amazonMusic': { id: 'amazon_music', name: 'Amazon Music' },
+  'youtube': { id: 'youtube', name: 'YouTube' },
+};
+
+function isValidUrl(url: string): boolean {
   try {
-    console.log('Parsing PHP string:', serialized);
-    
-    // Extract the array content between curly braces
-    const arrayMatch = serialized.match(/a:\d+:{(.+?)}/s);
-    if (!arrayMatch) {
-      console.error('No array content found');
-      return links;
-    }
-
-    const content = arrayMatch[1];
-    
-    // Split content by platform entries
-    const entries = content.split(/(?=s:\d+:"[^"]+")/).filter(Boolean);
-    
-    for (let i = 0; i < entries.length; i += 2) {
-      const keyMatch = entries[i].match(/s:\d+:"([^"]+)"/);
-      const valueMatch = entries[i + 1]?.match(/s:\d+:"([^"]*)"/);
-      
-      if (keyMatch && valueMatch) {
-        const [, key] = keyMatch;
-        const [, value] = valueMatch;
-        
-        if (value && value.trim() !== '') {
-          console.log(`Found link - ${key}: ${value}`);
-          links[key] = value.trim();
-        }
-      }
-    }
-
-    console.log('Parsed links:', links);
-  } catch (error) {
-    console.error('Error parsing PHP string:', error);
+    new URL(url);
+    return true;
+  } catch {
+    return false;
   }
-  
+}
+
+function parsePHPSerializedString(input: string) {
+  console.log("Parsing PHP string:", input);
+  const links: Record<string, string> = {};
+
+  // Extract key-value pairs using regex
+  const pattern = /s:\d+:"([^"]+)"\s*;\s*s:\d+:"([^"]*)"/g;
+  let match;
+
+  while ((match = pattern.exec(input)) !== null) {
+    const [, key, value] = match;
+    links[key] = value;
+    console.log(`Found link - ${key}: ${value}`);
+  }
+
+  console.log("Parsed links:", links);
   return links;
 }
 
-function validatePlatformLinks(links: Record<string, string>): boolean {
-  if (!links || Object.keys(links).length === 0) {
-    console.log('No links found in object');
-    return false;
-  }
+function validateAndMapPlatformLinks(links: Record<string, string>): PlatformLink[] {
+  const validLinks: PlatformLink[] = [];
+  let validCount = 0;
 
-  const validLinks = Object.entries(links).filter(([platform, url]) => {
-    // Check if platform exists in mappings
-    const mapping = platformMappings[platform];
-    if (!mapping) {
-      console.log(`Invalid platform: ${platform}`);
-      return false;
+  for (const [platformKey, url] of Object.entries(links)) {
+    // Skip empty URLs
+    if (!url) continue;
+
+    // Check if this is a valid platform
+    const platformMapping = platformMappings[platformKey as keyof typeof platformMappings];
+    if (!platformMapping) {
+      console.log(`Invalid platform key: ${platformKey}`);
+      continue;
     }
 
     // Validate URL
-    const isValidUrl = url && url.trim().length > 0 && 
-                      (url.startsWith('http://') || url.startsWith('https://'));
-    
-    if (!isValidUrl) {
-      console.log(`Invalid URL for ${platform}: ${url}`);
-      return false;
-    }
-    
-    return true;
-  });
-
-  console.log(`Found ${validLinks.length} valid links`);
-  return validLinks.length > 0;
-}
-
-function generateUniqueSlug(title: string, artist: string, attempt = 0): string {
-  const baseSlug = `${artist.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-  return attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
-}
-
-async function processItem(
-  item: any,
-  supabase: any,
-  summary: ImportSummary
-): Promise<void> {
-  try {
-    if (item["wp:post_type"] !== "custom_links") return;
-
-    const title = item.title;
-    const userEmail = item["dc:creator"];
-    
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', userEmail)
-      .single();
-
-    if (!profileData) {
-      summary.unassigned.push(`${title} (${userEmail})`);
-      return;
+    if (!isValidUrl(url)) {
+      console.log(`Invalid URL for ${platformKey}: ${url}`);
+      continue;
     }
 
-    const postmeta = Array.isArray(item["wp:postmeta"]) 
-      ? item["wp:postmeta"] 
-      : [item["wp:postmeta"]];
-
-    const getMeta = (key: string) => {
-      const meta = postmeta.find(m => m["wp:meta_key"] === key);
-      return meta ? meta["wp:meta_value"] : null;
-    };
-
-    const artistName = getMeta("_artist_name") || "";
-    const artworkUrl = getMeta("_default_image") || "";
-    const linksData = getMeta("_links") || "";
-
-    const platformLinks = parseSerializedPHPString(linksData);
-    
-    if (!validatePlatformLinks(platformLinks)) {
-      throw new Error("No valid platform links found");
-    }
-
-    // Try to insert with incrementing slug numbers until we succeed
-    let attempt = 0;
-    let smartLink = null;
-    let error = null;
-
-    do {
-      const slug = generateUniqueSlug(title, artistName, attempt);
-      const { data, error: insertError } = await supabase
-        .from('smart_links')
-        .insert({
-          user_id: profileData.id,
-          title,
-          artwork_url: artworkUrl,
-          slug,
-          artist_name: artistName,
-        })
-        .select()
-        .single();
-
-      error = insertError;
-      if (!error) {
-        smartLink = data;
-        break;
-      }
-      attempt++;
-    } while (error?.code === '23505' && attempt < 10); // Stop after 10 attempts
-
-    if (!smartLink) throw error || new Error("Failed to create smart link");
-
-    for (const [platform, url] of Object.entries(platformLinks)) {
-      const mapping = platformMappings[platform];
-      if (!mapping || !url) continue;
-
-      await supabase
-        .from('platform_links')
-        .insert({
-          smart_link_id: smartLink.id,
-          platform_id: mapping.id,
-          platform_name: mapping.name,
-          url,
-        });
-    }
-
-    summary.success++;
-  } catch (error) {
-    console.error(`Error processing item:`, error);
-    summary.errors.push({
-      link: item.title || "Unknown",
-      error: error.message,
+    validLinks.push({
+      platform_id: platformMapping.id,
+      platform_name: platformMapping.name,
+      url: url,
     });
+    validCount++;
   }
+
+  console.log(`Found ${validCount} valid links`);
+  return validLinks;
+}
+
+async function generateUniqueSlug(supabase: any, baseSlug: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+  
+  while (true) {
+    const { data } = await supabase
+      .from('smart_links')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    
+    if (!data) break;
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+  
+  return slug;
+}
+
+async function processItem(supabase: any, item: any, userId: string) {
+  const links = parsePHPSerializedString(item.platform_links);
+  const validPlatformLinks = validateAndMapPlatformLinks(links);
+
+  if (validPlatformLinks.length === 0) {
+    throw new Error("No valid platform links found");
+  }
+
+  // Generate a unique slug
+  const baseSlug = item.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const uniqueSlug = await generateUniqueSlug(supabase, baseSlug);
+
+  // Insert smart link
+  const { data: smartLink, error: smartLinkError } = await supabase
+    .from('smart_links')
+    .insert({
+      title: item.title,
+      artist_name: item.artist_name || 'Unknown Artist',
+      artwork_url: item.artwork_url,
+      user_id: userId,
+      slug: uniqueSlug,
+    })
+    .select()
+    .single();
+
+  if (smartLinkError) throw smartLinkError;
+
+  // Insert platform links
+  const platformLinksToInsert = validPlatformLinks.map(link => ({
+    smart_link_id: smartLink.id,
+    platform_id: link.platform_id,
+    platform_name: link.platform_name,
+    url: link.url,
+  }));
+
+  const { error: platformLinksError } = await supabase
+    .from('platform_links')
+    .insert(platformLinksToInsert);
+
+  if (platformLinksError) throw platformLinksError;
+
+  return smartLink;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const isTestMode = formData.get('testMode') === 'true';
+    const file = formData.get('file');
+    const testMode = formData.get('testMode') === 'true';
     
-    if (!file) {
-      throw new Error('No file provided');
+    if (!file || !(file instanceof File)) {
+      throw new Error('No file uploaded');
     }
 
-    console.log(`Starting import in ${isTestMode ? 'TEST' : 'PRODUCTION'} mode`);
+    const content = await file.text();
+    const items = JSON.parse(content);
 
-    const fileContent = await file.text();
-    const parser = new XMLParser({
-      attributeNamePrefix: "@_",
-      ignoreAttributes: false,
-      parseAttributeValue: true,
-      trimValues: true,
-    });
+    console.log(`Starting import in ${testMode ? 'TEST' : 'PRODUCTION'} mode`);
 
-    const result = parser.parse(fileContent);
-    if (!result.rss?.channel?.item) {
-      throw new Error("Invalid WordPress export file structure");
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get the first admin user as the owner of imported links
+    const { data: adminUser } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin')
+      .limit(1)
+      .single();
+
+    if (!adminUser?.user_id) {
+      throw new Error('No admin user found');
     }
 
-    let items = Array.isArray(result.rss.channel.item) 
-      ? result.rss.channel.item 
-      : [result.rss.channel.item];
-
-    if (isTestMode) {
-      console.log(`Test mode: limiting to ${TEST_MODE_LIMIT} items`);
-      items = items.slice(0, TEST_MODE_LIMIT);
+    // Process in chunks of 5
+    const chunkSize = 5;
+    const chunks = [];
+    const limitedItems = testMode ? items.slice(0, 10) : items;
+    
+    for (let i = 0; i < limitedItems.length; i += chunkSize) {
+      chunks.push(limitedItems.slice(i, i + chunkSize));
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const summary: ImportSummary = {
-      total: items.length,
+    const results = {
+      total: limitedItems.length,
       success: 0,
-      errors: [],
-      unassigned: [],
+      errors: [] as { link: string; error: string }[],
+      unassigned: [] as string[],
     };
 
-    for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-      const chunk = items.slice(i, i + CHUNK_SIZE);
-      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
-      
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Processing chunk ${i + 1} of ${chunks.length}`);
+      const chunk = chunks[i];
+
       for (const item of chunk) {
-        await processItem(item, supabase, summary);
-      }
-      
-      if (i + CHUNK_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CHUNKS));
+        try {
+          await processItem(supabase, item, adminUser.user_id);
+          results.success++;
+        } catch (error) {
+          console.log("Error processing item:", error);
+          results.errors.push({
+            link: item.title,
+            error: error.message,
+          });
+        }
       }
     }
 
-    return new Response(
-      JSON.stringify(summary),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
+    return new Response(JSON.stringify(results), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error("Error processing WordPress import:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    console.error('Import error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
