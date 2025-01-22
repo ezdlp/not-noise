@@ -93,7 +93,11 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        if (!item['wp:post_type'] || item['wp:post_type'][0] !== 'custom_links') {
+        // Check if this is a custom_links post type
+        const postType = item['wp:post_type']?.[0];
+        console.log(`Processing item with post type: ${postType}`);
+        
+        if (!postType || postType !== 'custom-links') {
           console.log('Skipping non-custom_links item');
           continue;
         }
