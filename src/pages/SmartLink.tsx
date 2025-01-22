@@ -15,7 +15,7 @@ const SmartLink = () => {
       console.log("Fetching smart link:", slug);
       
       // Try to fetch by slug first
-      const { data: smartLinkData, error: smartLinkError } = await supabase
+      let { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
