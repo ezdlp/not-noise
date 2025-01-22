@@ -7,27 +7,60 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const platformMapping: Record<string, string> = {
+  'spotify': 'spotify',
+  'appleMusic': 'appleMusic',
+  'amazonMusic': 'amazonMusic',
+  'youtubeMusic': 'youtubeMusic',
+  'deezer': 'deezer',
+  'soundcloud': 'soundcloud',
+  'youtube': 'youtube',
+  'itunes': 'itunes',
+  'tidal': 'tidal',
+  'anghami': 'anghami',
+  'napster': 'napster',
+  'boomplay': 'boomplay',
+  'yandex': 'yandex',
+  'beatport': 'beatport',
+  'bandcamp': 'bandcamp',
+  'audius': 'audius'
+};
+
 function unserializePhpArray(serialized: string): Record<string, string> {
   try {
-    // Remove the outer quotes and length indicator
+    console.log('Attempting to unserialize:', serialized);
+    
+    // Remove outer quotes and length indicator
     const cleaned = serialized.replace(/^s:\d+:"(.*?)";$/, '$1');
+    console.log('Cleaned string:', cleaned);
     
     // Extract the array part
     const arrayMatch = cleaned.match(/^a:(\d+):{(.+)}$/);
-    if (!arrayMatch) return {};
+    if (!arrayMatch) {
+      console.log('No array match found');
+      return {};
+    }
     
     const pairs = arrayMatch[2].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g) || [];
+    console.log('Found pairs:', pairs);
+    
     const result: Record<string, string> = {};
     
     pairs.forEach(pair => {
       const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
         s.replace(/^s:\d+:"(.*?)";$/, '$1')
       ) || [];
+      
       if (key && value) {
-        result[key] = value;
+        const mappedPlatform = platformMapping[key];
+        if (mappedPlatform) {
+          result[mappedPlatform] = value;
+          console.log(`Mapped platform ${key} -> ${mappedPlatform}: ${value}`);
+        }
       }
     });
     
+    console.log('Final platform links:', result);
     return result;
   } catch (error) {
     console.error('Error unserializing PHP array:', error);
@@ -95,7 +128,6 @@ serve(async (req) => {
           const creator = extractCData(item['dc:creator']);
           console.log(`Found creator email: ${creator}`);
 
-          // First try to find the user by email
           let userId = null;
           if (creator) {
             const { data: profile } = await supabaseClient
@@ -107,12 +139,9 @@ serve(async (req) => {
             if (profile) {
               userId = profile.id;
               console.log(`Found matching user: ${userId}`);
-            } else {
-              console.log(`No user found for email: ${creator}`);
             }
           }
 
-          // If no user found, fallback to admin
           if (!userId) {
             console.log('Falling back to admin user...');
             const { data: adminUser } = await supabaseClient
@@ -133,7 +162,6 @@ serve(async (req) => {
           const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
           console.log(`Found ${postMeta.length} meta fields`);
 
-          // Extract metadata
           let artistName = 'Unknown Artist';
           let artworkUrl = '';
           let platformLinks: Record<string, string> = {};
@@ -141,22 +169,27 @@ serve(async (req) => {
           for (const meta of postMeta) {
             const metaKey = extractCData(meta['wp:meta_key']);
             const metaValue = extractCData(meta['wp:meta_value']);
-            console.log(`Processing meta: ${metaKey} = ${metaValue}`);
+            console.log(`Processing meta: ${metaKey}`);
 
             if (metaKey === '_artist_name') {
               artistName = metaValue || artistName;
             } else if (metaKey === '_default_image') {
               artworkUrl = metaValue || '';
             } else if (metaKey === '_links' && metaValue) {
+              console.log('Found links meta value:', metaValue);
               platformLinks = unserializePhpArray(metaValue);
               console.log('Extracted platform links:', platformLinks);
             }
           }
 
-          // Convert platform links to our format
           const formattedPlatformLinks = Object.entries(platformLinks).map(([platform, url]) => ({
-            platform_id: platform.toLowerCase(),
-            platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
+            platform_id: platform,
+            platform_name: platform
+              .replace(/([A-Z])/g, ' $1')
+              .trim()
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' '),
             url
           }));
 
@@ -209,6 +242,7 @@ serve(async (req) => {
         if (smartLinkError) throw smartLinkError;
 
         if (item.platform_links.length > 0) {
+          console.log(`Inserting ${item.platform_links.length} platform links for ${item.title}`);
           const platformLinksToInsert = item.platform_links.map(pl => ({
             ...pl,
             smart_link_id: smartLink.id
@@ -219,6 +253,7 @@ serve(async (req) => {
             .insert(platformLinksToInsert);
 
           if (platformLinksError) throw platformLinksError;
+          console.log(`Successfully inserted platform links for ${item.title}`);
         }
 
         importedItems.push(smartLink);
