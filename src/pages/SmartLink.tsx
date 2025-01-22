@@ -12,9 +12,9 @@ const SmartLink = () => {
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
-      console.log("Fetching smart link with slug or ID:", slug);
+      console.log("Fetching smart link with slug:", slug);
       
-      let { data: smartLinkData, error: smartLinkError } = await supabase
+      const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
@@ -26,7 +26,7 @@ const SmartLink = () => {
           )
         `)
         .eq('slug', slug)
-        .maybeSingle();
+        .single();
 
       if (smartLinkError) {
         console.error('Error fetching smart link:', smartLinkError);
@@ -34,36 +34,13 @@ const SmartLink = () => {
       }
 
       if (!smartLinkData) {
-        console.log("No smart link found with slug, trying ID...");
-        const { data: idData, error: idError } = await supabase
-          .from('smart_links')
-          .select(`
-            *,
-            platform_links (
-              id,
-              platform_id,
-              platform_name,
-              url
-            )
-          `)
-          .eq('id', slug)
-          .maybeSingle();
-
-        if (idError) {
-          console.error('Error fetching smart link by ID:', idError);
-          throw idError;
-        }
-
-        if (!idData) {
-          console.error('Smart link not found by either slug or ID:', slug);
-          throw new Error('Smart link not found');
-        }
-
-        smartLinkData = idData;
+        console.error('Smart link not found:', slug);
+        throw new Error('Smart link not found');
       }
 
       console.log("Found smart link:", smartLinkData);
 
+      // Record the view
       await supabase.from('link_views').insert({
         smart_link_id: smartLinkData.id,
         user_agent: navigator.userAgent,
@@ -134,10 +111,10 @@ const SmartLink = () => {
 
   const platformIcons: { [key: string]: string } = {
     spotify: "/lovable-uploads/spotify.png",
-    youtubeMusic: "/lovable-uploads/youtubemusic.png",
+    apple_music: "/lovable-uploads/applemusic.png",
+    youtube_music: "/lovable-uploads/youtubemusic.png",
     youtube: "/lovable-uploads/youtube.png",
-    appleMusic: "/lovable-uploads/applemusic.png",
-    amazonMusic: "/lovable-uploads/amazonmusic.png",
+    amazon_music: "/lovable-uploads/amazonmusic.png",
     deezer: "/lovable-uploads/deezer.png",
     soundcloud: "/lovable-uploads/soundcloud.png",
     itunes: "/lovable-uploads/itunes.png",
@@ -181,7 +158,7 @@ const SmartLink = () => {
               return (
                 <PlatformButton
                   key={platformLink.id}
-                  name={platformLink.platform_name || platformLink.platform_id}
+                  name={platformLink.platform_name}
                   icon={icon}
                   action="Play"
                   url={platformLink.url}
