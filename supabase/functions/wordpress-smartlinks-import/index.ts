@@ -21,20 +21,16 @@ const platformMappings = {
 function extractCData(node: any): string {
   if (!node) return '';
   
-  // If it's an array, take the first element
   const text = Array.isArray(node) ? node[0] : node;
   
-  // If it's already a string, just return it trimmed
   if (typeof text === 'string') {
     return text.trim();
   }
   
-  // If it's an object with #text property (how the XML parser sometimes handles CDATA)
   if (text['#text']) {
     return text['#text'].trim();
   }
   
-  // Convert to string and try to extract CDATA content
   const stringValue = String(text);
   const match = stringValue.match(/<!\[CDATA\[(.*?)\]\]>/s);
   return match ? match[1].trim() : stringValue.trim();
@@ -73,7 +69,6 @@ function parsePlatformLinks(input: string): Record<string, string> {
   const links: Record<string, string> = {};
   
   try {
-    // First, try to match the entire serialized array structure
     const arrayMatch = input.match(/a:\d+:{(.*?)}/s);
     if (!arrayMatch) {
       console.log('No serialized array structure found');
@@ -83,7 +78,6 @@ function parsePlatformLinks(input: string): Record<string, string> {
     const content = arrayMatch[1];
     console.log('Extracted content:', content);
 
-    // Match each key-value pair
     const pairRegex = /s:\d+:"([^"]+)";s:\d+:"([^"]*)";/g;
     let match;
     
@@ -107,7 +101,6 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     const title = extractCData(item.title);
     console.log('Processing smart link:', title);
     
-    // Extract and validate post type
     const postType = extractCData(item['wp:post_type']);
     console.log('Raw post type:', item['wp:post_type']);
     console.log('Extracted post type:', postType);
@@ -117,7 +110,6 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
       return null;
     }
 
-    // Extract metadata
     const platformLinksData = getMetaValue(item, '_links');
     console.log('Raw platform links data:', platformLinksData);
 
@@ -155,7 +147,6 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     const artworkUrl = getMetaValue(item, '_default_image');
     const postName = extractCData(item['wp:post_name']);
     
-    // Meta pixel data
     const metaPixelEnabled = getMetaValue(item, '_fb_pixel') === '1';
     const metaPixelId = getMetaValue(item, '_fb_pixel_id');
     const metaViewEvent = getMetaValue(item, '_fb_pixel_page_load_event');
@@ -276,7 +267,7 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    const limitedItems = testMode ? smartLinkItems.slice(0, 1) : smartLinkItems;
+    const limitedItems = testMode ? smartLinkItems.slice(0, 10) : smartLinkItems;
     console.log(`Processing ${limitedItems.length} items...`);
 
     const results = {
