@@ -51,6 +51,20 @@ function parsePHPSerializedString(input: string) {
   return links;
 }
 
+function extractPostMeta(item: any, metaKey: string): string | null {
+  if (!item['wp:postmeta']) return null;
+  
+  const postmeta = Array.isArray(item['wp:postmeta']) 
+    ? item['wp:postmeta'] 
+    : [item['wp:postmeta']];
+
+  const meta = postmeta.find((meta: any) => 
+    meta['wp:meta_key']?.[0] === metaKey
+  );
+
+  return meta?.['wp:meta_value']?.[0] || null;
+}
+
 async function processSmartLink(supabase: any, item: any, userId: string) {
   if (!item || !userId) {
     console.error('Invalid input:', { item, userId });
@@ -58,15 +72,20 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
   }
 
   try {
-    console.log('Processing smart link:', item.title);
+    console.log('Processing smart link:', item.title?.[0]);
     
-    const platformLinks = item.platform_links;
-    if (!platformLinks) {
-      console.warn('No platform links found for:', item.title);
+    // Extract platform links from postmeta
+    const platformLinksData = extractPostMeta(item, '_platform_links');
+    console.log('Platform links data:', platformLinksData);
+
+    if (!platformLinksData) {
+      console.warn('No platform links found for:', item.title?.[0]);
       throw new Error("No platform links found");
     }
 
-    const links = parsePHPSerializedString(platformLinks);
+    const links = parsePHPSerializedString(platformLinksData);
+    console.log('Parsed platform links:', links);
+
     const validPlatformLinks = [];
 
     for (const [platformKey, url] of Object.entries(links)) {
@@ -89,11 +108,15 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     }
 
     if (validPlatformLinks.length === 0) {
-      console.warn('No valid platform links found for:', item.title);
+      console.warn('No valid platform links found for:', item.title?.[0]);
       throw new Error("No valid platform links found");
     }
 
-    const slug = (item.title || 'untitled')
+    const title = item.title?.[0] || 'Untitled';
+    const artistName = extractPostMeta(item, '_artist_name') || 'Unknown Artist';
+    const artworkUrl = extractPostMeta(item, '_artwork_url');
+
+    const slug = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
@@ -103,9 +126,9 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
       .insert({
-        title: item.title || 'Untitled',
-        artist_name: item.artist_name || 'Unknown Artist',
-        artwork_url: item.artwork_url,
+        title,
+        artist_name: artistName,
+        artwork_url: artworkUrl,
         user_id: userId,
         slug: slug,
       })
@@ -178,18 +201,11 @@ serve(async (req) => {
         ? xmlDoc.rss.channel.item 
         : [xmlDoc.rss.channel.item];
       
-      items = items.map(item => ({
-        title: item.title?.[0] || '',
-        artist_name: item['wp:postmeta']?.find(meta => 
-          meta['wp:meta_key']?.[0] === '_artist_name'
-        )?.[0]?.['wp:meta_value']?.[0] || '',
-        artwork_url: item['wp:postmeta']?.find(meta => 
-          meta['wp:meta_key']?.[0] === '_artwork_url'
-        )?.[0]?.['wp:meta_value']?.[0] || '',
-        platform_links: item['wp:postmeta']?.find(meta => 
-          meta['wp:meta_key']?.[0] === '_platform_links'
-        )?.[0]?.['wp:meta_value']?.[0] || '',
-      }));
+      // Filter only smart link post types
+      items = items.filter((item: any) => 
+        item['wp:post_type']?.[0] === 'smart-link' || 
+        item['wp:post_type']?.[0] === 'smartlink'
+      );
     }
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -214,7 +230,7 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    const limitedItems = testMode ? [items[0]] : items;
+    const limitedItems = testMode ? items.slice(0, 1) : items;
     console.log(`Processing ${limitedItems.length} items...`);
 
     const results = {
@@ -230,9 +246,9 @@ serve(async (req) => {
         results.success++;
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('Error processing item:', item.title, error);
+        console.error('Error processing item:', item.title?.[0], error);
         results.errors.push({
-          link: item.title || 'Untitled',
+          link: item.title?.[0] || 'Untitled',
           error: error.message,
         });
       }
