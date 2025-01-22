@@ -21,7 +21,6 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const file = formData.get('file');
-    const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
@@ -37,10 +36,6 @@ serve(async (req) => {
 
     const items = xmlDoc.rss.channel.item || [];
     console.log(`Found ${items.length} items in XML`);
-
-    if (testMode) {
-      items.length = Math.min(items.length, 10);
-    }
 
     const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
@@ -93,20 +88,15 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        // Check if this is a custom_links post type
-        const postType = item['wp:post_type']?.[0];
-        console.log(`Processing item with post type: ${postType}`);
-        
-        if (!postType || postType !== 'custom-links') {
-          console.log('Skipping non-custom_links item');
-          continue;
-        }
-
         const title = item.title?.[0] || '';
-        console.log(`Processing custom link: ${title}`);
+        console.log(`Processing link: ${title}`);
 
         const creatorEmail = item['dc:creator']?.[0];
-        console.log(`Found creator email: ${creatorEmail}`);
+        if (!creatorEmail) {
+          console.log('No creator email found, skipping');
+          results.unassigned.push(title);
+          continue;
+        }
 
         const { data: userData, error: userError } = await supabase
           .from('profiles')
@@ -120,11 +110,7 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`Found matching user: ${userData.id}`);
-
         const metas = item['wp:postmeta'] || [];
-        console.log(`Found ${metas.length} meta fields`);
-
         const platformLinks: PlatformLink[] = [];
         let artistName = '';
         let artworkUrl = '';
@@ -137,7 +123,6 @@ serve(async (req) => {
 
           if (key === '_links' && value) {
             try {
-              console.log('Processing links meta value');
               const cleanedStr = value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
               const matches = cleanedStr.match(/s:\d+:"([^"]+)"\s*s:\d+:"([^"]+)"/g) || [];
               
@@ -146,7 +131,6 @@ serve(async (req) => {
                 if (platform && url && url.trim() !== '') {
                   const mappedPlatformId = platformMapping[platform];
                   if (mappedPlatformId) {
-                    console.log(`Found platform link: ${platform} -> ${url}`);
                     platformLinks.push({
                       platform_id: mappedPlatformId,
                       platform_name: platformDisplayNames[mappedPlatformId],
@@ -160,20 +144,14 @@ serve(async (req) => {
             }
           } else if (key === '_artist_name' && value) {
             artistName = value;
-            console.log(`Found artist name: ${artistName}`);
           } else if (key === '_default_image' && value) {
             artworkUrl = value;
-            console.log(`Found artwork URL: ${artworkUrl}`);
           } else if (key === '_link_views' && value) {
             viewCount = parseInt(value) || 0;
-            console.log(`Found view count: ${viewCount}`);
           } else if (key === '_link_clicks' && value) {
             clickCount = parseInt(value) || 0;
-            console.log(`Found click count: ${clickCount}`);
           }
         }
-
-        console.log('Creating smart link with platform links:', platformLinks);
 
         const { data: smartLink, error: insertError } = await supabase
           .from('smart_links')
@@ -191,7 +169,6 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
-        // Insert historical view count
         if (viewCount > 0) {
           const { error: viewError } = await supabase
             .from('link_views')
@@ -223,7 +200,6 @@ serve(async (req) => {
             throw new Error(`Failed to insert platform links: ${platformError.message}`);
           }
 
-          // Insert historical click count on the first platform link
           if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
             const { error: clickError } = await supabase
               .from('platform_clicks')
