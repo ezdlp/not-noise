@@ -32,7 +32,7 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
   try {
     console.log('Parsing PHP string:', serialized);
     
-    // Extract the array content
+    // Extract the array content between curly braces
     const arrayMatch = serialized.match(/a:\d+:{(.+?)}/s);
     if (!arrayMatch) {
       console.error('No array content found');
@@ -41,18 +41,25 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 
     const content = arrayMatch[1];
     
-    // Match key-value pairs using a more precise regex
-    const pairRegex = /s:\d+:"([^"]+)"\s*s:\d+:"([^"]*)"/g;
-    let match;
+    // Split content by platform entries
+    const entries = content.split(/(?=s:\d+:"[^"]+")/).filter(Boolean);
     
-    while ((match = pairRegex.exec(content)) !== null) {
-      const [, key, value] = match;
-      if (value && value.trim() !== '') {
-        links[key] = value.trim();
+    for (let i = 0; i < entries.length; i += 2) {
+      const keyMatch = entries[i].match(/s:\d+:"([^"]+)"/);
+      const valueMatch = entries[i + 1]?.match(/s:\d+:"([^"]*)"/);
+      
+      if (keyMatch && valueMatch) {
+        const [, key] = keyMatch;
+        const [, value] = valueMatch;
+        
+        if (value && value.trim() !== '') {
+          console.log(`Found link - ${key}: ${value}`);
+          links[key] = value.trim();
+        }
       }
     }
 
-    console.log('Successfully parsed links:', links);
+    console.log('Parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
