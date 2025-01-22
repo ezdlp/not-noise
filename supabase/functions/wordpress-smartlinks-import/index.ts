@@ -50,20 +50,38 @@ function unserializePhp(input: string): any {
 }
 
 function extractCDATAContent(value: any): string {
+  // Handle null/undefined case
+  if (!value) {
+    return '';
+  }
+
+  // Handle direct string value
   if (typeof value === 'string') {
     return value;
   }
-  if (Array.isArray(value) && value.length > 0) {
-    const content = value[0];
-    // Handle CDATA sections which might be nested in arrays
-    if (typeof content === 'object' && content['#cdata'] !== undefined) {
-      return content['#cdata'];
+
+  // Handle array case
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    const firstItem = value[0];
+    
+    // Handle nested CDATA in array
+    if (typeof firstItem === 'object') {
+      if (firstItem['#cdata']) return firstItem['#cdata'];
+      if (firstItem['#text']) return firstItem['#text'];
+      return firstItem.toString();
     }
-    return content;
+    
+    return firstItem;
   }
-  if (typeof value === 'object' && value['#cdata'] !== undefined) {
-    return value['#cdata'];
+
+  // Handle object with CDATA
+  if (typeof value === 'object') {
+    if (value['#cdata']) return value['#cdata'];
+    if (value['#text']) return value['#text'];
+    if (value.toString) return value.toString();
   }
+
   return '';
 }
 
@@ -192,9 +210,9 @@ serve(async (req) => {
       'appleMusic': 'Apple Music',
       'amazonMusic': 'Amazon Music',
       'youtubeMusic': 'YouTube Music',
+      'youtube': 'YouTube',
       'deezer': 'Deezer',
       'soundcloud': 'SoundCloud',
-      'youtube': 'YouTube',
       'itunes': 'iTunes',
       'tidal': 'Tidal',
       'anghami': 'Anghami',
