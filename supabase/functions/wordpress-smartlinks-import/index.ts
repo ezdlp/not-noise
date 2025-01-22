@@ -18,6 +18,7 @@ const platformMappings = {
 };
 
 function isValidUrl(url: string): boolean {
+  if (!url) return false;
   try {
     new URL(url);
     return true;
@@ -27,26 +28,41 @@ function isValidUrl(url: string): boolean {
 }
 
 function parsePHPSerializedString(input: string) {
+  if (!input) {
+    console.log('Empty input for PHP serialized string');
+    return {};
+  }
+
   const links: Record<string, string> = {};
   const pattern = /s:\d+:"([^"]+)"\s*;\s*s:\d+:"([^"]*)"/g;
   let match;
 
-  while ((match = pattern.exec(input)) !== null) {
-    const [, key, value] = match;
-    if (key && value) {
-      links[key] = value;
+  try {
+    while ((match = pattern.exec(input)) !== null) {
+      const [, key, value] = match;
+      if (key && value) {
+        links[key] = value;
+      }
     }
+  } catch (error) {
+    console.error('Error parsing PHP serialized string:', error);
   }
 
   return links;
 }
 
 async function processSmartLink(supabase: any, item: any, userId: string) {
+  if (!item || !userId) {
+    console.error('Invalid input:', { item, userId });
+    throw new Error('Invalid input for processing smart link');
+  }
+
   try {
     console.log('Processing smart link:', item.title);
     
     const platformLinks = item.platform_links;
     if (!platformLinks) {
+      console.warn('No platform links found for:', item.title);
       throw new Error("No platform links found");
     }
 
@@ -54,10 +70,16 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     const validPlatformLinks = [];
 
     for (const [platformKey, url] of Object.entries(links)) {
-      if (!url || !isValidUrl(url)) continue;
+      if (!url || !isValidUrl(url)) {
+        console.warn(`Invalid URL for platform ${platformKey}:`, url);
+        continue;
+      }
 
       const mapping = platformMappings[platformKey as keyof typeof platformMappings];
-      if (!mapping) continue;
+      if (!mapping) {
+        console.warn(`No mapping found for platform: ${platformKey}`);
+        continue;
+      }
 
       validPlatformLinks.push({
         platform_id: mapping.id,
@@ -67,18 +89,21 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     }
 
     if (validPlatformLinks.length === 0) {
+      console.warn('No valid platform links found for:', item.title);
       throw new Error("No valid platform links found");
     }
 
-    const slug = item.title
+    const slug = (item.title || 'untitled')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+    console.log('Creating smart link with slug:', slug);
+
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
       .insert({
-        title: item.title,
+        title: item.title || 'Untitled',
         artist_name: item.artist_name || 'Unknown Artist',
         artwork_url: item.artwork_url,
         user_id: userId,
@@ -87,7 +112,12 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
       .select()
       .single();
 
-    if (smartLinkError) throw smartLinkError;
+    if (smartLinkError) {
+      console.error('Error creating smart link:', smartLinkError);
+      throw smartLinkError;
+    }
+
+    console.log('Smart link created:', smartLink.id);
 
     const platformLinksToInsert = validPlatformLinks.map(link => ({
       smart_link_id: smartLink.id,
@@ -100,8 +130,12 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
       .from('platform_links')
       .insert(platformLinksToInsert);
 
-    if (platformLinksError) throw platformLinksError;
+    if (platformLinksError) {
+      console.error('Error creating platform links:', platformLinksError);
+      throw platformLinksError;
+    }
 
+    console.log('Platform links created for:', smartLink.id);
     return smartLink;
   } catch (error) {
     console.error("Error processing smart link:", error);
@@ -124,18 +158,19 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    // Read file in chunks to prevent memory issues
+    console.log('File received:', file.name);
     const text = await file.text();
     let items;
     
     try {
-      console.log('Attempting to parse file...');
+      console.log('Attempting to parse file as JSON...');
       items = JSON.parse(text);
     } catch (e) {
       console.log('JSON parse failed, attempting XML parse...');
       const xmlDoc = parse(text);
       
-      if (!xmlDoc.rss?.channel?.item) {
+      if (!xmlDoc?.rss?.channel?.item) {
+        console.error('Invalid WordPress export file structure');
         throw new Error("Invalid WordPress export file structure");
       }
       
@@ -157,6 +192,12 @@ serve(async (req) => {
       }));
     }
 
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('No valid items found in the import file');
+    }
+
+    console.log(`Found ${items.length} items to process`);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -169,10 +210,10 @@ serve(async (req) => {
       .single();
 
     if (!adminUser?.user_id) {
+      console.error('No admin user found');
       throw new Error('No admin user found');
     }
 
-    // Process only first item in test mode
     const limitedItems = testMode ? [items[0]] : items;
     console.log(`Processing ${limitedItems.length} items...`);
 
@@ -183,16 +224,15 @@ serve(async (req) => {
       unassigned: [] as string[],
     };
 
-    // Process one item at a time
     for (const item of limitedItems) {
       try {
         await processSmartLink(supabase, item, adminUser.user_id);
         results.success++;
-        // Add small delay between items
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
+        console.error('Error processing item:', item.title, error);
         results.errors.push({
-          link: item.title,
+          link: item.title || 'Untitled',
           error: error.message,
         });
       }
@@ -204,7 +244,10 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Import error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
