@@ -12,8 +12,9 @@ const SmartLink = () => {
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
-      console.log("Fetching smart link with slug:", slug);
+      console.log("Fetching smart link:", slug);
       
+      // Try to fetch by slug first
       const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
@@ -26,25 +27,50 @@ const SmartLink = () => {
           )
         `)
         .eq('slug', slug)
-        .single();
+        .maybeSingle();
 
-      if (smartLinkError) {
+      if (!smartLinkData && !smartLinkError) {
+        console.log("No smart link found with slug, trying ID...");
+        // If no result by slug, try by ID
+        const { data: idData, error: idError } = await supabase
+          .from('smart_links')
+          .select(`
+            *,
+            platform_links (
+              id,
+              platform_id,
+              platform_name,
+              url
+            )
+          `)
+          .eq('id', slug)
+          .maybeSingle();
+
+        if (idError) {
+          console.error('Error fetching smart link by ID:', idError);
+          throw idError;
+        }
+
+        if (!idData) {
+          console.error('Smart link not found by either slug or ID:', slug);
+          throw new Error('Smart link not found');
+        }
+
+        smartLinkData = idData;
+      } else if (smartLinkError) {
         console.error('Error fetching smart link:', smartLinkError);
         throw smartLinkError;
-      }
-
-      if (!smartLinkData) {
-        console.error('Smart link not found:', slug);
-        throw new Error('Smart link not found');
       }
 
       console.log("Found smart link:", smartLinkData);
 
       // Record the view
-      await supabase.from('link_views').insert({
-        smart_link_id: smartLinkData.id,
-        user_agent: navigator.userAgent,
-      });
+      if (smartLinkData) {
+        await supabase.from('link_views').insert({
+          smart_link_id: smartLinkData.id,
+          user_agent: navigator.userAgent,
+        });
+      }
 
       return smartLinkData;
     }
@@ -106,8 +132,6 @@ const SmartLink = () => {
       </div>
     );
   }
-
-  console.log("Platform links:", smartLink.platform_links);
 
   const platformIcons: { [key: string]: string } = {
     spotify: "/lovable-uploads/spotify.png",
