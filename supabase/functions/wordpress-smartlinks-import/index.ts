@@ -7,7 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const CHUNK_SIZE = 10;
+// Reduce chunk size to prevent memory issues
+const CHUNK_SIZE = 5;
+const DELAY_BETWEEN_CHUNKS = 1000; // 1 second delay between chunks
 
 interface ImportSummary {
   total: number;
@@ -32,33 +34,20 @@ const platformMappings: Record<string, { id: string; name: string }> = {
 };
 
 function parseSerializedPHPString(serialized: string): Record<string, string> {
-  console.log('Parsing PHP string:', serialized);
   const links: Record<string, string> = {};
   
   try {
-    // Extract the array length from a:7:{...}
-    const arrayMatch = serialized.match(/a:(\d+):\{(.*)\}/);
-    if (!arrayMatch) return links;
+    // Remove length indicators to simplify parsing
+    const cleaned = serialized.replace(/s:\d+:/g, 's:');
+    // Extract key-value pairs
+    const matches = cleaned.matchAll(/s:"([^"]+)"\s*s:"([^"]*)"/g);
     
-    const content = arrayMatch[2];
-    // Split into key-value pairs
-    const pairs = content.split(/(?<="}|")\s+(?=s:)/);
-    
-    for (const pair of pairs) {
-      // Extract key and value using regex
-      const keyMatch = pair.match(/s:\d+:"([^"]+)"/);
-      const valueMatch = pair.match(/s:\d+:"([^"]*)"/g);
-      
-      if (keyMatch && valueMatch && valueMatch.length > 1) {
-        const key = keyMatch[1];
-        const value = valueMatch[1].replace(/^s:\d+:"/, '').replace(/"$/, '');
-        if (key && value !== undefined) {
-          links[key] = value;
-        }
+    for (const match of matches) {
+      const [, key, value] = match;
+      if (key && value !== undefined) {
+        links[key] = value;
       }
     }
-    
-    console.log('Final parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
@@ -68,117 +57,97 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 
 function validatePlatformLinks(links: Record<string, string>): boolean {
   if (!links || Object.keys(links).length === 0) {
-    console.log('No platform links found');
     return false;
   }
 
-  const hasValidLinks = Object.entries(links).some(([platform, url]) => {
-    const isValid = url && url.length > 0 && 
-                   (platformMappings[platform] || 
-                    Object.values(platformMappings).some(m => m.id === platform));
-    if (isValid) {
-      console.log(`Found valid link for platform ${platform}: ${url}`);
-    }
-    return isValid;
+  return Object.entries(links).some(([platform, url]) => {
+    return url && url.length > 0 && 
+           (platformMappings[platform] || 
+            Object.values(platformMappings).some(m => m.id === platform));
   });
-
-  console.log(`Platform links validation result: ${hasValidLinks}`);
-  return hasValidLinks;
 }
 
-async function processItemChunk(
-  items: any[], 
-  supabase: any, 
+async function processItem(
+  item: any,
+  supabase: any,
   summary: ImportSummary
 ): Promise<void> {
-  for (const item of items) {
-    try {
-      if (item["wp:post_type"] !== "custom_links") continue;
+  try {
+    if (item["wp:post_type"] !== "custom_links") return;
 
-      const title = item.title;
-      const userEmail = item["dc:creator"];
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', userEmail)
-        .single();
-
-      if (profileError || !profileData) {
-        summary.unassigned.push(`${title} (${userEmail})`);
-        continue;
-      }
-
-      const postmeta = Array.isArray(item["wp:postmeta"]) 
-        ? item["wp:postmeta"] 
-        : [item["wp:postmeta"]];
-
-      const getMeta = (key: string) => {
-        const meta = postmeta.find(m => m["wp:meta_key"] === key);
-        return meta ? meta["wp:meta_value"] : null;
-      };
-
-      const artistName = getMeta("_artist_name") || "";
-      const artworkUrl = getMeta("_default_image") || "";
-      const linksData = getMeta("_links") || "";
-      const slug = item["wp:post_name"];
-
-      const platformLinks = parseSerializedPHPString(linksData);
-      
-      if (!validatePlatformLinks(platformLinks)) {
-        throw new Error("No valid platform links found");
-      }
-
-      const { data: smartLink, error: smartLinkError } = await supabase
-        .from('smart_links')
-        .insert({
-          user_id: profileData.id,
-          title,
-          artwork_url: artworkUrl,
-          slug,
-          artist_name: artistName,
-        })
-        .select()
-        .single();
-
-      if (smartLinkError) throw smartLinkError;
-
-      // Process platform links in sequence to avoid overwhelming the database
-      for (const [platform, url] of Object.entries(platformLinks)) {
-        if (!url) continue;
-
-        let mapping = platformMappings[platform];
-        if (!mapping) {
-          mapping = Object.values(platformMappings).find(m => m.id === platform);
-        }
-
-        if (!mapping) continue;
-
-        const { error: platformLinkError } = await supabase
-          .from('platform_links')
-          .insert({
-            smart_link_id: smartLink.id,
-            platform_id: mapping.id,
-            platform_name: mapping.name,
-            url,
-          });
-
-        if (platformLinkError) {
-          console.error(`Error creating platform link for ${platform}:`, platformLinkError);
-        }
-      }
-
-      summary.success++;
-    } catch (error) {
-      console.error(`Error processing item:`, error);
-      summary.errors.push({
-        link: item.title || "Unknown",
-        error: error.message,
-      });
-    }
+    const title = item.title;
+    const userEmail = item["dc:creator"];
     
-    // Small delay between items to prevent overwhelming resources
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userEmail)
+      .single();
+
+    if (!profileData) {
+      summary.unassigned.push(`${title} (${userEmail})`);
+      return;
+    }
+
+    const postmeta = Array.isArray(item["wp:postmeta"]) 
+      ? item["wp:postmeta"] 
+      : [item["wp:postmeta"]];
+
+    const getMeta = (key: string) => {
+      const meta = postmeta.find(m => m["wp:meta_key"] === key);
+      return meta ? meta["wp:meta_value"] : null;
+    };
+
+    const artistName = getMeta("_artist_name") || "";
+    const artworkUrl = getMeta("_default_image") || "";
+    const linksData = getMeta("_links") || "";
+    const slug = item["wp:post_name"];
+
+    const platformLinks = parseSerializedPHPString(linksData);
+    
+    if (!validatePlatformLinks(platformLinks)) {
+      throw new Error("No valid platform links found");
+    }
+
+    const { data: smartLink, error: smartLinkError } = await supabase
+      .from('smart_links')
+      .insert({
+        user_id: profileData.id,
+        title,
+        artwork_url: artworkUrl,
+        slug,
+        artist_name: artistName,
+      })
+      .select()
+      .single();
+
+    if (smartLinkError) throw smartLinkError;
+
+    for (const [platform, url] of Object.entries(platformLinks)) {
+      if (!url) continue;
+
+      const mapping = platformMappings[platform] || 
+                     Object.values(platformMappings).find(m => m.id === platform);
+
+      if (!mapping) continue;
+
+      await supabase
+        .from('platform_links')
+        .insert({
+          smart_link_id: smartLink.id,
+          platform_id: mapping.id,
+          platform_name: mapping.name,
+          url,
+        });
+    }
+
+    summary.success++;
+  } catch (error) {
+    console.error(`Error processing item:`, error);
+    summary.errors.push({
+      link: item.title || "Unknown",
+      error: error.message,
+    });
   }
 }
 
@@ -188,8 +157,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Starting smart links import process");
-    
     const formData = await req.formData();
     const file = formData.get('file') as File;
     if (!file) {
@@ -197,8 +164,6 @@ serve(async (req) => {
     }
 
     const fileContent = await file.text();
-    console.log(`File content length: ${fileContent.length}`);
-
     const parser = new XMLParser({
       attributeNamePrefix: "@_",
       ignoreAttributes: false,
@@ -215,8 +180,6 @@ serve(async (req) => {
       ? result.rss.channel.item 
       : [result.rss.channel.item];
 
-    console.log(`Found ${items.length} items to process`);
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -229,14 +192,18 @@ serve(async (req) => {
       unassigned: [],
     };
 
-    // Process items in chunks
+    // Process items in smaller chunks with delays
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-      const chunk = items.slice(i, Math.min(i + CHUNK_SIZE, items.length));
-      await processItemChunk(chunk, supabase, summary);
+      const chunk = items.slice(i, i + CHUNK_SIZE);
       
-      // Add a delay between chunks
+      // Process items in chunk sequentially
+      for (const item of chunk) {
+        await processItem(item, supabase, summary);
+      }
+      
+      // Add delay between chunks
       if (i + CHUNK_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CHUNKS));
       }
     }
 
