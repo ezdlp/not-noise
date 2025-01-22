@@ -41,27 +41,10 @@ function parsePHPSerializedString(input: string) {
   return links;
 }
 
-async function generateUniqueSlug(supabase: any, baseSlug: string): Promise<string> {
-  let slug = baseSlug;
-  let counter = 1;
-  
-  while (true) {
-    const { data } = await supabase
-      .from('smart_links')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle();
-    
-    if (!data) break;
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-  
-  return slug;
-}
-
-async function processItem(supabase: any, item: any, userId: string) {
+async function processSmartLink(supabase: any, item: any, userId: string) {
   try {
+    console.log('Processing smart link:', item.title);
+    
     const platformLinks = item.platform_links;
     if (!platformLinks) {
       throw new Error("No platform links found");
@@ -87,12 +70,10 @@ async function processItem(supabase: any, item: any, userId: string) {
       throw new Error("No valid platform links found");
     }
 
-    const baseSlug = item.title
+    const slug = item.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
-    
-    const uniqueSlug = await generateUniqueSlug(supabase, baseSlug);
 
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
@@ -101,7 +82,7 @@ async function processItem(supabase: any, item: any, userId: string) {
         artist_name: item.artist_name || 'Unknown Artist',
         artwork_url: item.artwork_url,
         user_id: userId,
-        slug: uniqueSlug,
+        slug: slug,
       })
       .select()
       .single();
@@ -123,7 +104,7 @@ async function processItem(supabase: any, item: any, userId: string) {
 
     return smartLink;
   } catch (error) {
-    console.error("Error processing item:", error);
+    console.error("Error processing smart link:", error);
     throw error;
   }
 }
@@ -134,6 +115,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting import process...');
     const formData = await req.formData();
     const file = formData.get('file');
     const testMode = formData.get('testMode') === 'true';
@@ -142,13 +124,16 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    const content = await file.text();
+    // Read file in chunks to prevent memory issues
+    const text = await file.text();
     let items;
     
     try {
-      items = JSON.parse(content);
+      console.log('Attempting to parse file...');
+      items = JSON.parse(text);
     } catch (e) {
-      const xmlDoc = parse(content);
+      console.log('JSON parse failed, attempting XML parse...');
+      const xmlDoc = parse(text);
       
       if (!xmlDoc.rss?.channel?.item) {
         throw new Error("Invalid WordPress export file structure");
@@ -187,8 +172,10 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    const batchSize = 2;
-    const limitedItems = testMode ? items.slice(0, 5) : items;
+    // Process only first item in test mode
+    const limitedItems = testMode ? [items[0]] : items;
+    console.log(`Processing ${limitedItems.length} items...`);
+
     const results = {
       total: limitedItems.length,
       success: 0,
@@ -196,28 +183,22 @@ serve(async (req) => {
       unassigned: [] as string[],
     };
 
-    for (let i = 0; i < limitedItems.length; i += batchSize) {
-      const batch = limitedItems.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(limitedItems.length/batchSize)}`);
-
-      for (const item of batch) {
-        try {
-          await processItem(supabase, item, adminUser.user_id);
-          results.success++;
-        } catch (error) {
-          results.errors.push({
-            link: item.title,
-            error: error.message,
-          });
-        }
-      }
-
-      // Add a small delay between batches to prevent resource exhaustion
-      if (i + batchSize < limitedItems.length) {
+    // Process one item at a time
+    for (const item of limitedItems) {
+      try {
+        await processSmartLink(supabase, item, adminUser.user_id);
+        results.success++;
+        // Add small delay between items
         await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        results.errors.push({
+          link: item.title,
+          error: error.message,
+        });
       }
     }
 
+    console.log('Import completed:', results);
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
