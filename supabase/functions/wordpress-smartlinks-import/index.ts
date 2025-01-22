@@ -28,6 +28,7 @@ serve(async (req) => {
     }
 
     const text = await file.text();
+    console.log('Parsing XML file...');
     const xmlDoc = parse(text);
 
     if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
@@ -41,13 +42,13 @@ serve(async (req) => {
       items.length = Math.min(items.length, 10);
     }
 
-    const platformMapping = {
-      'appleMusic': 'apple_music',
-      'amazonMusic': 'amazon_music',
-      'youtubeMusic': 'youtube_music',
+    const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
-      'soundcloud': 'soundcloud',
+      'apple_music': 'appleMusic',
+      'amazon_music': 'amazonMusic',
+      'youtube_music': 'youtubeMusic',
       'deezer': 'deezer',
+      'soundcloud': 'soundcloud',
       'youtube': 'youtube',
       'itunes': 'itunes',
       'tidal': 'tidal',
@@ -60,13 +61,13 @@ serve(async (req) => {
       'audius': 'audius'
     };
 
-    const platformDisplayNames = {
-      'apple_music': 'Apple Music',
-      'amazon_music': 'Amazon Music',
-      'youtube_music': 'YouTube Music',
+    const platformDisplayNames: Record<string, string> = {
       'spotify': 'Spotify',
-      'soundcloud': 'SoundCloud',
+      'appleMusic': 'Apple Music',
+      'amazonMusic': 'Amazon Music',
+      'youtubeMusic': 'YouTube Music',
       'deezer': 'Deezer',
+      'soundcloud': 'SoundCloud',
       'youtube': 'YouTube',
       'itunes': 'iTunes',
       'tidal': 'Tidal',
@@ -92,7 +93,10 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        if (item['wp:post_type']?.[0] !== 'custom_links') continue;
+        if (!item['wp:post_type'] || item['wp:post_type'][0] !== 'custom_links') {
+          console.log('Skipping non-custom_links item');
+          continue;
+        }
 
         const title = item.title?.[0] || '';
         console.log(`Processing custom link: ${title}`);
@@ -126,45 +130,38 @@ serve(async (req) => {
           const value = meta['wp:meta_value']?.[0];
 
           if (key === '_links' && value) {
-            console.log('Found links meta value:', value);
-            
-            const cleanedStr = value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-            console.log('Cleaned string:', cleanedStr);
-
-            const pairs = cleanedStr.match(/s:\d+:"([^"]+)"\s+s:\d+:"([^"]+)"/g) || [];
-            console.log('Found pairs:', pairs);
-
-            const extractedLinks: Record<string, string> = {};
-            pairs.forEach(pair => {
-              const [platform, url] = pair.match(/s:\d+:"([^"]+)"/g)?.map(s => 
-                s.match(/:"([^"]+)"/)![1]
-              ) || [];
-              if (platform && url && url.trim() !== '') {
-                extractedLinks[platform] = url;
-              }
-            });
-
-            console.log('Extracted platform links:', extractedLinks);
-
-            Object.entries(extractedLinks).forEach(([platform, url]) => {
-              const mappedPlatformId = platformMapping[platform as keyof typeof platformMapping];
-              if (mappedPlatformId && url) {
-                console.log(`Mapped platform ${platform} -> ${mappedPlatformId}: ${url}`);
-                platformLinks.push({
-                  platform_id: mappedPlatformId,
-                  platform_name: platformDisplayNames[mappedPlatformId as keyof typeof platformDisplayNames],
-                  url: url
-                });
-              }
-            });
+            try {
+              console.log('Processing links meta value');
+              const cleanedStr = value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+              const matches = cleanedStr.match(/s:\d+:"([^"]+)"\s*s:\d+:"([^"]+)"/g) || [];
+              
+              matches.forEach(match => {
+                const [platform, url] = match.match(/:"([^"]+)"/g)?.map(s => s.slice(2, -1)) || [];
+                if (platform && url && url.trim() !== '') {
+                  const mappedPlatformId = platformMapping[platform];
+                  if (mappedPlatformId) {
+                    console.log(`Found platform link: ${platform} -> ${url}`);
+                    platformLinks.push({
+                      platform_id: mappedPlatformId,
+                      platform_name: platformDisplayNames[mappedPlatformId],
+                      url: url.trim()
+                    });
+                  }
+                }
+              });
+            } catch (error) {
+              console.error('Error parsing platform links:', error);
+            }
           } else if (key === '_artist_name' && value) {
             artistName = value;
+            console.log(`Found artist name: ${artistName}`);
           } else if (key === '_default_image' && value) {
             artworkUrl = value;
+            console.log(`Found artwork URL: ${artworkUrl}`);
           }
         }
 
-        console.log('Formatted platform links:', platformLinks);
+        console.log('Creating smart link with platform links:', platformLinks);
 
         const { data: smartLink, error: insertError } = await supabase
           .from('smart_links')
@@ -172,7 +169,7 @@ serve(async (req) => {
             user_id: userData.id,
             title,
             artist_name: artistName || 'Unknown Artist',
-            artwork_url: artworkUrl
+            artwork_url: artworkUrl || null
           })
           .select()
           .single();
