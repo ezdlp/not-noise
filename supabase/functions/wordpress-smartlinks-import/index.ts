@@ -18,16 +18,26 @@ const platformMappings = {
   'youtubeMusic': { id: 'youtube_music', name: 'YouTube Music' },
 };
 
-function extractCData(text: string | undefined): string {
-  if (!text) return '';
+function extractCData(node: any): string {
+  if (!node) return '';
   
-  // Handle array of text nodes
-  if (Array.isArray(text)) {
-    text = text[0];
+  // If it's an array, take the first element
+  const text = Array.isArray(node) ? node[0] : node;
+  
+  // If it's already a string, just return it trimmed
+  if (typeof text === 'string') {
+    return text.trim();
   }
   
-  const match = text.match(/<!\[CDATA\[(.*?)\]\]>/);
-  return match ? match[1].trim() : text.trim();
+  // If it's an object with #text property (how the XML parser sometimes handles CDATA)
+  if (text['#text']) {
+    return text['#text'].trim();
+  }
+  
+  // Convert to string and try to extract CDATA content
+  const stringValue = String(text);
+  const match = stringValue.match(/<!\[CDATA\[(.*?)\]\]>/s);
+  return match ? match[1].trim() : stringValue.trim();
 }
 
 function getMetaValue(item: any, key: string): string | null {
@@ -37,11 +47,19 @@ function getMetaValue(item: any, key: string): string | null {
     ? item['wp:postmeta'] 
     : [item['wp:postmeta']];
 
-  const meta = postmeta.find((meta: any) => 
-    extractCData(meta['wp:meta_key']) === key
-  );
+  const meta = postmeta.find((meta: any) => {
+    const metaKey = extractCData(meta['wp:meta_key']);
+    console.log(`Comparing meta key: "${metaKey}" with "${key}"`);
+    return metaKey === key;
+  });
 
-  return meta ? extractCData(meta['wp:meta_value']) : null;
+  if (meta) {
+    const value = extractCData(meta['wp:meta_value']);
+    console.log(`Found meta value for ${key}:`, value);
+    return value;
+  }
+  
+  return null;
 }
 
 function parsePlatformLinks(input: string): Record<string, string> {
@@ -55,39 +73,44 @@ function parsePlatformLinks(input: string): Record<string, string> {
   const links: Record<string, string> = {};
   
   try {
-    // Extract the actual serialized array content
-    const match = input.match(/a:\d+:{(.*?)}/s);
-    if (!match) {
-      console.log('No serialized array content found');
+    // First, try to match the entire serialized array structure
+    const arrayMatch = input.match(/a:\d+:{(.*?)}/s);
+    if (!arrayMatch) {
+      console.log('No serialized array structure found');
       return links;
     }
 
-    const content = match[1];
+    const content = arrayMatch[1];
+    console.log('Extracted content:', content);
+
     // Match each key-value pair
-    const pairs = content.matchAll(/s:\d+:"([^"]+)";s:\d+:"([^"]*)";/g);
+    const pairRegex = /s:\d+:"([^"]+)";s:\d+:"([^"]*)";/g;
+    let match;
     
-    for (const pair of pairs) {
-      const [, key, value] = pair;
+    while ((match = pairRegex.exec(content)) !== null) {
+      const [, key, value] = match;
       if (key && value) {
         links[key] = value;
-        console.log(`Found link - Platform: ${key}, URL: ${value}`);
+        console.log(`Found platform link: ${key} -> ${value}`);
       }
     }
   } catch (error) {
     console.error('Error parsing platform links:', error);
   }
 
+  console.log('Parsed links:', links);
   return links;
 }
 
 async function processSmartLink(supabase: any, item: any, userId: string) {
   try {
-    const title = extractCData(item.title?.[0]);
+    const title = extractCData(item.title);
     console.log('Processing smart link:', title);
     
-    // Extract post type and verify it's a custom link
-    const postType = extractCData(item['wp:post_type']?.[0]);
-    console.log('Post type:', postType);
+    // Extract and validate post type
+    const postType = extractCData(item['wp:post_type']);
+    console.log('Raw post type:', item['wp:post_type']);
+    console.log('Extracted post type:', postType);
     
     if (postType !== 'custom_links') {
       console.warn('Not a custom link post type:', postType);
@@ -130,7 +153,7 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
 
     const artistName = getMetaValue(item, '_artist_name') || 'Unknown Artist';
     const artworkUrl = getMetaValue(item, '_default_image');
-    const postName = extractCData(item['wp:post_name']?.[0]);
+    const postName = extractCData(item['wp:post_name']);
     
     // Meta pixel data
     const metaPixelEnabled = getMetaValue(item, '_fb_pixel') === '1';
@@ -224,8 +247,9 @@ serve(async (req) => {
 
     // Filter only custom_links post types
     const smartLinkItems = items.filter((item: any) => {
-      const postType = extractCData(item['wp:post_type']?.[0]);
-      console.log('Raw post type:', item['wp:post_type']);
+      const rawPostType = item['wp:post_type'];
+      const postType = extractCData(rawPostType);
+      console.log('Raw post type value:', rawPostType);
       console.log('Extracted post type:', postType);
       return postType === 'custom_links';
     });
@@ -270,9 +294,9 @@ serve(async (req) => {
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('Error processing item:', extractCData(item.title?.[0] || ''), error);
+        console.error('Error processing item:', extractCData(item.title), error);
         results.errors.push({
-          link: extractCData(item.title?.[0] || 'Untitled'),
+          link: extractCData(item.title),
           error: error.message,
         });
       }
