@@ -41,6 +41,8 @@ serve(async (req) => {
       ? xmlDoc.rss.channel.item 
       : [xmlDoc.rss.channel.item];
 
+    console.log(`Found ${items.length} items in XML`);
+
     const extractCData = (node: any): string => {
       if (!node) return '';
       if (Array.isArray(node)) return node[0];
@@ -49,100 +51,125 @@ serve(async (req) => {
     };
 
     const validItems = [];
+    const invalidItems = [];
     
     for (const item of items) {
-      const postType = extractCData(item['wp:post_type']);
-      console.log("Raw post type value:", postType);
-      console.log("Extracted post type:", postType);
+      try {
+        const postType = extractCData(item['wp:post_type']);
+        console.log(`Processing item of type: ${postType}`);
 
-      if (postType === 'custom_links') {
-        const creator = extractCData(item['dc:creator']);
-        console.log("Found creator email:", creator);
+        if (postType === 'custom_links') {
+          const title = extractCData(item.title);
+          console.log(`Processing custom link: ${title}`);
 
-        // First try to find the user by email
-        let userId = null;
-        if (creator) {
-          const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('id')
-            .eq('email', creator)
-            .maybeSingle();
+          const creator = extractCData(item['dc:creator']);
+          console.log(`Found creator email: ${creator}`);
 
-          if (profile) {
-            userId = profile.id;
-            console.log("Found matching user:", userId);
-          }
-        }
+          // First try to find the user by email
+          let userId = null;
+          if (creator) {
+            const { data: profile } = await supabaseClient
+              .from('profiles')
+              .select('id')
+              .eq('email', creator)
+              .maybeSingle();
 
-        // If no user found, fallback to admin
-        if (!userId) {
-          const { data: adminUser } = await supabaseClient
-            .from('user_roles')
-            .select('user_id')
-            .eq('role', 'admin')
-            .limit(1)
-            .single();
-          
-          if (!adminUser) {
-            throw new Error('No admin user found');
-          }
-          
-          userId = adminUser.user_id;
-          console.log("Using admin user as fallback:", userId);
-        }
-
-        const title = extractCData(item.title);
-        const content = extractCData(item['content:encoded']);
-        const artistName = extractCData(item['wp:postmeta']?.find((meta: any) => 
-          extractCData(meta['wp:meta_key']) === 'artist_name'
-        )?.['wp:meta_value']) || 'Unknown Artist';
-
-        const artworkUrl = extractCData(item['wp:postmeta']?.find((meta: any) => 
-          extractCData(meta['wp:meta_key']) === 'artwork_url'
-        )?.['wp:meta_value']);
-
-        const platformLinks = [];
-        const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
-        
-        for (const meta of postMeta) {
-          const metaKey = extractCData(meta['wp:meta_key']);
-          if (metaKey.startsWith('platform_')) {
-            const platformId = metaKey.replace('platform_', '');
-            const url = extractCData(meta['wp:meta_value']);
-            if (url) {
-              platformLinks.push({
-                platform_id: platformId,
-                platform_name: platformId.charAt(0).toUpperCase() + platformId.slice(1),
-                url
-              });
+            if (profile) {
+              userId = profile.id;
+              console.log(`Found matching user: ${userId}`);
+            } else {
+              console.log(`No user found for email: ${creator}`);
             }
           }
-        }
 
-        if (title && platformLinks.length > 0) {
-          validItems.push({
+          // If no user found, fallback to admin
+          if (!userId) {
+            console.log('Falling back to admin user...');
+            const { data: adminUser } = await supabaseClient
+              .from('user_roles')
+              .select('user_id')
+              .eq('role', 'admin')
+              .limit(1)
+              .single();
+            
+            if (!adminUser) {
+              throw new Error('No admin user found');
+            }
+            
+            userId = adminUser.user_id;
+            console.log(`Using admin user as fallback: ${userId}`);
+          }
+
+          const artistName = extractCData(item['wp:postmeta']?.find((meta: any) => 
+            extractCData(meta['wp:meta_key']) === 'artist_name'
+          )?.['wp:meta_value']) || 'Unknown Artist';
+
+          const artworkUrl = extractCData(item['wp:postmeta']?.find((meta: any) => 
+            extractCData(meta['wp:meta_key']) === 'artwork_url'
+          )?.['wp:meta_value']);
+
+          const platformLinks = [];
+          const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
+          
+          console.log(`Processing ${postMeta.length} meta fields`);
+          
+          for (const meta of postMeta) {
+            const metaKey = extractCData(meta['wp:meta_key']);
+            if (metaKey.startsWith('platform_')) {
+              const platformId = metaKey.replace('platform_', '');
+              const url = extractCData(meta['wp:meta_value']);
+              if (url) {
+                platformLinks.push({
+                  platform_id: platformId,
+                  platform_name: platformId.charAt(0).toUpperCase() + platformId.slice(1),
+                  url
+                });
+                console.log(`Found platform link: ${platformId} -> ${url}`);
+              }
+            }
+          }
+
+          const validItem = {
             title,
-            content,
+            content: extractCData(item['content:encoded']),
             artist_name: artistName,
             artwork_url: artworkUrl,
             user_id: userId,
             platform_links: platformLinks
-          });
+          };
+
+          // Log validation details
+          const validationIssues = [];
+          if (!title) validationIssues.push('missing title');
+          if (!userId) validationIssues.push('missing user_id');
+          if (!platformLinks.length) validationIssues.push('no platform links');
+
+          if (validationIssues.length === 0) {
+            console.log(`Valid item found: ${title}`);
+            validItems.push(validItem);
+          } else {
+            console.log(`Invalid item "${title}": ${validationIssues.join(', ')}`);
+            invalidItems.push({ title, issues: validationIssues });
+          }
         }
+      } catch (error) {
+        console.error('Error processing item:', error);
+        invalidItems.push({ error: error.message });
       }
     }
 
-    if (validItems.length === 0) {
-      throw new Error('No valid items found in the import file');
-    }
+    console.log(`Found ${validItems.length} valid items and ${invalidItems.length} invalid items`);
 
-    console.log(`Found ${validItems.length} valid items to import`);
+    if (validItems.length === 0) {
+      throw new Error(`No valid items found in the import file. Invalid items: ${JSON.stringify(invalidItems)}`);
+    }
 
     const importedItems = [];
     const errors = [];
 
     for (const item of validItems) {
       try {
+        console.log(`Importing smart link: ${item.title}`);
         const { data: smartLink, error: smartLinkError } = await supabaseClient
           .from('smart_links')
           .insert({
@@ -168,6 +195,7 @@ serve(async (req) => {
         if (platformLinksError) throw platformLinksError;
 
         importedItems.push(smartLink);
+        console.log(`Successfully imported: ${item.title}`);
       } catch (error) {
         console.error('Error importing item:', error);
         errors.push({
@@ -181,7 +209,8 @@ serve(async (req) => {
       JSON.stringify({
         success: importedItems.length,
         errors,
-        total: validItems.length
+        total: validItems.length,
+        invalidItems
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -190,7 +219,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
