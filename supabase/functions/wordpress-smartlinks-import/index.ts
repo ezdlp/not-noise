@@ -13,14 +13,135 @@ interface PlatformLink {
   url: string;
 }
 
+function unserializePhp(input: string): any {
+  const serializedStr = input.replace(/^s:\d+:"(.*?)";$/, '$1');
+  
+  function parseValue(): any {
+    if (serializedStr.startsWith('a:')) {
+      const match = serializedStr.match(/^a:(\d+):\{(.*)\}$/);
+      if (!match) return null;
+      
+      const [, count, content] = match;
+      const result: Record<string, any> = {};
+      let currentContent = content;
+      
+      for (let i = 0; i < parseInt(count); i++) {
+        const keyMatch = currentContent.match(/^s:\d+:"([^"]+)";/);
+        if (!keyMatch) break;
+        
+        const key = keyMatch[1];
+        currentContent = currentContent.slice(keyMatch[0].length);
+        
+        let valueMatch;
+        if (currentContent.startsWith('s:')) {
+          valueMatch = currentContent.match(/^s:\d+:"([^"]+)";/);
+          if (!valueMatch) break;
+          result[key] = valueMatch[1];
+          currentContent = currentContent.slice(valueMatch[0].length);
+        }
+      }
+      
+      return result;
+    }
+    return null;
+  }
+
+  return parseValue();
+}
+
 function extractCDATAContent(value: any): string {
   if (typeof value === 'string') {
     return value;
   }
   if (Array.isArray(value) && value.length > 0) {
-    return value[0];
+    const content = value[0];
+    // Handle CDATA sections which might be nested in arrays
+    if (typeof content === 'object' && content['#cdata'] !== undefined) {
+      return content['#cdata'];
+    }
+    return content;
+  }
+  if (typeof value === 'object' && value['#cdata'] !== undefined) {
+    return value['#cdata'];
   }
   return '';
+}
+
+function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
+  console.log('Parsing platform links from:', serializedLinks);
+  
+  try {
+    const unserialized = unserializePhp(serializedLinks);
+    console.log('Unserialized data:', unserialized);
+    
+    if (!unserialized) {
+      console.log('Failed to unserialize platform links');
+      return [];
+    }
+
+    const platformMapping: Record<string, string> = {
+      'spotify': 'spotify',
+      'apple': 'appleMusic',
+      'apple_music': 'appleMusic',
+      'amazon': 'amazonMusic',
+      'amazon_music': 'amazonMusic',
+      'youtube_music': 'youtubeMusic',
+      'youtube': 'youtube',
+      'deezer': 'deezer',
+      'soundcloud': 'soundcloud',
+      'itunes': 'itunes',
+      'tidal': 'tidal',
+      'anghami': 'anghami',
+      'napster': 'napster',
+      'boomplay': 'boomplay',
+      'yandex': 'yandex',
+      'beatport': 'beatport',
+      'bandcamp': 'bandcamp',
+      'audius': 'audius'
+    };
+
+    const platformDisplayNames: Record<string, string> = {
+      'spotify': 'Spotify',
+      'appleMusic': 'Apple Music',
+      'amazonMusic': 'Amazon Music',
+      'youtubeMusic': 'YouTube Music',
+      'youtube': 'YouTube',
+      'deezer': 'Deezer',
+      'soundcloud': 'SoundCloud',
+      'itunes': 'iTunes',
+      'tidal': 'Tidal',
+      'anghami': 'Anghami',
+      'napster': 'Napster',
+      'boomplay': 'Boomplay',
+      'yandex': 'Yandex Music',
+      'beatport': 'Beatport',
+      'bandcamp': 'Bandcamp',
+      'audius': 'Audius'
+    };
+
+    const links: PlatformLink[] = [];
+    
+    Object.entries(unserialized).forEach(([key, value]: [string, any]) => {
+      if (value && value.type && value.url) {
+        const platformId = platformMapping[value.type.toLowerCase()];
+        if (platformId) {
+          links.push({
+            platform_id: platformId,
+            platform_name: platformDisplayNames[platformId],
+            url: value.url
+          });
+          console.log(`Added platform link: ${platformId} -> ${value.url}`);
+        } else {
+          console.log(`Unknown platform type: ${value.type}`);
+        }
+      }
+    });
+
+    return links;
+  } catch (error) {
+    console.error('Error parsing platform links:', error);
+    return [];
+  }
 }
 
 serve(async (req) => {
