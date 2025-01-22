@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,11 +99,9 @@ serve(async (req) => {
         const title = item.querySelector('title')?.textContent || '';
         console.log(`Processing custom link: ${title}`);
 
-        // Find creator email from meta
         const creatorEmail = item.querySelector('dc\\:creator')?.textContent;
         console.log(`Found creator email: ${creatorEmail}`);
 
-        // Get user ID from profiles table
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('id')
@@ -117,7 +116,6 @@ serve(async (req) => {
 
         console.log(`Found matching user: ${userData.id}`);
 
-        // Process meta fields
         const metas = Array.from(item.querySelectorAll('wp\\:postmeta'));
         console.log(`Found ${metas.length} meta fields`);
 
@@ -129,16 +127,12 @@ serve(async (req) => {
           const key = meta.querySelector('wp\\:meta_key')?.textContent;
           const value = meta.querySelector('wp\\:meta_value')?.textContent;
 
-          console.log(`Processing meta: ${key}`);
-
           if (key === '_links' && value) {
             console.log('Found links meta value:', value);
             
-            // Clean and parse the serialized PHP string
             const cleanedStr = value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
             console.log('Cleaned string:', cleanedStr);
 
-            // Extract platform-URL pairs using regex
             const pairs = cleanedStr.match(/s:\d+:"([^"]+)"\s+s:\d+:"([^"]+)"/g) || [];
             console.log('Found pairs:', pairs);
 
@@ -153,9 +147,7 @@ serve(async (req) => {
             });
 
             console.log('Extracted platform links:', extractedLinks);
-            console.log('Final platform links:', extractedLinks);
 
-            // Map platforms and create platform links
             Object.entries(extractedLinks).forEach(([platform, url]) => {
               const mappedPlatformId = platformMapping[platform as keyof typeof platformMapping];
               if (mappedPlatformId && url) {
@@ -176,7 +168,6 @@ serve(async (req) => {
 
         console.log('Formatted platform links:', platformLinks);
 
-        // Insert smart link
         const { data: smartLink, error: insertError } = await supabase
           .from('smart_links')
           .insert({
@@ -192,7 +183,6 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
-        // Insert platform links
         if (platformLinks.length > 0) {
           const { error: platformError } = await supabase
             .from('platform_links')
