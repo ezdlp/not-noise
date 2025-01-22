@@ -13,6 +13,16 @@ interface PlatformLink {
   url: string;
 }
 
+function extractCDATAContent(value: any): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    return value[0];
+  }
+  return '';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -88,16 +98,17 @@ serve(async (req) => {
 
     for (const item of items) {
       try {
-        const title = item.title?.[0] || '';
+        const title = extractCDATAContent(item.title) || '';
         console.log(`Processing link: ${title}`);
 
-        const creatorEmail = item['dc:creator']?.[0];
+        const creatorEmail = extractCDATAContent(item['dc:creator']);
         if (!creatorEmail) {
           console.log('No creator email found, skipping');
           results.unassigned.push(title);
           continue;
         }
 
+        console.log(`Looking for user with email: ${creatorEmail}`);
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('id')
@@ -118,8 +129,8 @@ serve(async (req) => {
         let clickCount = 0;
 
         for (const meta of metas) {
-          const key = meta['wp:meta_key']?.[0];
-          const value = meta['wp:meta_value']?.[0];
+          const key = extractCDATAContent(meta['wp:meta_key']);
+          const value = extractCDATAContent(meta['wp:meta_value']);
 
           if (key === '_links' && value) {
             try {
@@ -160,7 +171,7 @@ serve(async (req) => {
             title,
             artist_name: artistName || 'Unknown Artist',
             artwork_url: artworkUrl || null,
-            slug: item['wp:post_name']?.[0] || undefined
+            slug: extractCDATAContent(item['wp:post_name']) || undefined
           })
           .select()
           .single();
@@ -221,7 +232,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error processing item:', error);
         results.errors.push({
-          link: item.title?.[0] || 'Unknown',
+          link: extractCDATAContent(item.title) || 'Unknown',
           error: error.message
         });
       }
