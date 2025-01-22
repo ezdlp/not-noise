@@ -17,15 +17,12 @@ interface ImportSummary {
 function parseSerializedPHPString(serialized: string): Record<string, string> {
   const links: Record<string, string> = {};
   
-  // Extract the serialized array content
   const match = serialized.match(/a:\d+:\{(.*?)\}/);
   if (!match) return links;
   
-  // Split into key-value pairs
   const pairs = match[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
   if (!pairs) return links;
   
-  // Process each pair
   pairs.forEach(pair => {
     const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
       s.replace(/s:\d+:"/, '').replace('";', '')
@@ -37,7 +34,6 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -54,7 +50,6 @@ serve(async (req) => {
     const fileContent = await file.text();
     console.log(`File content length: ${fileContent.length}`);
 
-    // Parse XML with fast-xml-parser
     const parser = new XMLParser({
       attributeNamePrefix: "@_",
       ignoreAttributes: false,
@@ -75,7 +70,6 @@ serve(async (req) => {
 
     console.log(`Found ${items.length} items to process`);
 
-    // Limit to 10 items for testing
     const itemsToProcess = items.slice(0, 10);
     console.log(`Processing first ${itemsToProcess.length} items for testing`);
 
@@ -91,6 +85,18 @@ serve(async (req) => {
       unassigned: [],
     };
 
+    // Platform mappings using snake_case for consistency with frontend
+    const platformMappings = {
+      spotify: { id: 'spotify', name: 'Spotify' },
+      appleMusic: { id: 'apple_music', name: 'Apple Music' },
+      amazonMusic: { id: 'amazon_music', name: 'Amazon Music' },
+      youtubeMusic: { id: 'youtube_music', name: 'YouTube Music' },
+      deezer: { id: 'deezer', name: 'Deezer' },
+      soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
+      youtube: { id: 'youtube', name: 'YouTube' },
+      itunes: { id: 'itunes', name: 'iTunes Store' },
+    };
+
     for (const item of itemsToProcess) {
       try {
         if (item["wp:post_type"] !== "custom_links") {
@@ -102,7 +108,6 @@ serve(async (req) => {
         const userEmail = item["dc:creator"];
         const slug = item["wp:post_name"];
         
-        // Find user by email in profiles table
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id')
@@ -115,7 +120,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Extract metadata from postmeta array
         const postmeta = Array.isArray(item["wp:postmeta"]) 
           ? item["wp:postmeta"] 
           : [item["wp:postmeta"]];
@@ -130,11 +134,9 @@ serve(async (req) => {
         const spotifyUrl = getMeta("_url") || "";
         const linksData = getMeta("_links") || "";
 
-        // Parse serialized PHP links data
         const platformLinks = parseSerializedPHPString(linksData);
         console.log("Parsed platform links:", platformLinks);
 
-        // Create smart link
         const { data: smartLink, error: smartLinkError } = await supabase
           .from('smart_links')
           .insert({
@@ -148,24 +150,23 @@ serve(async (req) => {
           .single();
 
         if (smartLinkError) {
+          console.error(`Error creating smart link for ${title}:`, smartLinkError);
           throw smartLinkError;
         }
 
-        // Create platform links
-        const platformMappings = {
-          spotify: { id: 'spotify', name: 'Spotify' },
-          appleMusic: { id: 'appleMusic', name: 'Apple Music' },
-          amazonMusic: { id: 'amazonMusic', name: 'Amazon Music' },
-          deezer: { id: 'deezer', name: 'Deezer' },
-          youtube: { id: 'youtube', name: 'YouTube' },
-          youtubeMusic: { id: 'youtubeMusic', name: 'YouTube Music' },
-          soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
-          itunes: { id: 'itunes', name: 'iTunes' },
-        };
+        console.log(`Created smart link with ID ${smartLink.id} for ${title}`);
 
+        // Create platform links with proper error handling
         for (const [platform, url] of Object.entries(platformLinks)) {
-          if (url && platformMappings[platform as keyof typeof platformMappings]) {
-            const mapping = platformMappings[platform as keyof typeof platformMappings];
+          if (!url) continue;
+
+          const mapping = platformMappings[platform as keyof typeof platformMappings];
+          if (!mapping) {
+            console.warn(`Unknown platform ${platform} for ${title}`);
+            continue;
+          }
+
+          try {
             const { error: platformLinkError } = await supabase
               .from('platform_links')
               .insert({
@@ -176,8 +177,12 @@ serve(async (req) => {
               });
 
             if (platformLinkError) {
-              console.error(`Error creating platform link for ${platform}:`, platformLinkError);
+              console.error(`Error creating platform link for ${platform} in ${title}:`, platformLinkError);
+            } else {
+              console.log(`Created platform link for ${platform} in ${title}`);
             }
+          } catch (error) {
+            console.error(`Failed to create platform link for ${platform} in ${title}:`, error);
           }
         }
 
