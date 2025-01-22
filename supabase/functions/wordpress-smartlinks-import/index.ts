@@ -10,13 +10,7 @@ const corsHeaders = {
 // Reduce chunk size to prevent memory issues
 const CHUNK_SIZE = 5;
 const DELAY_BETWEEN_CHUNKS = 1000; // 1 second delay between chunks
-
-interface ImportSummary {
-  total: number;
-  success: number;
-  errors: { link: string; error: string }[];
-  unassigned: string[];
-}
+const TEST_MODE_LIMIT = 10; // Limit for test mode
 
 const platformMappings: Record<string, { id: string; name: string }> = {
   spotify: { id: 'spotify', name: 'Spotify' },
@@ -37,6 +31,8 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
   const links: Record<string, string> = {};
   
   try {
+    console.log('Parsing PHP string:', serialized);
+    
     // Remove length indicators to simplify parsing
     const cleaned = serialized.replace(/s:\d+:/g, 's:');
     // Extract key-value pairs
@@ -48,6 +44,8 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
         links[key] = value;
       }
     }
+
+    console.log('Final parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
@@ -159,9 +157,13 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const isTestMode = formData.get('testMode') === 'true';
+    
     if (!file) {
       throw new Error('No file provided');
     }
+
+    console.log(`Starting import in ${isTestMode ? 'TEST' : 'PRODUCTION'} mode`);
 
     const fileContent = await file.text();
     const parser = new XMLParser({
@@ -176,9 +178,15 @@ serve(async (req) => {
       throw new Error("Invalid WordPress export file structure");
     }
 
-    const items = Array.isArray(result.rss.channel.item) 
+    let items = Array.isArray(result.rss.channel.item) 
       ? result.rss.channel.item 
       : [result.rss.channel.item];
+
+    // Limit items in test mode
+    if (isTestMode) {
+      console.log(`Test mode: limiting to ${TEST_MODE_LIMIT} items`);
+      items = items.slice(0, TEST_MODE_LIMIT);
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -195,6 +203,7 @@ serve(async (req) => {
     // Process items in smaller chunks with delays
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
+      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
       
       // Process items in chunk sequentially
       for (const item of chunk) {

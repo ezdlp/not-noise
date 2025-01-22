@@ -14,6 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface ImportSummary {
   total: number;
@@ -26,6 +28,7 @@ export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [testMode, setTestMode] = useState(true);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -37,6 +40,7 @@ export function ImportLinks() {
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('testMode', testMode.toString());
 
       const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
         body: formData,
@@ -69,17 +73,27 @@ export function ImportLinks() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          type="file"
-          accept=".xml"
-          onChange={handleFileUpload}
-          disabled={isImporting}
-          className="max-w-[300px]"
-        />
-        <Button disabled={isImporting} variant="outline" size="icon">
-          <Upload className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept=".xml"
+            onChange={handleFileUpload}
+            disabled={isImporting}
+            className="max-w-[300px]"
+          />
+          <Button disabled={isImporting} variant="outline" size="icon">
+            <Upload className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="test-mode"
+            checked={testMode}
+            onCheckedChange={setTestMode}
+          />
+          <Label htmlFor="test-mode">Test Mode (first 10 items only)</Label>
+        </div>
       </div>
 
       {isImporting && (
@@ -95,7 +109,7 @@ export function ImportLinks() {
         <Dialog open={!!summary} onOpenChange={() => setSummary(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Import Summary</DialogTitle>
+              <DialogTitle>Import Summary {testMode && "(Test Mode)"}</DialogTitle>
               <DialogDescription>
                 Results of the smart links import process
               </DialogDescription>
