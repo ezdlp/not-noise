@@ -22,12 +22,13 @@ serve(async (req) => {
     console.log("Starting import process...");
     const formData = await req.formData();
     const file = formData.get('file');
+    const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
 
-    console.log(`File received: ${file.name}`);
+    console.log(`File received: ${file.name}, Test mode: ${testMode}`);
     const text = await file.text();
     
     console.log("Parsing XML file...");
@@ -52,6 +53,7 @@ serve(async (req) => {
 
     const validItems = [];
     const invalidItems = [];
+    let processedCount = 0;
     
     for (const item of items) {
       try {
@@ -111,13 +113,16 @@ serve(async (req) => {
           const platformLinks = [];
           const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
           
-          console.log(`Processing ${postMeta.length} meta fields`);
+          console.log(`Found ${postMeta.length} meta fields for ${title}`);
           
           for (const meta of postMeta) {
             const metaKey = extractCData(meta['wp:meta_key']);
+            const metaValue = extractCData(meta['wp:meta_value']);
+            console.log(`Meta field: ${metaKey} = ${metaValue}`);
+            
             if (metaKey.startsWith('platform_')) {
               const platformId = metaKey.replace('platform_', '');
-              const url = extractCData(meta['wp:meta_value']);
+              const url = metaValue;
               if (url) {
                 platformLinks.push({
                   platform_id: platformId,
@@ -129,28 +134,31 @@ serve(async (req) => {
             }
           }
 
-          const validItem = {
-            title,
-            content: extractCData(item['content:encoded']),
-            artist_name: artistName,
-            artwork_url: artworkUrl,
-            user_id: userId,
-            platform_links: platformLinks
-          };
-
-          // Log validation details
           const validationIssues = [];
           if (!title) validationIssues.push('missing title');
           if (!userId) validationIssues.push('missing user_id');
-          if (!platformLinks.length) validationIssues.push('no platform links');
 
+          // Platform links are now optional
           if (validationIssues.length === 0) {
             console.log(`Valid item found: ${title}`);
-            validItems.push(validItem);
+            validItems.push({
+              title,
+              content: extractCData(item['content:encoded']),
+              artist_name: artistName,
+              artwork_url: artworkUrl,
+              user_id: userId,
+              platform_links: platformLinks
+            });
           } else {
             console.log(`Invalid item "${title}": ${validationIssues.join(', ')}`);
             invalidItems.push({ title, issues: validationIssues });
           }
+        }
+
+        processedCount++;
+        if (testMode && processedCount >= 10) {
+          console.log("Test mode: stopping after 10 items");
+          break;
         }
       } catch (error) {
         console.error('Error processing item:', error);
@@ -183,16 +191,18 @@ serve(async (req) => {
 
         if (smartLinkError) throw smartLinkError;
 
-        const platformLinksToInsert = item.platform_links.map(pl => ({
-          ...pl,
-          smart_link_id: smartLink.id
-        }));
+        if (item.platform_links.length > 0) {
+          const platformLinksToInsert = item.platform_links.map(pl => ({
+            ...pl,
+            smart_link_id: smartLink.id
+          }));
 
-        const { error: platformLinksError } = await supabaseClient
-          .from('platform_links')
-          .insert(platformLinksToInsert);
+          const { error: platformLinksError } = await supabaseClient
+            .from('platform_links')
+            .insert(platformLinksToInsert);
 
-        if (platformLinksError) throw platformLinksError;
+          if (platformLinksError) throw platformLinksError;
+        }
 
         importedItems.push(smartLink);
         console.log(`Successfully imported: ${item.title}`);
