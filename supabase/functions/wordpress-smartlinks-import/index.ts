@@ -15,19 +15,29 @@ const platformMappings = {
   'deezer': { id: 'deezer', name: 'Deezer' },
   'amazonMusic': { id: 'amazon_music', name: 'Amazon Music' },
   'youtube': { id: 'youtube', name: 'YouTube' },
+  'youtubeMusic': { id: 'youtube_music', name: 'YouTube Music' },
 };
 
-function isValidUrl(url: string): boolean {
-  if (!url) return false;
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+function extractCData(text: string): string {
+  const match = text.match(/<!\[CDATA\[(.*?)\]\]>/);
+  return match ? match[1].trim() : text.trim();
 }
 
-function parsePlatformLinks(input: string) {
+function getMetaValue(item: any, key: string): string | null {
+  if (!item['wp:postmeta']) return null;
+  
+  const postmeta = Array.isArray(item['wp:postmeta']) 
+    ? item['wp:postmeta'] 
+    : [item['wp:postmeta']];
+
+  const meta = postmeta.find((meta: any) => 
+    extractCData(meta['wp:meta_key']?.[0] || '') === key
+  );
+
+  return meta ? extractCData(meta['wp:meta_value']?.[0] || '') : null;
+}
+
+function parsePlatformLinks(input: string): Record<string, string> {
   console.log('Parsing platform links from:', input);
   
   if (!input) {
@@ -40,10 +50,10 @@ function parsePlatformLinks(input: string) {
   try {
     // Remove the string length prefix and array length prefix
     const cleanInput = input.replace(/^s:\d+:"/, '').replace(/^a:\d+:{/, '');
-    const pattern = /s:\d+:"([^"]+)";s:\d+:"([^"]*)"/g;
-    let match;
-
-    while ((match = pattern.exec(cleanInput)) !== null) {
+    
+    // Parse the serialized PHP array format
+    const matches = cleanInput.matchAll(/s:\d+:"([^"]+)";s:\d+:"([^"]*)"/g);
+    for (const match of matches) {
       const [, key, value] = match;
       if (key && value) {
         links[key] = value;
@@ -57,47 +67,34 @@ function parsePlatformLinks(input: string) {
   return links;
 }
 
-function extractPostMeta(item: any, metaKey: string): string | null {
-  if (!item['wp:postmeta']) return null;
-  
-  const postmeta = Array.isArray(item['wp:postmeta']) 
-    ? item['wp:postmeta'] 
-    : [item['wp:postmeta']];
-
-  const meta = postmeta.find((meta: any) => 
-    meta['wp:meta_key']?.[0] === metaKey
-  );
-
-  return meta?.['wp:meta_value']?.[0] || null;
-}
-
 async function processSmartLink(supabase: any, item: any, userId: string) {
-  if (!item || !userId) {
-    console.error('Invalid input:', { item: !!item, userId });
-    throw new Error('Invalid input for processing smart link');
-  }
-
   try {
-    console.log('Processing smart link:', item.title?.[0]);
+    console.log('Processing smart link:', extractCData(item.title?.[0] || ''));
     
-    const platformLinksData = extractPostMeta(item, '_links');
+    // Extract post type and verify it's a custom link
+    const postType = extractCData(item['wp:post_type']?.[0] || '');
+    console.log('Post type:', postType);
+    
+    if (postType !== 'custom_links') {
+      console.warn('Not a custom link post type:', postType);
+      return null;
+    }
+
+    // Extract metadata
+    const platformLinksData = getMetaValue(item, '_links');
     console.log('Raw platform links data:', platformLinksData);
 
     if (!platformLinksData) {
-      console.warn('No platform links found for:', item.title?.[0]);
-      throw new Error("No platform links found");
+      console.warn('No platform links found');
+      return null;
     }
 
     const links = parsePlatformLinks(platformLinksData);
     console.log('Parsed platform links:', links);
 
     const validPlatformLinks = [];
-
     for (const [platformKey, url] of Object.entries(links)) {
-      if (!url || !isValidUrl(url)) {
-        console.warn(`Invalid URL for platform ${platformKey}:`, url);
-        continue;
-      }
+      if (!url) continue;
 
       const mapping = platformMappings[platformKey as keyof typeof platformMappings];
       if (!mapping) {
@@ -113,20 +110,28 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
     }
 
     if (validPlatformLinks.length === 0) {
-      console.warn('No valid platform links found for:', item.title?.[0]);
-      throw new Error("No valid platform links found");
+      console.warn('No valid platform links found');
+      return null;
     }
 
-    const title = item.title?.[0] || 'Untitled';
-    const artistName = extractPostMeta(item, '_artist_name') || 'Unknown Artist';
-    const artworkUrl = extractPostMeta(item, '_default_image');
+    const title = extractCData(item.title?.[0] || '');
+    const artistName = getMetaValue(item, '_artist_name') || 'Unknown Artist';
+    const artworkUrl = getMetaValue(item, '_default_image');
+    const postName = extractCData(item['wp:post_name']?.[0] || '');
+    
+    // Meta pixel data
+    const metaPixelEnabled = getMetaValue(item, '_fb_pixel') === '1';
+    const metaPixelId = getMetaValue(item, '_fb_pixel_id');
+    const metaViewEvent = getMetaValue(item, '_fb_pixel_page_load_event');
+    const metaClickEvent = getMetaValue(item, '_fb_pixel_link_click_event');
 
-    const slug = item['wp:post_name']?.[0] || title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-    console.log('Creating smart link with:', { title, artistName, slug });
+    console.log('Creating smart link with:', { 
+      title, 
+      artistName, 
+      postName,
+      metaPixelEnabled,
+      platformCount: validPlatformLinks.length 
+    });
 
     const { data: smartLink, error: smartLinkError } = await supabase
       .from('smart_links')
@@ -135,7 +140,10 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
         artist_name: artistName,
         artwork_url: artworkUrl,
         user_id: userId,
-        slug: slug,
+        slug: postName,
+        meta_pixel_id: metaPixelEnabled ? metaPixelId : null,
+        meta_view_event: metaPixelEnabled ? metaViewEvent : null,
+        meta_click_event: metaPixelEnabled ? metaClickEvent : null,
       })
       .select()
       .single();
@@ -163,7 +171,7 @@ async function processSmartLink(supabase: any, item: any, userId: string) {
       throw platformLinksError;
     }
 
-    console.log('Platform links created for:', smartLink.id);
+    console.log('Platform links created:', platformLinksToInsert.length);
     return smartLink;
   } catch (error) {
     console.error("Error processing smart link:", error);
@@ -188,7 +196,6 @@ serve(async (req) => {
 
     console.log('File received:', file.name);
     const text = await file.text();
-    let items;
     
     console.log('Parsing XML file...');
     const xmlDoc = parse(text);
@@ -198,20 +205,20 @@ serve(async (req) => {
       throw new Error("Invalid WordPress export file structure");
     }
     
-    items = Array.isArray(xmlDoc.rss.channel.item) 
+    const items = Array.isArray(xmlDoc.rss.channel.item) 
       ? xmlDoc.rss.channel.item 
       : [xmlDoc.rss.channel.item];
-    
+
     // Filter only custom_links post types
-    items = items.filter((item: any) => {
-      const postType = item['wp:post_type']?.[0];
+    const smartLinkItems = items.filter((item: any) => {
+      const postType = extractCData(item['wp:post_type']?.[0] || '');
       console.log('Found post type:', postType);
       return postType === 'custom_links';
     });
 
-    console.log(`Found ${items.length} smart link items to process`);
+    console.log(`Found ${smartLinkItems.length} smart link items to process`);
 
-    if (!Array.isArray(items) || items.length === 0) {
+    if (smartLinkItems.length === 0) {
       throw new Error('No valid items found in the import file');
     }
 
@@ -231,7 +238,7 @@ serve(async (req) => {
       throw new Error('No admin user found');
     }
 
-    const limitedItems = testMode ? items.slice(0, 1) : items;
+    const limitedItems = testMode ? smartLinkItems.slice(0, 1) : smartLinkItems;
     console.log(`Processing ${limitedItems.length} items...`);
 
     const results = {
@@ -243,13 +250,15 @@ serve(async (req) => {
 
     for (const item of limitedItems) {
       try {
-        await processSmartLink(supabase, item, adminUser.user_id);
-        results.success++;
+        const smartLink = await processSmartLink(supabase, item, adminUser.user_id);
+        if (smartLink) {
+          results.success++;
+        }
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('Error processing item:', item.title?.[0], error);
+        console.error('Error processing item:', extractCData(item.title?.[0] || ''), error);
         results.errors.push({
-          link: item.title?.[0] || 'Untitled',
+          link: extractCData(item.title?.[0] || 'Untitled'),
           error: error.message,
         });
       }
