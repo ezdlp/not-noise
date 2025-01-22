@@ -94,6 +94,7 @@ export default function SmartLinks() {
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error("Error fetching smart links:", error);
         toast.error("Failed to load smart links");
         throw error;
       }
