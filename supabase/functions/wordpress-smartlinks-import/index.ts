@@ -32,31 +32,27 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
   try {
     console.log('Parsing PHP string:', serialized);
     
-    // Extract the array content between curly braces
-    const match = serialized.match(/a:\d+:{(.*?)}/);
-    if (!match) {
-      console.error('No array content found in PHP string');
+    // Extract the array content
+    const arrayMatch = serialized.match(/a:\d+:{(.+?)}/s);
+    if (!arrayMatch) {
+      console.error('No array content found');
       return links;
     }
 
-    const content = match[1];
-    // Split into key-value pairs
-    const pairs = content.split(/s:\d+:"[^"]*"/g).filter(Boolean);
+    const content = arrayMatch[1];
     
-    for (let i = 0; i < pairs.length; i += 2) {
-      const keyMatch = pairs[i].match(/"([^"]*)"/);
-      const valueMatch = pairs[i + 1]?.match(/"([^"]*)"/);
-      
-      if (keyMatch && valueMatch) {
-        const [, key] = keyMatch;
-        const [, value] = valueMatch;
-        if (value && value.trim() !== '') {
-          links[key] = value;
-        }
+    // Match key-value pairs using a more precise regex
+    const pairRegex = /s:\d+:"([^"]+)"\s*s:\d+:"([^"]*)"/g;
+    let match;
+    
+    while ((match = pairRegex.exec(content)) !== null) {
+      const [, key, value] = match;
+      if (value && value.trim() !== '') {
+        links[key] = value.trim();
       }
     }
 
-    console.log('Parsed links:', links);
+    console.log('Successfully parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
@@ -73,10 +69,15 @@ function validatePlatformLinks(links: Record<string, string>): boolean {
   const validLinks = Object.entries(links).filter(([platform, url]) => {
     const isValidPlatform = platformMappings[platform] || 
                            Object.values(platformMappings).some(m => m.id === platform);
-    const isValidUrl = url && url.length > 0 && (url.startsWith('http://') || url.startsWith('https://'));
+    const isValidUrl = url && url.trim().length > 0 && 
+                      (url.startsWith('http://') || url.startsWith('https://'));
     
-    console.log(`Platform: ${platform}, URL: ${url}`);
-    console.log(`Is valid platform: ${isValidPlatform}, Is valid URL: ${isValidUrl}`);
+    if (!isValidPlatform) {
+      console.log(`Invalid platform: ${platform}`);
+    }
+    if (!isValidUrl) {
+      console.log(`Invalid URL for ${platform}: ${url}`);
+    }
     
     return isValidPlatform && isValidUrl;
   });
