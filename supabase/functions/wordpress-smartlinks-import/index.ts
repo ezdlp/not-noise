@@ -14,23 +14,84 @@ interface ImportSummary {
   unassigned: string[];
 }
 
+// Platform mappings using snake_case to match our standardized IDs
+const platformMappings: Record<string, { id: string; name: string }> = {
+  spotify: { id: 'spotify', name: 'Spotify' },
+  apple_music: { id: 'apple_music', name: 'Apple Music' },
+  amazon_music: { id: 'amazon_music', name: 'Amazon Music' },
+  youtube_music: { id: 'youtube_music', name: 'YouTube Music' },
+  deezer: { id: 'deezer', name: 'Deezer' },
+  soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
+  youtube: { id: 'youtube', name: 'YouTube' },
+  itunes: { id: 'itunes', name: 'iTunes Store' },
+  // WordPress specific mappings
+  appleMusic: { id: 'apple_music', name: 'Apple Music' },
+  amazonMusic: { id: 'amazon_music', name: 'Amazon Music' },
+  youtubeMusic: { id: 'youtube_music', name: 'YouTube Music' },
+};
+
 function parseSerializedPHPString(serialized: string): Record<string, string> {
+  console.log('Parsing PHP string:', serialized);
   const links: Record<string, string> = {};
   
-  const match = serialized.match(/a:\d+:\{(.*?)\}/);
-  if (!match) return links;
+  try {
+    // Handle both serialized arrays and plain JSON
+    if (serialized.startsWith('a:')) {
+      const match = serialized.match(/a:\d+:\{(.*?)\}/);
+      if (!match) {
+        console.log('No match found in serialized string');
+        return links;
+      }
+      
+      const pairs = match[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
+      if (!pairs) {
+        console.log('No pairs found in match');
+        return links;
+      }
+      
+      pairs.forEach(pair => {
+        const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
+          s.replace(/s:\d+:"/, '').replace('";', '')
+        ) || [];
+        if (key && value) {
+          console.log(`Found pair: ${key} -> ${value}`);
+          links[key] = value;
+        }
+      });
+    } else {
+      // Try parsing as JSON
+      try {
+        const jsonLinks = JSON.parse(serialized);
+        Object.assign(links, jsonLinks);
+        console.log('Parsed as JSON:', links);
+      } catch (e) {
+        console.error('Failed to parse as JSON:', e);
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing PHP string:', error);
+  }
   
-  const pairs = match[1].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g);
-  if (!pairs) return links;
-  
-  pairs.forEach(pair => {
-    const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
-      s.replace(/s:\d+:"/, '').replace('";', '')
-    ) || [];
-    if (key && value) links[key] = value;
-  });
-  
+  console.log('Final parsed links:', links);
   return links;
+}
+
+function validatePlatformLinks(links: Record<string, string>): boolean {
+  if (Object.keys(links).length === 0) {
+    console.log('No platform links found');
+    return false;
+  }
+
+  let hasValidLink = false;
+  for (const [platform, url] of Object.entries(links)) {
+    if (url && (platformMappings[platform] || Object.values(platformMappings).some(m => m.id === platform))) {
+      hasValidLink = true;
+      break;
+    }
+  }
+
+  console.log('Platform links validation result:', hasValidLink);
+  return hasValidLink;
 }
 
 serve(async (req) => {
@@ -70,34 +131,19 @@ serve(async (req) => {
 
     console.log(`Found ${items.length} items to process`);
 
-    const itemsToProcess = items.slice(0, 10);
-    console.log(`Processing first ${itemsToProcess.length} items for testing`);
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const summary: ImportSummary = {
-      total: itemsToProcess.length,
+      total: items.length,
       success: 0,
       errors: [],
       unassigned: [],
     };
 
-    // Platform mappings using snake_case for consistency with frontend
-    const platformMappings = {
-      spotify: { id: 'spotify', name: 'Spotify' },
-      appleMusic: { id: 'apple_music', name: 'Apple Music' },
-      amazonMusic: { id: 'amazon_music', name: 'Amazon Music' },
-      youtubeMusic: { id: 'youtube_music', name: 'YouTube Music' },
-      deezer: { id: 'deezer', name: 'Deezer' },
-      soundcloud: { id: 'soundcloud', name: 'SoundCloud' },
-      youtube: { id: 'youtube', name: 'YouTube' },
-      itunes: { id: 'itunes', name: 'iTunes Store' },
-    };
-
-    for (const item of itemsToProcess) {
+    for (const item of items) {
       try {
         if (item["wp:post_type"] !== "custom_links") {
           console.log(`Skipping non-custom_links post type: ${item["wp:post_type"]}`);
@@ -131,11 +177,14 @@ serve(async (req) => {
 
         const artistName = getMeta("_artist_name") || "";
         const artworkUrl = getMeta("_default_image") || "";
-        const spotifyUrl = getMeta("_url") || "";
         const linksData = getMeta("_links") || "";
 
         const platformLinks = parseSerializedPHPString(linksData);
         console.log("Parsed platform links:", platformLinks);
+
+        if (!validatePlatformLinks(platformLinks)) {
+          throw new Error("No valid platform links found");
+        }
 
         const { data: smartLink, error: smartLinkError } = await supabase
           .from('smart_links')
@@ -156,11 +205,17 @@ serve(async (req) => {
 
         console.log(`Created smart link with ID ${smartLink.id} for ${title}`);
 
-        // Create platform links with proper error handling
+        // Create platform links with proper mapping and error handling
         for (const [platform, url] of Object.entries(platformLinks)) {
           if (!url) continue;
 
-          const mapping = platformMappings[platform as keyof typeof platformMappings];
+          // Find the correct platform mapping
+          let mapping = platformMappings[platform];
+          if (!mapping) {
+            // Try to find by ID in case the platform key is already in our format
+            mapping = Object.values(platformMappings).find(m => m.id === platform);
+          }
+
           if (!mapping) {
             console.warn(`Unknown platform ${platform} for ${title}`);
             continue;
