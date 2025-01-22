@@ -49,18 +49,27 @@ export function ImportLinks() {
       if (error) throw error;
 
       setProgress(100);
-      setSummary(data as ImportSummary);
 
-      if (data.success > 0) {
-        toast.success(`Successfully imported ${data.success} smart links`);
+      // Ensure data has the expected structure with default values
+      const processedData: ImportSummary = {
+        total: data?.total ?? 0,
+        success: data?.success ?? 0,
+        errors: Array.isArray(data?.errors) ? data.errors : [],
+        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+      };
+
+      setSummary(processedData);
+
+      if (processedData.success > 0) {
+        toast.success(`Successfully imported ${processedData.success} smart links`);
       }
 
-      if (data.errors.length > 0) {
-        toast.error(`Failed to import ${data.errors.length} smart links`);
+      if (processedData.errors.length > 0) {
+        toast.error(`Failed to import ${processedData.errors.length} smart links`);
       }
 
-      if (data.unassigned.length > 0) {
-        toast.warning(`${data.unassigned.length} smart links were unassigned`);
+      if (processedData.unassigned.length > 0) {
+        toast.warning(`${processedData.unassigned.length} smart links were unassigned`);
       }
     } catch (error) {
       console.error("Error importing smart links:", error);
