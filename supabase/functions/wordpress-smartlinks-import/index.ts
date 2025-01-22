@@ -124,6 +124,8 @@ serve(async (req) => {
         const platformLinks: PlatformLink[] = [];
         let artistName = '';
         let artworkUrl = '';
+        let viewCount = 0;
+        let clickCount = 0;
 
         for (const meta of metas) {
           const key = meta['wp:meta_key']?.[0];
@@ -158,6 +160,12 @@ serve(async (req) => {
           } else if (key === '_default_image' && value) {
             artworkUrl = value;
             console.log(`Found artwork URL: ${artworkUrl}`);
+          } else if (key === '_link_views' && value) {
+            viewCount = parseInt(value) || 0;
+            console.log(`Found view count: ${viewCount}`);
+          } else if (key === '_link_clicks' && value) {
+            clickCount = parseInt(value) || 0;
+            console.log(`Found click count: ${clickCount}`);
           }
         }
 
@@ -169,7 +177,8 @@ serve(async (req) => {
             user_id: userData.id,
             title,
             artist_name: artistName || 'Unknown Artist',
-            artwork_url: artworkUrl || null
+            artwork_url: artworkUrl || null,
+            slug: item['wp:post_name']?.[0] || undefined
           })
           .select()
           .single();
@@ -178,8 +187,23 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
+        // Insert historical view count
+        if (viewCount > 0) {
+          const { error: viewError } = await supabase
+            .from('link_views')
+            .insert({
+              smart_link_id: smartLink.id,
+              viewed_at: new Date().toISOString(),
+              user_agent: 'Imported from WordPress',
+            });
+
+          if (viewError) {
+            console.error('Error recording historical views:', viewError);
+          }
+        }
+
         if (platformLinks.length > 0) {
-          const { error: platformError } = await supabase
+          const { data: insertedPlatformLinks, error: platformError } = await supabase
             .from('platform_links')
             .insert(
               platformLinks.map(pl => ({
@@ -188,10 +212,26 @@ serve(async (req) => {
                 platform_name: pl.platform_name,
                 url: pl.url
               }))
-            );
+            )
+            .select();
 
           if (platformError) {
             throw new Error(`Failed to insert platform links: ${platformError.message}`);
+          }
+
+          // Insert historical click count on the first platform link
+          if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
+            const { error: clickError } = await supabase
+              .from('platform_clicks')
+              .insert({
+                platform_link_id: insertedPlatformLinks[0].id,
+                clicked_at: new Date().toISOString(),
+                user_agent: 'Imported from WordPress',
+              });
+
+            if (clickError) {
+              console.error('Error recording historical clicks:', clickError);
+            }
           }
         }
 
