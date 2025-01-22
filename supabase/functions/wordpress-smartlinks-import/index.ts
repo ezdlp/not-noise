@@ -14,58 +14,67 @@ interface PlatformLink {
 }
 
 function unserializePhp(input: string): any {
-  const serializedStr = input.replace(/^s:\d+:"(.*?)";$/, '$1');
-  
-  function parseValue(): any {
-    if (serializedStr.startsWith('a:')) {
-      const match = serializedStr.match(/^a:(\d+):\{(.*)\}$/);
-      if (!match) return null;
-      
-      const [, count, content] = match;
-      const result: Record<string, any> = {};
-      let currentContent = content;
-      
-      for (let i = 0; i < parseInt(count); i++) {
-        const keyMatch = currentContent.match(/^s:\d+:"([^"]+)";/);
-        if (!keyMatch) break;
-        
-        const key = keyMatch[1];
-        currentContent = currentContent.slice(keyMatch[0].length);
-        
-        let valueMatch;
-        if (currentContent.startsWith('s:')) {
-          valueMatch = currentContent.match(/^s:\d+:"([^"]+)";/);
-          if (!valueMatch) break;
-          result[key] = valueMatch[1];
-          currentContent = currentContent.slice(valueMatch[0].length);
-        }
-      }
-      
-      return result;
-    }
-    return null;
+  let position = 0;
+
+  function readLength(): number {
+    const colonPos = input.indexOf(':', position);
+    const length = parseInt(input.slice(position, colonPos));
+    position = colonPos + 1;
+    return length;
   }
 
-  return parseValue();
+  function readString(): string {
+    const length = readLength();
+    const str = input.slice(position + 1, position + length + 1);
+    position += length + 3; // Skip quotes and semicolon
+    return str;
+  }
+
+  function readArray(): any {
+    const length = readLength();
+    position += 1; // Skip {
+    const result: any = {};
+    
+    for (let i = 0; i < length; i++) {
+      const key = readValue();
+      const value = readValue();
+      result[key] = value;
+    }
+    
+    position += 1; // Skip }
+    return result;
+  }
+
+  function readValue(): any {
+    const type = input[position];
+    position += 2; // Skip type and :
+    
+    switch (type) {
+      case 'i':
+        const num = parseInt(input.slice(position, input.indexOf(';', position)));
+        position = input.indexOf(';', position) + 1;
+        return num;
+      case 's':
+        return readString();
+      case 'a':
+        return readArray();
+      default:
+        throw new Error(`Unknown type: ${type}`);
+    }
+  }
+
+  return readValue();
 }
 
 function extractCDATAContent(value: any): string {
-  // Handle null/undefined case
-  if (!value) {
-    return '';
-  }
-
-  // Handle direct string value
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  // Handle array case
+  if (!value) return '';
+  
+  if (typeof value === 'string') return value;
+  
   if (Array.isArray(value)) {
     if (value.length === 0) return '';
     const firstItem = value[0];
     
-    // Handle nested CDATA in array
     if (typeof firstItem === 'object') {
       if (firstItem['#cdata']) return firstItem['#cdata'];
       if (firstItem['#text']) return firstItem['#text'];
@@ -74,14 +83,13 @@ function extractCDATAContent(value: any): string {
     
     return firstItem;
   }
-
-  // Handle object with CDATA
+  
   if (typeof value === 'object') {
     if (value['#cdata']) return value['#cdata'];
     if (value['#text']) return value['#text'];
     if (value.toString) return value.toString();
   }
-
+  
   return '';
 }
 
@@ -89,13 +97,15 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   console.log('Parsing platform links from:', serializedLinks);
   
   try {
-    const unserialized = unserializePhp(serializedLinks);
-    console.log('Unserialized data:', unserialized);
-    
-    if (!unserialized) {
-      console.log('Failed to unserialize platform links');
-      return [];
-    }
+    // Clean up the input string
+    const cleanedStr = serializedLinks
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      .trim();
+
+    // Parse the PHP serialized data
+    const unserialized = unserializePhp(cleanedStr);
+    console.log('Unserialized platform links:', JSON.stringify(unserialized, null, 2));
 
     const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
@@ -139,18 +149,24 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 
     const links: PlatformLink[] = [];
     
-    Object.entries(unserialized).forEach(([key, value]: [string, any]) => {
-      if (value && value.type && value.url) {
-        const platformId = platformMapping[value.type.toLowerCase()];
-        if (platformId) {
-          links.push({
-            platform_id: platformId,
-            platform_name: platformDisplayNames[platformId],
-            url: value.url
-          });
-          console.log(`Added platform link: ${platformId} -> ${value.url}`);
-        } else {
-          console.log(`Unknown platform type: ${value.type}`);
+    // Handle array of platform links
+    Object.values(unserialized).forEach((platform: any) => {
+      if (platform && typeof platform === 'object') {
+        const type = platform.type?.toLowerCase();
+        const url = platform.url;
+        
+        if (type && url && url.trim() !== '') {
+          const platformId = platformMapping[type];
+          if (platformId) {
+            links.push({
+              platform_id: platformId,
+              platform_name: platformDisplayNames[platformId],
+              url: url.trim()
+            });
+            console.log(`Added platform link: ${platformId} -> ${url}`);
+          } else {
+            console.log(`Unknown platform type: ${type}`);
+          }
         }
       }
     });
@@ -158,6 +174,7 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
+    console.error('Original input:', serializedLinks);
     return [];
   }
 }
@@ -185,44 +202,6 @@ serve(async (req) => {
 
     const items = xmlDoc.rss.channel.item || [];
     console.log(`Found ${items.length} items in XML`);
-
-    const platformMapping: Record<string, string> = {
-      'spotify': 'spotify',
-      'apple_music': 'appleMusic',
-      'amazon_music': 'amazonMusic',
-      'youtube_music': 'youtubeMusic',
-      'deezer': 'deezer',
-      'soundcloud': 'soundcloud',
-      'youtube': 'youtube',
-      'itunes': 'itunes',
-      'tidal': 'tidal',
-      'anghami': 'anghami',
-      'napster': 'napster',
-      'boomplay': 'boomplay',
-      'yandex': 'yandex',
-      'beatport': 'beatport',
-      'bandcamp': 'bandcamp',
-      'audius': 'audius'
-    };
-
-    const platformDisplayNames: Record<string, string> = {
-      'spotify': 'Spotify',
-      'appleMusic': 'Apple Music',
-      'amazonMusic': 'Amazon Music',
-      'youtubeMusic': 'YouTube Music',
-      'youtube': 'YouTube',
-      'deezer': 'Deezer',
-      'soundcloud': 'SoundCloud',
-      'itunes': 'iTunes',
-      'tidal': 'Tidal',
-      'anghami': 'Anghami',
-      'napster': 'Napster',
-      'boomplay': 'Boomplay',
-      'yandex': 'Yandex Music',
-      'beatport': 'Beatport',
-      'bandcamp': 'Bandcamp',
-      'audius': 'Audius'
-    };
 
     const results = {
       total: items.length,
@@ -261,37 +240,18 @@ serve(async (req) => {
         }
 
         const metas = item['wp:postmeta'] || [];
-        const platformLinks: PlatformLink[] = [];
         let artistName = '';
         let artworkUrl = '';
         let viewCount = 0;
         let clickCount = 0;
+        let platformLinksData = null;
 
         for (const meta of metas) {
           const key = extractCDATAContent(meta['wp:meta_key']);
           const value = extractCDATAContent(meta['wp:meta_value']);
 
           if (key === '_links' && value) {
-            try {
-              const cleanedStr = value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-              const matches = cleanedStr.match(/s:\d+:"([^"]+)"\s*s:\d+:"([^"]+)"/g) || [];
-              
-              matches.forEach(match => {
-                const [platform, url] = match.match(/:"([^"]+)"/g)?.map(s => s.slice(2, -1)) || [];
-                if (platform && url && url.trim() !== '') {
-                  const mappedPlatformId = platformMapping[platform];
-                  if (mappedPlatformId) {
-                    platformLinks.push({
-                      platform_id: mappedPlatformId,
-                      platform_name: platformDisplayNames[mappedPlatformId],
-                      url: url.trim()
-                    });
-                  }
-                }
-              });
-            } catch (error) {
-              console.error('Error parsing platform links:', error);
-            }
+            platformLinksData = value;
           } else if (key === '_artist_name' && value) {
             artistName = value;
           } else if (key === '_default_image' && value) {
@@ -333,34 +293,40 @@ serve(async (req) => {
           }
         }
 
-        if (platformLinks.length > 0) {
-          const { data: insertedPlatformLinks, error: platformError } = await supabase
-            .from('platform_links')
-            .insert(
-              platformLinks.map(pl => ({
-                smart_link_id: smartLink.id,
-                platform_id: pl.platform_id,
-                platform_name: pl.platform_name,
-                url: pl.url
-              }))
-            )
-            .select();
+        if (platformLinksData) {
+          console.log('Processing platform links data:', platformLinksData);
+          const platformLinks = parsePlatformLinks(platformLinksData);
+          console.log('Parsed platform links:', platformLinks);
 
-          if (platformError) {
-            throw new Error(`Failed to insert platform links: ${platformError.message}`);
-          }
+          if (platformLinks.length > 0) {
+            const { data: insertedPlatformLinks, error: platformError } = await supabase
+              .from('platform_links')
+              .insert(
+                platformLinks.map(pl => ({
+                  smart_link_id: smartLink.id,
+                  platform_id: pl.platform_id,
+                  platform_name: pl.platform_name,
+                  url: pl.url
+                }))
+              )
+              .select();
 
-          if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
-            const { error: clickError } = await supabase
-              .from('platform_clicks')
-              .insert({
-                platform_link_id: insertedPlatformLinks[0].id,
-                clicked_at: new Date().toISOString(),
-                user_agent: 'Imported from WordPress',
-              });
+            if (platformError) {
+              throw new Error(`Failed to insert platform links: ${platformError.message}`);
+            }
 
-            if (clickError) {
-              console.error('Error recording historical clicks:', clickError);
+            if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
+              const { error: clickError } = await supabase
+                .from('platform_clicks')
+                .insert({
+                  platform_link_id: insertedPlatformLinks[0].id,
+                  clicked_at: new Date().toISOString(),
+                  user_agent: 'Imported from WordPress',
+                });
+
+              if (clickError) {
+                console.error('Error recording historical clicks:', clickError);
+              }
             }
           }
         }
