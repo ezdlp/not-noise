@@ -7,6 +7,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function unserializePhpArray(serialized: string): Record<string, string> {
+  try {
+    // Remove the outer quotes and length indicator
+    const cleaned = serialized.replace(/^s:\d+:"(.*?)";$/, '$1');
+    
+    // Extract the array part
+    const arrayMatch = cleaned.match(/^a:(\d+):{(.+)}$/);
+    if (!arrayMatch) return {};
+    
+    const pairs = arrayMatch[2].match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g) || [];
+    const result: Record<string, string> = {};
+    
+    pairs.forEach(pair => {
+      const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
+        s.replace(/^s:\d+:"(.*?)";$/, '$1')
+      ) || [];
+      if (key && value) {
+        result[key] = value;
+      }
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error unserializing PHP array:', error);
+    return {};
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -102,57 +130,46 @@ serve(async (req) => {
             console.log(`Using admin user as fallback: ${userId}`);
           }
 
-          const artistName = extractCData(item['wp:postmeta']?.find((meta: any) => 
-            extractCData(meta['wp:meta_key']) === 'artist_name'
-          )?.['wp:meta_value']) || 'Unknown Artist';
-
-          const artworkUrl = extractCData(item['wp:postmeta']?.find((meta: any) => 
-            extractCData(meta['wp:meta_key']) === 'artwork_url'
-          )?.['wp:meta_value']);
-
-          const platformLinks = [];
           const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']];
-          
-          console.log(`Found ${postMeta.length} meta fields for ${title}`);
-          
+          console.log(`Found ${postMeta.length} meta fields`);
+
+          // Extract metadata
+          let artistName = 'Unknown Artist';
+          let artworkUrl = '';
+          let platformLinks: Record<string, string> = {};
+
           for (const meta of postMeta) {
             const metaKey = extractCData(meta['wp:meta_key']);
             const metaValue = extractCData(meta['wp:meta_value']);
-            console.log(`Meta field: ${metaKey} = ${metaValue}`);
-            
-            if (metaKey.startsWith('platform_')) {
-              const platformId = metaKey.replace('platform_', '');
-              const url = metaValue;
-              if (url) {
-                platformLinks.push({
-                  platform_id: platformId,
-                  platform_name: platformId.charAt(0).toUpperCase() + platformId.slice(1),
-                  url
-                });
-                console.log(`Found platform link: ${platformId} -> ${url}`);
-              }
+            console.log(`Processing meta: ${metaKey} = ${metaValue}`);
+
+            if (metaKey === '_artist_name') {
+              artistName = metaValue || artistName;
+            } else if (metaKey === '_default_image') {
+              artworkUrl = metaValue || '';
+            } else if (metaKey === '_links' && metaValue) {
+              platformLinks = unserializePhpArray(metaValue);
+              console.log('Extracted platform links:', platformLinks);
             }
           }
 
-          const validationIssues = [];
-          if (!title) validationIssues.push('missing title');
-          if (!userId) validationIssues.push('missing user_id');
+          // Convert platform links to our format
+          const formattedPlatformLinks = Object.entries(platformLinks).map(([platform, url]) => ({
+            platform_id: platform.toLowerCase(),
+            platform_name: platform.charAt(0).toUpperCase() + platform.slice(1),
+            url
+          }));
 
-          // Platform links are now optional
-          if (validationIssues.length === 0) {
-            console.log(`Valid item found: ${title}`);
-            validItems.push({
-              title,
-              content: extractCData(item['content:encoded']),
-              artist_name: artistName,
-              artwork_url: artworkUrl,
-              user_id: userId,
-              platform_links: platformLinks
-            });
-          } else {
-            console.log(`Invalid item "${title}": ${validationIssues.join(', ')}`);
-            invalidItems.push({ title, issues: validationIssues });
-          }
+          console.log('Formatted platform links:', formattedPlatformLinks);
+
+          validItems.push({
+            title,
+            artist_name: artistName,
+            artwork_url: artworkUrl,
+            user_id: userId,
+            platform_links: formattedPlatformLinks
+          });
+          console.log(`Successfully processed item: ${title}`);
         }
 
         processedCount++;
