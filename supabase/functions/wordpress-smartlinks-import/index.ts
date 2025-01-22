@@ -7,10 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Reduce chunk size to prevent memory issues
 const CHUNK_SIZE = 5;
-const DELAY_BETWEEN_CHUNKS = 1000; // 1 second delay between chunks
-const TEST_MODE_LIMIT = 10; // Limit for test mode
+const DELAY_BETWEEN_CHUNKS = 1000;
+const TEST_MODE_LIMIT = 10;
 
 const platformMappings: Record<string, { id: string; name: string }> = {
   spotify: { id: 'spotify', name: 'Spotify' },
@@ -33,19 +32,31 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
   try {
     console.log('Parsing PHP string:', serialized);
     
-    // Remove length indicators to simplify parsing
-    const cleaned = serialized.replace(/s:\d+:/g, 's:');
-    // Extract key-value pairs
-    const matches = cleaned.matchAll(/s:"([^"]+)"\s*s:"([^"]*)"/g);
+    // Extract the array content between curly braces
+    const match = serialized.match(/a:\d+:{(.*?)}/);
+    if (!match) {
+      console.error('No array content found in PHP string');
+      return links;
+    }
+
+    const content = match[1];
+    // Split into key-value pairs
+    const pairs = content.split(/s:\d+:"[^"]*"/g).filter(Boolean);
     
-    for (const match of matches) {
-      const [, key, value] = match;
-      if (key && value !== undefined) {
-        links[key] = value;
+    for (let i = 0; i < pairs.length; i += 2) {
+      const keyMatch = pairs[i].match(/"([^"]*)"/);
+      const valueMatch = pairs[i + 1]?.match(/"([^"]*)"/);
+      
+      if (keyMatch && valueMatch) {
+        const [, key] = keyMatch;
+        const [, value] = valueMatch;
+        if (value && value.trim() !== '') {
+          links[key] = value;
+        }
       }
     }
 
-    console.log('Final parsed links:', links);
+    console.log('Parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
@@ -55,14 +66,23 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 
 function validatePlatformLinks(links: Record<string, string>): boolean {
   if (!links || Object.keys(links).length === 0) {
+    console.log('No links found in object');
     return false;
   }
 
-  return Object.entries(links).some(([platform, url]) => {
-    return url && url.length > 0 && 
-           (platformMappings[platform] || 
-            Object.values(platformMappings).some(m => m.id === platform));
+  const validLinks = Object.entries(links).filter(([platform, url]) => {
+    const isValidPlatform = platformMappings[platform] || 
+                           Object.values(platformMappings).some(m => m.id === platform);
+    const isValidUrl = url && url.length > 0 && (url.startsWith('http://') || url.startsWith('https://'));
+    
+    console.log(`Platform: ${platform}, URL: ${url}`);
+    console.log(`Is valid platform: ${isValidPlatform}, Is valid URL: ${isValidUrl}`);
+    
+    return isValidPlatform && isValidUrl;
   });
+
+  console.log(`Found ${validLinks.length} valid links`);
+  return validLinks.length > 0;
 }
 
 async function processItem(
@@ -182,7 +202,6 @@ serve(async (req) => {
       ? result.rss.channel.item 
       : [result.rss.channel.item];
 
-    // Limit items in test mode
     if (isTestMode) {
       console.log(`Test mode: limiting to ${TEST_MODE_LIMIT} items`);
       items = items.slice(0, TEST_MODE_LIMIT);
@@ -200,17 +219,14 @@ serve(async (req) => {
       unassigned: [],
     };
 
-    // Process items in smaller chunks with delays
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
       console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
       
-      // Process items in chunk sequentially
       for (const item of chunk) {
         await processItem(item, supabase, summary);
       }
       
-      // Add delay between chunks
       if (i + CHUNK_SIZE < items.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CHUNKS));
       }
