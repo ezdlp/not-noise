@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const CHUNK_SIZE = 10; // Process items in smaller chunks
+const CHUNK_SIZE = 10;
 
 interface ImportSummary {
   total: number;
@@ -32,27 +32,33 @@ const platformMappings: Record<string, { id: string; name: string }> = {
 };
 
 function parseSerializedPHPString(serialized: string): Record<string, string> {
-  console.log('Parsing PHP string length:', serialized.length);
+  console.log('Parsing PHP string:', serialized);
   const links: Record<string, string> = {};
   
   try {
-    if (serialized.startsWith('a:')) {
-      const pairs = serialized.match(/s:\d+:"([^"]+)";s:\d+:"([^"]+)";/g) || [];
-      for (const pair of pairs) {
-        const [key, value] = pair.match(/s:\d+:"([^"]+)";/g)?.map(s => 
-          s.replace(/s:\d+:"/, '').replace('";', '')
-        ) || [];
-        if (key && value) {
+    // Extract the array length from a:7:{...}
+    const arrayMatch = serialized.match(/a:(\d+):\{(.*)\}/);
+    if (!arrayMatch) return links;
+    
+    const content = arrayMatch[2];
+    // Split into key-value pairs
+    const pairs = content.split(/(?<="}|")\s+(?=s:)/);
+    
+    for (const pair of pairs) {
+      // Extract key and value using regex
+      const keyMatch = pair.match(/s:\d+:"([^"]+)"/);
+      const valueMatch = pair.match(/s:\d+:"([^"]*)"/g);
+      
+      if (keyMatch && valueMatch && valueMatch.length > 1) {
+        const key = keyMatch[1];
+        const value = valueMatch[1].replace(/^s:\d+:"/, '').replace(/"$/, '');
+        if (key && value !== undefined) {
           links[key] = value;
         }
       }
-    } else {
-      try {
-        Object.assign(links, JSON.parse(serialized));
-      } catch (e) {
-        console.error('Failed to parse as JSON:', e);
-      }
     }
+    
+    console.log('Final parsed links:', links);
   } catch (error) {
     console.error('Error parsing PHP string:', error);
   }
@@ -61,11 +67,23 @@ function parseSerializedPHPString(serialized: string): Record<string, string> {
 }
 
 function validatePlatformLinks(links: Record<string, string>): boolean {
-  if (Object.keys(links).length === 0) return false;
+  if (!links || Object.keys(links).length === 0) {
+    console.log('No platform links found');
+    return false;
+  }
 
-  return Object.entries(links).some(([platform, url]) => 
-    url && (platformMappings[platform] || Object.values(platformMappings).some(m => m.id === platform))
-  );
+  const hasValidLinks = Object.entries(links).some(([platform, url]) => {
+    const isValid = url && url.length > 0 && 
+                   (platformMappings[platform] || 
+                    Object.values(platformMappings).some(m => m.id === platform));
+    if (isValid) {
+      console.log(`Found valid link for platform ${platform}: ${url}`);
+    }
+    return isValid;
+  });
+
+  console.log(`Platform links validation result: ${hasValidLinks}`);
+  return hasValidLinks;
 }
 
 async function processItemChunk(
