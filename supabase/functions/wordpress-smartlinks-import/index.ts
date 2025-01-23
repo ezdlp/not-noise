@@ -207,12 +207,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    // Create regular client for user-level operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') as string,
-      Deno.env.get('SUPABASE_ANON_KEY') as string
-    );
-
     for (const item of items) {
       try {
         const title = extractCDATAContent(item.title) || '';
@@ -257,7 +251,7 @@ serve(async (req) => {
           }
         }
 
-        // Create smart link using admin client
+        // Create smart link using admin client and get the inserted record
         const { data: smartLink, error: insertError } = await supabaseAdmin
           .from('smart_links')
           .insert({
@@ -289,7 +283,6 @@ serve(async (req) => {
 
             console.log('Attempting to insert platform links:', platformLinksWithId);
 
-            // Use admin client for platform links insertion
             const { error: platformError } = await supabaseAdmin
               .from('platform_links')
               .insert(platformLinksWithId);
