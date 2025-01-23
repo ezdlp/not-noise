@@ -58,47 +58,34 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   console.log('Starting platform links parsing with input:', serializedLinks);
   
   try {
-    // First, handle the outer string serialization (s:425:"...")
-    const outerMatch = serializedLinks.match(/^s:(\d+):"(.*)"$/);
-    if (!outerMatch) {
-      console.error('Invalid outer serialization format');
-      throw new Error('Invalid outer serialization format');
-    }
-
-    const [, lengthStr, innerContent] = outerMatch;
-    console.log('Parsed outer serialization:', { declaredLength: lengthStr, actualLength: innerContent.length });
-
-    // Parse the inner array serialization
-    const arrayMatch = innerContent.match(/^a:(\d+):\{(.*)\}$/);
+    // Extract the inner array content from the outer serialized string
+    const arrayMatch = serializedLinks.match(/^s:\d+:"(a:\d+:\{.*\})";$/);
     if (!arrayMatch) {
-      console.error('Invalid array serialization format');
-      throw new Error('Invalid array serialization format');
+      console.error('Invalid serialized format');
+      throw new Error('Invalid serialized format');
     }
 
-    const [, count, content] = arrayMatch;
-    console.log(`Found ${count} platform entries to parse`);
+    const arrayContent = arrayMatch[1];
+    console.log('Extracted array content:', arrayContent);
+
+    // Split the array content into key-value pairs
+    const pairs = arrayContent.match(/s:\d+:"[^"]+";s:\d+:"[^"]*";/g) || [];
+    console.log(`Found ${pairs.length} platform pairs`);
 
     const links: PlatformLink[] = [];
-    let position = 0;
-    const pairs = content.split(/(?<="})/); // Split on closing quotes+brace
 
     for (const pair of pairs) {
-      if (!pair.trim()) continue;
+      // Extract key and value from each pair
+      const keyMatch = pair.match(/s:\d+:"([^"]+)";/);
+      const valueMatch = pair.match(/;s:\d+:"([^"]*)";/);
 
-      // Parse platform key
-      const keyMatch = pair.match(/s:(\d+):"([^"]+)"/);
-      if (!keyMatch) continue;
-      const platformKey = keyMatch[2];
-      
-      // Find the corresponding value
-      const valueMatch = pair.match(/s:(\d+):"([^"]*)"/g)?.[1];
-      if (!valueMatch) continue;
+      if (!keyMatch || !valueMatch) {
+        console.warn('Skipping invalid pair:', pair);
+        continue;
+      }
 
-      const urlMatch = valueMatch.match(/s:(\d+):"([^"]*)"/);
-      if (!urlMatch) continue;
-      
-      const url = urlMatch[2];
-      console.log(`Processing platform: ${platformKey}, URL: ${url}`);
+      const platformKey = keyMatch[1];
+      const url = valueMatch[1];
 
       // Skip empty URLs
       if (!url) {
@@ -126,7 +113,7 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
       });
     }
 
-    console.log('Final parsed platform links:', links);
+    console.log('Successfully parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
@@ -316,3 +303,4 @@ function extractCDATAContent(value: any): string {
   
   return '';
 }
+
