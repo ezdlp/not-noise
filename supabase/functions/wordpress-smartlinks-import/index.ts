@@ -14,6 +14,7 @@ interface PlatformLink {
 }
 
 function unserializePhp(input: string): any {
+  console.log('Starting PHP unserialization of:', input);
   let position = 0;
 
   function readLength(): number {
@@ -27,6 +28,7 @@ function unserializePhp(input: string): any {
     const length = readLength();
     const str = input.slice(position + 1, position + length + 1);
     position += length + 3; // Skip quotes and semicolon
+    console.log('Read string:', str);
     return str;
   }
 
@@ -34,11 +36,13 @@ function unserializePhp(input: string): any {
     const length = readLength();
     position += 1; // Skip {
     const result: any = {};
+    console.log('Reading array of length:', length);
     
     for (let i = 0; i < length; i++) {
       const key = readValue();
       const value = readValue();
       result[key] = value;
+      console.log(`Array entry ${i}:`, { key, value });
     }
     
     position += 1; // Skip }
@@ -48,11 +52,13 @@ function unserializePhp(input: string): any {
   function readValue(): any {
     const type = input[position];
     position += 2; // Skip type and :
+    console.log('Reading value of type:', type);
     
     switch (type) {
       case 'i':
         const num = parseInt(input.slice(position, input.indexOf(';', position)));
         position = input.indexOf(';', position) + 1;
+        console.log('Read integer:', num);
         return num;
       case 's':
         return readString();
@@ -63,7 +69,9 @@ function unserializePhp(input: string): any {
     }
   }
 
-  return readValue();
+  const result = readValue();
+  console.log('Final unserialized result:', result);
+  return result;
 }
 
 function extractCDATAContent(value: any): string {
@@ -94,7 +102,7 @@ function extractCDATAContent(value: any): string {
 }
 
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
-  console.log('Parsing platform links from:', serializedLinks);
+  console.log('Starting platform links parsing with input:', serializedLinks);
   
   try {
     // Clean up the input string
@@ -102,10 +110,11 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\')
       .trim();
+    console.log('Cleaned serialized string:', cleanedStr);
 
     // Parse the PHP serialized data
     const unserialized = unserializePhp(cleanedStr);
-    console.log('Unserialized platform links:', JSON.stringify(unserialized, null, 2));
+    console.log('Unserialized platform links data:', JSON.stringify(unserialized, null, 2));
 
     const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
@@ -150,10 +159,14 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
     const links: PlatformLink[] = [];
     
     // Handle array of platform links
-    Object.values(unserialized).forEach((platform: any) => {
+    Object.entries(unserialized).forEach(([key, platform]: [string, any]) => {
+      console.log('Processing platform entry:', { key, platform });
+      
       if (platform && typeof platform === 'object') {
         const type = platform.type?.toLowerCase();
         const url = platform.url;
+        
+        console.log('Platform details:', { type, url });
         
         if (type && url && url.trim() !== '') {
           const platformId = platformMapping[type];
@@ -171,6 +184,7 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
       }
     });
 
+    console.log('Final parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
@@ -249,9 +263,11 @@ serve(async (req) => {
         for (const meta of metas) {
           const key = extractCDATAContent(meta['wp:meta_key']);
           const value = extractCDATAContent(meta['wp:meta_value']);
+          console.log('Processing meta:', { key, value });
 
           if (key === '_links' && value) {
             platformLinksData = value;
+            console.log('Found platform links data:', platformLinksData);
           } else if (key === '_artist_name' && value) {
             artistName = value;
           } else if (key === '_default_image' && value) {
