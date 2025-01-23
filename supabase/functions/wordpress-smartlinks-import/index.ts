@@ -21,6 +21,7 @@ function unserializePhp(input: string): any {
     const colonPos = input.indexOf(':', position);
     const length = parseInt(input.slice(position, colonPos));
     position = colonPos + 1;
+    console.log('Reading length:', length, 'at position:', position);
     return length;
   }
 
@@ -28,7 +29,7 @@ function unserializePhp(input: string): any {
     const length = readLength();
     const str = input.slice(position + 1, position + length + 1);
     position += length + 3; // Skip quotes and semicolon
-    console.log('Read string:', str);
+    console.log('Read string:', str, 'at position:', position);
     return str;
   }
 
@@ -36,9 +37,10 @@ function unserializePhp(input: string): any {
     const length = readLength();
     position += 1; // Skip {
     const result: any = {};
-    console.log('Reading array of length:', length);
+    console.log('Reading array of length:', length, 'at position:', position);
     
     for (let i = 0; i < length; i++) {
+      console.log(`Processing array entry ${i + 1}/${length}`);
       const key = readValue();
       const value = readValue();
       result[key] = value;
@@ -52,7 +54,7 @@ function unserializePhp(input: string): any {
   function readValue(): any {
     const type = input[position];
     position += 2; // Skip type and :
-    console.log('Reading value of type:', type);
+    console.log('Reading value of type:', type, 'at position:', position);
     
     switch (type) {
       case 'i':
@@ -65,16 +67,19 @@ function unserializePhp(input: string): any {
       case 'a':
         return readArray();
       default:
-        throw new Error(`Unknown type: ${type}`);
+        throw new Error(`Unknown type: ${type} at position ${position}`);
     }
   }
 
   try {
+    console.log('Starting to read value from position:', position);
     const result = readValue();
-    console.log('Final unserialized result:', result);
+    console.log('Final unserialized result:', JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
     console.error('Error during unserialization:', error);
+    console.error('Input that caused error:', input);
+    console.error('Position when error occurred:', position);
     throw error;
   }
 }
@@ -118,8 +123,9 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
     console.log('Cleaned serialized string:', cleanedStr);
 
     // Parse the PHP serialized data
+    console.log('Attempting to unserialize data...');
     const unserialized = unserializePhp(cleanedStr);
-    console.log('Unserialized platform links data:', JSON.stringify(unserialized, null, 2));
+    console.log('Successfully unserialized data:', JSON.stringify(unserialized, null, 2));
 
     const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
@@ -165,31 +171,36 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
     
     // Handle array of platform links
     Object.entries(unserialized).forEach(([key, platform]: [string, any]) => {
-      console.log('Processing platform entry:', { key, platform });
+      console.log('Processing platform entry:', { key, platform: JSON.stringify(platform) });
       
       if (platform && typeof platform === 'object') {
         const type = platform.type?.toLowerCase();
         const url = platform.url;
         
-        console.log('Platform details:', { type, url });
+        console.log('Extracted platform details:', { type, url });
         
         if (type && url && url.trim() !== '') {
           const platformId = platformMapping[type];
           if (platformId) {
-            links.push({
+            const link = {
               platform_id: platformId,
               platform_name: platformDisplayNames[platformId],
               url: url.trim()
-            });
-            console.log(`Added platform link: ${platformId} -> ${url}`);
+            };
+            links.push(link);
+            console.log(`Added platform link:`, link);
           } else {
-            console.log(`Unknown platform type: ${type}`);
+            console.log(`Unknown platform type: ${type}, skipping`);
           }
+        } else {
+          console.log('Invalid platform data, missing type or URL:', { type, url });
         }
+      } else {
+        console.log('Invalid platform entry, not an object:', platform);
       }
     });
 
-    console.log('Final parsed platform links:', links);
+    console.log('Final parsed platform links:', JSON.stringify(links, null, 2));
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
