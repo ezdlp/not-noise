@@ -16,7 +16,8 @@ import {
   EditIcon, 
   TrashIcon,
   DownloadIcon,
-  SearchIcon
+  SearchIcon,
+  SaveIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -70,6 +71,9 @@ export default function SmartLinks() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
+  const [editingLink, setEditingLink] = useState<string | null>(null);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedArtist, setEditedArtist] = useState("");
   const queryClient = useQueryClient();
 
   const { data: smartLinks, isLoading } = useQuery({
@@ -110,6 +114,27 @@ export default function SmartLinks() {
       }
 
       return data;
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, title, artist_name }: { id: string; title: string; artist_name: string }) => {
+      const { error } = await supabase
+        .from("smart_links")
+        .update({ title, artist_name })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminSmartLinks"] });
+      toast.success("Smart link updated successfully");
+      setEditingLink(null);
+      setEditedTitle("");
+      setEditedArtist("");
+    },
+    onError: (error) => {
+      console.error("Error updating smart link:", error);
+      toast.error("Failed to update smart link");
     },
   });
 
@@ -351,10 +376,47 @@ export default function SmartLinks() {
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{link.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {link.artist_name}
-                    </div>
+                    {editingLink === link.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editedTitle}
+                          onChange={(e) => setEditedTitle(e.target.value)}
+                          className="w-full"
+                          placeholder="Title"
+                        />
+                        <Input
+                          value={editedArtist}
+                          onChange={(e) => setEditedArtist(e.target.value)}
+                          className="w-full"
+                          placeholder="Artist name"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSave(link.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <SaveIcon className="w-4 h-4" />
+                            Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="font-medium">{link.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {link.artist_name}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -402,13 +464,15 @@ export default function SmartLinks() {
                     >
                       <BarChart2Icon className="w-4 h-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/links/${link.id}/edit`)}
-                    >
-                      <EditIcon className="w-4 h-4" />
-                    </Button>
+                    {editingLink === link.id ? null : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(link)}
+                      >
+                        <EditIcon className="w-4 h-4" />
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
