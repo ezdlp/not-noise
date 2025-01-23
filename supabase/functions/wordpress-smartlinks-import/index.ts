@@ -1,171 +1,376 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { parse } from 'https://deno.land/x/xml@2.1.1/mod.ts'
-import { unserialize } from 'https://esm.sh/php-unserialize@0.0.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 interface PlatformLink {
-  type: string;
+  platform_id: string;
+  platform_name: string;
   url: string;
+}
+
+function unserializePhp(input: string): any {
+  console.log('Starting PHP unserialization of:', input);
+  let position = 0;
+
+  function readLength(): number {
+    const colonPos = input.indexOf(':', position);
+    const length = parseInt(input.slice(position, colonPos));
+    position = colonPos + 1;
+    console.log('Reading length:', length, 'at position:', position);
+    return length;
+  }
+
+  function readString(): string {
+    const length = readLength();
+    const str = input.slice(position + 1, position + length + 1);
+    position += length + 3; // Skip quotes and semicolon
+    console.log('Read string:', str, 'at position:', position);
+    return str;
+  }
+
+  function readArray(): any {
+    const length = readLength();
+    position += 1; // Skip {
+    const result: any = {};
+    console.log('Reading array of length:', length, 'at position:', position);
+    
+    for (let i = 0; i < length; i++) {
+      console.log(`Processing array entry ${i + 1}/${length}`);
+      const key = readValue();
+      const value = readValue();
+      result[key] = value;
+      console.log(`Array entry ${i}:`, { key, value });
+    }
+    
+    position += 1; // Skip }
+    return result;
+  }
+
+  function readValue(): any {
+    const type = input[position];
+    position += 2; // Skip type and :
+    console.log('Reading value of type:', type, 'at position:', position);
+    
+    switch (type) {
+      case 'i':
+        const num = parseInt(input.slice(position, input.indexOf(';', position)));
+        position = input.indexOf(';', position) + 1;
+        console.log('Read integer:', num);
+        return num;
+      case 's':
+        return readString();
+      case 'a':
+        return readArray();
+      default:
+        throw new Error(`Unknown type: ${type} at position ${position}`);
+    }
+  }
+
+  try {
+    console.log('Starting to read value from position:', position);
+    const result = readValue();
+    console.log('Final unserialized result:', JSON.stringify(result, null, 2));
+    return result;
+  } catch (error) {
+    console.error('Error during unserialization:', error);
+    console.error('Input that caused error:', input);
+    console.error('Position when error occurred:', position);
+    throw error;
+  }
+}
+
+function extractCDATAContent(value: any): string {
+  if (!value) return '';
+  
+  if (typeof value === 'string') return value;
+  
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    const firstItem = value[0];
+    
+    if (typeof firstItem === 'object') {
+      if (firstItem['#cdata']) return firstItem['#cdata'];
+      if (firstItem['#text']) return firstItem['#text'];
+      return firstItem.toString();
+    }
+    
+    return firstItem;
+  }
+  
+  if (typeof value === 'object') {
+    if (value['#cdata']) return value['#cdata'];
+    if (value['#text']) return value['#text'];
+    if (value.toString) return value.toString();
+  }
+  
+  return '';
+}
+
+function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
+  console.log('Starting platform links parsing with input:', serializedLinks);
+  
+  try {
+    // Clean up the input string
+    const cleanedStr = serializedLinks
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      .trim();
+
+    // Parse the PHP serialized data
+    const unserialized = unserializePhp(cleanedStr);
+    console.log('Successfully unserialized data:', unserialized);
+
+    const platformMapping: Record<string, string> = {
+      'spotify': 'spotify',
+      'apple': 'appleMusic',
+      'apple_music': 'appleMusic',
+      'amazon': 'amazonMusic',
+      'amazon_music': 'amazonMusic',
+      'youtube_music': 'youtubeMusic',
+      'youtube': 'youtube',
+      'deezer': 'deezer',
+      'soundcloud': 'soundcloud',
+      'itunes': 'itunes',
+      'tidal': 'tidal',
+      'anghami': 'anghami',
+      'napster': 'napster',
+      'boomplay': 'boomplay',
+      'yandex': 'yandex',
+      'beatport': 'beatport',
+      'bandcamp': 'bandcamp',
+      'audius': 'audius'
+    };
+
+    const platformDisplayNames: Record<string, string> = {
+      'spotify': 'Spotify',
+      'appleMusic': 'Apple Music',
+      'amazonMusic': 'Amazon Music',
+      'youtubeMusic': 'YouTube Music',
+      'youtube': 'YouTube',
+      'deezer': 'Deezer',
+      'soundcloud': 'SoundCloud',
+      'itunes': 'iTunes',
+      'tidal': 'Tidal',
+      'anghami': 'Anghami',
+      'napster': 'Napster',
+      'boomplay': 'Boomplay',
+      'yandex': 'Yandex Music',
+      'beatport': 'Beatport',
+      'bandcamp': 'Bandcamp',
+      'audius': 'Audius'
+    };
+
+    const links: PlatformLink[] = [];
+    
+    // Handle numbered keys from PHP serialization
+    Object.values(unserialized).forEach((platform: any) => {
+      if (platform && typeof platform === 'object') {
+        const type = platform.type?.toLowerCase();
+        const url = platform.url;
+        
+        if (type && url && url.trim() !== '') {
+          const platformId = platformMapping[type];
+          if (platformId) {
+            links.push({
+              platform_id: platformId,
+              platform_name: platformDisplayNames[platformId],
+              url: url.trim()
+            });
+          }
+        }
+      }
+    });
+
+    return links;
+  } catch (error) {
+    console.error('Error parsing platform links:', error);
+    return [];
+  }
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const formData = await req.formData()
-    const xmlFile = formData.get('file') as File
-    const testMode = formData.get('testMode') === 'true'
+    const formData = await req.formData();
+    const file = formData.get('file');
     
-    if (!xmlFile) {
-      throw new Error('No file provided')
+    if (!file || !(file instanceof File)) {
+      throw new Error('No file uploaded');
     }
 
-    console.log('Reading XML file content...')
-    const xmlContent = await xmlFile.text()
-    
-    console.log('Parsing XML content...')
-    const doc = parse(xmlContent)
-    
-    if (!doc) {
-      throw new Error('Failed to parse XML')
+    const text = await file.text();
+    console.log('Parsing XML file...');
+    const xmlDoc = parse(text);
+
+    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
+      throw new Error('Invalid XML file structure');
     }
 
-    console.log('XML parsed successfully')
-    const items = doc.rss?.channel?.item || []
-    const processLimit = testMode ? 10 : items.length
-    
-    console.log(`Processing ${processLimit} items${testMode ? ' (test mode)' : ''}`)
-    
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const items = xmlDoc.rss.channel.item || [];
+    console.log(`Found ${items.length} items in XML`);
 
-    let totalProcessed = 0
-    let successCount = 0
-    const errors: { link: string; error: string }[] = []
-    const unassignedLinks: string[] = []
+    const results = {
+      total: items.length,
+      success: 0,
+      errors: [] as { link: string; error: string }[],
+      unassigned: [] as string[]
+    };
 
-    for (let i = 0; i < Math.min(items.length, processLimit); i++) {
-      const item = items[i]
-      totalProcessed++
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
+    for (const item of items) {
       try {
-        const title = item.title?.[0]
-        const artistName = item['dc:creator']?.[0] || 'Unknown Artist'
-        const platformLinksData = item['wp:postmeta']?.find(
-          (meta: any) => meta['wp:meta_key']?.[0] === 'platform_links'
-        )?.['wp:meta_value']?.[0]
+        const title = extractCDATAContent(item.title) || '';
+        console.log(`Processing link: ${title}`);
 
-        if (!title) {
-          throw new Error('Missing required title')
+        const creatorEmail = extractCDATAContent(item['dc:creator']);
+        if (!creatorEmail) {
+          console.log('No creator email found, skipping');
+          results.unassigned.push(title);
+          continue;
         }
 
-        console.log(`Processing item ${i + 1}: ${title}`)
+        console.log(`Looking for user with email: ${creatorEmail}`);
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', creatorEmail)
+          .single();
 
-        // Create smart link
-        const { data: smartLink, error: smartLinkError } = await supabaseClient
+        if (userError || !userData) {
+          console.log(`No matching user found for email: ${creatorEmail}`);
+          results.unassigned.push(title);
+          continue;
+        }
+
+        const metas = item['wp:postmeta'] || [];
+        let artistName = '';
+        let artworkUrl = '';
+        let viewCount = 0;
+        let clickCount = 0;
+        let platformLinksData = null;
+
+        for (const meta of metas) {
+          const key = extractCDATAContent(meta['wp:meta_key']);
+          const value = extractCDATAContent(meta['wp:meta_value']);
+          console.log('Processing meta:', { key, value });
+
+          if (key === '_links' && value) {
+            platformLinksData = value;
+            console.log('Found platform links data:', platformLinksData);
+          } else if (key === '_artist_name' && value) {
+            artistName = value;
+          } else if (key === '_default_image' && value) {
+            artworkUrl = value;
+          } else if (key === '_link_views' && value) {
+            viewCount = parseInt(value) || 0;
+          } else if (key === '_link_clicks' && value) {
+            clickCount = parseInt(value) || 0;
+          }
+        }
+
+        const { data: smartLink, error: insertError } = await supabase
           .from('smart_links')
           .insert({
+            user_id: userData.id,
             title,
-            artist_name: artistName,
-            user_id: (await supabaseClient.auth.getUser()).data.user?.id
+            artist_name: artistName || 'Unknown Artist',
+            artwork_url: artworkUrl || null,
+            slug: extractCDATAContent(item['wp:post_name']) || undefined
           })
           .select()
-          .single()
+          .single();
 
-        if (smartLinkError) {
-          console.error('Error creating smart link:', smartLinkError)
-          throw smartLinkError
+        if (insertError || !smartLink) {
+          throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
-        console.log('Smart link created successfully:', smartLink.id)
+        if (viewCount > 0) {
+          const { error: viewError } = await supabase
+            .from('link_views')
+            .insert({
+              smart_link_id: smartLink.id,
+              viewed_at: new Date().toISOString(),
+              user_agent: 'Imported from WordPress',
+            });
 
-        // Process platform links if they exist
-        if (platformLinksData) {
-          try {
-            console.log('Processing platform links data:', platformLinksData)
-            const unserialized = unserialize(platformLinksData)
-            const platformLinks = Object.values(unserialized) as PlatformLink[]
-            
-            if (Array.isArray(platformLinks) && platformLinks.length > 0) {
-              console.log(`Found ${platformLinks.length} platform links`)
-              
-              const platformLinksToInsert = platformLinks.map(link => ({
-                smart_link_id: smartLink.id,
-                platform_id: link.type,
-                platform_name: link.type.charAt(0).toUpperCase() + link.type.slice(1),
-                url: link.url
-              }))
-
-              const { error: platformLinksError } = await supabaseClient
-                .from('platform_links')
-                .insert(platformLinksToInsert)
-
-              if (platformLinksError) {
-                console.error('Error inserting platform links:', platformLinksError)
-                throw new Error(`Failed to insert platform links: ${platformLinksError.message}`)
-              }
-
-              console.log('Platform links inserted successfully')
-            } else {
-              console.log('No valid platform links found in the data')
-              unassignedLinks.push(title)
-            }
-          } catch (error) {
-            console.error('Error processing platform links:', error)
-            unassignedLinks.push(title)
+          if (viewError) {
+            console.error('Error recording historical views:', viewError);
           }
-        } else {
-          console.log('No platform links data found for this item')
-          unassignedLinks.push(title)
         }
 
-        successCount++
+        if (platformLinksData) {
+          console.log('Processing platform links data:', platformLinksData);
+          const platformLinks = parsePlatformLinks(platformLinksData);
+          console.log('Parsed platform links:', platformLinks);
+
+          if (platformLinks.length > 0) {
+            const { data: insertedPlatformLinks, error: platformError } = await supabase
+              .from('platform_links')
+              .insert(
+                platformLinks.map(pl => ({
+                  smart_link_id: smartLink.id,
+                  platform_id: pl.platform_id,
+                  platform_name: pl.platform_name,
+                  url: pl.url
+                }))
+              )
+              .select();
+
+            if (platformError) {
+              throw new Error(`Failed to insert platform links: ${platformError.message}`);
+            }
+
+            if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
+              const { error: clickError } = await supabase
+                .from('platform_clicks')
+                .insert({
+                  platform_link_id: insertedPlatformLinks[0].id,
+                  clicked_at: new Date().toISOString(),
+                  user_agent: 'Imported from WordPress',
+                });
+
+              if (clickError) {
+                console.error('Error recording historical clicks:', clickError);
+              }
+            }
+          }
+        }
+
+        results.success++;
+        console.log(`Successfully processed item: ${title}`);
+
       } catch (error) {
-        console.error('Error processing item:', error)
-        errors.push({
-          link: item.title?.[0] || 'Unknown',
+        console.error('Error processing item:', error);
+        results.errors.push({
+          link: extractCDATAContent(item.title) || 'Unknown',
           error: error.message
-        })
+        });
       }
     }
 
-    console.log('Import process completed:', {
-      total: totalProcessed,
-      success: successCount,
-      errors: errors.length,
-      unassigned: unassignedLinks.length
-    })
-
-    return new Response(
-      JSON.stringify({
-        total: totalProcessed,
-        success: successCount,
-        errors,
-        unassigned: unassignedLinks
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
+    return new Response(JSON.stringify(results), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
-    console.error('Fatal error:', error)
+    console.error('Error processing import:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      { 
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
-})
+});
