@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { DOMParser } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts'
+import { parse } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 import { unserialize } from 'https://esm.sh/php-unserialize@0.0.1'
 
 const corsHeaders = {
@@ -27,16 +27,21 @@ serve(async (req) => {
       throw new Error('No file provided')
     }
 
+    console.log('Reading XML file content...')
     const xmlContent = await xmlFile.text()
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(xmlContent, 'text/xml')
-
+    
+    console.log('Parsing XML content...')
+    const doc = parse(xmlContent)
+    
     if (!doc) {
       throw new Error('Failed to parse XML')
     }
 
-    const items = doc.querySelectorAll('item')
+    console.log('XML parsed successfully')
+    const items = doc.rss?.channel?.item || []
     const processLimit = testMode ? 10 : items.length
+    
+    console.log(`Processing ${processLimit} items${testMode ? ' (test mode)' : ''}`)
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -53,13 +58,17 @@ serve(async (req) => {
       totalProcessed++
 
       try {
-        const title = item.querySelector('title')?.textContent
-        const artistName = item.querySelector('dc\\:creator')?.textContent || 'Unknown Artist'
-        const platformLinksData = item.querySelector('wp\\:postmeta:has(wp\\:meta_key:contains("platform_links")) wp\\:meta_value')?.textContent
+        const title = item.title?.[0]
+        const artistName = item['dc:creator']?.[0] || 'Unknown Artist'
+        const platformLinksData = item['wp:postmeta']?.find(
+          (meta: any) => meta['wp:meta_key']?.[0] === 'platform_links'
+        )?.['wp:meta_value']?.[0]
 
         if (!title) {
           throw new Error('Missing required title')
         }
+
+        console.log(`Processing item ${i + 1}: ${title}`)
 
         // Create smart link
         const { data: smartLink, error: smartLinkError } = await supabaseClient
@@ -73,17 +82,22 @@ serve(async (req) => {
           .single()
 
         if (smartLinkError) {
+          console.error('Error creating smart link:', smartLinkError)
           throw smartLinkError
         }
+
+        console.log('Smart link created successfully:', smartLink.id)
 
         // Process platform links if they exist
         if (platformLinksData) {
           try {
+            console.log('Processing platform links data:', platformLinksData)
             const unserialized = unserialize(platformLinksData)
-            // Convert numbered keys object to array using Object.values()
             const platformLinks = Object.values(unserialized) as PlatformLink[]
             
             if (Array.isArray(platformLinks) && platformLinks.length > 0) {
+              console.log(`Found ${platformLinks.length} platform links`)
+              
               const platformLinksToInsert = platformLinks.map(link => ({
                 smart_link_id: smartLink.id,
                 platform_id: link.type,
@@ -99,21 +113,37 @@ serve(async (req) => {
                 console.error('Error inserting platform links:', platformLinksError)
                 throw new Error(`Failed to insert platform links: ${platformLinksError.message}`)
               }
+
+              console.log('Platform links inserted successfully')
+            } else {
+              console.log('No valid platform links found in the data')
+              unassignedLinks.push(title)
             }
           } catch (error) {
             console.error('Error processing platform links:', error)
             unassignedLinks.push(title)
           }
+        } else {
+          console.log('No platform links data found for this item')
+          unassignedLinks.push(title)
         }
 
         successCount++
       } catch (error) {
+        console.error('Error processing item:', error)
         errors.push({
-          link: item.querySelector('title')?.textContent || 'Unknown',
+          link: item.title?.[0] || 'Unknown',
           error: error.message
         })
       }
     }
+
+    console.log('Import process completed:', {
+      total: totalProcessed,
+      success: successCount,
+      errors: errors.length,
+      unassigned: unassignedLinks.length
+    })
 
     return new Response(
       JSON.stringify({
@@ -129,6 +159,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    console.error('Fatal error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
