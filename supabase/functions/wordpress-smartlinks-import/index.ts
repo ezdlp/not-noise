@@ -84,6 +84,8 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
       .replace(/\\\\/g, '\\')
       .trim();
 
+    console.log('Cleaned serialized links string:', cleanedStr);
+
     // Parse the PHP serialized data
     const unserialized = unserializePhp(cleanedStr);
     console.log('Successfully unserialized data:', unserialized);
@@ -136,6 +138,8 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
         const type = platform.type?.toLowerCase();
         const url = platform.url;
         
+        console.log('Processing platform:', { type, url });
+
         if (type && url && url.trim() !== '') {
           const platformId = platformMapping[type];
           if (platformId) {
@@ -149,7 +153,11 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
               platform_name: platformDisplayNames[platformId],
               url: url.trim()
             });
+          } else {
+            console.warn(`Unknown platform type: ${type}`);
           }
+        } else {
+          console.warn('Invalid platform data:', platform);
         }
       }
     });
@@ -232,6 +240,7 @@ serve(async (req) => {
           const value = extractCDATAContent(meta['wp:meta_value']);
 
           if (key === '_links' && value) {
+            console.log('Found platform links data:', value);
             platformLinksData = value;
           } else if (key === '_artist_name' && value) {
             artistName = value;
@@ -256,12 +265,15 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
+        console.log('Successfully created smart link:', smartLink);
+
         if (platformLinksData) {
           console.log('Processing platform links data:', platformLinksData);
           const platformLinks = parsePlatformLinks(platformLinksData);
           console.log('Parsed platform links:', platformLinks);
 
           if (platformLinks.length > 0) {
+            console.log('Attempting to insert platform links:', platformLinks);
             const { error: platformError } = await supabase
               .from('platform_links')
               .insert(
@@ -274,8 +286,12 @@ serve(async (req) => {
               );
 
             if (platformError) {
+              console.error('Error inserting platform links:', platformError);
               throw new Error(`Failed to insert platform links: ${platformError.message}`);
             }
+            console.log('Successfully inserted platform links');
+          } else {
+            console.log('No valid platform links found to insert');
           }
         }
 
