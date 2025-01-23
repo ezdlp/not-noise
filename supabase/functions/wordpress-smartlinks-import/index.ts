@@ -21,7 +21,6 @@ function unserializePhp(input: string): any {
     const colonPos = input.indexOf(':', position);
     const length = parseInt(input.slice(position, colonPos));
     position = colonPos + 1;
-    console.log('Reading length:', length, 'at position:', position);
     return length;
   }
 
@@ -29,7 +28,6 @@ function unserializePhp(input: string): any {
     const length = readLength();
     const str = input.slice(position + 1, position + length + 1);
     position += length + 3; // Skip quotes and semicolon
-    console.log('Read string:', str, 'at position:', position);
     return str;
   }
 
@@ -37,14 +35,11 @@ function unserializePhp(input: string): any {
     const length = readLength();
     position += 1; // Skip {
     const result: any = {};
-    console.log('Reading array of length:', length, 'at position:', position);
     
     for (let i = 0; i < length; i++) {
-      console.log(`Processing array entry ${i + 1}/${length}`);
       const key = readValue();
       const value = readValue();
       result[key] = value;
-      console.log(`Array entry ${i}:`, { key, value });
     }
     
     position += 1; // Skip }
@@ -54,13 +49,11 @@ function unserializePhp(input: string): any {
   function readValue(): any {
     const type = input[position];
     position += 2; // Skip type and :
-    console.log('Reading value of type:', type, 'at position:', position);
     
     switch (type) {
       case 'i':
         const num = parseInt(input.slice(position, input.indexOf(';', position)));
         position = input.indexOf(';', position) + 1;
-        console.log('Read integer:', num);
         return num;
       case 's':
         return readString();
@@ -72,43 +65,13 @@ function unserializePhp(input: string): any {
   }
 
   try {
-    console.log('Starting to read value from position:', position);
-    const result = readValue();
-    console.log('Final unserialized result:', JSON.stringify(result, null, 2));
-    return result;
+    return readValue();
   } catch (error) {
     console.error('Error during unserialization:', error);
     console.error('Input that caused error:', input);
     console.error('Position when error occurred:', position);
     throw error;
   }
-}
-
-function extractCDATAContent(value: any): string {
-  if (!value) return '';
-  
-  if (typeof value === 'string') return value;
-  
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '';
-    const firstItem = value[0];
-    
-    if (typeof firstItem === 'object') {
-      if (firstItem['#cdata']) return firstItem['#cdata'];
-      if (firstItem['#text']) return firstItem['#text'];
-      return firstItem.toString();
-    }
-    
-    return firstItem;
-  }
-  
-  if (typeof value === 'object') {
-    if (value['#cdata']) return value['#cdata'];
-    if (value['#text']) return value['#text'];
-    if (value.toString) return value.toString();
-  }
-  
-  return '';
 }
 
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
@@ -181,11 +144,17 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
               platform_name: platformDisplayNames[platformId],
               url: url.trim()
             });
+            console.log(`Added platform link:`, {
+              platform_id: platformId,
+              platform_name: platformDisplayNames[platformId],
+              url: url.trim()
+            });
           }
         }
       }
     });
 
+    console.log('Final parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
@@ -256,26 +225,18 @@ serve(async (req) => {
         const metas = item['wp:postmeta'] || [];
         let artistName = '';
         let artworkUrl = '';
-        let viewCount = 0;
-        let clickCount = 0;
         let platformLinksData = null;
 
         for (const meta of metas) {
           const key = extractCDATAContent(meta['wp:meta_key']);
           const value = extractCDATAContent(meta['wp:meta_value']);
-          console.log('Processing meta:', { key, value });
 
           if (key === '_links' && value) {
             platformLinksData = value;
-            console.log('Found platform links data:', platformLinksData);
           } else if (key === '_artist_name' && value) {
             artistName = value;
           } else if (key === '_default_image' && value) {
             artworkUrl = value;
-          } else if (key === '_link_views' && value) {
-            viewCount = parseInt(value) || 0;
-          } else if (key === '_link_clicks' && value) {
-            clickCount = parseInt(value) || 0;
           }
         }
 
@@ -295,27 +256,13 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
-        if (viewCount > 0) {
-          const { error: viewError } = await supabase
-            .from('link_views')
-            .insert({
-              smart_link_id: smartLink.id,
-              viewed_at: new Date().toISOString(),
-              user_agent: 'Imported from WordPress',
-            });
-
-          if (viewError) {
-            console.error('Error recording historical views:', viewError);
-          }
-        }
-
         if (platformLinksData) {
           console.log('Processing platform links data:', platformLinksData);
           const platformLinks = parsePlatformLinks(platformLinksData);
           console.log('Parsed platform links:', platformLinks);
 
           if (platformLinks.length > 0) {
-            const { data: insertedPlatformLinks, error: platformError } = await supabase
+            const { error: platformError } = await supabase
               .from('platform_links')
               .insert(
                 platformLinks.map(pl => ({
@@ -324,25 +271,10 @@ serve(async (req) => {
                   platform_name: pl.platform_name,
                   url: pl.url
                 }))
-              )
-              .select();
+              );
 
             if (platformError) {
               throw new Error(`Failed to insert platform links: ${platformError.message}`);
-            }
-
-            if (clickCount > 0 && insertedPlatformLinks && insertedPlatformLinks.length > 0) {
-              const { error: clickError } = await supabase
-                .from('platform_clicks')
-                .insert({
-                  platform_link_id: insertedPlatformLinks[0].id,
-                  clicked_at: new Date().toISOString(),
-                  user_agent: 'Imported from WordPress',
-                });
-
-              if (clickError) {
-                console.error('Error recording historical clicks:', clickError);
-              }
             }
           }
         }
@@ -374,3 +306,30 @@ serve(async (req) => {
     );
   }
 });
+
+function extractCDATAContent(value: any): string {
+  if (!value) return '';
+  
+  if (typeof value === 'string') return value;
+  
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    const firstItem = value[0];
+    
+    if (typeof firstItem === 'object') {
+      if (firstItem['#cdata']) return firstItem['#cdata'];
+      if (firstItem['#text']) return firstItem['#text'];
+      return firstItem.toString();
+    }
+    
+    return firstItem;
+  }
+  
+  if (typeof value === 'object') {
+    if (value['#cdata']) return value['#cdata'];
+    if (value['#text']) return value['#text'];
+    if (value.toString) return value.toString();
+  }
+  
+  return '';
+}
