@@ -249,6 +249,7 @@ serve(async (req) => {
           }
         }
 
+        // Create smart link first and get its ID
         const { data: smartLink, error: insertError } = await supabase
           .from('smart_links')
           .insert({
@@ -273,17 +274,17 @@ serve(async (req) => {
           console.log('Parsed platform links:', platformLinks);
 
           if (platformLinks.length > 0) {
-            console.log('Attempting to insert platform links:', platformLinks);
+            // Add smart_link_id to each platform link
+            const platformLinksWithId = platformLinks.map(pl => ({
+              ...pl,
+              smart_link_id: smartLink.id
+            }));
+
+            console.log('Attempting to insert platform links:', platformLinksWithId);
+
             const { error: platformError } = await supabase
               .from('platform_links')
-              .insert(
-                platformLinks.map(pl => ({
-                  smart_link_id: smartLink.id,
-                  platform_id: pl.platform_id,
-                  platform_name: pl.platform_name,
-                  url: pl.url
-                }))
-              );
+              .insert(platformLinksWithId);
 
             if (platformError) {
               console.error('Error inserting platform links:', platformError);
