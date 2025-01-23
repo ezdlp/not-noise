@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ExternalLinkIcon, 
   BarChart2Icon, 
@@ -68,6 +69,8 @@ interface SmartLink {
 export default function SmartLinks() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const { data: smartLinks, isLoading } = useQuery({
     queryKey: ["adminSmartLinks"],
@@ -106,8 +109,30 @@ export default function SmartLinks() {
         throw error;
       }
 
-      console.log("Fetched smart links:", data);
-      return data as SmartLink[];
+      return data;
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("smart_links")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminSmartLinks"] });
+      toast.success(
+        selectedLinks.size > 1 
+          ? "Smart links deleted successfully" 
+          : "Smart link deleted successfully"
+      );
+      setSelectedLinks(new Set());
+    },
+    onError: (error) => {
+      console.error("Error deleting smart links:", error);
+      toast.error("Failed to delete smart links");
     },
   });
 
@@ -117,6 +142,29 @@ export default function SmartLinks() {
       link.artist_name.toLowerCase().includes(search.toLowerCase()) ||
       link.profiles?.name?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleSelectAll = () => {
+    if (selectedLinks.size === filteredLinks?.length) {
+      setSelectedLinks(new Set());
+    } else {
+      setSelectedLinks(new Set(filteredLinks?.map(link => link.id)));
+    }
+  };
+
+  const handleSelectLink = (id: string) => {
+    const newSelected = new Set(selectedLinks);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedLinks(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedLinks.size === 0) return;
+    deleteMutation.mutate(Array.from(selectedLinks));
+  };
 
   const exportToCSV = () => {
     if (!smartLinks) return;
@@ -209,6 +257,33 @@ export default function SmartLinks() {
               className="pl-8 w-[300px]"
             />
           </div>
+          {selectedLinks.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  Delete Selected ({selectedLinks.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Smart Links</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedLinks.size} smart link{selectedLinks.size > 1 ? 's' : ''}? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleBulkDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button onClick={exportToCSV} variant="outline">
             <DownloadIcon className="w-4 h-4 mr-2" />
             Export CSV
@@ -219,6 +294,12 @@ export default function SmartLinks() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[30px]">
+              <Checkbox 
+                checked={selectedLinks.size === filteredLinks?.length && filteredLinks.length > 0}
+                onCheckedChange={handleSelectAll}
+              />
+            </TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Creator</TableHead>
             <TableHead>Created</TableHead>
@@ -262,6 +343,12 @@ export default function SmartLinks() {
 
             return (
               <TableRow key={link.id}>
+                <TableCell>
+                  <Checkbox 
+                    checked={selectedLinks.has(link.id)}
+                    onCheckedChange={() => handleSelectLink(link.id)}
+                  />
+                </TableCell>
                 <TableCell>
                   <div>
                     <div className="font-medium">{link.title}</div>
@@ -343,19 +430,7 @@ export default function SmartLinks() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={async () => {
-                              const { error } = await supabase
-                                .from("smart_links")
-                                .delete()
-                                .eq("id", link.id);
-
-                              if (error) {
-                                toast.error("Failed to delete smart link");
-                                return;
-                              }
-
-                              toast.success("Smart link deleted successfully");
-                            }}
+                            onClick={() => deleteMutation.mutate([link.id])}
                             className="bg-red-500 hover:bg-red-600"
                           >
                             Delete
