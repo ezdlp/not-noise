@@ -201,9 +201,17 @@ serve(async (req) => {
       unassigned: [] as string[]
     };
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') as string,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
+    );
+
+    // Create regular client for user-level operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') as string,
+      Deno.env.get('SUPABASE_ANON_KEY') as string
+    );
 
     for (const item of items) {
       try {
@@ -218,7 +226,7 @@ serve(async (req) => {
         }
 
         console.log(`Looking for user with email: ${creatorEmail}`);
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('email', creatorEmail)
@@ -249,8 +257,8 @@ serve(async (req) => {
           }
         }
 
-        // Create smart link first and get its ID
-        const { data: smartLink, error: insertError } = await supabase
+        // Create smart link using admin client
+        const { data: smartLink, error: insertError } = await supabaseAdmin
           .from('smart_links')
           .insert({
             user_id: userData.id,
@@ -274,7 +282,6 @@ serve(async (req) => {
           console.log('Parsed platform links:', platformLinks);
 
           if (platformLinks.length > 0) {
-            // Add smart_link_id to each platform link
             const platformLinksWithId = platformLinks.map(pl => ({
               ...pl,
               smart_link_id: smartLink.id
@@ -282,7 +289,8 @@ serve(async (req) => {
 
             console.log('Attempting to insert platform links:', platformLinksWithId);
 
-            const { error: platformError } = await supabase
+            // Use admin client for platform links insertion
+            const { error: platformError } = await supabaseAdmin
               .from('platform_links')
               .insert(platformLinksWithId);
 
