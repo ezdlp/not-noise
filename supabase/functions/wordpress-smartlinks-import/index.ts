@@ -13,67 +13,6 @@ interface PlatformLink {
   url: string;
 }
 
-function unserializePhp(input: string): any {
-  console.log('Starting PHP unserialization of:', input);
-  let position = 0;
-
-  function readLength(): number {
-    const colonPos = input.indexOf(':', position);
-    const length = parseInt(input.slice(position, colonPos));
-    position = colonPos + 1;
-    return length;
-  }
-
-  function readString(): string {
-    const length = readLength();
-    const str = input.slice(position + 1, position + length + 1);
-    position += length + 3; // Skip quotes and semicolon
-    return str;
-  }
-
-  function readArray(): any {
-    const length = readLength();
-    position += 1; // Skip {
-    const result: any = {};
-    
-    for (let i = 0; i < length; i++) {
-      const key = readValue();
-      const value = readValue();
-      result[key] = value;
-    }
-    
-    position += 1; // Skip }
-    return result;
-  }
-
-  function readValue(): any {
-    const type = input[position];
-    position += 2; // Skip type and :
-    
-    switch (type) {
-      case 'i':
-        const num = parseInt(input.slice(position, input.indexOf(';', position)));
-        position = input.indexOf(';', position) + 1;
-        return num;
-      case 's':
-        return readString();
-      case 'a':
-        return readArray();
-      default:
-        throw new Error(`Unknown type: ${type} at position ${position}`);
-    }
-  }
-
-  try {
-    return readValue();
-  } catch (error) {
-    console.error('Error during unserialization:', error);
-    console.error('Input that caused error:', input);
-    console.error('Position when error occurred:', position);
-    throw error;
-  }
-}
-
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   console.log('Starting platform links parsing with input:', serializedLinks);
   
@@ -132,8 +71,10 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 
     const links: PlatformLink[] = [];
     
-    // Handle numbered keys from PHP serialization
-    Object.values(unserialized).forEach((platform: any) => {
+    // Handle both object and array formats from PHP serialization
+    const platforms = Array.isArray(unserialized) ? unserialized : Object.values(unserialized);
+    
+    platforms.forEach((platform: any) => {
       if (platform && typeof platform === 'object') {
         const type = platform.type?.toLowerCase();
         const url = platform.url;
@@ -166,7 +107,80 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
-    return [];
+    console.error('Input that caused error:', serializedLinks);
+    throw error; // Re-throw to handle in the main import flow
+  }
+}
+
+function unserializePhp(input: string): any {
+  console.log('Starting PHP unserialization of:', input);
+  let position = 0;
+
+  function readLength(): number {
+    const colonPos = input.indexOf(':', position);
+    if (colonPos === -1) throw new Error('Invalid format: colon not found');
+    const length = parseInt(input.slice(position, colonPos));
+    position = colonPos + 1;
+    return length;
+  }
+
+  function readString(): string {
+    const length = readLength();
+    if (input[position] !== '"') throw new Error('Expected string start');
+    position++; // Skip "
+    const str = input.slice(position, position + length);
+    position += length + 2; // Skip string content and closing quote + semicolon
+    return str;
+  }
+
+  function readArray(): any {
+    const length = readLength();
+    if (input[position] !== '{') throw new Error('Expected array start');
+    position++; // Skip {
+    
+    const result: any = {};
+    
+    for (let i = 0; i < length; i++) {
+      const key = readValue();
+      const value = readValue();
+      result[key] = value;
+    }
+    
+    if (input[position] !== '}') throw new Error('Expected array end');
+    position++; // Skip }
+    return result;
+  }
+
+  function readValue(): any {
+    const type = input[position];
+    position++; // Skip type
+    if (input[position] !== ':') throw new Error('Expected : after type');
+    position++; // Skip :
+    
+    switch (type) {
+      case 'i': {
+        const endPos = input.indexOf(';', position);
+        if (endPos === -1) throw new Error('Invalid integer format');
+        const num = parseInt(input.slice(position, endPos));
+        position = endPos + 1;
+        return num;
+      }
+      case 's':
+        return readString();
+      case 'a':
+        return readArray();
+      default:
+        throw new Error(`Unknown type: ${type} at position ${position}`);
+    }
+  }
+
+  try {
+    return readValue();
+  } catch (error) {
+    console.error('Error during unserialization:', error);
+    console.error('Input that caused error:', input);
+    console.error('Position when error occurred:', position);
+    throw error;
   }
 }
 
