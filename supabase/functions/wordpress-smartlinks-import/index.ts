@@ -120,12 +120,10 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\')
       .trim();
-    console.log('Cleaned serialized string:', cleanedStr);
 
     // Parse the PHP serialized data
-    console.log('Attempting to unserialize data...');
     const unserialized = unserializePhp(cleanedStr);
-    console.log('Successfully unserialized data:', JSON.stringify(unserialized, null, 2));
+    console.log('Successfully unserialized data:', unserialized);
 
     const platformMapping: Record<string, string> = {
       'spotify': 'spotify',
@@ -169,42 +167,28 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 
     const links: PlatformLink[] = [];
     
-    // Handle array of platform links
-    Object.entries(unserialized).forEach(([key, platform]: [string, any]) => {
-      console.log('Processing platform entry:', { key, platform: JSON.stringify(platform) });
-      
+    // Handle numbered keys from PHP serialization
+    Object.values(unserialized).forEach((platform: any) => {
       if (platform && typeof platform === 'object') {
         const type = platform.type?.toLowerCase();
         const url = platform.url;
         
-        console.log('Extracted platform details:', { type, url });
-        
         if (type && url && url.trim() !== '') {
           const platformId = platformMapping[type];
           if (platformId) {
-            const link = {
+            links.push({
               platform_id: platformId,
               platform_name: platformDisplayNames[platformId],
               url: url.trim()
-            };
-            links.push(link);
-            console.log(`Added platform link:`, link);
-          } else {
-            console.log(`Unknown platform type: ${type}, skipping`);
+            });
           }
-        } else {
-          console.log('Invalid platform data, missing type or URL:', { type, url });
         }
-      } else {
-        console.log('Invalid platform entry, not an object:', platform);
       }
     });
 
-    console.log('Final parsed platform links:', JSON.stringify(links, null, 2));
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
-    console.error('Original input:', serializedLinks);
     return [];
   }
 }
