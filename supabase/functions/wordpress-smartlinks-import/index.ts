@@ -69,9 +69,14 @@ function unserializePhp(input: string): any {
     }
   }
 
-  const result = readValue();
-  console.log('Final unserialized result:', result);
-  return result;
+  try {
+    const result = readValue();
+    console.log('Final unserialized result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error during unserialization:', error);
+    throw error;
+  }
 }
 
 function extractCDATAContent(value: any): string {
