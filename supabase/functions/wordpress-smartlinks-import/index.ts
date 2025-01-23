@@ -13,173 +13,124 @@ interface PlatformLink {
   url: string;
 }
 
+const platformMapping: Record<string, string> = {
+  'spotify': 'spotify',
+  'apple_music': 'appleMusic',
+  'appleMusic': 'appleMusic',
+  'amazon_music': 'amazonMusic',
+  'amazonMusic': 'amazonMusic',
+  'youtube_music': 'youtubeMusic',
+  'youtubeMusic': 'youtubeMusic',
+  'youtube': 'youtube',
+  'deezer': 'deezer',
+  'soundcloud': 'soundcloud',
+  'itunes': 'itunes',
+  'tidal': 'tidal',
+  'anghami': 'anghami',
+  'napster': 'napster',
+  'boomplay': 'boomplay',
+  'yandex': 'yandex',
+  'beatport': 'beatport',
+  'bandcamp': 'bandcamp',
+  'audius': 'audius'
+};
+
+const platformDisplayNames: Record<string, string> = {
+  'spotify': 'Spotify',
+  'appleMusic': 'Apple Music',
+  'amazonMusic': 'Amazon Music',
+  'youtubeMusic': 'YouTube Music',
+  'youtube': 'YouTube',
+  'deezer': 'Deezer',
+  'soundcloud': 'SoundCloud',
+  'itunes': 'iTunes',
+  'tidal': 'Tidal',
+  'anghami': 'Anghami',
+  'napster': 'Napster',
+  'boomplay': 'Boomplay',
+  'yandex': 'Yandex Music',
+  'beatport': 'Beatport',
+  'bandcamp': 'Bandcamp',
+  'audius': 'Audius'
+};
+
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   console.log('Starting platform links parsing with input:', serializedLinks);
   
   try {
-    // Clean up the input string
-    const cleanedStr = serializedLinks
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\')
-      .trim();
+    // First, handle the outer string serialization (s:425:"...")
+    const outerMatch = serializedLinks.match(/^s:(\d+):"(.*)"$/);
+    if (!outerMatch) {
+      console.error('Invalid outer serialization format');
+      throw new Error('Invalid outer serialization format');
+    }
 
-    console.log('Cleaned serialized links string:', cleanedStr);
+    const [, lengthStr, innerContent] = outerMatch;
+    console.log('Parsed outer serialization:', { declaredLength: lengthStr, actualLength: innerContent.length });
 
-    // Parse the PHP serialized data
-    const unserialized = unserializePhp(cleanedStr);
-    console.log('Successfully unserialized data:', unserialized);
+    // Parse the inner array serialization
+    const arrayMatch = innerContent.match(/^a:(\d+):\{(.*)\}$/);
+    if (!arrayMatch) {
+      console.error('Invalid array serialization format');
+      throw new Error('Invalid array serialization format');
+    }
 
-    const platformMapping: Record<string, string> = {
-      'spotify': 'spotify',
-      'apple': 'appleMusic',
-      'apple_music': 'appleMusic',
-      'amazon': 'amazonMusic',
-      'amazon_music': 'amazonMusic',
-      'youtube_music': 'youtubeMusic',
-      'youtube': 'youtube',
-      'deezer': 'deezer',
-      'soundcloud': 'soundcloud',
-      'itunes': 'itunes',
-      'tidal': 'tidal',
-      'anghami': 'anghami',
-      'napster': 'napster',
-      'boomplay': 'boomplay',
-      'yandex': 'yandex',
-      'beatport': 'beatport',
-      'bandcamp': 'bandcamp',
-      'audius': 'audius'
-    };
-
-    const platformDisplayNames: Record<string, string> = {
-      'spotify': 'Spotify',
-      'appleMusic': 'Apple Music',
-      'amazonMusic': 'Amazon Music',
-      'youtubeMusic': 'YouTube Music',
-      'youtube': 'YouTube',
-      'deezer': 'Deezer',
-      'soundcloud': 'SoundCloud',
-      'itunes': 'iTunes',
-      'tidal': 'Tidal',
-      'anghami': 'Anghami',
-      'napster': 'Napster',
-      'boomplay': 'Boomplay',
-      'yandex': 'Yandex Music',
-      'beatport': 'Beatport',
-      'bandcamp': 'Bandcamp',
-      'audius': 'Audius'
-    };
+    const [, count, content] = arrayMatch;
+    console.log(`Found ${count} platform entries to parse`);
 
     const links: PlatformLink[] = [];
-    
-    // Handle both object and array formats from PHP serialization
-    const platforms = Array.isArray(unserialized) ? unserialized : Object.values(unserialized);
-    
-    platforms.forEach((platform: any) => {
-      if (platform && typeof platform === 'object') {
-        const type = platform.type?.toLowerCase();
-        const url = platform.url;
-        
-        console.log('Processing platform:', { type, url });
+    let position = 0;
+    const pairs = content.split(/(?<="})/); // Split on closing quotes+brace
 
-        if (type && url && url.trim() !== '') {
-          const platformId = platformMapping[type];
-          if (platformId) {
-            links.push({
-              platform_id: platformId,
-              platform_name: platformDisplayNames[platformId],
-              url: url.trim()
-            });
-            console.log(`Added platform link:`, {
-              platform_id: platformId,
-              platform_name: platformDisplayNames[platformId],
-              url: url.trim()
-            });
-          } else {
-            console.warn(`Unknown platform type: ${type}`);
-          }
-        } else {
-          console.warn('Invalid platform data:', platform);
-        }
+    for (const pair of pairs) {
+      if (!pair.trim()) continue;
+
+      // Parse platform key
+      const keyMatch = pair.match(/s:(\d+):"([^"]+)"/);
+      if (!keyMatch) continue;
+      const platformKey = keyMatch[2];
+      
+      // Find the corresponding value
+      const valueMatch = pair.match(/s:(\d+):"([^"]*)"/g)?.[1];
+      if (!valueMatch) continue;
+
+      const urlMatch = valueMatch.match(/s:(\d+):"([^"]*)"/);
+      if (!urlMatch) continue;
+      
+      const url = urlMatch[2];
+      console.log(`Processing platform: ${platformKey}, URL: ${url}`);
+
+      // Skip empty URLs
+      if (!url) {
+        console.log(`Skipping ${platformKey} - empty URL`);
+        continue;
       }
-    });
+
+      // Map to our platform conventions
+      const platformId = platformMapping[platformKey];
+      if (!platformId) {
+        console.warn(`Unknown platform type: ${platformKey}`);
+        continue;
+      }
+
+      links.push({
+        platform_id: platformId,
+        platform_name: platformDisplayNames[platformId],
+        url: url.trim()
+      });
+      
+      console.log(`Added platform link:`, {
+        platform_id: platformId,
+        platform_name: platformDisplayNames[platformId],
+        url: url.trim()
+      });
+    }
 
     console.log('Final parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
     console.error('Input that caused error:', serializedLinks);
-    throw error; // Re-throw to handle in the main import flow
-  }
-}
-
-function unserializePhp(input: string): any {
-  console.log('Starting PHP unserialization of:', input);
-  let position = 0;
-
-  function readLength(): number {
-    const colonPos = input.indexOf(':', position);
-    if (colonPos === -1) throw new Error('Invalid format: colon not found');
-    const length = parseInt(input.slice(position, colonPos));
-    position = colonPos + 1;
-    return length;
-  }
-
-  function readString(): string {
-    const length = readLength();
-    if (input[position] !== '"') throw new Error('Expected string start');
-    position++; // Skip "
-    const str = input.slice(position, position + length);
-    position += length + 2; // Skip string content and closing quote + semicolon
-    return str;
-  }
-
-  function readArray(): any {
-    const length = readLength();
-    if (input[position] !== '{') throw new Error('Expected array start');
-    position++; // Skip {
-    
-    const result: any = {};
-    
-    for (let i = 0; i < length; i++) {
-      const key = readValue();
-      const value = readValue();
-      result[key] = value;
-    }
-    
-    if (input[position] !== '}') throw new Error('Expected array end');
-    position++; // Skip }
-    return result;
-  }
-
-  function readValue(): any {
-    const type = input[position];
-    position++; // Skip type
-    if (input[position] !== ':') throw new Error('Expected : after type');
-    position++; // Skip :
-    
-    switch (type) {
-      case 'i': {
-        const endPos = input.indexOf(';', position);
-        if (endPos === -1) throw new Error('Invalid integer format');
-        const num = parseInt(input.slice(position, endPos));
-        position = endPos + 1;
-        return num;
-      }
-      case 's':
-        return readString();
-      case 'a':
-        return readArray();
-      default:
-        throw new Error(`Unknown type: ${type} at position ${position}`);
-    }
-  }
-
-  try {
-    return readValue();
-  } catch (error) {
-    console.error('Error during unserialization:', error);
-    console.error('Input that caused error:', input);
-    console.error('Position when error occurred:', position);
     throw error;
   }
 }
@@ -351,7 +302,7 @@ function extractCDATAContent(value: any): string {
     if (typeof firstItem === 'object') {
       if (firstItem['#cdata']) return firstItem['#cdata'];
       if (firstItem['#text']) return firstItem['#text'];
-      return firstItem.toString();
+      return firstItem;
     }
     
     return firstItem;
