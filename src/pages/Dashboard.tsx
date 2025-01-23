@@ -8,6 +8,9 @@ export default function Dashboard() {
   const { data: links, isLoading } = useQuery({
     queryKey: ["smartLinks"],
     queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("smart_links")
         .select(`
@@ -23,6 +26,7 @@ export default function Dashboard() {
             viewed_at
           )
         `)
+        .eq('user_id', user.user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
