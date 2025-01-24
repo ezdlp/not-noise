@@ -9,6 +9,7 @@ import {
   TrashIcon,
   CopyIcon,
   CheckIcon,
+  InfoIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,8 @@ interface SmartLinkCardProps {
 export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
+  // This is a placeholder - in the future this would come from Spotify's API
+  const popularityScore = 25; 
 
   const handleDelete = async () => {
     try {
@@ -67,6 +71,12 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score < 30) return "text-yellow-500";
+    if (score < 60) return "text-blue-500";
+    return "text-green-500";
+  };
+
   return (
     <Card className="flex flex-col md:flex-row gap-4 p-4">
       <div className="flex-shrink-0">
@@ -81,6 +91,28 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
           <div>
             <h3 className="font-semibold">{link.title}</h3>
             <p className="text-sm text-muted-foreground">{link.artist_name}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="w-32">
+                <Progress value={popularityScore} className="h-2" />
+              </div>
+              <span className={`text-sm font-medium ${getScoreColor(popularityScore)}`}>
+                {popularityScore}
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Spotify Popularity Score (0-100)</p>
+                    <p className="text-xs mt-1 text-muted-foreground">
+                      This score shows how popular your music is on Spotify. Scores under 30 are typical for new artists. 
+                      Want to improve your score? Stay tuned for our promotion services!
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -92,10 +124,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
                 <EditIcon className="mr-2 h-4 w-4" />
                 Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate(`/dashboard/analytics/${link.id}`)}>
-                <BarChart2Icon className="mr-2 h-4 w-4" />
-                Analytics
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive"
