@@ -72,9 +72,30 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   };
 
   const getScoreColor = (score: number) => {
-    if (score < 30) return "text-yellow-500";
-    if (score < 60) return "text-blue-500";
+    if (score <= 20) return "text-[#ea384c]";
+    if (score <= 30) return "text-yellow-500";
+    if (score <= 60) return "text-blue-500";
     return "text-green-500";
+  };
+
+  const getProgressColor = (score: number) => {
+    if (score <= 20) return "bg-[#ea384c]";
+    if (score <= 30) return "bg-yellow-500";
+    if (score <= 60) return "bg-blue-500";
+    return "bg-green-500";
+  };
+
+  const getScoreMessage = (score: number) => {
+    if (score <= 20) {
+      return "Your music needs more engagement to trigger Spotify's algorithms. At this stage, songs typically don't appear in Discover Weekly or Release Radar.";
+    }
+    if (score <= 30) {
+      return "You're approaching the algorithm threshold! Songs in this range start appearing in Radio stations and 'Fans Also Like' features.";
+    }
+    if (score <= 60) {
+      return "Great news! Your music is now active in Spotify's algorithm, appearing in Discover Weekly and Release Radar. Keep the momentum going!";
+    }
+    return "Impressive! Your music has strong algorithmic presence, getting premium placement and maximum exposure across Spotify's ecosystem.";
   };
 
   return (
@@ -93,22 +114,21 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
             <p className="text-sm text-muted-foreground">{link.artist_name}</p>
             <div className="mt-2 flex items-center gap-2">
               <div className="w-32">
-                <Progress value={popularityScore} className="h-2" />
+                <Progress 
+                  value={popularityScore} 
+                  className={`h-2 ${getProgressColor(popularityScore)}`}
+                />
               </div>
               <span className={`text-sm font-medium ${getScoreColor(popularityScore)}`}>
                 {popularityScore}
               </span>
-              <TooltipProvider>
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Spotify Popularity Score (0-100)</p>
-                    <p className="text-xs mt-1 text-muted-foreground">
-                      This score shows how popular your music is on Spotify. Scores under 30 are typical for new artists. 
-                      Want to improve your score? Stay tuned for our promotion services!
-                    </p>
+                    <p>{getScoreMessage(popularityScore)}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -136,7 +156,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
           </DropdownMenu>
         </div>
         <div className="flex flex-wrap gap-2">
-          <TooltipProvider>
+          <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
