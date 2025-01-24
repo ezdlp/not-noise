@@ -33,7 +33,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const views = link.link_views?.length || 0;
   const clicks = link.platform_clicks?.length || 0;
   const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-  const smartLinkUrl = `${window.location.origin}/link/${link.id}`;
+  const smartLinkUrl = `${window.location.origin}/link/${link.slug || link.id}`;
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
