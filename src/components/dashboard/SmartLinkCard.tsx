@@ -7,6 +7,8 @@ import {
   ExternalLinkIcon,
   MoreVerticalIcon,
   TrashIcon,
+  CopyIcon,
+  CheckIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 interface SmartLinkCardProps {
   link: any;
@@ -25,6 +28,7 @@ interface SmartLinkCardProps {
 
 export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -42,6 +46,18 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     } catch (error) {
       console.error("Error deleting smart link:", error);
       toast.error("Failed to delete smart link");
+    }
+  };
+
+  const copyToClipboard = async () => {
+    const url = `${window.location.origin}/link/${link.slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setIsCopied(true);
+      toast.success("Link copied to clipboard");
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy link");
     }
   };
 
@@ -95,6 +111,18 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               <ExternalLinkIcon className="mr-2 h-4 w-4" />
               View Link
             </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={copyToClipboard}
+          >
+            {isCopied ? (
+              <CheckIcon className="mr-2 h-4 w-4" />
+            ) : (
+              <CopyIcon className="mr-2 h-4 w-4" />
+            )}
+            Copy URL
           </Button>
           <Button
             variant="outline"
