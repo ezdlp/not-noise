@@ -37,8 +37,8 @@ interface SmartLinkCardProps {
 export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
-  // This is a placeholder - in the future this would come from Spotify's API
-  const popularityScore = 25;
+  // This will be replaced by the actual Spotify popularity score
+  const popularityScore = null;
 
   const handleDelete = async () => {
     try {
@@ -71,28 +71,34 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null) => {
+    if (!score) return "text-muted-foreground";
     if (score <= 20) return "text-[#ea384c]";
     if (score <= 30) return "text-yellow-500";
     if (score <= 60) return "text-blue-500";
     return "text-green-500";
   };
 
-  const getProgressColor = (score: number) => {
+  const getProgressColor = (score: number | null) => {
+    if (!score) return "bg-muted-foreground/30";
     if (score <= 20) return "bg-[#ea384c]";
     if (score <= 30) return "bg-yellow-500";
     if (score <= 60) return "bg-blue-500";
     return "bg-green-500";
   };
 
-  const getProgressBgColor = (score: number) => {
+  const getProgressBgColor = (score: number | null) => {
+    if (!score) return "bg-muted-foreground/10";
     if (score <= 20) return "bg-[#ea384c]/25";
     if (score <= 30) return "bg-yellow-500/25";
     if (score <= 60) return "bg-blue-500/25";
     return "bg-green-500/25";
   };
 
-  const getScoreMessage = (score: number) => {
+  const getScoreMessage = (score: number | null) => {
+    if (!score) {
+      return "Unable to retrieve Spotify popularity score. This could be because there's no Spotify link added or the track information is unavailable.";
+    }
     const baseMessage = "Spotify Popularity Score (0-100): ";
     if (score <= 20) {
       return baseMessage + "Your music needs more engagement to trigger Spotify's algorithms. At this stage, songs typically don't appear in Discover Weekly or Release Radar.";
@@ -125,13 +131,13 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               <div className="flex items-center gap-2">
                 <div className="w-32">
                   <Progress 
-                    value={popularityScore} 
+                    value={popularityScore || 0} 
                     className={`h-2 ${getProgressBgColor(popularityScore)}`}
                     indicatorClassName={getProgressColor(popularityScore)}
                   />
                 </div>
                 <span className={`text-sm font-medium ${getScoreColor(popularityScore)}`}>
-                  {popularityScore}
+                  {popularityScore ?? "-"}
                 </span>
                 <TooltipProvider delayDuration={0}>
                   <Tooltip>
