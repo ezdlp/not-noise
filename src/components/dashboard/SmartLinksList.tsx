@@ -27,9 +27,18 @@ interface SmartLinksListProps {
       viewed_at: string;
     }>;
   }>;
+  isLoading?: boolean;
 }
 
-const SmartLinksList = ({ links }: SmartLinksListProps) => {
+const SmartLinksList = ({ links, isLoading }: SmartLinksListProps) => {
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!links?.length) {
+    return <div>No smart links found</div>;
+  }
+
   return (
     <Table>
       <TableHeader>
