@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
-import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
+import SmartLinksList from "@/components/dashboard/SmartLinksList";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
