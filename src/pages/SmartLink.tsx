@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
@@ -9,6 +9,23 @@ import { toast } from "sonner";
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
+
+  // Separate mutation for recording views
+  const recordViewMutation = useMutation({
+    mutationFn: async (smartLinkId: string) => {
+      const { error } = await supabase.from('link_views').insert({
+        smart_link_id: smartLinkId,
+        user_agent: navigator.userAgent,
+      });
+
+      if (error) {
+        console.error('Error recording view:', error);
+        toast.error("Failed to record view");
+        throw error;
+      }
+      console.log('View recorded successfully');
+    }
+  });
 
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
@@ -32,7 +49,6 @@ const SmartLink = () => {
 
       if (!smartLinkData && !smartLinkError) {
         console.log("No smart link found with slug, trying ID...");
-        // If no result by slug, try by ID
         const { data: idData, error: idError } = await supabase
           .from('smart_links')
           .select(`
@@ -64,25 +80,18 @@ const SmartLink = () => {
       }
 
       console.log("Found smart link:", smartLinkData);
-
-      // Record the view
-      if (smartLinkData) {
-        const { error: viewError } = await supabase.from('link_views').insert({
-          smart_link_id: smartLinkData.id,
-          user_agent: navigator.userAgent,
-        });
-
-        if (viewError) {
-          console.error('Error recording view:', viewError);
-          toast.error("Failed to record view");
-        } else {
-          console.log('View recorded successfully');
-        }
-      }
-
       return smartLinkData;
-    }
+    },
+    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+    cacheTime: 30 * 60 * 1000, // Cache persists for 30 minutes
   });
+
+  // Record view on initial load only
+  useEffect(() => {
+    if (smartLink?.id) {
+      recordViewMutation.mutate(smartLink.id);
+    }
+  }, [smartLink?.id]);
 
   useEffect(() => {
     if (smartLink?.meta_pixel_id) {
@@ -130,7 +139,7 @@ const SmartLink = () => {
       }
     } catch (error) {
       console.error('Error in handlePlatformClick:', error);
-      throw error; // Re-throw to be handled by the PlatformButton component
+      throw error;
     }
   };
 
@@ -169,6 +178,10 @@ const SmartLink = () => {
     beatport: "/lovable-uploads/beatport.png",
     bandcamp: "/lovable-uploads/bandcamp.png",
     audius: "/lovable-uploads/audius.png",
+    // Add exact matches for platform IDs
+    youtubeMusic: "/lovable-uploads/youtubemusic.png",
+    appleMusic: "/lovable-uploads/applemusic.png",
+    amazonMusic: "/lovable-uploads/amazonmusic.png",
   };
 
   return (
