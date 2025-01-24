@@ -184,13 +184,14 @@ export default function SmartLinkAnalytics() {
                       {new Date(click.clicked_at).toLocaleString()}
                     </p>
                   </div>
-                  <div className="text-sm">{click.country || "Unknown location"}</div>
+                  <div className="text-sm">
+                    {click.country || "Unknown location"}
+                  </div>
                 </div>
               ))}
           </div>
         </Card>
       </div>
     </div>
-  </div>
   );
 }
