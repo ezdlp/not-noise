@@ -1,172 +1,72 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { 
-  EditIcon, 
-  TrashIcon, 
-  ExternalLinkIcon, 
-  CopyIcon,
-  BarChart2Icon,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SmartLinkCardProps {
-  link: any;
-  onDelete: (id: string) => void;
+  link: {
+    id: string;
+    title: string;
+    artwork_url?: string;
+    created_at: string;
+    slug?: string;
+    platform_links: Array<{
+      id: string;
+      platform_id: string;
+      platform_name: string;
+      url: string;
+    }>;
+    link_views: Array<{
+      id: string;
+      viewed_at: string;
+    }>;
+  };
 }
 
-export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
-  const navigate = useNavigate();
-  const views = link.link_views?.length || 0;
-  const clicks = link.platform_clicks?.length || 0;
-  const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-  const smartLinkUrl = `${window.location.origin}/link/${link.id}`;
-
-  const copyToClipboard = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard");
-  };
+const SmartLinkCard = ({ link }: SmartLinkCardProps) => {
+  const smartLinkUrl = `${window.location.origin}/link/${link.slug || link.id}`;
+  const totalViews = link.link_views?.length || 0;
+  const platformCount = link.platform_links?.length || 0;
 
   return (
-    <Card className="p-4 flex flex-col h-full">
-      <div className="flex gap-4">
-        {link.artwork_url && (
-          <img
-            src={link.artwork_url}
-            alt={link.title}
-            className="w-20 h-20 object-cover rounded"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium truncate">{link.title}</h3>
-          <p className="text-sm text-muted-foreground">{link.artist_name}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
-              {smartLinkUrl}
-            </code>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 flex-shrink-0"
-              onClick={() => copyToClipboard(smartLinkUrl)}
-            >
-              <CopyIcon className="h-4 w-4" />
-            </Button>
+    <Link to={`/link/${link.slug || link.id}`}>
+      <Card className="hover:shadow-lg transition-shadow duration-200">
+        <CardContent className="p-6">
+          <div className="flex items-start space-x-4">
+            {link.artwork_url && (
+              <img
+                src={link.artwork_url}
+                alt={link.title}
+                className="w-24 h-24 object-cover rounded-lg"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {link.title}
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  {totalViews} {totalViews === 1 ? "view" : "views"}
+                </Badge>
+                <Badge variant="secondary">
+                  {platformCount} {platformCount === 1 ? "platform" : "platforms"}
+                </Badge>
+                <Badge variant="outline">
+                  Created{" "}
+                  {formatDistanceToNow(new Date(link.created_at), {
+                    addSuffix: true,
+                  })}
+                </Badge>
+              </div>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500 truncate">{smartLinkUrl}</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 my-3 text-center text-sm">
-        <div>
-          <div className="font-medium">{views}</div>
-          <div className="text-xs text-muted-foreground">Views</div>
-        </div>
-        <div>
-          <div className="font-medium">{clicks}</div>
-          <div className="text-xs text-muted-foreground">Clicks</div>
-        </div>
-        <div>
-          <div className="font-medium">{ctr}%</div>
-          <div className="text-xs text-muted-foreground">CTR</div>
-        </div>
-      </div>
-
-      <div className="mt-auto pt-3 border-t flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
-        </div>
-        <TooltipProvider>
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/link/${link.id}`)}
-                >
-                  <ExternalLinkIcon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View Smart Link</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/links/${link.id}/analytics`)}
-                >
-                  <BarChart2Icon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View Analytics</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/links/${link.id}/edit`)}
-                >
-                  <EditIcon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit Smart Link</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{link.title}"? This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(link.id)}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </TooltipProvider>
-      </div>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
-}
+};
+
+export default SmartLinkCard;
