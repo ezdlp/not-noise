@@ -31,7 +31,7 @@ export default function SmartLinkAnalytics() {
             platform_id,
             platform_name,
             url,
-            clicks (
+            clicks:platform_clicks (
               id,
               clicked_at,
               country,
@@ -85,7 +85,7 @@ export default function SmartLinkAnalytics() {
   const platformData = smartLink.platform_links?.map((pl) => ({
     name: pl.platform_name,
     clicks: pl.clicks?.length || 0,
-  }));
+  })) || [];
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -160,13 +160,12 @@ export default function SmartLinkAnalytics() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Recent Clicks</h2>
           <div className="space-y-4">
-            {smartLink.platform_links
-              ?.flatMap((pl) =>
-                (pl.clicks || []).map((click) => ({
-                  ...click,
-                  platform_name: pl.platform_name,
-                }))
-              )
+            {smartLink.platform_links?.flatMap((pl) =>
+              (pl.clicks || []).map((click) => ({
+                ...click,
+                platform_name: pl.platform_name,
+              }))
+            )
               .sort(
                 (a, b) =>
                   new Date(b.clicked_at).getTime() -

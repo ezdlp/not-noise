@@ -18,7 +18,12 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-export function SmartLinkCard({ link }: { link: any }) {
+interface SmartLinkCardProps {
+  link: any;
+  onDelete?: (id: string) => void;
+}
+
+export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
 
   const handleDelete = async () => {
@@ -30,6 +35,9 @@ export function SmartLinkCard({ link }: { link: any }) {
 
       if (error) throw error;
 
+      if (onDelete) {
+        onDelete(link.id);
+      }
       toast.success("Smart link deleted successfully");
     } catch (error) {
       console.error("Error deleting smart link:", error);
