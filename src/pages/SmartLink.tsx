@@ -116,12 +116,14 @@ const SmartLink = () => {
         throw error;
       }
 
+      console.log('Platform click recorded successfully');
+
       // Track click event with Meta Pixel if enabled
       if (smartLink.meta_pixel_id) {
         fbq('track', smartLink.meta_click_event || 'SmartLinkClick');
       }
     } catch (error) {
-      console.error('Error recording platform click:', error);
+      console.error('Error in handlePlatformClick:', error);
     }
   };
 

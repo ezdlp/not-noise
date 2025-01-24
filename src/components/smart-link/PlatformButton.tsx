@@ -6,17 +6,24 @@ interface PlatformButtonProps {
   icon: string;
   action: string;
   url: string;
-  onClick?: () => void;
+  onClick?: () => Promise<void>;
 }
 
 const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProps) => {
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent default to ensure our click handler runs first
-    if (onClick) {
-      onClick();
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      console.log('Platform button clicked:', name);
+      if (onClick) {
+        await onClick();
+        console.log('Click handler completed successfully');
+      }
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error in platform button click handler:', error);
+      // Still open the URL even if tracking fails
+      window.open(url, '_blank');
     }
-    // Open in new tab after our click handling is done
-    window.open(url, '_blank');
   };
 
   return (
