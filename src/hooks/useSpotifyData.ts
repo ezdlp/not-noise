@@ -3,8 +3,8 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { extractSpotifyTrackId } from "@/utils/spotify";
 
 const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
+  clientSecret: import.meta.env.VITE_SPOTIFY_CLIENT_SECRET,
 });
 
 let accessToken: string | null = null;
