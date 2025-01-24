@@ -10,10 +10,12 @@ interface PlatformButtonProps {
 }
 
 const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProps) => {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default to ensure our click handler runs first
     if (onClick) {
       onClick();
     }
+    // Open in new tab after our click handling is done
     window.open(url, '_blank');
   };
 

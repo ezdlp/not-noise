@@ -66,10 +66,14 @@ const SmartLink = () => {
 
       // Record the view
       if (smartLinkData) {
-        await supabase.from('link_views').insert({
+        const { error: viewError } = await supabase.from('link_views').insert({
           smart_link_id: smartLinkData.id,
           user_agent: navigator.userAgent,
         });
+
+        if (viewError) {
+          console.error('Error recording view:', viewError);
+        }
       }
 
       return smartLinkData;
@@ -101,10 +105,16 @@ const SmartLink = () => {
     if (!smartLink) return;
 
     try {
-      await supabase.from('platform_clicks').insert({
+      console.log('Recording platform click:', platformId);
+      const { error } = await supabase.from('platform_clicks').insert({
         platform_link_id: platformId,
         user_agent: navigator.userAgent,
       });
+
+      if (error) {
+        console.error('Error recording platform click:', error);
+        throw error;
+      }
 
       // Track click event with Meta Pixel if enabled
       if (smartLink.meta_pixel_id) {
