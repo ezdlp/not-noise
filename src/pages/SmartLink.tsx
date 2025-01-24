@@ -5,6 +5,7 @@ import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
+import { toast } from "sonner";
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -73,6 +74,9 @@ const SmartLink = () => {
 
         if (viewError) {
           console.error('Error recording view:', viewError);
+          toast.error("Failed to record view");
+        } else {
+          console.log('View recorded successfully');
         }
       }
 
@@ -101,18 +105,20 @@ const SmartLink = () => {
     }
   }, [smartLink?.meta_pixel_id]);
 
-  const handlePlatformClick = async (platformId: string) => {
+  const handlePlatformClick = async (platformLinkId: string) => {
     if (!smartLink) return;
 
     try {
-      console.log('Recording platform click:', platformId);
+      console.log('Recording platform click for ID:', platformLinkId);
+      
       const { error } = await supabase.from('platform_clicks').insert({
-        platform_link_id: platformId,
+        platform_link_id: platformLinkId,
         user_agent: navigator.userAgent,
       });
 
       if (error) {
         console.error('Error recording platform click:', error);
+        toast.error("Failed to record click");
         throw error;
       }
 
@@ -124,6 +130,7 @@ const SmartLink = () => {
       }
     } catch (error) {
       console.error('Error in handlePlatformClick:', error);
+      throw error; // Re-throw to be handled by the PlatformButton component
     }
   };
 
