@@ -16,6 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +84,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoreVerticalIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -101,37 +107,62 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-          >
-            <Link to={`/link/${link.slug}`} target="_blank">
-              <ExternalLinkIcon className="mr-2 h-4 w-4" />
-              View Link
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyToClipboard}
-          >
-            {isCopied ? (
-              <CheckIcon className="mr-2 h-4 w-4" />
-            ) : (
-              <CopyIcon className="mr-2 h-4 w-4" />
-            )}
-            Copy URL
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/dashboard/analytics/${link.id}`)}
-          >
-            <BarChart2Icon className="mr-2 h-4 w-4" />
-            Analytics
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  asChild
+                >
+                  <Link to={`/link/${link.slug}`} target="_blank">
+                    <ExternalLinkIcon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View Link</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={copyToClipboard}
+                >
+                  {isCopied ? (
+                    <CheckIcon className="h-4 w-4" />
+                  ) : (
+                    <CopyIcon className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Copy URL</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => navigate(`/dashboard/analytics/${link.id}`)}
+                >
+                  <BarChart2Icon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Analytics</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </Card>
