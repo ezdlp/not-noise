@@ -231,3 +231,5 @@ export function SmartLinkCard({ link, onDelete, popularityScore = null }: SmartL
         </div>
       </div>
     </Card>
+  );
+}
