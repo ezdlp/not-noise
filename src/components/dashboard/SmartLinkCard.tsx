@@ -1,171 +1,102 @@
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatDistanceToNow } from "date-fns";
-import { 
-  EditIcon, 
-  TrashIcon, 
-  ExternalLinkIcon, 
-  CopyIcon,
-  BarChart2Icon,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+  BarChart2Icon,
+  EditIcon,
+  ExternalLinkIcon,
+  MoreVerticalIcon,
+  TrashIcon,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-interface SmartLinkCardProps {
-  link: any;
-  onDelete: (id: string) => void;
-}
-
-export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
+export function SmartLinkCard({ link }: { link: any }) {
   const navigate = useNavigate();
-  const views = link.link_views?.length || 0;
-  const clicks = link.platform_clicks?.length || 0;
-  const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-  const smartLinkUrl = `${window.location.origin}/link/${link.slug || link.id}`;
 
-  const copyToClipboard = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard");
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from("smart_links")
+        .delete()
+        .eq("id", link.id);
+
+      if (error) throw error;
+
+      toast.success("Smart link deleted successfully");
+    } catch (error) {
+      console.error("Error deleting smart link:", error);
+      toast.error("Failed to delete smart link");
+    }
   };
 
   return (
-    <Card className="p-4 flex flex-col h-full">
-      <div className="flex gap-4">
-        {link.artwork_url && (
-          <img
-            src={link.artwork_url}
-            alt={link.title}
-            className="w-20 h-20 object-cover rounded"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium truncate">{link.title}</h3>
-          <p className="text-sm text-muted-foreground">{link.artist_name}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
-              {smartLinkUrl}
-            </code>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 flex-shrink-0"
-              onClick={() => copyToClipboard(smartLinkUrl)}
-            >
-              <CopyIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+    <Card className="flex flex-col md:flex-row gap-4 p-4">
+      <div className="flex-shrink-0">
+        <img
+          src={link.artwork_url || "/placeholder.svg"}
+          alt={link.title}
+          className="w-24 h-24 object-cover rounded-lg"
+        />
       </div>
-
-      <div className="grid grid-cols-3 gap-2 my-3 text-center text-sm">
-        <div>
-          <div className="font-medium">{views}</div>
-          <div className="text-xs text-muted-foreground">Views</div>
-        </div>
-        <div>
-          <div className="font-medium">{clicks}</div>
-          <div className="text-xs text-muted-foreground">Clicks</div>
-        </div>
-        <div>
-          <div className="font-medium">{ctr}%</div>
-          <div className="text-xs text-muted-foreground">CTR</div>
-        </div>
-      </div>
-
-      <div className="mt-auto pt-3 border-t flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
-        </div>
-        <TooltipProvider>
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/link/${link.id}`)}
-                >
-                  <ExternalLinkIcon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View Smart Link</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/links/${link.id}/analytics`)}
-                >
-                  <BarChart2Icon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View Analytics</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/links/${link.id}/edit`)}
-                >
-                  <EditIcon className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit Smart Link</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{link.title}"? This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(link.id)}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+      <div className="flex-grow space-y-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-semibold">{link.title}</h3>
+            <p className="text-sm text-muted-foreground">{link.artist_name}</p>
           </div>
-        </TooltipProvider>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVerticalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
+                <EditIcon className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/dashboard/analytics/${link.id}`)}>
+                <BarChart2Icon className="mr-2 h-4 w-4" />
+                Analytics
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={handleDelete}
+              >
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link to={`/link/${link.slug}`} target="_blank">
+              <ExternalLinkIcon className="mr-2 h-4 w-4" />
+              View Link
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/dashboard/analytics/${link.id}`)}
+          >
+            <BarChart2Icon className="mr-2 h-4 w-4" />
+            Analytics
+          </Button>
+        </div>
       </div>
     </Card>
   );

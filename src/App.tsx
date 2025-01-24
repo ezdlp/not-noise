@@ -8,6 +8,7 @@ import SmartLink from "./pages/SmartLink";
 import CreateSmartLink from "./pages/CreateSmartLink";
 import EditSmartLink from "./pages/EditSmartLink";
 import Dashboard from "./pages/Dashboard";
+import SmartLinkAnalytics from "./pages/SmartLinkAnalytics";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AccountSettings from "./pages/AccountSettings";
@@ -136,6 +137,14 @@ const AppContent = () => {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard/analytics/:id"
+          element={
+            <PrivateRoute>
+              <SmartLinkAnalytics />
             </PrivateRoute>
           }
         />
