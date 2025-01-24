@@ -3,6 +3,7 @@ import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSpotifyPopularity } from "@/hooks/useSpotifyData";
 
 export default function Dashboard() {
   const { data: links, isLoading } = useQuery({
@@ -38,6 +39,8 @@ export default function Dashboard() {
     },
   });
 
+  const { data: popularityScores } = useSpotifyPopularity(links || []);
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       <div>
@@ -46,7 +49,7 @@ export default function Dashboard() {
           <DashboardStats data={links} />
         </div>
       </div>
-      <SmartLinksList links={links} isLoading={isLoading} />
+      <SmartLinksList links={links} isLoading={isLoading} popularityScores={popularityScores} />
     </div>
   );
 }

@@ -32,13 +32,12 @@ import { useState } from "react";
 interface SmartLinkCardProps {
   link: any;
   onDelete?: (id: string) => void;
+  popularityScore?: number | null;
 }
 
-export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
+export function SmartLinkCard({ link, onDelete, popularityScore = null }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
-  // This will be replaced by the actual Spotify popularity score
-  const popularityScore = null;
 
   const handleDelete = async () => {
     try {
@@ -232,5 +231,3 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         </div>
       </div>
     </Card>
-  );
-}
