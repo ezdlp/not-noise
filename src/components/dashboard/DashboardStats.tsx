@@ -10,10 +10,10 @@ import { ArrowUpIcon, ArrowDownIcon, EyeIcon, MousePointerClickIcon, TargetIcon 
 export function DashboardStats({ data }: { data: any[] }) {
   const totalViews = data?.reduce((acc, link) => acc + (link.link_views?.length || 0), 0) || 0;
   
-  // Fixed calculation for total clicks by properly accessing nested platform_links and their clicks
+  // Updated calculation to properly access platform_clicks
   const totalClicks = data?.reduce((acc, link) => {
     const platformClicks = link.platform_links?.reduce((sum: number, pl: any) => {
-      return sum + (pl.clicks?.length || 0);
+      return sum + (pl.platform_clicks?.length || 0);
     }, 0) || 0;
     return acc + platformClicks;
   }, 0) || 0;
