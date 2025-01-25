@@ -1,5 +1,5 @@
 import React from 'react';
-import { EmailSubscribeForm } from './smart-link/EmailSubscribeForm';
+import EmailSubscribeForm from './smart-link/EmailSubscribeForm';
 
 interface EmailSubscriptionFormProps {
   smartLinkId: string;

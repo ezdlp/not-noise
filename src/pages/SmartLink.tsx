@@ -36,8 +36,8 @@ export default function SmartLink() {
           ),
           user:profiles (
             id,
-            full_name,
-            avatar_url
+            name,
+            artist_name
           )
         `
         )
@@ -170,11 +170,11 @@ export default function SmartLink() {
           <Avatar className="h-6 w-6">
             <AvatarImage src={smartLink.user?.avatar_url || undefined} />
             <AvatarFallback>
-              {smartLink.user?.full_name?.[0] || "U"}
+              {smartLink.user?.name?.[0] || "U"}
             </AvatarFallback>
           </Avatar>
           <span className="text-sm text-muted-foreground">
-            {smartLink.user?.full_name}
+            {smartLink.user?.name}
           </span>
         </div>
 
