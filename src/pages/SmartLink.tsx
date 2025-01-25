@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -168,13 +168,12 @@ export default function SmartLink() {
 
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
-            <AvatarImage src={smartLink.user?.avatar_url || undefined} />
             <AvatarFallback>
-              {smartLink.user?.name?.[0] || "U"}
+              {smartLink.user?.name?.[0] || smartLink.user?.artist_name?.[0] || "U"}
             </AvatarFallback>
           </Avatar>
           <span className="text-sm text-muted-foreground">
-            {smartLink.user?.name}
+            {smartLink.user?.name || smartLink.user?.artist_name}
           </span>
         </div>
 
