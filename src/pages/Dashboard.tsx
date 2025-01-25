@@ -20,7 +20,7 @@ export default function Dashboard() {
             platform_id,
             platform_name,
             url,
-            clicks (
+            platform_clicks (
               id,
               clicked_at
             )
