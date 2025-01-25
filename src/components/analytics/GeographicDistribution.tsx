@@ -8,8 +8,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { MapIcon } from "lucide-react";
 
+// Using a more reliable source for the world map data
 const geoUrl =
-  "https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json";
+  "https://raw.githubusercontent.com/zcreativelabs/react-simple-maps/master/topojson-maps/world-110m.json";
 
 interface CountryData {
   country: string;
