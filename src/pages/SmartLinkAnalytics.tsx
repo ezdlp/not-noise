@@ -14,7 +14,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { GeographicDistribution } from "@/components/analytics/GeographicDistribution";
 
 export default function SmartLinkAnalytics() {
   const { id } = useParams();
@@ -88,28 +87,6 @@ export default function SmartLinkAnalytics() {
     clicks: pl.clicks?.length || 0,
   })) || [];
 
-  // Prepare geographic data
-  const viewsByCountry = smartLink.link_views?.reduce((acc, view) => {
-    const country = view.country || "Unknown";
-    acc[country] = (acc[country] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const clicksByCountry = smartLink.platform_links?.reduce((acc, pl) => {
-    pl.clicks?.forEach((click) => {
-      const country = click.country || "Unknown";
-      acc[country] = (acc[country] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
-
-  const geographicData = Object.entries(clicksByCountry || {}).map(
-    ([country, count]) => ({
-      country,
-      count,
-    })
-  );
-
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex items-center gap-4 mb-6">
@@ -142,24 +119,20 @@ export default function SmartLinkAnalytics() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Platform Performance</h2>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={platformData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="clicks" fill="#6851FB" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <GeographicDistribution data={geographicData} total={totalClicks} />
-      </div>
+      <Card className="p-6 mb-8">
+        <h2 className="text-lg font-semibold mb-4">Platform Performance</h2>
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={platformData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="clicks" fill="#6851FB" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="p-6">
