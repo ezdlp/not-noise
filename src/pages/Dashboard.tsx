@@ -19,7 +19,11 @@ export default function Dashboard() {
             id,
             platform_id,
             platform_name,
-            url
+            url,
+            clicks (
+              id,
+              clicked_at
+            )
           ),
           link_views (
             id,
