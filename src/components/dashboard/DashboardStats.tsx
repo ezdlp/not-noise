@@ -9,11 +9,15 @@ import { ArrowUpIcon, ArrowDownIcon, EyeIcon, MousePointerClickIcon, TargetIcon 
 
 export function DashboardStats({ data }: { data: any[] }) {
   const totalViews = data?.reduce((acc, link) => acc + (link.link_views?.length || 0), 0) || 0;
-  const totalClicks = data?.reduce(
-    (acc, link) =>
-      acc + (link.platform_links?.reduce((sum: number, pl: any) => sum + (pl.clicks?.length || 0), 0) || 0),
-    0
-  ) || 0;
+  
+  // Fixed calculation for total clicks by properly accessing nested platform_links and their clicks
+  const totalClicks = data?.reduce((acc, link) => {
+    const platformClicks = link.platform_links?.reduce((sum: number, pl: any) => {
+      return sum + (pl.clicks?.length || 0);
+    }, 0) || 0;
+    return acc + platformClicks;
+  }, 0) || 0;
+
   const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
   const stats = [
