@@ -1,1 +1,4 @@
 project_id = "owtufhdsuuyrgmxytclj"
+
+[functions.get-geolocation]
+verify_jwt = false

@@ -1,244 +1,219 @@
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import PlatformButton from "@/components/smart-link/PlatformButton";
-import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
-import { useEffect } from "react";
-import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
-import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { PlatformIcon } from "@/components/PlatformIcon";
+import { useToast } from "@/components/ui/use-toast";
+import { EmailSubscriptionForm } from "@/components/EmailSubscriptionForm";
+import { ShareButton } from "@/components/ShareButton";
+import { useMetaPixel } from "@/hooks/useMetaPixel";
 
-const SmartLink = () => {
-  const { slug } = useParams<{ slug: string }>();
+export default function SmartLink() {
+  const { slug } = useParams();
+  const { toast } = useToast();
+  const { trackEvent } = useMetaPixel();
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
-  // Separate mutation for recording views
-  const recordViewMutation = useMutation({
-    mutationFn: async (smartLinkId: string) => {
-      const { error } = await supabase.from('link_views').insert({
-        smart_link_id: smartLinkId,
-        user_agent: navigator.userAgent,
-      });
-
-      if (error) {
-        console.error('Error recording view:', error);
-        toast.error("Failed to record view");
-        throw error;
-      }
-      console.log('View recorded successfully');
-    }
-  });
-
-  const { data: smartLink, isLoading, error } = useQuery({
-    queryKey: ['smartLink', slug],
+  const { data: smartLink, isLoading } = useQuery({
+    queryKey: ["smartLink", slug],
     queryFn: async () => {
-      console.log("Fetching smart link:", slug);
-      
-      // Try to fetch by slug first
-      let { data: smartLinkData, error: smartLinkError } = await supabase
-        .from('smart_links')
-        .select(`
+      const { data, error } = await supabase
+        .from("smart_links")
+        .select(
+          `
           *,
           platform_links (
             id,
             platform_id,
             platform_name,
             url
+          ),
+          user:profiles (
+            id,
+            full_name,
+            avatar_url
           )
-        `)
-        .eq('slug', slug)
-        .maybeSingle();
+        `
+        )
+        .eq("slug", slug)
+        .single();
 
-      if (!smartLinkData && !smartLinkError) {
-        console.log("No smart link found with slug, trying ID...");
-        const { data: idData, error: idError } = await supabase
-          .from('smart_links')
-          .select(`
-            *,
-            platform_links (
-              id,
-              platform_id,
-              platform_name,
-              url
-            )
-          `)
-          .eq('id', slug)
-          .maybeSingle();
-
-        if (idError) {
-          console.error('Error fetching smart link by ID:', idError);
-          throw idError;
-        }
-
-        if (!idData) {
-          console.error('Smart link not found by either slug or ID:', slug);
-          throw new Error('Smart link not found');
-        }
-
-        smartLinkData = idData;
-      } else if (smartLinkError) {
-        console.error('Error fetching smart link:', smartLinkError);
-        throw smartLinkError;
-      }
-
-      console.log("Found smart link:", smartLinkData);
-      return smartLinkData;
+      if (error) throw error;
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
-    gcTime: 30 * 60 * 1000, // Cache garbage collection time (formerly cacheTime)
   });
 
-  // Record view on initial load only
+  const recordView = async () => {
+    try {
+      // Get IP address
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const { ip } = await ipResponse.json();
+
+      // Get geolocation from our Edge Function
+      const { data: geoData } = await supabase.functions.invoke('get-geolocation', {
+        body: { ip },
+      });
+
+      // Record the view with country information
+      const { error: viewError } = await supabase
+        .from('link_views')
+        .insert({
+          smart_link_id: smartLink?.id,
+          user_agent: navigator.userAgent,
+          ip_address: ip,
+          country: geoData?.country || 'Unknown'
+        });
+
+      if (viewError) throw viewError;
+    } catch (error) {
+      console.error('Error recording view:', error);
+    }
+  };
+
+  const handlePlatformClick = async (platformId: string) => {
+    try {
+      const platformLink = smartLink?.platform_links?.find(
+        (pl) => pl.platform_id === platformId
+      );
+
+      if (!platformLink) return;
+
+      // Get IP address
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const { ip } = await ipResponse.json();
+
+      // Get geolocation from our Edge Function
+      const { data: geoData } = await supabase.functions.invoke('get-geolocation', {
+        body: { ip },
+      });
+
+      // Record the click with country information
+      const { error: clickError } = await supabase
+        .from('platform_clicks')
+        .insert({
+          platform_link_id: platformLink.id,
+          user_agent: navigator.userAgent,
+          ip_address: ip,
+          country: geoData?.country || 'Unknown'
+        });
+
+      if (clickError) throw clickError;
+
+      trackEvent("Click Platform Link", {
+        platform: platformLink.platform_name,
+        smartLinkId: smartLink?.id,
+      });
+
+      window.open(platformLink.url, '_blank');
+    } catch (error) {
+      console.error('Error recording click:', error);
+    }
+  };
+
   useEffect(() => {
     if (smartLink?.id) {
-      recordViewMutation.mutate(smartLink.id);
+      recordView();
     }
   }, [smartLink?.id]);
 
-  useEffect(() => {
-    if (smartLink?.meta_pixel_id) {
-      // Initialize Meta Pixel
-      const initPixel = () => {
-        (function(f,b,e,v,n,t,s) {
-          if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)})(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          
-        fbq('init', smartLink.meta_pixel_id);
-        fbq('track', smartLink.meta_view_event || 'SmartLinkView');
-      };
-
-      initPixel();
-    }
-  }, [smartLink?.meta_pixel_id]);
-
-  const handlePlatformClick = async (platformLinkId: string) => {
-    if (!smartLink) return;
-
-    try {
-      console.log('Recording platform click for ID:', platformLinkId);
-      
-      const { error } = await supabase.from('platform_clicks').insert({
-        platform_link_id: platformLinkId,
-        user_agent: navigator.userAgent,
-      });
-
-      if (error) {
-        console.error('Error recording platform click:', error);
-        toast.error("Failed to record click");
-        throw error;
-      }
-
-      console.log('Platform click recorded successfully');
-
-      // Track click event with Meta Pixel if enabled
-      if (smartLink.meta_pixel_id) {
-        fbq('track', smartLink.meta_click_event || 'SmartLinkClick');
-      }
-    } catch (error) {
-      console.error('Error in handlePlatformClick:', error);
-      throw error;
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="container max-w-2xl mx-auto py-6 px-4">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-[300px] w-[300px] rounded-lg" />
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-32" />
+          <div className="w-full space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error || !smartLink) {
+  if (!smartLink) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-red-500">
-          {error ? 'Error loading smart link' : 'Smart link not found'}
-        </p>
+      <div className="container max-w-2xl mx-auto py-6 px-4">
+        <div className="flex flex-col items-center gap-4">
+          <h1 className="text-2xl font-bold">Link not found</h1>
+          <p className="text-muted-foreground">
+            The link you're looking for doesn't exist or has been removed.
+          </p>
+        </div>
       </div>
     );
   }
-
-  const platformIcons: { [key: string]: string } = {
-    spotify: "/lovable-uploads/spotify.png",
-    apple_music: "/lovable-uploads/applemusic.png",
-    youtube_music: "/lovable-uploads/youtubemusic.png",
-    youtube: "/lovable-uploads/youtube.png",
-    amazon_music: "/lovable-uploads/amazonmusic.png",
-    deezer: "/lovable-uploads/deezer.png",
-    soundcloud: "/lovable-uploads/soundcloud.png",
-    itunes: "/lovable-uploads/itunes.png",
-    tidal: "/lovable-uploads/tidal.png",
-    anghami: "/lovable-uploads/anghami.png",
-    napster: "/lovable-uploads/napster.png",
-    boomplay: "/lovable-uploads/boomplay.png",
-    yandex: "/lovable-uploads/yandex.png",
-    beatport: "/lovable-uploads/beatport.png",
-    bandcamp: "/lovable-uploads/bandcamp.png",
-    audius: "/lovable-uploads/audius.png",
-    // Add exact matches for platform IDs
-    youtubeMusic: "/lovable-uploads/youtubemusic.png",
-    appleMusic: "/lovable-uploads/applemusic.png",
-    amazonMusic: "/lovable-uploads/amazonmusic.png",
-  };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center">
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ 
-          backgroundImage: `url(${smartLink.artwork_url})`,
-          filter: 'blur(30px) brightness(0.7)',
-          transform: 'scale(1.1)'
-        }}
-      />
-
-      <div className="relative w-full max-w-md mx-auto px-4 py-8 z-10">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
-          <SmartLinkHeader
-            title={smartLink.title}
-            artistName={smartLink.artist_name}
-            artworkUrl={smartLink.artwork_url}
+    <div className="container max-w-2xl mx-auto py-6 px-4">
+      <div className="flex flex-col items-center gap-4">
+        <Card className="w-[300px] h-[300px] rounded-lg overflow-hidden">
+          <img
+            src={smartLink.artwork_url || "/placeholder-artwork.jpg"}
+            alt={smartLink.title}
+            className="w-full h-full object-cover"
           />
-          
-          <div className="space-y-4">
-            {smartLink.platform_links && smartLink.platform_links.map((platformLink) => {
-              const icon = platformIcons[platformLink.platform_id];
-              if (!icon) {
-                console.warn(`No icon found for platform: ${platformLink.platform_id}`);
-                return null;
-              }
+        </Card>
 
-              return (
-                <PlatformButton
-                  key={platformLink.id}
-                  name={platformLink.platform_name}
-                  icon={icon}
-                  action="Play"
-                  url={platformLink.url}
-                  onClick={() => handlePlatformClick(platformLink.id)}
-                />
-              );
-            })}
-          </div>
+        <h1 className="text-2xl font-bold text-center">{smartLink.title}</h1>
+        <p className="text-muted-foreground">{smartLink.artist_name}</p>
 
-          {smartLink.email_capture_enabled && (
-            <EmailSubscribeForm
-              smartLinkId={smartLink.id}
-              title={smartLink.email_capture_title}
-              description={smartLink.email_capture_description}
-            />
-          )}
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={smartLink.user?.avatar_url || undefined} />
+            <AvatarFallback>
+              {smartLink.user?.full_name?.[0] || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-sm text-muted-foreground">
+            {smartLink.user?.full_name}
+          </span>
         </div>
-        
-        <div className="mt-8 text-center">
-          <p className="text-sm text-white/60">Powered by notnoise</p>
+
+        <div className="w-full space-y-2">
+          {smartLink.platform_links?.map((platform) => (
+            <Button
+              key={platform.platform_id}
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => handlePlatformClick(platform.platform_id)}
+            >
+              <PlatformIcon platform={platform.platform_id} className="h-5 w-5" />
+              <span>Listen on {platform.platform_name}</span>
+            </Button>
+          ))}
         </div>
+
+        <Separator />
+
+        <div className="flex gap-2">
+          <ShareButton
+            title={smartLink.title}
+            text={`Listen to ${smartLink.title} by ${smartLink.artist_name}`}
+            url={window.location.href}
+          />
+          <Button
+            variant="outline"
+            onClick={() => setShowEmailForm((prev) => !prev)}
+          >
+            Subscribe
+          </Button>
+        </div>
+
+        {showEmailForm && (
+          <Card className="w-full p-4">
+            <EmailSubscriptionForm smartLinkId={smartLink.id} />
+          </Card>
+        )}
       </div>
     </div>
   );
-};
-
-export default SmartLink;
+}
