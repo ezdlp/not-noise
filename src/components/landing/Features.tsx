@@ -4,7 +4,7 @@ const features = [
   {
     icon: Link2,
     title: "One Link for All Platforms",
-    description: "Create a single, powerful smart link that connects your fans to your music across all streaming platforms. Simplify your promotion strategy and reach listeners wherever they are.",
+    description: "Create a single, powerful smart link that connects your fans to your music across all major streaming platforms. Simplify your promotion strategy and reach listeners wherever they are.",
   },
   {
     icon: Activity,
@@ -35,32 +35,24 @@ const features = [
 
 export const Features = () => {
   return (
-    <section className="py-20 px-4 bg-gradient-to-b from-white to-moonRaker">
+    <section className="py-20 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-cornflowerBlue font-heading">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
           From One Link to Endless Plays
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <div
               key={feature.title}
-              className={`p-8 rounded-xl border border-transparent shadow-lg hover:shadow-xl transition-all duration-300 ${
-                index % 3 === 0 ? 'bg-feature-gradient-1' :
-                index % 3 === 1 ? 'bg-feature-gradient-2' :
-                'bg-feature-gradient-3'
-              }`}
+              className="p-8 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="mb-6">
-                <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center group">
-                  <feature.icon className={`h-6 w-6 ${
-                    index % 3 === 0 ? 'text-moonRaker' :
-                    index % 3 === 1 ? 'text-ziggurat' :
-                    'text-surfCrest'
-                  } group-hover:scale-110 transition-all duration-300`} />
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <feature.icon className="h-6 w-6 text-primary" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-white font-heading">{feature.title}</h3>
-              <p className="text-moonRaker/90 leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>

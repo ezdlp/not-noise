@@ -25,51 +25,81 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#6851FB",
+          foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#D6BCFA",
+          foreground: "#0F0F0F",
         },
-        perfume: "#E5D4FF",
-        rhino: "#2E4374",
-        meteorite: "#3B185F",
-        regentBlue: "#A0E9FF",
-        arapawa: "#0B2447",
-        ziggurat: "#A5D7E8",
-        blueGem: "#4424D6",
-        surfCrest: "#C8E4B2",
-        mintGreen: "#9FFF9C",
-        toreaBay: "#0B2447",
-        persianBlue: "#1D24CA",
-        nebula: "#1D267D",
-        moonRaker: "#E5D4FF",
-        jacarta: "#3B185F",
-        jordyBlue: "#9BB8CD",
-        persianIndigo: "#2E4374",
-        bilobaFlower: "#C4B0FF",
-        luckyPoint: "#2E2E7E",
-        jaggedIce: "#C4DFDF",
-        christalle: "#2E4374",
-        cornflowerBlue: "#7B66FF",
-        mindaro: "#D4FF9C",
-        snowyMint: "#DBFFD6",
-        valhalla: "#2E2E7E",
-        codGray: "#121212",
-        bermuda: "#93FFD8",
-        tropicalBlue: "#C4DFDF",
+        accent: {
+          DEFAULT: "#F5F3FF",
+          foreground: "#0F0F0F",
+        },
+        onyx: "#0F0F0F",
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         heading: ["Poppins", "sans-serif"],
       },
-      backgroundImage: {
-        'hero-gradient': 'linear-gradient(135deg, #7B66FF, #E5D4FF)',
-        'cta-gradient': 'linear-gradient(135deg, #9FFF9C, #0B2447)',
-        'feature-gradient-1': 'linear-gradient(135deg, #E5D4FF, #3B185F)',
-        'feature-gradient-2': 'linear-gradient(135deg, #A5D7E8, #4424D6)',
-        'feature-gradient-3': 'linear-gradient(135deg, #C8E4B2, #0B2447)',
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 3s ease-in-out infinite",
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'inherit',
+            a: {
+              color: 'inherit',
+              textDecoration: 'none',
+              fontWeight: '500',
+            },
+            strong: {
+              color: 'inherit',
+            },
+            h1: {
+              color: 'inherit',
+            },
+            h2: {
+              color: 'inherit',
+            },
+            h3: {
+              color: 'inherit',
+            },
+            h4: {
+              color: 'inherit',
+            },
+          },
+        },
       },
     },
   },
