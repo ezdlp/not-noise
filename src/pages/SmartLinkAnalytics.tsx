@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { DailyStatsChart } from "@/components/dashboard/DailyStatsChart";
 import {
   BarChart,
   Bar,
@@ -119,6 +120,8 @@ export default function SmartLinkAnalytics() {
         </Card>
       </div>
 
+      {id && <DailyStatsChart smartLinkId={id} />}
+
       <Card className="p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">Platform Performance</h2>
         <div className="h-[400px]">
@@ -160,12 +163,13 @@ export default function SmartLinkAnalytics() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Recent Clicks</h2>
           <div className="space-y-4">
-            {smartLink.platform_links?.flatMap((pl) =>
-              (pl.clicks || []).map((click) => ({
-                ...click,
-                platform_name: pl.platform_name,
-              }))
-            )
+            {smartLink.platform_links
+              ?.flatMap((pl) =>
+                (pl.clicks || []).map((click) => ({
+                  ...click,
+                  platform_name: pl.platform_name,
+                }))
+              )
               .sort(
                 (a, b) =>
                   new Date(b.clicked_at).getTime() -
