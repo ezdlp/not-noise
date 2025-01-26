@@ -40,6 +40,12 @@
   }
 }
 
+@layer components {
+  [data-active="true"] {
+    @apply bg-gray-100;
+  }
+}
+
 .prose {
   @apply max-w-none;
 }
@@ -70,8 +76,4 @@
 
 .prose ol {
   @apply list-decimal pl-5 mb-4;
-}
-
-[data-active="true"] {
-  @apply bg-secondary;
 }
