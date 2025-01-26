@@ -22,20 +22,26 @@ interface DailyStats {
   clicks: number;
 }
 
+interface RPCResponse {
+  day: string;
+  views: number;
+  clicks: number;
+}
+
 export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   const { data: stats, isLoading } = useQuery<DailyStats[]>({
     queryKey: ["dailyStats", smartLinkId],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
 
-      const { data, error } = await supabase.rpc("get_daily_stats", {
+      const { data, error } = await supabase.rpc<RPCResponse>("get_daily_stats", {
         p_smart_link_id: smartLinkId,
         p_start_date: thirtyDaysAgo,
       });
 
       if (error) throw error;
 
-      return (data || []).map((stat: DailyStats) => ({
+      return (data || []).map((stat) => ({
         ...stat,
         day: format(new Date(stat.day), "MMM d"),
       }));
