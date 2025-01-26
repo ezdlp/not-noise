@@ -29,12 +29,12 @@ interface RPCResponse {
 }
 
 export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
-  const { data: stats, isLoading } = useQuery<DailyStats[]>({
+  const { data: stats, isLoading } = useQuery<RPCResponse[]>({
     queryKey: ["dailyStats", smartLinkId],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
 
-      const { data, error } = await supabase.rpc<RPCResponse>("get_daily_stats", {
+      const { data, error } = await supabase.rpc("get_daily_stats", {
         p_smart_link_id: smartLinkId,
         p_start_date: thirtyDaysAgo,
       });

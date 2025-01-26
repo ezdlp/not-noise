@@ -612,7 +612,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_daily_stats: {
+        Args: {
+          p_smart_link_id: string
+          p_start_date: string
+        }
+        Returns: {
+          day: string
+          views: number
+          clicks: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
