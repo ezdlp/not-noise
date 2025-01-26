@@ -8,18 +8,18 @@ export const Hero = () => {
     <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-20 bg-hero-gradient">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
         <div className="text-left">
-          <h1 className="text-3xl md:text-6xl font-bold mb-6 font-heading text-violetViolet">
+          <h1 className="text-3xl md:text-6xl font-bold mb-6 font-heading text-white">
             Elevate Your Music With{" "}
-            <span className="text-luckyPoint">
+            <span className="text-vibrantYellow">
               Smart Links
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-codGray mb-8 max-w-xl leading-relaxed">
+          <p className="text-lg md:text-xl text-softLavender mb-8 max-w-xl leading-relaxed">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
             onClick={() => navigate("/create")}
-            className="bg-luckyPoint text-white hover:bg-button-hover transition-all duration-300 transform hover:scale-105 hover:animate-glow"
+            className="bg-neonGreen text-onyx hover:bg-white transition-all duration-300 transform hover:scale-105 hover:animate-glow font-bold"
           >
             Get Started For Free
           </CTAButton>
