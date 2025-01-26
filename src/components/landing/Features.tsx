@@ -4,7 +4,7 @@ const features = [
   {
     icon: Link2,
     title: "One Link for All Platforms",
-    description: "Create a single, powerful smart link that connects your fans to your music across all major streaming platforms. Simplify your promotion strategy and reach listeners wherever they are.",
+    description: "Create a single, powerful smart link that connects your fans to your music across all streaming platforms. Simplify your promotion strategy and reach listeners wherever they are.",
   },
   {
     icon: Activity,
@@ -37,22 +37,24 @@ export const Features = () => {
   return (
     <section className="py-20 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-cornflower font-heading">
           From One Link to Endless Plays
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="p-8 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className={`p-8 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 ${
+                index % 2 === 0 ? 'bg-moonRaker' : 'bg-ziggurat'
+              }`}
             >
               <div className="mb-6">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <feature.icon className="h-6 w-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center group">
+                  <feature.icon className="h-6 w-6 text-mintGreen group-hover:text-persianBlue transition-colors duration-300" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-bold mb-3 text-cornflower font-heading">{feature.title}</h3>
+              <p className="text-codGray leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>

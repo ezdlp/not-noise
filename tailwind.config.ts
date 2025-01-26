@@ -37,18 +37,16 @@ export default {
           foreground: "#0F0F0F",
         },
         onyx: "#0F0F0F",
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
+        // New color palette
+        cornflower: "#6495ED",
+        snowyMint: "#DFFFD4",
+        violetViolet: "#8B00FF",
+        luckyPoint: "#1A1E7D",
+        mintGreen: "#98FB98",
+        moonRaker: "#D6CADD",
+        ziggurat: "#BFDBE2",
+        codGray: "#1B1B1B",
+        persianBlue: "#1C39BB",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
@@ -67,39 +65,21 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
+        glow: {
+          "0%, 100%": { boxShadow: "0 0 5px rgba(223, 255, 212, 0)" },
+          "50%": { boxShadow: "0 0 20px rgba(223, 255, 212, 0.5)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 3s ease-in-out infinite",
+        glow: "glow 2s ease-in-out infinite",
       },
-      typography: {
-        DEFAULT: {
-          css: {
-            maxWidth: 'none',
-            color: 'inherit',
-            a: {
-              color: 'inherit',
-              textDecoration: 'none',
-              fontWeight: '500',
-            },
-            strong: {
-              color: 'inherit',
-            },
-            h1: {
-              color: 'inherit',
-            },
-            h2: {
-              color: 'inherit',
-            },
-            h3: {
-              color: 'inherit',
-            },
-            h4: {
-              color: 'inherit',
-            },
-          },
-        },
+      backgroundImage: {
+        'hero-gradient': 'linear-gradient(135deg, #6495ED, #DFFFD4)',
+        'cta-gradient': 'linear-gradient(135deg, #8B00FF, #1A1E7D)',
+        'button-hover': 'linear-gradient(135deg, #6495ED, #8B00FF)',
       },
     },
   },
