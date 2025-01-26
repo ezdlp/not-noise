@@ -10,16 +10,16 @@ export const Hero = () => {
         <div className="text-left">
           <h1 className="text-3xl md:text-6xl font-bold mb-6 font-heading text-white">
             Elevate Your Music With{" "}
-            <span className="text-vibrantYellow">
+            <span className="text-snowyMint">
               Smart Links
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-softLavender mb-8 max-w-xl leading-relaxed">
+          <p className="text-lg md:text-xl text-moonRaker mb-8 max-w-xl leading-relaxed">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
             onClick={() => navigate("/create")}
-            className="bg-neonGreen text-onyx hover:bg-white transition-all duration-300 transform hover:scale-105 hover:animate-glow font-bold"
+            className="bg-mintGreen text-toreaBay hover:bg-snowyMint transition-all duration-300 transform hover:scale-105 hover:animate-glow font-bold"
           >
             Get Started For Free
           </CTAButton>

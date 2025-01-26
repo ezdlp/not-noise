@@ -35,9 +35,9 @@ const features = [
 
 export const Features = () => {
   return (
-    <section className="py-20 px-4 bg-gradient-to-b from-white to-softLavender">
+    <section className="py-20 px-4 bg-gradient-to-b from-white to-moonRaker">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-neonPurple font-heading">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-cornflowerBlue font-heading">
           From One Link to Endless Plays
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
@@ -45,22 +45,22 @@ export const Features = () => {
             <div
               key={feature.title}
               className={`p-8 rounded-xl border border-transparent shadow-lg hover:shadow-xl transition-all duration-300 ${
-                index % 3 === 0 ? 'bg-gradient-to-br from-neonPurple/10 to-electricPink/10' :
-                index % 3 === 1 ? 'bg-gradient-to-br from-oceanBlue/10 to-neonGreen/10' :
-                'bg-gradient-to-br from-vividOrange/10 to-vibrantYellow/10'
+                index % 3 === 0 ? 'bg-feature-gradient-1' :
+                index % 3 === 1 ? 'bg-feature-gradient-2' :
+                'bg-feature-gradient-3'
               }`}
             >
               <div className="mb-6">
                 <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center group">
                   <feature.icon className={`h-6 w-6 ${
-                    index % 3 === 0 ? 'text-neonPurple' :
-                    index % 3 === 1 ? 'text-oceanBlue' :
-                    'text-vividOrange'
+                    index % 3 === 0 ? 'text-moonRaker' :
+                    index % 3 === 1 ? 'text-ziggurat' :
+                    'text-surfCrest'
                   } group-hover:scale-110 transition-all duration-300`} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-onyx font-heading">{feature.title}</h3>
-              <p className="text-gray-700 leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-bold mb-3 text-white font-heading">{feature.title}</h3>
+              <p className="text-moonRaker/90 leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
