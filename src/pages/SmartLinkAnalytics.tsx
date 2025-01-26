@@ -137,64 +137,40 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Recent Views</h2>
-          <div className="space-y-4">
-            {smartLink.link_views?.slice(0, 5).map((view) => (
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">Recent Clicks</h2>
+        <div className="space-y-4">
+          {smartLink.platform_links
+            ?.flatMap((pl) =>
+              (pl.clicks || []).map((click) => ({
+                ...click,
+                platform_name: pl.platform_name,
+              }))
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.clicked_at).getTime() -
+                new Date(a.clicked_at).getTime()
+            )
+            .slice(0, 5)
+            .map((click) => (
               <div
-                key={view.id}
+                key={click.id}
                 className="flex items-center justify-between border-b pb-2"
               >
                 <div>
+                  <p className="text-sm font-medium">{click.platform_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(view.viewed_at).toLocaleString()}
+                    {new Date(click.clicked_at).toLocaleString()}
                   </p>
-                  <p className="text-sm">{view.country || "Unknown location"}</p>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {view.user_agent}
+                <div className="text-sm">
+                  {click.country || "Unknown location"}
                 </div>
               </div>
             ))}
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Recent Clicks</h2>
-          <div className="space-y-4">
-            {smartLink.platform_links
-              ?.flatMap((pl) =>
-                (pl.clicks || []).map((click) => ({
-                  ...click,
-                  platform_name: pl.platform_name,
-                }))
-              )
-              .sort(
-                (a, b) =>
-                  new Date(b.clicked_at).getTime() -
-                  new Date(a.clicked_at).getTime()
-              )
-              .slice(0, 5)
-              .map((click) => (
-                <div
-                  key={click.id}
-                  className="flex items-center justify-between border-b pb-2"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{click.platform_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(click.clicked_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-sm">
-                    {click.country || "Unknown location"}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </div>
   );
 }
