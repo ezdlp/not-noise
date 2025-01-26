@@ -23,7 +23,7 @@ interface DailyStats {
 }
 
 export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<DailyStats[]>({
     queryKey: ["dailyStats", smartLinkId],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
@@ -35,7 +35,7 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
 
       if (error) throw error;
 
-      return data.map((stat: DailyStats) => ({
+      return (data || []).map((stat: DailyStats) => ({
         ...stat,
         day: format(new Date(stat.day), "MMM d"),
       }));
@@ -46,6 +46,16 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
     return (
       <Card className="p-6">
         <div className="h-[400px] animate-pulse bg-gray-100 rounded" />
+      </Card>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <Card className="p-6">
+        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+          No data available
+        </div>
       </Card>
     );
   }
