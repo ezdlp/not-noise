@@ -57,7 +57,6 @@ export default function Posts() {
 
   const handleDelete = async (postId: string) => {
     try {
-      // First delete associated categories
       const { error: categoriesError } = await supabase
         .from("blog_post_categories")
         .delete()
@@ -69,7 +68,6 @@ export default function Posts() {
         return;
       }
 
-      // Then delete the post itself
       const { error: postError } = await supabase
         .from("blog_posts")
         .delete()
@@ -82,7 +80,7 @@ export default function Posts() {
       }
 
       toast.success("Post deleted successfully");
-      refetch(); // Refresh the posts list
+      refetch();
     } catch (error) {
       console.error("Error in delete operation:", error);
       toast.error("An error occurred while deleting the post");
@@ -115,6 +113,7 @@ export default function Posts() {
           onClose={() => {
             setIsEditing(false);
             setSelectedPost(null);
+            refetch();
           }}
         />
       </div>
