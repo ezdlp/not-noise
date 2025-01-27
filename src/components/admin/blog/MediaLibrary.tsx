@@ -96,6 +96,15 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
     return null;
   };
 
+  const sanitizeFilename = (filename: string): string => {
+    const sanitized = filename
+      .toLowerCase()
+      .replace(/[^a-z0-9-_.]/g, '-')
+      .replace(/-+/g, '-');
+    
+    return sanitized;
+  };
+
   const handleFileUpload = async (fileToUpload: File) => {
     const error = validateFile(fileToUpload);
     if (error) {
@@ -117,7 +126,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       let originalSize = fileToUpload.size;
       let compressedSize = fileToUpload.size;
 
-      // Compress image if enabled and it's an image file
       if (compressionEnabled && fileToUpload.type.startsWith('image/')) {
         const result = await compressImage(
           fileToUpload,
@@ -127,7 +135,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
               const updated = new Map(prev);
               const file = updated.get(fileId);
               if (file) {
-                updated.set(fileId, { ...file, progress: progress * 0.5 }); // First 50% is compression
+                updated.set(fileId, { ...file, progress: progress * 0.5 });
               }
               return updated;
             });
@@ -138,7 +146,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         originalSize = result.originalSize;
         compressedSize = result.compressedSize;
 
-        // Update file info with compression results
         setUploadingFiles(prev => {
           const updated = new Map(prev);
           const file = updated.get(fileId);
@@ -147,23 +154,23 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
               ...file, 
               originalSize,
               compressedSize,
-              progress: 50 // Compression complete, starting upload
+              progress: 50
             });
           }
           return updated;
         });
       }
 
-      const fileExt = fileToProcess.name.split(".").pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      const nameWithoutExt = fileToProcess.name.substring(0, fileToProcess.name.lastIndexOf('.'));
+      const fileExt = fileToProcess.name.split('.').pop();
+      const sanitizedName = sanitizeFilename(nameWithoutExt);
+      const filePath = `${sanitizedName}.${fileExt}`;
 
-      // Create a ReadableStream from the file
       const stream = fileToProcess.stream();
       const reader = stream.getReader();
       const totalSize = fileToProcess.size;
       let uploadedSize = 0;
 
-      // Read the file in chunks and update progress
       const chunks: Uint8Array[] = [];
       while (true) {
         const { done, value } = await reader.read();
@@ -171,8 +178,8 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         chunks.push(value);
         uploadedSize += value.length;
         const progress = compressionEnabled ? 
-          50 + ((uploadedSize / totalSize) * 50) : // Second 50% is upload if compression was enabled
-          (uploadedSize / totalSize) * 100; // Full 100% is upload if no compression
+          50 + ((uploadedSize / totalSize) * 50) :
+          (uploadedSize / totalSize) * 100;
         
         setUploadingFiles(prev => {
           const updated = new Map(prev);
@@ -184,13 +191,12 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         });
       }
 
-      // Combine chunks and upload
       const file = new Blob(chunks, { type: fileToProcess.type });
       const { error: uploadError } = await supabase.storage
         .from("media-library")
         .upload(filePath, file, {
           contentType: fileToProcess.type,
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) throw uploadError;
@@ -199,7 +205,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         .from("media-library")
         .getPublicUrl(filePath);
 
-      // Get image dimensions
       const img = document.createElement('img');
       const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
         img.onload = () => {
@@ -297,7 +302,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
     if (selectedFiles.size === 0) return;
 
     try {
-      // Check if any files are in use
       const { data: usageData, error: usageError } = await supabase
         .from("media_usage")
         .select("media_id")
@@ -310,7 +314,6 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
         return;
       }
 
-      // Get file paths for selected files
       const { data: fileData, error: fileError } = await supabase
         .from("media_files")
         .select("file_path")
@@ -319,14 +322,12 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
       if (fileError) throw fileError;
       if (!fileData) return;
 
-      // Delete files from storage
       const { error: storageError } = await supabase.storage
         .from("media-library")
         .remove(fileData.map(f => f.file_path));
 
       if (storageError) throw storageError;
 
-      // Delete records from database
       const { error: dbError } = await supabase
         .from("media_files")
         .delete()
