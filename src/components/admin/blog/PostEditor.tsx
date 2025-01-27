@@ -36,6 +36,13 @@ const formSchema = z.object({
   featured_image: z.string().optional(),
 });
 
+export type PostFormValues = z.infer<typeof formSchema>;
+
+export interface PostEditorProps {
+  post?: PostFormValues & { id?: string };
+  onClose: () => void;
+}
+
 export function PostEditor({ post, onClose }: PostEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
@@ -109,7 +116,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         debouncedUpdateSlug(value.title as string);
       }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe?.();
+      debouncedUpdateSlug.cancel();
+    };
   }, [form.watch]);
 
   const handleClose = () => {
@@ -120,7 +130,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const handleSave = async (values: PostFormValues) => {
+  const handleSave = async (values: PostFormValues): Promise<void> => {
     console.log("Saving post with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -188,8 +198,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .from("blog_post_categories")
             .insert({ post_id: post.id, category_id: values.category_id });
         }
-
-        return postData;
       } else {
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
@@ -204,8 +212,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .from("blog_post_categories")
             .insert({ post_id: newPost.id, category_id: values.category_id });
         }
-
-        return postData;
       }
     } catch (error) {
       console.error("Error saving post:", error);
