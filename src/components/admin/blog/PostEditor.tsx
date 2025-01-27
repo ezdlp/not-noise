@@ -130,7 +130,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const handleSave = async (values: PostFormValues) => {
+  const handleSave = async (values: PostFormValues): Promise<void> => {
     console.log("Saving post with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -215,8 +215,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: newPost.id, category_id: values.category_id });
         }
       }
-
-      return postData;
     } catch (error) {
       console.error("Error saving post:", error);
       throw error;
