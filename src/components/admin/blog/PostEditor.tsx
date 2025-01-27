@@ -61,7 +61,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .update({
               title: data.title,
               content: data.content,
-              slug: data.slug,
+              slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
               excerpt: data.excerpt,
               featured_image: data.featured_image,
               status: data.status,
@@ -73,10 +73,11 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert([{
               title: data.title,
               content: data.content,
-              slug: data.slug,
+              slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
               excerpt: data.excerpt,
               featured_image: data.featured_image,
               status: data.status,
+              author_id: (await supabase.auth.getUser()).data.user?.id,
             }]);
 
       console.log("Supabase response error:", error);
