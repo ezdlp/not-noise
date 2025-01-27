@@ -57,6 +57,13 @@ const PublicBlogPost = () => {
   return (
     <article className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+      {post.featured_image && (
+        <img
+          src={post.featured_image}
+          alt={post.title}
+          className="w-full h-[400px] object-cover rounded-lg mb-8"
+        />
+      )}
       <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
     </article>
   );

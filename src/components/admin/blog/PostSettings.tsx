@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "./CategorySelect";
+import { FeaturedImage } from "./FeaturedImage";
 
 interface PostSettingsProps {
   post: any;
@@ -25,6 +26,11 @@ export function PostSettings({ post, onUpdate }: PostSettingsProps) {
       <Separator />
 
       <div className="space-y-4">
+        <FeaturedImage
+          value={post.featured_image}
+          onChange={(url) => onUpdate('featured_image', url)}
+        />
+
         <div className="space-y-2">
           <Label>URL Slug</Label>
           <Input
