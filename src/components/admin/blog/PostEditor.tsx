@@ -62,6 +62,32 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
   const isDirty = form.formState.isDirty;
 
+  const createUniqueSlug = async (baseSlug: string, postId?: string): Promise<string> => {
+    let slug = baseSlug;
+    let counter = 1;
+    let isUnique = false;
+
+    while (!isUnique) {
+      const { data, error } = await supabase
+        .from("blog_posts")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      // If no post found with this slug, or if the found post is the one we're updating
+      if (!data || (postId && data.id === postId)) {
+        isUnique = true;
+      } else {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    return slug;
+  };
+
   const createSlug = (title: string) => {
     return title
       .toLowerCase()
@@ -96,6 +122,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         scheduledFor = null;
       }
 
+      const baseSlug = createSlug(values.title);
+      const uniqueSlug = await createUniqueSlug(baseSlug, post?.id);
+
       const postData = {
         title: values.title,
         content: values.content,
@@ -103,7 +132,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         meta_description: values.meta_description,
         meta_keywords: values.meta_keywords,
         status: status,
-        slug: createSlug(values.title),
+        slug: uniqueSlug,
         visibility: values.visibility,
         password: values.password,
         published_at: publishDate.toISOString(),
