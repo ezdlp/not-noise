@@ -50,7 +50,6 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -69,11 +68,21 @@ serve(async (req) => {
     // Create a mapping of filenames to file paths
     const mediaMapping: MediaMapping = {};
     existingMedia?.forEach(media => {
-      // Get the filename without path
+      // Get the filename without path and convert to lowercase for case-insensitive matching
       const filename = media.filename.toLowerCase();
       // Store the full Supabase URL
       const supabaseUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/media-library/${media.file_path}`;
       mediaMapping[filename] = supabaseUrl;
+      
+      // Also store variations of the filename for better matching
+      const filenameWithoutExt = filename.split('.').slice(0, -1).join('.');
+      const ext = filename.split('.').pop();
+      if (ext) {
+        // Store variations like filename-150x150.jpg, filename-300x300.jpg etc.
+        mediaMapping[`${filenameWithoutExt}-\\d+x\\d+\\.${ext}`] = supabaseUrl;
+        mediaMapping[`${filenameWithoutExt}-scaled\\.${ext}`] = supabaseUrl;
+        mediaMapping[`${filenameWithoutExt}-thumbnail\\.${ext}`] = supabaseUrl;
+      }
     });
 
     const text = await file.text();
@@ -128,8 +137,6 @@ serve(async (req) => {
 
       for (const item of chunk) {
         try {
-          console.log('Processing item type:', item['wp:post_type']?.[0]);
-          
           const postType = item['wp:post_type']?.[0];
           if (!postType) {
             console.warn('Item missing post type:', item);
@@ -161,10 +168,13 @@ serve(async (req) => {
                 description,
               });
 
-              // Map WordPress URL to Supabase URL
-              if (mediaMapping[filename]) {
-                console.log(`Mapped media file ${filename} to ${mediaMapping[filename]}`);
-              } else {
+              // Check if we have this media file in our library
+              if (!Object.values(mediaMapping).some(mappedUrl => 
+                url.toLowerCase().includes(filename) || 
+                Object.keys(mediaMapping).some(pattern => 
+                  new RegExp(pattern).test(filename)
+                )
+              )) {
                 console.warn(`No matching media file found for ${filename}`);
                 missingMedia.add(url);
               }
@@ -182,10 +192,9 @@ serve(async (req) => {
             }
 
             // Replace WordPress media URLs with Supabase URLs
-            Object.entries(mediaMapping).forEach(([filename, supabaseUrl]) => {
-              // Create a regex that matches the WordPress URL pattern with the filename
-              const wpUrlPattern = new RegExp(`https?://[^/]+/wp-content/uploads/\\d{4}/\\d{2}/${filename}`, 'gi');
-              content = content.replace(wpUrlPattern, supabaseUrl);
+            Object.entries(mediaMapping).forEach(([pattern, supabaseUrl]) => {
+              const regex = new RegExp(pattern, 'gi');
+              content = content.replace(regex, supabaseUrl);
             });
 
             const excerpt = item['excerpt:encoded']?.[0] || '';
