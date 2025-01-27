@@ -129,8 +129,15 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   async function onSubmit(values: PostFormValues) {
     console.log("Form submitted with values:", values);
     setIsSubmitting(true);
+    
     try {
-      const user = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("Error getting user:", userError);
+        throw userError;
+      }
+      
       console.log("Current user:", user);
       
       const now = new Date();
@@ -167,13 +174,13 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         format: values.format,
         seo_title: values.seo_title,
         focus_keyword: values.focus_keyword,
-        author_id: user.data.user?.id,
+        author_id: user?.id,
         featured_image: values.featured_image,
       };
 
       console.log("Post data to be submitted:", postData);
 
-      if (post) {
+      if (post?.id) {
         console.log("Updating existing post with ID:", post.id);
         const { error: postError } = await supabase
           .from("blog_posts")
@@ -186,14 +193,24 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         }
 
         if (values.category_id) {
-          await supabase
+          const { error: deleteError } = await supabase
             .from("blog_post_categories")
             .delete()
             .eq("post_id", post.id);
 
-          await supabase
+          if (deleteError) {
+            console.error("Error deleting old categories:", deleteError);
+            throw deleteError;
+          }
+
+          const { error: insertError } = await supabase
             .from("blog_post_categories")
             .insert({ post_id: post.id, category_id: values.category_id });
+
+          if (insertError) {
+            console.error("Error inserting new category:", insertError);
+            throw insertError;
+          }
         }
 
         const message = isFuture(publishDate)
@@ -218,9 +235,14 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         }
 
         if (values.category_id && newPost) {
-          await supabase
+          const { error: categoryError } = await supabase
             .from("blog_post_categories")
             .insert({ post_id: newPost.id, category_id: values.category_id });
+
+          if (categoryError) {
+            console.error("Error inserting category:", categoryError);
+            throw categoryError;
+          }
         }
 
         const message = isFuture(publishDate)
@@ -232,7 +254,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         toast.success(message);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["adminPosts"] });
+      await queryClient.invalidateQueries({ queryKey: ["adminPosts"] });
       onClose();
     } catch (error) {
       console.error("Error saving post:", error);
