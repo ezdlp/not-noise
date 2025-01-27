@@ -73,26 +73,17 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
-    const timestamp = Date.now();
-    const uniqueSlug = `${baseSlug}-${timestamp}`;
-    return uniqueSlug;
-  };
-
   const onSubmit = async (data: PostFormValues) => {
     console.log("Form submission started with data:", data);
     setIsSubmitting(true);
     try {
       console.log("Preparing Supabase request...");
       
-      let slug = data.slug || data.title.toLowerCase().replace(/\s+/g, '-');
+      let slug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       
       // If we're updating and the slug hasn't changed, use the existing slug
       if (post?.id && slug === post.slug) {
         slug = post.slug;
-      } else {
-        // Generate a unique slug for new posts or when slug has changed
-        slug = await generateUniqueSlug(slug);
       }
 
       const updateData = {
