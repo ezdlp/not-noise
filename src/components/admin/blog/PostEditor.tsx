@@ -55,31 +55,34 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     setIsSubmitting(true);
     try {
       console.log("Preparing Supabase request...");
-      const { error } = post?.id 
+      
+      const updateData = {
+        title: data.title,
+        content: data.content,
+        slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
+        excerpt: data.excerpt,
+        featured_image: data.featured_image,
+        status: data.status,
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log("Update data being sent:", updateData);
+      
+      const { data: responseData, error } = post?.id 
         ? await supabase
             .from('blog_posts')
-            .update({
-              title: data.title,
-              content: data.content,
-              slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
-              excerpt: data.excerpt,
-              featured_image: data.featured_image,
-              status: data.status,
-              updated_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq('id', post.id)
+            .select()
         : await supabase
             .from('blog_posts')
             .insert([{
-              title: data.title,
-              content: data.content,
-              slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
-              excerpt: data.excerpt,
-              featured_image: data.featured_image,
-              status: data.status,
+              ...updateData,
               author_id: (await supabase.auth.getUser()).data.user?.id,
-            }]);
+            }])
+            .select();
 
+      console.log("Supabase complete response:", responseData);
       console.log("Supabase response error:", error);
       
       if (error) {
