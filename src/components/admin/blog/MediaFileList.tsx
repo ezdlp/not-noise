@@ -201,7 +201,7 @@ export function MediaFileList({
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium truncate flex items-center gap-2" title={file.filename}>
                   {getFileIcon(file.mime_type)}
-                  {file.filename}
+                  <span className="truncate">{file.filename}</span>
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(file.created_at), 'PPp')} • 
@@ -237,8 +237,9 @@ export function MediaFileList({
                         e.stopPropagation();
                         onSelect(publicUrl);
                       }}
+                      className="flex items-center gap-1"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="h-4 w-4" />
                       Insert
                     </Button>
                   )}
@@ -257,8 +258,9 @@ export function MediaFileList({
                             filename: file.filename,
                           });
                         }}
+                        className="flex items-center gap-1"
                       >
-                        <Pencil className="h-4 w-4 mr-1" />
+                        <Pencil className="h-4 w-4" />
                         Edit
                       </Button>
                     </DialogTrigger>
@@ -303,8 +305,9 @@ export function MediaFileList({
                       e.stopPropagation();
                       copyToClipboard(publicUrl);
                     }}
+                    className="flex items-center gap-1"
                   >
-                    <Copy className="h-4 w-4 mr-1" />
+                    <Copy className="h-4 w-4" />
                     Copy URL
                   </Button>
 
@@ -315,6 +318,7 @@ export function MediaFileList({
                       e.stopPropagation();
                       onDelete(file.id, file.file_path);
                     }}
+                    className="flex items-center gap-1"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
