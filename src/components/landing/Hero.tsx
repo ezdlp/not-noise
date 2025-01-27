@@ -5,23 +5,29 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-20 bg-white">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-20 bg-hero-gradient relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-secondary rounded-full mix-blend-multiply filter blur-xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent rounded-full mix-blend-multiply filter blur-xl animate-float delay-200"></div>
+      </div>
+      
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center relative">
         <div className="text-left">
-          <h1 className="text-3xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 font-heading">
             Elevate Your Music With{" "}
-            <span className="text-primary">
+            <span className="text-secondary drop-shadow-lg">
               Smart Links
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl leading-relaxed">
+          <p className="text-lg md:text-xl text-onyx mb-8 max-w-xl leading-relaxed font-sans">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
             onClick={() => navigate("/create")}
-            className="w-full md:w-auto"
+            className="w-full md:w-auto font-heading uppercase tracking-wider bg-accent hover:bg-accent/90 hover:animate-bounce"
           >
-            Get Started For Free
+            No cap, it's free 🎶
           </CTAButton>
         </div>
         <div className="relative order-first md:order-last">
