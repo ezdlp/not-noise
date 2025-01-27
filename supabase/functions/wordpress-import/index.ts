@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +32,10 @@ interface MediaItem {
   description?: string;
 }
 
+interface MediaMapping {
+  [wordpressUrl: string]: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -44,6 +49,32 @@ serve(async (req) => {
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Fetch existing media files
+    const { data: existingMedia, error: mediaError } = await supabase
+      .from('media_files')
+      .select('filename, file_path');
+
+    if (mediaError) {
+      console.error('Error fetching media files:', mediaError);
+      throw new Error('Failed to fetch media files');
+    }
+
+    // Create a mapping of filenames to file paths
+    const mediaMapping: MediaMapping = {};
+    existingMedia?.forEach(media => {
+      // Get the filename without path
+      const filename = media.filename.toLowerCase();
+      // Store the full Supabase URL
+      const supabaseUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/media-library/${media.file_path}`;
+      mediaMapping[filename] = supabaseUrl;
+    });
 
     const text = await file.text();
     let xmlDoc;
@@ -71,7 +102,7 @@ serve(async (req) => {
       });
     } catch (parseError) {
       console.error('XML parsing error:', parseError);
-      console.error('Raw file content:', text.substring(0, 1000) + '...'); // Log first 1000 chars
+      console.error('Raw file content:', text.substring(0, 1000) + '...'); 
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
@@ -111,7 +142,7 @@ serve(async (req) => {
               const id = item['wp:post_id']?.[0] || crypto.randomUUID();
               const title = item.title?.[0] || '';
               const description = item['content:encoded']?.[0] || '';
-              const filename = url.split('/').pop() || '';
+              const filename = url.split('/').pop()?.toLowerCase() || '';
               
               const metadata = {
                 alt: item['wp:postmeta']?.find(meta => 
@@ -130,19 +161,32 @@ serve(async (req) => {
                 description,
               });
 
-              console.log('Added media item:', { id, filename });
+              // Map WordPress URL to Supabase URL
+              if (mediaMapping[filename]) {
+                console.log(`Mapped media file ${filename} to ${mediaMapping[filename]}`);
+              } else {
+                console.warn(`No matching media file found for ${filename}`);
+                missingMedia.add(url);
+              }
             }
           } else if (postType === 'post') {
             console.log('Processing post:', item.title?.[0]);
             
             const title = item.title?.[0];
-            const content = item['content:encoded']?.[0];
+            let content = item['content:encoded']?.[0];
             
             if (!title || !content) {
               console.warn('Post missing required fields:', { title, content });
               errors.push(`Post "${title || 'Untitled'}" missing required fields`);
               continue;
             }
+
+            // Replace WordPress media URLs with Supabase URLs
+            Object.entries(mediaMapping).forEach(([filename, supabaseUrl]) => {
+              // Create a regex that matches the WordPress URL pattern with the filename
+              const wpUrlPattern = new RegExp(`https?://[^/]+/wp-content/uploads/\\d{4}/\\d{2}/${filename}`, 'gi');
+              content = content.replace(wpUrlPattern, supabaseUrl);
+            });
 
             const excerpt = item['excerpt:encoded']?.[0] || '';
             const postDate = item['wp:post_date']?.[0];
@@ -167,15 +211,12 @@ serve(async (req) => {
                 i => i['wp:post_type']?.[0] === 'attachment' && i['wp:post_id']?.[0] === thumbnailId
               );
               if (attachmentItem) {
-                featuredImage = attachmentItem['wp:attachment_url']?.[0];
+                const featuredImageUrl = attachmentItem['wp:attachment_url']?.[0];
+                if (featuredImageUrl) {
+                  const filename = featuredImageUrl.split('/').pop()?.toLowerCase();
+                  featuredImage = filename ? mediaMapping[filename] : null;
+                }
               }
-            }
-
-            // Process images in content
-            const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
-            let match;
-            while ((match = imgRegex.exec(content)) !== null) {
-              if (match[1]) missingMedia.add(match[1]);
             }
 
             posts.push({
