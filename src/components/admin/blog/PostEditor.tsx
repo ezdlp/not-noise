@@ -125,8 +125,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   }, [form.watch]);
 
   const handleClose = () => {
-    console.log("Handle close triggered, isDirty:", isDirty);
-    if (isDirty) {
+    console.log("Handle close triggered, isDirty:", form.formState.isDirty);
+    if (form.formState.isDirty) {
       setShowUnsavedChangesDialog(true);
     } else {
       onClose();
