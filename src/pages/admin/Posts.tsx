@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { FileText, Pencil, Trash2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { PostEditor } from "@/components/admin/blog/PostEditor";
@@ -33,11 +33,11 @@ export default function Posts() {
       .eq("id", postId);
 
     if (error) {
-      toast.error("Failed to delete post");
+      toast.error("Failed to delete page");
       return;
     }
 
-    toast.success("Post deleted successfully");
+    toast.success("Page deleted successfully");
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -48,17 +48,17 @@ export default function Posts() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {selectedPost ? "Edit Post" : "Create New Post"}
+              {selectedPost ? "Edit Page" : "Create New Page"}
             </h1>
             <p className="text-muted-foreground">
-              {selectedPost ? "Make changes to your post." : "Create a new blog post."}
+              {selectedPost ? "Make changes to your page." : "Create a new page."}
             </p>
           </div>
           <Button variant="outline" onClick={() => {
             setIsEditing(false);
             setSelectedPost(null);
           }}>
-            Back to Posts
+            Back to Pages
           </Button>
         </div>
         <PostEditor
@@ -76,14 +76,14 @@ export default function Posts() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Blog Posts</h1>
-          <p className="text-muted-foreground">Manage your blog content.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
+          <p className="text-muted-foreground">Manage your pages.</p>
         </div>
         <div className="flex items-center gap-4">
           <ImportPosts />
           <Button onClick={() => setIsEditing(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Add New Post
+            Add New Page
           </Button>
         </div>
       </div>
@@ -126,6 +126,15 @@ export default function Posts() {
                   onClick={() => handleDelete(post.id)}
                 >
                   <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                >
+                  <a href={`/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                    <Eye className="h-4 w-4" />
+                  </a>
                 </Button>
               </TableCell>
             </TableRow>
