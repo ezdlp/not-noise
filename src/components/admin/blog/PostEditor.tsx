@@ -12,7 +12,6 @@ import { PostActions } from "./PostActions";
 import { isFuture, isPast } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SeoSection } from "./seo/SeoSection";
-import { AutoSave } from "./AutoSave";
 import debounce from "lodash/debounce";
 
 export const formSchema = z.object({
@@ -130,7 +129,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const handleSave = async (values: PostFormValues): Promise<void> => {
+  const handleSave = async (values: PostFormValues) => {
     console.log("Saving post with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -254,7 +253,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
               onClose={handleClose}
               isEditing={!!post}
             />
-            <AutoSave form={form} onSave={handleSave} />
           </div>
           
           <div className="grid grid-cols-3 gap-6">
