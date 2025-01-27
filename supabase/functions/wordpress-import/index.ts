@@ -53,6 +53,18 @@ serve(async (req) => {
 
     console.log('[Import] File received:', file.name, 'Size:', file.size);
 
+    // Read file as ArrayBuffer first
+    const arrayBuffer = await file.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    const text = decoder.decode(arrayBuffer);
+
+    if (!text || text.length === 0) {
+      console.error('[Import] Empty file content');
+      throw new Error('Empty file content');
+    }
+
+    console.log('[Import] File content length:', text.length);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -86,9 +98,7 @@ serve(async (req) => {
       }
     });
 
-    const text = await file.text();
-    console.log('[Import] File content length:', text.length);
-
+    // Parse XML with error handling
     let xmlDoc;
     try {
       console.log('[Import] Attempting to parse XML...');
@@ -294,7 +304,7 @@ serve(async (req) => {
       );
     } catch (parseError) {
       console.error('[Import] XML parsing error:', parseError);
-      console.error('[Import] Raw file content (first 1000 chars):', text.substring(0, 1000)); 
+      console.error('[Import] Raw file content (first 1000 chars):', text.substring(0, 1000));
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
   } catch (error) {
