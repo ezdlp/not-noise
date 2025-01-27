@@ -183,6 +183,12 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     }
   };
 
+  const handleImageSelect = (url: string) => {
+    setSelectedImage(url);
+    setIsMediaDialogOpen(false);
+    setIsImageSettingsOpen(true);
+  };
+
   if (!editor) {
     return null;
   }
