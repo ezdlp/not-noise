@@ -42,16 +42,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting WordPress import process');
+    console.log('[Import] Starting WordPress import process');
     const formData = await req.formData();
     const file = formData.get('file');
     
     if (!file || !(file instanceof File)) {
-      console.error('No file uploaded');
+      console.error('[Import] No file uploaded');
       throw new Error('No file uploaded');
     }
 
-    console.log('File received:', file.name, 'Size:', file.size);
+    console.log('[Import] File received:', file.name, 'Size:', file.size);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -64,11 +64,11 @@ serve(async (req) => {
       .select('filename, file_path');
 
     if (mediaError) {
-      console.error('Error fetching media files:', mediaError);
+      console.error('[Import] Error fetching media files:', mediaError);
       throw new Error('Failed to fetch media files');
     }
 
-    console.log('Fetched existing media files:', existingMedia?.length || 0);
+    console.log('[Import] Fetched existing media files:', existingMedia?.length || 0);
 
     // Create a mapping of filenames to file paths
     const mediaMapping: MediaMapping = {};
@@ -87,32 +87,40 @@ serve(async (req) => {
     });
 
     const text = await file.text();
+    console.log('[Import] File content length:', text.length);
+    console.log('[Import] First 500 characters:', text.substring(0, 500));
+
     let xmlDoc;
-    
     try {
-      console.log('Parsing XML file...');
+      console.log('[Import] Attempting to parse XML...');
       xmlDoc = parse(text);
-      console.log('XML structure:', Object.keys(xmlDoc));
+      console.log('[Import] XML structure:', JSON.stringify(Object.keys(xmlDoc), null, 2));
       
       if (!xmlDoc.rss) {
-        console.error('Missing RSS element in XML structure');
+        console.error('[Import] Missing RSS element in XML structure');
         throw new Error('Invalid WordPress export file - missing RSS element');
       }
 
       if (!xmlDoc.rss.channel) {
-        console.error('Missing channel element in RSS structure');
+        console.error('[Import] Missing channel element in RSS structure');
         throw new Error('Invalid WordPress export file - missing channel element');
       }
 
-      console.log('Channel information:', {
+      console.log('[Import] Channel information:', {
         title: xmlDoc.rss.channel.title,
         link: xmlDoc.rss.channel.link,
         description: xmlDoc.rss.channel.description,
         'wp:wxr_version': xmlDoc.rss.channel['wp:wxr_version']?.[0],
       });
+
+      // Log channel items
+      const items = xmlDoc.rss.channel.item;
+      console.log('[Import] Items type:', typeof items);
+      console.log('[Import] Is items array?', Array.isArray(items));
+      console.log('[Import] Items length:', items ? (Array.isArray(items) ? items.length : 1) : 0);
     } catch (parseError) {
-      console.error('XML parsing error:', parseError);
-      console.error('Raw file content (first 1000 chars):', text.substring(0, 1000)); 
+      console.error('[Import] XML parsing error:', parseError);
+      console.error('[Import] Raw file content (first 1000 chars):', text.substring(0, 1000)); 
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
@@ -124,21 +132,21 @@ serve(async (req) => {
     const channel = xmlDoc.rss.channel;
     const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
     
-    console.log(`Found ${items.length} items in the XML file`);
+    console.log(`[Import] Found ${items.length} items in the XML file`);
 
     if (items.length === 0) {
-      console.error('No items found in the XML file');
+      console.error('[Import] No items found in the XML file');
       throw new Error('No items found in the WordPress export file');
     }
 
     // Process items in chunks
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
-      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
+      console.log(`[Import] Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
 
       for (const item of chunk) {
         try {
-          console.log('Processing item:', {
+          console.log('[Import] Processing item:', {
             title: item.title?.[0],
             type: item['wp:post_type']?.[0],
             status: item['wp:status']?.[0],
@@ -146,7 +154,7 @@ serve(async (req) => {
 
           const postType = item['wp:post_type']?.[0];
           if (!postType) {
-            console.warn('Item missing post type:', item);
+            console.warn('[Import] Item missing post type:', item);
             continue;
           }
           
@@ -165,7 +173,7 @@ serve(async (req) => {
                 caption: item['excerpt:encoded']?.[0] || '',
               };
               
-              console.log('Processing attachment:', { url, filename, title });
+              console.log('[Import] Processing attachment:', { url, filename, title });
               
               mediaItems.push({
                 id,
@@ -183,18 +191,18 @@ serve(async (req) => {
                   new RegExp(pattern).test(filename)
                 )
               )) {
-                console.warn(`No matching media file found for ${filename}`);
+                console.warn(`[Import] No matching media file found for ${filename}`);
                 missingMedia.add(url);
               }
             }
           } else if (postType === 'post') {
-            console.log('Processing post:', item.title?.[0]);
+            console.log('[Import] Processing post:', item.title?.[0]);
             
             const title = item.title?.[0];
             let content = item['content:encoded']?.[0];
             
             if (!title || !content) {
-              console.warn('Post missing required fields:', { title, hasContent: !!content });
+              console.warn('[Import] Post missing required fields:', { title, hasContent: !!content });
               errors.push(`Post "${title || 'Untitled'}" missing required fields`);
               continue;
             }
@@ -236,7 +244,7 @@ serve(async (req) => {
               }
             }
 
-            console.log('Post processed:', {
+            console.log('[Import] Post processed:', {
               title,
               status,
               hasExcerpt: !!excerpt,
@@ -262,7 +270,7 @@ serve(async (req) => {
             });
           }
         } catch (itemError) {
-          console.error('Error processing item:', itemError);
+          console.error('[Import] Error processing item:', itemError);
           errors.push(itemError.message);
         }
 
@@ -273,7 +281,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Import completed:`, {
+    console.log(`[Import] Import completed:`, {
       posts: posts.length,
       media: mediaItems.length,
       missingMedia: missingMedia.size,
@@ -300,7 +308,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error processing WordPress import:', error);
+    console.error('[Import] Error processing WordPress import:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process WordPress import', 
