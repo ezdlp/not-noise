@@ -14,6 +14,7 @@ import Register from "./pages/Register";
 import AccountSettings from "./pages/AccountSettings";
 import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import PublicBlogPost from "./pages/PublicBlogPost";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 import { Overview, Users, Posts, Settings, UserLinks, Media, Import, SmartLinks } from "./pages/admin";
@@ -95,7 +96,9 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   const location = useLocation();
-  const showHeader = !location.pathname.startsWith('/link/') && !location.pathname.startsWith('/admin');
+  const showHeader = !location.pathname.startsWith('/link/') && 
+                    !location.pathname.startsWith('/admin') && 
+                    !location.pathname.endsWith('.html');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -106,6 +109,7 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/link/:slug" element={<SmartLink />} />
+        <Route path="/:slug" element={<PublicBlogPost />} />
         
         {/* Protected Routes */}
         <Route
