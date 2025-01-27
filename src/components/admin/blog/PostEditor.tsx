@@ -70,6 +70,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
   const isDirty = form.formState.isDirty;
   console.log("Form isDirty:", isDirty);
+  console.log("Current form values:", form.getValues());
 
   const createUniqueSlug = async (baseSlug: string, postId?: string): Promise<string> => {
     let slug = baseSlug;
@@ -124,6 +125,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   }, [form.watch]);
 
   const handleClose = () => {
+    console.log("Handle close triggered, isDirty:", isDirty);
     if (isDirty) {
       setShowUnsavedChangesDialog(true);
     } else {
@@ -132,7 +134,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   const handleSave = async (values: PostFormValues) => {
-    console.log("Saving post with values:", values);
+    console.log("handleSave called with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -245,7 +247,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       toast.success(message);
       onClose();
     } catch (error) {
-      console.error("Error saving post:", error);
+      console.error("Error in onSubmit:", error);
       toast.error("Failed to save post. Please check all required fields.");
     } finally {
       setIsSubmitting(false);
