@@ -47,6 +47,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
   const queryClient = useQueryClient();
 
+  console.log("PostEditor rendered with post:", post);
+
   const form = useForm<PostFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: post || {
@@ -125,10 +127,11 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   async function onSubmit(values: PostFormValues) {
-    console.log("Submitting form with values:", values);
+    console.log("Form submitted with values:", values);
     setIsSubmitting(true);
     try {
       const user = await supabase.auth.getUser();
+      console.log("Current user:", user);
       
       const now = new Date();
       const publishDate = values.published_at || now;
@@ -177,7 +180,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           .update(postData)
           .eq("id", post.id);
 
-        if (postError) throw postError;
+        if (postError) {
+          console.error("Error updating post:", postError);
+          throw postError;
+        }
 
         if (values.category_id) {
           await supabase
@@ -206,7 +212,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           .select()
           .single();
 
-        if (postError) throw postError;
+        if (postError) {
+          console.error("Error creating post:", postError);
+          throw postError;
+        }
 
         if (values.category_id && newPost) {
           await supabase
