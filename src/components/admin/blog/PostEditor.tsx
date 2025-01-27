@@ -31,6 +31,7 @@ const formSchema = z.object({
   format: z.enum(["standard", "gallery", "video", "audio"]).default("standard"),
   seo_title: z.string().optional(),
   focus_keyword: z.string().optional(),
+  slug: z.string().optional(), // Added slug to the schema
 });
 
 export type PostFormValues = z.infer<typeof formSchema>;
@@ -59,6 +60,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       is_sticky: false,
       format: "standard",
       published_at: new Date(),
+      slug: "", // Added default value for slug
     },
   });
 
