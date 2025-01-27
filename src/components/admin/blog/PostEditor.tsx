@@ -44,9 +44,16 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   });
 
   useEffect(() => {
-    console.log("Form isDirty:", form.formState.isDirty);
-    console.log("Current form values:", form.getValues());
-  }, [form.watch()]);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (form.formState.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [form.formState.isDirty]);
 
   const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
     if (!categoryId) return;
@@ -74,14 +81,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   const onSubmit = async (data: PostFormValues) => {
-    console.log("Form submission started with data:", data);
     setIsSubmitting(true);
     try {
-      console.log("Preparing Supabase request...");
-      
       let slug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       
-      // If we're updating and the slug hasn't changed, use the existing slug
       if (post?.id && slug === post.slug) {
         slug = post.slug;
       }
@@ -95,9 +98,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         status: data.status,
         updated_at: new Date().toISOString(),
       };
-      
-      console.log("Update data being sent:", updateData);
-      
+
       const { data: responseData, error } = post?.id 
         ? await supabase
             .from('blog_posts')
@@ -112,23 +113,18 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             }])
             .select();
 
-      console.log("Supabase complete response:", responseData);
-      console.log("Supabase response error:", error);
-      
       if (error) {
         console.error("Error saving post:", error);
         toast.error("Failed to save post");
         return;
       }
 
-      // Update category after successful post save
       if (responseData && responseData[0]) {
         await updatePostCategory(responseData[0].id, data.category_id);
+        form.reset(data);
+        toast.success(post?.id ? "Post updated" : "Post created");
+        onClose();
       }
-
-      console.log("Post saved successfully");
-      toast.success(post?.id ? "Post updated" : "Post created");
-      onClose();
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred");
@@ -138,7 +134,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   const handlePostUpdate = (key: string, value: any) => {
-    console.log("Updating post field:", key, "with value:", value);
     form.setValue(key as any, value, {
       shouldDirty: true,
       shouldValidate: true,
