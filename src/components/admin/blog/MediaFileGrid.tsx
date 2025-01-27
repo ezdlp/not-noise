@@ -106,7 +106,7 @@ export function MediaFileGrid({
               key={file.id}
               className={cn(
                 "relative group border rounded-md p-2",
-                isSelectionMode && "cursor-pointer",
+                isSelectionMode && "cursor-pointer hover:border-primary",
                 selectedFiles.has(file.id) && "ring-2 ring-primary",
                 "hover:shadow-lg transition-all duration-200"
               )}

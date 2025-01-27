@@ -31,7 +31,8 @@ const formSchema = z.object({
   format: z.enum(["standard", "gallery", "video", "audio"]).default("standard"),
   seo_title: z.string().optional(),
   focus_keyword: z.string().optional(),
-  slug: z.string().optional(), // Added slug to the schema
+  slug: z.string().optional(),
+  featured_image: z.string().optional(),
 });
 
 export type PostFormValues = z.infer<typeof formSchema>;
@@ -60,7 +61,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       is_sticky: false,
       format: "standard",
       published_at: new Date(),
-      slug: "", // Added default value for slug
+      slug: "",
+      featured_image: "",
     },
   });
 
@@ -165,6 +167,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         seo_title: values.seo_title,
         focus_keyword: values.focus_keyword,
         author_id: user.data.user?.id,
+        featured_image: values.featured_image,
       };
 
       if (post) {
