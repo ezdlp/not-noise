@@ -82,7 +82,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
       if (error) throw error;
 
-      // If no post found with this slug, or if the found post is the one we're updating
       if (!data || (postId && data.id === postId)) {
         isUnique = true;
       } else {
@@ -101,7 +100,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       .replace(/(^-|-$)/g, '');
   };
 
-  // Debounced function to update slug
   const debouncedUpdateSlug = debounce(async (title: string) => {
     if (!title) return;
     const baseSlug = createSlug(title);
@@ -109,7 +107,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     form.setValue('slug', uniqueSlug, { shouldDirty: true });
   }, 5000);
 
-  // Watch title changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'title') {
@@ -128,6 +125,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   async function onSubmit(values: PostFormValues) {
+    console.log("Submitting form with values:", values);
     setIsSubmitting(true);
     try {
       const user = await supabase.auth.getUser();
@@ -170,7 +168,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         featured_image: values.featured_image,
       };
 
+      console.log("Post data to be submitted:", postData);
+
       if (post) {
+        console.log("Updating existing post with ID:", post.id);
         const { error: postError } = await supabase
           .from("blog_posts")
           .update(postData)
@@ -198,6 +199,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         toast.success(message);
         form.reset(values);
       } else {
+        console.log("Creating new post");
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
           .insert(postData)
