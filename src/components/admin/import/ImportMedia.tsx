@@ -6,7 +6,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload } from "lucide-react";
-import imageCompression from "browser-image-compression";
 import { CompressionLevel, getCompressionSettings } from "@/utils/imageCompression";
 import {
   AlertDialog,
@@ -62,10 +61,19 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
       .from('media-library')
       .upload(filePath, finalBlob, {
         contentType: file.type,
-        upsert: false
+        upsert: true
       });
 
     if (uploadError) throw uploadError;
+  };
+
+  const sanitizeFilename = (filename: string): string => {
+    const sanitized = filename
+      .toLowerCase()
+      .replace(/[^a-z0-9-_.]/g, '-')
+      .replace(/-+/g, '-');
+    
+    return sanitized;
   };
 
   const compressImage = async (file: File): Promise<File> => {
@@ -115,7 +123,10 @@ export function ImportMedia({ onComplete }: ImportMediaProps) {
           file = await compressImage(file);
         }
 
-        const filePath = `${crypto.randomUUID()}.${file.name.split('.').pop()}`;
+        const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+        const fileExt = file.name.split('.').pop();
+        const sanitizedName = sanitizeFilename(nameWithoutExt);
+        const filePath = `${sanitizedName}.${fileExt}`;
 
         try {
           await uploadFileInChunks(file, filePath);
