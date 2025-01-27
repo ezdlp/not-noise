@@ -51,7 +51,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
     if (!categoryId) return;
 
-    // First, remove any existing category relationships
     const { error: deleteError } = await supabase
       .from('blog_post_categories')
       .delete()
@@ -62,7 +61,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       return;
     }
 
-    // Then insert the new category relationship
     const { error: insertError } = await supabase
       .from('blog_post_categories')
       .insert([{
@@ -75,16 +73,32 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
+  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
+    const timestamp = Date.now();
+    const uniqueSlug = `${baseSlug}-${timestamp}`;
+    return uniqueSlug;
+  };
+
   const onSubmit = async (data: PostFormValues) => {
     console.log("Form submission started with data:", data);
     setIsSubmitting(true);
     try {
       console.log("Preparing Supabase request...");
       
+      let slug = data.slug || data.title.toLowerCase().replace(/\s+/g, '-');
+      
+      // If we're updating and the slug hasn't changed, use the existing slug
+      if (post?.id && slug === post.slug) {
+        slug = post.slug;
+      } else {
+        // Generate a unique slug for new posts or when slug has changed
+        slug = await generateUniqueSlug(slug);
+      }
+
       const updateData = {
         title: data.title,
         content: data.content,
-        slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
+        slug,
         excerpt: data.excerpt,
         featured_image: data.featured_image,
         status: data.status,
