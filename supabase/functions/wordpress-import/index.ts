@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -88,225 +88,215 @@ serve(async (req) => {
 
     const text = await file.text();
     console.log('[Import] File content length:', text.length);
-    console.log('[Import] First 500 characters:', text.substring(0, 500));
 
     let xmlDoc;
     try {
       console.log('[Import] Attempting to parse XML...');
-      xmlDoc = parse(text);
-      console.log('[Import] XML structure:', JSON.stringify(Object.keys(xmlDoc), null, 2));
+      const parser = new DOMParser();
+      xmlDoc = parser.parseFromString(text, "text/xml");
       
-      if (!xmlDoc.rss) {
-        console.error('[Import] Missing RSS element in XML structure');
-        throw new Error('Invalid WordPress export file - missing RSS element');
+      if (!xmlDoc) {
+        console.error('[Import] Failed to parse XML document');
+        throw new Error('Failed to parse XML document');
       }
 
-      if (!xmlDoc.rss.channel) {
+      console.log('[Import] XML parsed successfully');
+      
+      const channel = xmlDoc.querySelector('channel');
+      if (!channel) {
         console.error('[Import] Missing channel element in RSS structure');
         throw new Error('Invalid WordPress export file - missing channel element');
       }
 
-      console.log('[Import] Channel information:', {
-        title: xmlDoc.rss.channel.title,
-        link: xmlDoc.rss.channel.link,
-        description: xmlDoc.rss.channel.description,
-        'wp:wxr_version': xmlDoc.rss.channel['wp:wxr_version']?.[0],
-      });
+      console.log('[Import] Channel found, processing items...');
 
-      // Log channel items
-      const items = xmlDoc.rss.channel.item;
-      console.log('[Import] Items type:', typeof items);
-      console.log('[Import] Is items array?', Array.isArray(items));
-      console.log('[Import] Items length:', items ? (Array.isArray(items) ? items.length : 1) : 0);
+      const posts: WordPressPost[] = [];
+      const mediaItems: MediaItem[] = [];
+      const missingMedia = new Set<string>();
+      const errors: string[] = [];
+
+      const items = Array.from(xmlDoc.querySelectorAll('item'));
+      console.log(`[Import] Found ${items.length} items in the XML file`);
+
+      if (items.length === 0) {
+        console.error('[Import] No items found in the XML file');
+        throw new Error('No items found in the WordPress export file');
+      }
+
+      // Process items in chunks
+      for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+        const chunk = items.slice(i, i + CHUNK_SIZE);
+        console.log(`[Import] Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
+
+        for (const item of chunk) {
+          try {
+            const title = item.querySelector('title')?.textContent;
+            const postType = item.querySelector('wp\\:post_type')?.textContent;
+            
+            console.log('[Import] Processing item:', {
+              title,
+              type: postType,
+              status: item.querySelector('wp\\:status')?.textContent,
+            });
+
+            if (!postType) {
+              console.warn('[Import] Item missing post type:', title);
+              continue;
+            }
+            
+            if (postType === 'attachment') {
+              const url = item.querySelector('wp\\:attachment_url')?.textContent;
+              if (url) {
+                const id = item.querySelector('wp\\:post_id')?.textContent || crypto.randomUUID();
+                const description = item.querySelector('content\\:encoded')?.textContent || '';
+                const filename = url.split('/').pop()?.toLowerCase() || '';
+                
+                const metadata = {
+                  alt: Array.from(item.querySelectorAll('wp\\:postmeta')).find(meta => 
+                    meta.querySelector('wp\\:meta_key')?.textContent === '_wp_attachment_image_alt'
+                  )?.querySelector('wp\\:meta_value')?.textContent || '',
+                  caption: item.querySelector('excerpt\\:encoded')?.textContent || '',
+                };
+                
+                console.log('[Import] Processing attachment:', { url, filename, title });
+                
+                mediaItems.push({
+                  id,
+                  url,
+                  filename,
+                  title: title || '',
+                  alt: metadata.alt,
+                  caption: metadata.caption,
+                  description,
+                });
+
+                if (!Object.values(mediaMapping).some(mappedUrl => 
+                  url.toLowerCase().includes(filename) || 
+                  Object.keys(mediaMapping).some(pattern => 
+                    new RegExp(pattern).test(filename)
+                  )
+                )) {
+                  console.warn(`[Import] No matching media file found for ${filename}`);
+                  missingMedia.add(url);
+                }
+              }
+            } else if (postType === 'post') {
+              console.log('[Import] Processing post:', title);
+              
+              let content = item.querySelector('content\\:encoded')?.textContent;
+              
+              if (!title || !content) {
+                console.warn('[Import] Post missing required fields:', { title, hasContent: !!content });
+                errors.push(`Post "${title || 'Untitled'}" missing required fields`);
+                continue;
+              }
+
+              // Replace WordPress media URLs with Supabase URLs
+              Object.entries(mediaMapping).forEach(([pattern, supabaseUrl]) => {
+                const regex = new RegExp(pattern, 'gi');
+                content = content!.replace(regex, supabaseUrl);
+              });
+
+              const excerpt = item.querySelector('excerpt\\:encoded')?.textContent || '';
+              const postDate = item.querySelector('wp\\:post_date')?.textContent;
+              const status = item.querySelector('wp\\:status')?.textContent || 'draft';
+              
+              // Process categories and tags
+              const categories = Array.from(item.querySelectorAll('category'));
+              const processedCategories = categories.map(cat => ({
+                domain: cat.getAttribute('domain') || '',
+                name: cat.textContent || ''
+              }));
+
+              // Process featured image
+              let featuredImage = null;
+              const postMetas = Array.from(item.querySelectorAll('wp\\:postmeta'));
+              const thumbnailId = postMetas.find(
+                meta => meta.querySelector('wp\\:meta_key')?.textContent === '_thumbnail_id'
+              )?.querySelector('wp\\:meta_value')?.textContent;
+
+              if (thumbnailId) {
+                const attachmentItem = items.find(
+                  i => i.querySelector('wp\\:post_type')?.textContent === 'attachment' && 
+                      i.querySelector('wp\\:post_id')?.textContent === thumbnailId
+                );
+                if (attachmentItem) {
+                  const featuredImageUrl = attachmentItem.querySelector('wp\\:attachment_url')?.textContent;
+                  if (featuredImageUrl) {
+                    const filename = featuredImageUrl.split('/').pop()?.toLowerCase();
+                    featuredImage = filename ? mediaMapping[filename] : null;
+                  }
+                }
+              }
+
+              console.log('[Import] Post processed:', {
+                title,
+                status,
+                hasExcerpt: !!excerpt,
+                categoriesCount: processedCategories.length,
+                hasFeaturedImage: !!featuredImage
+              });
+
+              posts.push({
+                title,
+                content,
+                excerpt,
+                post_date: postDate,
+                status,
+                categories: processedCategories.filter(cat => cat.domain === 'category').map(cat => cat.name),
+                tags: processedCategories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
+                featured_image: featuredImage,
+                meta_description: postMetas.find(
+                  meta => meta.querySelector('wp\\:meta_key')?.textContent === '_yoast_wpseo_metadesc'
+                )?.querySelector('wp\\:meta_value')?.textContent,
+                focus_keyword: postMetas.find(
+                  meta => meta.querySelector('wp\\:meta_key')?.textContent === '_yoast_wpseo_focuskw'
+                )?.querySelector('wp\\:meta_value')?.textContent,
+              });
+            }
+          } catch (itemError) {
+            console.error('[Import] Error processing item:', itemError);
+            errors.push(itemError.message);
+          }
+
+          // Free up memory after processing each item
+          if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+      }
+
+      console.log(`[Import] Import completed:`, {
+        posts: posts.length,
+        media: mediaItems.length,
+        missingMedia: missingMedia.size,
+        errors: errors.length
+      });
+      
+      return new Response(
+        JSON.stringify({
+          posts,
+          mediaItems,
+          missingMedia: Array.from(missingMedia),
+          errors: errors.length > 0 ? errors : undefined,
+          stats: {
+            processedPosts: posts.length,
+            processedMedia: mediaItems.length,
+            errors: errors.length
+          }
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     } catch (parseError) {
       console.error('[Import] XML parsing error:', parseError);
       console.error('[Import] Raw file content (first 1000 chars):', text.substring(0, 1000)); 
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
-
-    const posts: WordPressPost[] = [];
-    const mediaItems: MediaItem[] = [];
-    const missingMedia = new Set<string>();
-    const errors: string[] = [];
-
-    const channel = xmlDoc.rss.channel;
-    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
-    
-    console.log(`[Import] Found ${items.length} items in the XML file`);
-
-    if (items.length === 0) {
-      console.error('[Import] No items found in the XML file');
-      throw new Error('No items found in the WordPress export file');
-    }
-
-    // Process items in chunks
-    for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-      const chunk = items.slice(i, i + CHUNK_SIZE);
-      console.log(`[Import] Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1} of ${Math.ceil(items.length / CHUNK_SIZE)}`);
-
-      for (const item of chunk) {
-        try {
-          console.log('[Import] Processing item:', {
-            title: item.title?.[0],
-            type: item['wp:post_type']?.[0],
-            status: item['wp:status']?.[0],
-          });
-
-          const postType = item['wp:post_type']?.[0];
-          if (!postType) {
-            console.warn('[Import] Item missing post type:', item);
-            continue;
-          }
-          
-          if (postType === 'attachment') {
-            const url = item['wp:attachment_url']?.[0];
-            if (url) {
-              const id = item['wp:post_id']?.[0] || crypto.randomUUID();
-              const title = item.title?.[0] || '';
-              const description = item['content:encoded']?.[0] || '';
-              const filename = url.split('/').pop()?.toLowerCase() || '';
-              
-              const metadata = {
-                alt: item['wp:postmeta']?.find(meta => 
-                  meta['wp:meta_key']?.[0] === '_wp_attachment_image_alt'
-                )?.[0]?.['wp:meta_value']?.[0] || '',
-                caption: item['excerpt:encoded']?.[0] || '',
-              };
-              
-              console.log('[Import] Processing attachment:', { url, filename, title });
-              
-              mediaItems.push({
-                id,
-                url,
-                filename,
-                title,
-                alt: metadata.alt,
-                caption: metadata.caption,
-                description,
-              });
-
-              if (!Object.values(mediaMapping).some(mappedUrl => 
-                url.toLowerCase().includes(filename) || 
-                Object.keys(mediaMapping).some(pattern => 
-                  new RegExp(pattern).test(filename)
-                )
-              )) {
-                console.warn(`[Import] No matching media file found for ${filename}`);
-                missingMedia.add(url);
-              }
-            }
-          } else if (postType === 'post') {
-            console.log('[Import] Processing post:', item.title?.[0]);
-            
-            const title = item.title?.[0];
-            let content = item['content:encoded']?.[0];
-            
-            if (!title || !content) {
-              console.warn('[Import] Post missing required fields:', { title, hasContent: !!content });
-              errors.push(`Post "${title || 'Untitled'}" missing required fields`);
-              continue;
-            }
-
-            // Replace WordPress media URLs with Supabase URLs
-            Object.entries(mediaMapping).forEach(([pattern, supabaseUrl]) => {
-              const regex = new RegExp(pattern, 'gi');
-              content = content.replace(regex, supabaseUrl);
-            });
-
-            const excerpt = item['excerpt:encoded']?.[0] || '';
-            const postDate = item['wp:post_date']?.[0];
-            const status = item['wp:status']?.[0] || 'draft';
-            
-            // Process categories and tags
-            const categories = Array.isArray(item.category) ? item.category : item.category ? [item.category] : [];
-            const processedCategories = categories.map(cat => ({
-              domain: cat?.['@domain'] || '',
-              name: cat?.['#text'] || ''
-            }));
-
-            // Process featured image
-            let featuredImage = null;
-            const postMeta = Array.isArray(item['wp:postmeta']) ? item['wp:postmeta'] : [item['wp:postmeta']].filter(Boolean);
-            const thumbnailId = postMeta?.find(
-              meta => meta['wp:meta_key']?.[0] === '_thumbnail_id'
-            )?.[0]?.['wp:meta_value']?.[0];
-
-            if (thumbnailId) {
-              const attachmentItem = items.find(
-                i => i['wp:post_type']?.[0] === 'attachment' && i['wp:post_id']?.[0] === thumbnailId
-              );
-              if (attachmentItem) {
-                const featuredImageUrl = attachmentItem['wp:attachment_url']?.[0];
-                if (featuredImageUrl) {
-                  const filename = featuredImageUrl.split('/').pop()?.toLowerCase();
-                  featuredImage = filename ? mediaMapping[filename] : null;
-                }
-              }
-            }
-
-            console.log('[Import] Post processed:', {
-              title,
-              status,
-              hasExcerpt: !!excerpt,
-              categoriesCount: processedCategories.length,
-              hasFeaturedImage: !!featuredImage
-            });
-
-            posts.push({
-              title,
-              content,
-              excerpt,
-              post_date: postDate,
-              status,
-              categories: processedCategories.filter(cat => cat.domain === 'category').map(cat => cat.name),
-              tags: processedCategories.filter(cat => cat.domain === 'post_tag').map(cat => cat.name),
-              featured_image: featuredImage,
-              meta_description: postMeta?.find(
-                meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_metadesc'
-              )?.[0]?.['wp:meta_value']?.[0],
-              focus_keyword: postMeta?.find(
-                meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
-              )?.[0]?.['wp:meta_value']?.[0],
-            });
-          }
-        } catch (itemError) {
-          console.error('[Import] Error processing item:', itemError);
-          errors.push(itemError.message);
-        }
-
-        // Free up memory after processing each item
-        if (i % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
-      }
-    }
-
-    console.log(`[Import] Import completed:`, {
-      posts: posts.length,
-      media: mediaItems.length,
-      missingMedia: missingMedia.size,
-      errors: errors.length
-    });
-    
-    return new Response(
-      JSON.stringify({
-        posts,
-        mediaItems,
-        missingMedia: Array.from(missingMedia),
-        errors: errors.length > 0 ? errors : undefined,
-        stats: {
-          processedPosts: posts.length,
-          processedMedia: mediaItems.length,
-          errors: errors.length
-        }
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
   } catch (error) {
     console.error('[Import] Error processing WordPress import:', error);
     return new Response(
