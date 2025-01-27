@@ -7,7 +7,7 @@ import {
 
 const faqs = [
   {
-    question: "What makes Soundraiser's Smart Links different?",
+    question: "What makes notnoise's Smart Links different?",
     answer: "Our Smart Links are built for modern music marketing, featuring Meta Pixel integration for retargeting, email capture capabilities, and comprehensive analytics - all in one streamlined solution that takes less than 3 minutes to set up."
   },
   {
@@ -24,21 +24,15 @@ const faqs = [
   },
   {
     question: "Is it really free to use?",
-    answer: "No cap! You can create unlimited Smart Links with all core features including Meta Pixel integration and email capture at no cost. No credit card required to get started. 🎵"
+    answer: "Yes! You can create unlimited Smart Links with all core features including Meta Pixel integration and email capture at no cost. No credit card required to get started."
   }
 ];
 
 export const FAQ = () => {
   return (
-    <section className="py-20 px-4 bg-neutral relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-accent rounded-full mix-blend-multiply filter blur-xl"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-secondary rounded-full mix-blend-multiply filter blur-xl"></div>
-      </div>
-      
-      <div className="max-w-3xl mx-auto relative">
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-onyx text-center font-heading">
+    <section className="py-20 px-4 bg-onyx">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-white text-center">
           Frequently Asked Questions
         </h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
@@ -46,12 +40,12 @@ export const FAQ = () => {
             <AccordionItem 
               key={index} 
               value={`item-${index}`}
-              className="bg-white rounded-lg px-6 border border-primary/10 transition-all duration-300 hover:shadow-md"
+              className="bg-white rounded-lg px-6"
             >
-              <AccordionTrigger className="text-left hover:text-secondary font-heading py-4">
+              <AccordionTrigger className="text-left hover:text-primary">
                 {faq.question}
               </AccordionTrigger>
-              <AccordionContent className="text-onyx/80 pb-4">
+              <AccordionContent className="text-gray-600">
                 {faq.answer}
               </AccordionContent>
             </AccordionItem>
