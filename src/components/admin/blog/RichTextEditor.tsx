@@ -129,10 +129,8 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     size: 'medium',
     alignment: 'left'
   });
-  const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -166,7 +164,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
         class: 'prose max-w-none p-4 min-h-[400px] focus:outline-none',
       },
       handleClick: (view, pos, event) => {
-        // Ensure cursor is placed at click position
         const coordinates = view.coordsAtPos(pos);
         const transaction = view.state.tr.setSelection(
           view.state.selection.empty 
@@ -174,57 +171,16 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             : view.state.selection
         );
         view.dispatch(transaction);
-        return false; // Allow default click behavior
+        return false;
       },
     },
   });
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (editor) {
-      const interval = setInterval(() => {
-        const content = editor.getHTML();
-        onChange(content);
-        setLastSaved(new Date());
-        toast.success("Content auto-saved");
-      }, 60000); // Auto-save every minute
-
-      setAutoSaveInterval(interval);
-
-      return () => {
-        if (interval) clearInterval(interval);
-      };
-    }
-  }, [editor, onChange]);
 
   const handleManualSave = () => {
     if (editor) {
       const content = editor.getHTML();
       onChange(content);
-      setLastSaved(new Date());
-      toast.success("Content saved");
     }
-  };
-
-  const insertHorizontalRule = () => {
-    editor?.chain().focus().setHorizontalRule().run();
-  };
-
-  const handleAddLink = () => {
-    if (linkUrl) {
-      editor?.chain().focus().setLink({ 
-        href: linkUrl,
-        target: linkTarget 
-      }).run();
-      setLinkUrl('');
-      setIsLinkDialogOpen(false);
-    }
-  };
-
-  const handleImageSelect = (url: string) => {
-    setSelectedImage(url);
-    setIsMediaDialogOpen(false);
-    setIsImageSettingsOpen(true);
   };
 
   if (!editor) {
@@ -349,7 +305,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             <Button
               variant="ghost"
               size="icon"
-              onClick={insertHorizontalRule}
+              onClick={() => editor.chain().focus().setHorizontalRule().run()}
             >
               <SeparatorHorizontal className="h-4 w-4" />
             </Button>
@@ -386,11 +342,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             {readingTime} min read
           </span>
         </div>
-        {lastSaved && (
-          <span className="text-sm text-muted-foreground">
-            Last saved: {lastSaved.toLocaleTimeString()}
-          </span>
-        )}
       </div>
 
       <Dialog open={isImageSettingsOpen} onOpenChange={setIsImageSettingsOpen}>
@@ -511,7 +462,16 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleAddLink}>Add Link</Button>
+            <Button onClick={() => {
+              if (linkUrl) {
+                editor?.chain().focus().setLink({ 
+                  href: linkUrl,
+                  target: linkTarget 
+                }).run();
+                setLinkUrl('');
+                setIsLinkDialogOpen(false);
+              }
+            }}>Add Link</Button>
           </div>
         </DialogContent>
       </Dialog>

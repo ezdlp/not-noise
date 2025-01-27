@@ -186,7 +186,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           .update(postData)
           .eq("id", post.id);
 
-        if (postError) throw postError;
+        if (postError) {
+          console.error("Error updating post:", postError);
+          throw postError;
+        }
 
         if (values.category_id) {
           await supabase
