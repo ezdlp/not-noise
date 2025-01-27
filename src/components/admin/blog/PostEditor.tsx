@@ -69,6 +69,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   });
 
   const isDirty = form.formState.isDirty;
+  console.log("Form isDirty:", isDirty);
 
   const createUniqueSlug = async (baseSlug: string, postId?: string): Promise<string> => {
     let slug = baseSlug;
@@ -111,6 +112,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
+      console.log("Form value changed:", name, value);
       if (name === 'title') {
         debouncedUpdateSlug(value.title as string);
       }
@@ -179,6 +181,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         featured_image: values.featured_image,
       };
 
+      console.log("Prepared post data:", postData);
+
       if (post?.id) {
         console.log("Updating existing post:", post.id);
         const { error: postError } = await supabase
@@ -190,6 +194,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           console.error("Error updating post:", postError);
           throw postError;
         }
+
+        console.log("Post updated successfully");
 
         if (values.category_id) {
           await supabase
