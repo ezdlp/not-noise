@@ -12,6 +12,7 @@ import { PostActions } from "./PostActions";
 import { isFuture, isPast } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SeoSection } from "./seo/SeoSection";
+import { AutoSave } from "./AutoSave";
 import debounce from "lodash/debounce";
 
 const formSchema = z.object({
@@ -34,13 +35,6 @@ const formSchema = z.object({
   slug: z.string().optional(),
   featured_image: z.string().optional(),
 });
-
-export type PostFormValues = z.infer<typeof formSchema>;
-
-interface PostEditorProps {
-  post?: PostFormValues & { id: string };
-  onClose: () => void;
-}
 
 export function PostEditor({ post, onClose }: PostEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,10 +120,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  async function onSubmit(values: PostFormValues) {
-    console.log("Form submitted with values:", values);
-    setIsSubmitting(true);
-    
+  const handleSave = async (values: PostFormValues) => {
+    console.log("Saving post with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -178,83 +170,62 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         featured_image: values.featured_image,
       };
 
-      console.log("Post data to be submitted:", postData);
-
       if (post?.id) {
-        console.log("Updating existing post with ID:", post.id);
         const { error: postError } = await supabase
           .from("blog_posts")
           .update(postData)
           .eq("id", post.id);
 
-        if (postError) {
-          console.error("Error updating post:", postError);
-          throw postError;
-        }
+        if (postError) throw postError;
 
         if (values.category_id) {
-          const { error: deleteError } = await supabase
+          await supabase
             .from("blog_post_categories")
             .delete()
             .eq("post_id", post.id);
 
-          if (deleteError) {
-            console.error("Error deleting old categories:", deleteError);
-            throw deleteError;
-          }
-
-          const { error: insertError } = await supabase
+          await supabase
             .from("blog_post_categories")
             .insert({ post_id: post.id, category_id: values.category_id });
-
-          if (insertError) {
-            console.error("Error inserting new category:", insertError);
-            throw insertError;
-          }
         }
 
-        const message = isFuture(publishDate)
-          ? `Post scheduled for ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
-          : isPast(publishDate)
-          ? `Post backdated to ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
-          : "Post updated successfully";
-
-        toast.success(message);
-        form.reset(values);
+        return postData;
       } else {
-        console.log("Creating new post");
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
           .insert(postData)
           .select()
           .single();
 
-        if (postError) {
-          console.error("Error creating post:", postError);
-          throw postError;
-        }
+        if (postError) throw postError;
 
         if (values.category_id && newPost) {
-          const { error: categoryError } = await supabase
+          await supabase
             .from("blog_post_categories")
             .insert({ post_id: newPost.id, category_id: values.category_id });
-
-          if (categoryError) {
-            console.error("Error inserting category:", categoryError);
-            throw categoryError;
-          }
         }
 
-        const message = isFuture(publishDate)
-          ? `Post scheduled for ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
-          : isPast(publishDate)
-          ? `Post backdated to ${publishDate.toLocaleDateString()} ${publishDate.toLocaleTimeString()}`
-          : "Post published successfully";
-
-        toast.success(message);
+        return postData;
       }
+    } catch (error) {
+      console.error("Error saving post:", error);
+      throw error;
+    }
+  };
 
+  const onSubmit = async (values: PostFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await handleSave(values);
       await queryClient.invalidateQueries({ queryKey: ["adminPosts"] });
+      
+      const message = isFuture(values.published_at || new Date())
+        ? `Post scheduled for ${values.published_at?.toLocaleDateString()} ${values.published_at?.toLocaleTimeString()}`
+        : isPast(values.published_at || new Date())
+        ? `Post backdated to ${values.published_at?.toLocaleDateString()} ${values.published_at?.toLocaleTimeString()}`
+        : post?.id ? "Post updated successfully" : "Post published successfully";
+
+      toast.success(message);
       onClose();
     } catch (error) {
       console.error("Error saving post:", error);
@@ -262,17 +233,21 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <PostActions 
-            isSubmitting={isSubmitting}
-            onClose={handleClose}
-            isEditing={!!post}
-          />
+          <div className="flex justify-between items-center sticky top-0 bg-background z-10 py-4 border-b">
+            <PostActions 
+              isSubmitting={isSubmitting}
+              onClose={() => isDirty ? setShowUnsavedChangesDialog(true) : onClose()}
+              isEditing={!!post}
+            />
+            <AutoSave form={form} onSave={handleSave} />
+          </div>
+          
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2 space-y-6">
               <PostContent form={form} />
