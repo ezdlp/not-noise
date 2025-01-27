@@ -15,7 +15,7 @@ import { SeoSection } from "./seo/SeoSection";
 import { AutoSave } from "./AutoSave";
 import debounce from "lodash/debounce";
 
-const formSchema = z.object({
+export const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
   excerpt: z.string().optional(),
@@ -130,7 +130,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const handleSave = async (values: PostFormValues): Promise<void> => {
+  const handleSave = async (values: PostFormValues) => {
     console.log("Saving post with values:", values);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -181,6 +181,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       };
 
       if (post?.id) {
+        console.log("Updating existing post:", post.id);
         const { error: postError } = await supabase
           .from("blog_posts")
           .update(postData)
@@ -199,6 +200,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: post.id, category_id: values.category_id });
         }
       } else {
+        console.log("Creating new post");
         const { data: newPost, error: postError } = await supabase
           .from("blog_posts")
           .insert(postData)
@@ -213,6 +215,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert({ post_id: newPost.id, category_id: values.category_id });
         }
       }
+
+      return postData;
     } catch (error) {
       console.error("Error saving post:", error);
       throw error;
@@ -220,6 +224,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   const onSubmit = async (values: PostFormValues) => {
+    console.log("Form submitted with values:", values);
     setIsSubmitting(true);
     try {
       await handleSave(values);
@@ -248,7 +253,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           <div className="flex justify-between items-center sticky top-0 bg-background z-10 py-4 border-b">
             <PostActions 
               isSubmitting={isSubmitting}
-              onClose={() => isDirty ? setShowUnsavedChangesDialog(true) : onClose()}
+              onClose={handleClose}
               isEditing={!!post}
             />
             <AutoSave form={form} onSave={handleSave} />
