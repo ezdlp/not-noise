@@ -36,7 +36,7 @@ const menuItems = [
     href: "/admin/smart-links",
   },
   {
-    title: "Blog Posts",
+    title: "Pages",
     icon: NewspaperIcon,
     href: "/admin/posts",
   },

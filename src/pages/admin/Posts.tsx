@@ -8,18 +8,47 @@ import { useState } from "react";
 import { PostEditor } from "@/components/admin/blog/PostEditor";
 import { ImportPosts } from "@/components/admin/blog/ImportPosts";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Posts() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const { data: posts, isLoading } = useQuery({
-    queryKey: ["adminPosts"],
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("blog_posts")
+        .from("blog_categories")
         .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["adminPosts", selectedCategory],
+    queryFn: async () => {
+      let query = supabase
+        .from("blog_posts")
+        .select(`
+          *,
+          blog_post_categories!inner (
+            blog_categories (
+              id,
+              name
+            )
+          )
+        `)
         .order("created_at", { ascending: false });
+
+      if (selectedCategory !== 'all') {
+        query = query.eq('blog_post_categories.category_id', selectedCategory);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
@@ -88,10 +117,27 @@ export default function Posts() {
         </div>
       </div>
 
+      <div className="flex items-center gap-4 mb-4">
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories?.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Updated</TableHead>
@@ -102,6 +148,9 @@ export default function Posts() {
           {posts?.map((post) => (
             <TableRow key={post.id}>
               <TableCell>{post.title}</TableCell>
+              <TableCell>
+                {post.blog_post_categories?.[0]?.blog_categories?.name || 'Uncategorized'}
+              </TableCell>
               <TableCell>
                 <Badge variant={post.status === "published" ? "default" : "secondary"}>
                   {post.status}
