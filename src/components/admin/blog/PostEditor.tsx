@@ -50,6 +50,33 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     console.log("Current form values:", form.getValues());
   }, [form.watch()]);
 
+  const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
+    if (!categoryId) return;
+
+    // First, remove any existing category relationships
+    const { error: deleteError } = await supabase
+      .from('blog_post_categories')
+      .delete()
+      .eq('post_id', postId);
+
+    if (deleteError) {
+      console.error("Error deleting existing categories:", deleteError);
+      return;
+    }
+
+    // Then insert the new category relationship
+    const { error: insertError } = await supabase
+      .from('blog_post_categories')
+      .insert([{
+        post_id: postId,
+        category_id: categoryId
+      }]);
+
+    if (insertError) {
+      console.error("Error inserting new category:", insertError);
+    }
+  };
+
   const onSubmit = async (data: PostFormValues) => {
     console.log("Form submission started with data:", data);
     setIsSubmitting(true);
@@ -89,6 +116,11 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         console.error("Error saving post:", error);
         toast.error("Failed to save post");
         return;
+      }
+
+      // Update category after successful post save
+      if (responseData && responseData[0]) {
+        await updatePostCategory(responseData[0].id, data.category_id);
       }
 
       console.log("Post saved successfully");
