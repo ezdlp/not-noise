@@ -199,7 +199,7 @@ export function MediaFileList({
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate flex items-center gap-2">
+                <h3 className="font-medium truncate flex items-center gap-2" title={file.filename}>
                   {getFileIcon(file.mime_type)}
                   {file.filename}
                 </h3>
@@ -209,7 +209,7 @@ export function MediaFileList({
                   {formatFileSize(file.size)}
                 </p>
                 {file.alt_text && (
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-sm text-muted-foreground truncate" title={file.alt_text}>
                     Alt: {file.alt_text}
                   </p>
                 )}
@@ -228,7 +228,7 @@ export function MediaFileList({
               </div>
 
               {!isSelectionMode && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {showInsertButton && (
                     <Button
                       variant="secondary"

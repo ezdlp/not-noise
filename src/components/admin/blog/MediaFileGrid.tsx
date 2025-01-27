@@ -105,7 +105,7 @@ export function MediaFileGrid({
             <div
               key={file.id}
               className={cn(
-                "relative group border rounded-md p-2",
+                "relative group border rounded-md p-2 overflow-hidden",
                 isSelectionMode && "cursor-pointer hover:border-primary",
                 selectedFiles.has(file.id) && "ring-2 ring-primary",
                 "hover:shadow-lg transition-all duration-200"
@@ -219,7 +219,9 @@ export function MediaFileGrid({
               )}
               
               <div className="mt-2 space-y-1">
-                <p className="text-sm truncate">{file.filename}</p>
+                <p className="text-sm truncate" title={file.filename}>
+                  {file.filename}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {file.dimensions ? `${file.dimensions.width}x${file.dimensions.height}` : ""}
                   {file.size && ` • ${(file.size / 1024).toFixed(1)}KB`}
