@@ -47,8 +47,11 @@ serve(async (req) => {
     const file = formData.get('file');
     
     if (!file || !(file instanceof File)) {
+      console.error('No file uploaded');
       throw new Error('No file uploaded');
     }
+
+    console.log('File received:', file.name, 'Size:', file.size);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -65,20 +68,18 @@ serve(async (req) => {
       throw new Error('Failed to fetch media files');
     }
 
+    console.log('Fetched existing media files:', existingMedia?.length || 0);
+
     // Create a mapping of filenames to file paths
     const mediaMapping: MediaMapping = {};
     existingMedia?.forEach(media => {
-      // Get the filename without path and convert to lowercase for case-insensitive matching
       const filename = media.filename.toLowerCase();
-      // Store the full Supabase URL
       const supabaseUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/media-library/${media.file_path}`;
       mediaMapping[filename] = supabaseUrl;
       
-      // Also store variations of the filename for better matching
       const filenameWithoutExt = filename.split('.').slice(0, -1).join('.');
       const ext = filename.split('.').pop();
       if (ext) {
-        // Store variations like filename-150x150.jpg, filename-300x300.jpg etc.
         mediaMapping[`${filenameWithoutExt}-\\d+x\\d+\\.${ext}`] = supabaseUrl;
         mediaMapping[`${filenameWithoutExt}-scaled\\.${ext}`] = supabaseUrl;
         mediaMapping[`${filenameWithoutExt}-thumbnail\\.${ext}`] = supabaseUrl;
@@ -89,9 +90,9 @@ serve(async (req) => {
     let xmlDoc;
     
     try {
-      console.log('Attempting to parse XML file...');
+      console.log('Parsing XML file...');
       xmlDoc = parse(text);
-      console.log('XML parsing successful');
+      console.log('XML structure:', Object.keys(xmlDoc));
       
       if (!xmlDoc.rss) {
         console.error('Missing RSS element in XML structure');
@@ -111,7 +112,7 @@ serve(async (req) => {
       });
     } catch (parseError) {
       console.error('XML parsing error:', parseError);
-      console.error('Raw file content:', text.substring(0, 1000) + '...'); 
+      console.error('Raw file content (first 1000 chars):', text.substring(0, 1000)); 
       throw new Error(`Failed to parse WordPress export file: ${parseError.message}`);
     }
 
@@ -137,6 +138,12 @@ serve(async (req) => {
 
       for (const item of chunk) {
         try {
+          console.log('Processing item:', {
+            title: item.title?.[0],
+            type: item['wp:post_type']?.[0],
+            status: item['wp:status']?.[0],
+          });
+
           const postType = item['wp:post_type']?.[0];
           if (!postType) {
             console.warn('Item missing post type:', item);
@@ -158,6 +165,8 @@ serve(async (req) => {
                 caption: item['excerpt:encoded']?.[0] || '',
               };
               
+              console.log('Processing attachment:', { url, filename, title });
+              
               mediaItems.push({
                 id,
                 url,
@@ -168,7 +177,6 @@ serve(async (req) => {
                 description,
               });
 
-              // Check if we have this media file in our library
               if (!Object.values(mediaMapping).some(mappedUrl => 
                 url.toLowerCase().includes(filename) || 
                 Object.keys(mediaMapping).some(pattern => 
@@ -186,7 +194,7 @@ serve(async (req) => {
             let content = item['content:encoded']?.[0];
             
             if (!title || !content) {
-              console.warn('Post missing required fields:', { title, content });
+              console.warn('Post missing required fields:', { title, hasContent: !!content });
               errors.push(`Post "${title || 'Untitled'}" missing required fields`);
               continue;
             }
@@ -228,6 +236,14 @@ serve(async (req) => {
               }
             }
 
+            console.log('Post processed:', {
+              title,
+              status,
+              hasExcerpt: !!excerpt,
+              categoriesCount: processedCategories.length,
+              hasFeaturedImage: !!featuredImage
+            });
+
             posts.push({
               title,
               content,
@@ -244,8 +260,6 @@ serve(async (req) => {
                 meta => meta['wp:meta_key']?.[0] === '_yoast_wpseo_focuskw'
               )?.[0]?.['wp:meta_value']?.[0],
             });
-
-            console.log(`Processed post: ${title}`);
           }
         } catch (itemError) {
           console.error('Error processing item:', itemError);
@@ -259,7 +273,12 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Successfully processed ${posts.length} posts and ${mediaItems.length} media items`);
+    console.log(`Import completed:`, {
+      posts: posts.length,
+      media: mediaItems.length,
+      missingMedia: missingMedia.size,
+      errors: errors.length
+    });
     
     return new Response(
       JSON.stringify({
