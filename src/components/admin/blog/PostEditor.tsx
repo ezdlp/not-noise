@@ -5,12 +5,14 @@ import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PostContent } from "./PostContent";
 import { PostSettings } from "./PostSettings";
 import { PostActions } from "./PostActions";
 import { isFuture, isPast } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { SeoSection } from "./seo/SeoSection";
+import debounce from "lodash/debounce";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -94,6 +96,24 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   };
+
+  // Debounced function to update slug
+  const debouncedUpdateSlug = debounce(async (title: string) => {
+    if (!title) return;
+    const baseSlug = createSlug(title);
+    const uniqueSlug = await createUniqueSlug(baseSlug, post?.id);
+    form.setValue('slug', uniqueSlug, { shouldDirty: true });
+  }, 5000);
+
+  // Watch title changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'title') {
+        debouncedUpdateSlug(value.title as string);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   const handleClose = () => {
     if (isDirty) {
@@ -216,8 +236,25 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             isEditing={!!post}
           />
           <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2">
+            <div className="col-span-2 space-y-6">
               <PostContent form={form} />
+              <SeoSection
+                title={form.watch('title')}
+                content={form.watch('content')}
+                focusKeyword={form.watch('focus_keyword') || ''}
+                onFocusKeywordChange={(value) => form.setValue('focus_keyword', value)}
+                seoTitle={form.watch('seo_title') || ''}
+                onSeoTitleChange={(value) => form.setValue('seo_title', value)}
+                metaDescription={form.watch('meta_description') || ''}
+                onMetaDescriptionChange={(value) => form.setValue('meta_description', value)}
+                ogTitle={form.watch('seo_title') || form.watch('title')}
+                onOgTitleChange={(value) => form.setValue('seo_title', value)}
+                ogDescription={form.watch('meta_description') || ''}
+                onOgDescriptionChange={(value) => form.setValue('meta_description', value)}
+                ogImage={''}
+                onOgImageChange={() => {}}
+                url={`${window.location.origin}/${form.watch('slug')}`}
+              />
             </div>
             <div>
               <PostSettings 
