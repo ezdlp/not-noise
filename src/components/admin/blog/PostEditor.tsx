@@ -4,7 +4,6 @@ import * as z from "zod";
 import { Form } from "@/components/ui/form";
 import { PostContent } from "./PostContent";
 import { PostSettings } from "./PostSettings";
-import { PostActions } from "./PostActions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ interface PostEditorProps {
 }
 
 export function PostEditor({ post, onClose }: PostEditorProps) {
-  console.log("PostEditor rendered with post:", post);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PostFormValues>({
@@ -150,13 +148,11 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
           <PostSettings 
             post={form.getValues()} 
             onUpdate={handlePostUpdate}
+            onClose={onClose}
+            isSubmitting={isSubmitting}
+            isEditing={!!post?.id}
           />
         </div>
-        <PostActions 
-          isSubmitting={isSubmitting}
-          onClose={onClose}
-          isEditing={!!post?.id}
-        />
       </form>
     </Form>
   );

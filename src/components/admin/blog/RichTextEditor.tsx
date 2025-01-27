@@ -19,13 +19,11 @@ import {
   AlignCenter,
   AlignRight,
   Code,
-  Eye,
-  Save,
-  Clock,
   Text as TextIcon,
+  Clock,
   SeparatorHorizontal,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +31,6 @@ import { MediaLibrary } from './MediaLibrary';
 import { mergeAttributes } from '@tiptap/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import { TextSelection } from 'prosemirror-state';
 
 interface ImageSettings {
@@ -120,7 +117,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
   const [linkTarget, setLinkTarget] = useState<'_blank' | '_self'>('_self');
   const [editorMode, setEditorMode] = useState<'visual' | 'code'>('visual');
   const [htmlContent, setHtmlContent] = useState(content);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     alt: '',
     caption: '',
@@ -129,8 +125,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     size: 'medium',
     alignment: 'left'
   });
-  const [wordCount, setWordCount] = useState(0);
-  const [readingTime, setReadingTime] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -153,11 +147,12 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       onChange(newContent);
       setHtmlContent(newContent);
       
-      // Update word count and reading time
+      // Fix word count and reading time calculation
       const text = editor.getText();
-      const words = text.trim().split(/\s+/).length;
+      const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+      const readingTime = Math.ceil(words / 200); // Assuming average reading speed of 200 words per minute
       setWordCount(words);
-      setReadingTime(Math.ceil(words / 200)); // Assuming average reading speed of 200 words per minute
+      setReadingTime(readingTime);
     },
     editorProps: {
       attributes: {
@@ -176,12 +171,8 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     },
   });
 
-  const handleManualSave = () => {
-    if (editor) {
-      const content = editor.getHTML();
-      onChange(content);
-    }
-  };
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
 
   const handleImageSelect = (url: string) => {
     setSelectedImage(url);
@@ -203,26 +194,9 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
               <TabsTrigger value="code">Code</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleManualSave}
-            className="ml-auto mr-2"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
         </div>
         
-        {editorMode === 'visual' && !isPreviewMode && (
+        {editorMode === 'visual' && (
           <>
             <Button
               variant="ghost"
@@ -319,11 +293,11 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
         )}
       </div>
 
-      {editorMode === 'visual' && !isPreviewMode && (
+      {editorMode === 'visual' && (
         <EditorContent editor={editor} className="prose max-w-none p-4 min-h-[400px]" />
       )}
 
-      {editorMode === 'code' && !isPreviewMode && (
+      {editorMode === 'code' && (
         <div className="p-4">
           <textarea
             value={htmlContent}
@@ -331,10 +305,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             className="w-full h-[400px] font-mono text-sm p-4 border rounded-md"
           />
         </div>
-      )}
-
-      {isPreviewMode && (
-        <div className="prose max-w-none p-4 min-h-[400px]" dangerouslySetInnerHTML={{ __html: htmlContent }} />
       )}
 
       <div className="border-t p-2 flex justify-between items-center text-sm text-muted-foreground">

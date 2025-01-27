@@ -8,9 +8,12 @@ import { FeaturedImage } from "./FeaturedImage";
 interface PostSettingsProps {
   post: any;
   onUpdate: (key: string, value: any) => void;
+  onClose: () => void;
+  isSubmitting: boolean;
+  isEditing: boolean;
 }
 
-export function PostSettings({ post, onUpdate }: PostSettingsProps) {
+export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing }: PostSettingsProps) {
   const baseUrl = window.location.origin;
   const postUrl = `${baseUrl}/${post.slug}`;
 
@@ -46,6 +49,18 @@ export function PostSettings({ post, onUpdate }: PostSettingsProps) {
             value={post.category_id}
             onChange={(value) => onUpdate('category_id', value)}
           />
+        </div>
+
+        <div className="pt-4 flex justify-end space-x-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : (isEditing ? "Update" : "Publish")}
+          </Button>
         </div>
       </div>
     </div>
