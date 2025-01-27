@@ -105,14 +105,14 @@ export function MediaFileGrid({
             <div
               key={file.id}
               className={cn(
-                "relative group border rounded-md p-2 overflow-hidden",
-                isSelectionMode && "cursor-pointer hover:border-primary",
+                "relative group border rounded-md p-3 overflow-hidden",
+                isSelectionMode && "cursor-pointer hover:bg-accent/50",
                 selectedFiles.has(file.id) && "ring-2 ring-primary",
-                "hover:shadow-lg transition-all duration-200"
+                "hover:shadow-md transition-all duration-200"
               )}
               onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
             >
-              <div className="aspect-square relative">
+              <div className="aspect-square relative bg-accent/5 rounded-md overflow-hidden">
                 <img
                   src={publicUrl}
                   alt={file.alt_text || file.filename}
@@ -135,7 +135,7 @@ export function MediaFileGrid({
                           e.stopPropagation();
                           onSelect(publicUrl);
                         }}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1.5 whitespace-nowrap"
                       >
                         <Plus className="h-4 w-4" />
                         Insert
@@ -156,7 +156,7 @@ export function MediaFileGrid({
                               filename: file.filename,
                             });
                           }}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1.5 whitespace-nowrap"
                         >
                           <Pencil className="h-4 w-4" />
                           Edit
@@ -203,7 +203,7 @@ export function MediaFileGrid({
                         e.stopPropagation();
                         copyToClipboard(publicUrl);
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <Copy className="h-4 w-4" />
                       Copy URL
@@ -216,7 +216,7 @@ export function MediaFileGrid({
                         e.stopPropagation();
                         handleDeleteClick(file.id, file.file_path);
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1.5"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -225,7 +225,7 @@ export function MediaFileGrid({
               </div>
               
               <div className="mt-2 space-y-1">
-                <p className="text-sm truncate" title={file.filename}>
+                <p className="text-sm font-medium truncate" title={file.filename}>
                   {file.filename}
                 </p>
                 <p className="text-xs text-muted-foreground">

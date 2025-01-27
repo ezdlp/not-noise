@@ -172,14 +172,14 @@ export function MediaFileList({
             key={file.id}
             className={cn(
               "relative group border rounded-md p-4",
-              isSelectionMode && "cursor-pointer",
+              isSelectionMode && "cursor-pointer hover:bg-accent/50",
               selectedFiles.has(file.id) && "ring-2 ring-primary",
-              "hover:bg-accent transition-colors duration-200"
+              "hover:bg-accent/5 transition-colors duration-200"
             )}
             onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
           >
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 relative flex-shrink-0">
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 relative flex-shrink-0 bg-accent/5 rounded-md overflow-hidden">
                 <FilePreview file={file} publicUrl={publicUrl} />
                 {needsOptimization && (
                   <div className="absolute -top-2 -right-2">
@@ -198,7 +198,7 @@ export function MediaFileList({
                 )}
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 space-y-1">
                 <h3 className="font-medium truncate flex items-center gap-2" title={file.filename}>
                   {getFileIcon(file.mime_type)}
                   <span className="truncate">{file.filename}</span>
@@ -237,7 +237,7 @@ export function MediaFileList({
                         e.stopPropagation();
                         onSelect(publicUrl);
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <Plus className="h-4 w-4" />
                       Insert
@@ -258,7 +258,7 @@ export function MediaFileList({
                             filename: file.filename,
                           });
                         }}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1.5 whitespace-nowrap"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -305,7 +305,7 @@ export function MediaFileList({
                       e.stopPropagation();
                       copyToClipboard(publicUrl);
                     }}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1.5 whitespace-nowrap"
                   >
                     <Copy className="h-4 w-4" />
                     Copy URL
@@ -318,7 +318,7 @@ export function MediaFileList({
                       e.stopPropagation();
                       onDelete(file.id, file.file_path);
                     }}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1.5"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
