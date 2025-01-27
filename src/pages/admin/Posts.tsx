@@ -28,7 +28,7 @@ export default function Posts() {
     },
   });
 
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, refetch } = useQuery({
     queryKey: ["adminPosts", selectedCategory],
     queryFn: async () => {
       let query = supabase
@@ -56,17 +56,37 @@ export default function Posts() {
   });
 
   const handleDelete = async (postId: string) => {
-    const { error } = await supabase
-      .from("blog_posts")
-      .delete()
-      .eq("id", postId);
+    try {
+      // First delete associated categories
+      const { error: categoriesError } = await supabase
+        .from("blog_post_categories")
+        .delete()
+        .eq("post_id", postId);
 
-    if (error) {
-      toast.error("Failed to delete page");
-      return;
+      if (categoriesError) {
+        console.error("Error deleting post categories:", categoriesError);
+        toast.error("Failed to delete post categories");
+        return;
+      }
+
+      // Then delete the post itself
+      const { error: postError } = await supabase
+        .from("blog_posts")
+        .delete()
+        .eq("id", postId);
+
+      if (postError) {
+        console.error("Error deleting post:", postError);
+        toast.error("Failed to delete post");
+        return;
+      }
+
+      toast.success("Post deleted successfully");
+      refetch(); // Refresh the posts list
+    } catch (error) {
+      console.error("Error in delete operation:", error);
+      toast.error("An error occurred while deleting the post");
     }
-
-    toast.success("Page deleted successfully");
   };
 
   if (isLoading) return <div>Loading...</div>;
