@@ -257,14 +257,22 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsMediaDialogOpen(true)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsMediaDialogOpen(true);
+              }}
             >
               <ImageIcon className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsLinkDialogOpen(true)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsLinkDialogOpen(true);
+              }}
             >
               <LinkIcon className="h-4 w-4" />
             </Button>
