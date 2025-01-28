@@ -3,6 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
+import { Calendar, Clock, Share2, User } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 
 const PublicBlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -11,9 +20,14 @@ const PublicBlogPost = () => {
     queryKey: ['public-post', slug],
     queryFn: async () => {
       console.log('Fetching post with slug:', slug);
-      const { data, error } = await supabase
+      const { data: post, error } = await supabase
         .from('blog_posts')
-        .select('*')
+        .select(`
+          *,
+          author:author_id (
+            email
+          )
+        `)
         .eq('slug', slug)
         .eq('status', 'published')
         .single();
@@ -23,13 +37,28 @@ const PublicBlogPost = () => {
         throw error;
       }
 
-      if (!data) {
+      if (!post) {
         throw new Error('Post not found');
       }
 
-      return data;
+      return post;
     },
   });
+
+  const handleShare = (platform: string) => {
+    const url = window.location.href;
+    const title = post?.title || '';
+    
+    const shareUrls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Check out this post: ${url}`)}`
+    };
+
+    window.open(shareUrls[platform as keyof typeof shareUrls], '_blank');
+  };
 
   if (isLoading) {
     return (
@@ -80,6 +109,54 @@ const PublicBlogPost = () => {
       
       <article className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+        
+        <div className="flex items-center gap-6 text-muted-foreground mb-8">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm">
+              {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4" />
+            <span className="text-sm">{post.author?.email || 'Unknown author'}</span>
+          </div>
+          
+          {post.reading_time && (
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm">{post.reading_time} min read</span>
+            </div>
+          )}
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleShare('twitter')}>
+                Share on X (Twitter)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('facebook')}>
+                Share on Facebook
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+                Share on LinkedIn
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                Share on WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('email')}>
+                Share via Email
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {post.featured_image && (
           <img
             src={post.featured_image}
