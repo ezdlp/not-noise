@@ -75,6 +75,22 @@ export function MediaFileList({
 
   const isImage = (mimeType: string) => mimeType.startsWith("image/");
 
+  if (!files) {
+    return (
+      <div className="flex items-center justify-center h-[500px]">
+        <p className="text-muted-foreground">Loading media files...</p>
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[500px]">
+        <p className="text-muted-foreground">No media files found</p>
+      </div>
+    );
+  }
+
   return (
     <ScrollArea className="h-[500px] pr-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
