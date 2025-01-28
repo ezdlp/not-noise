@@ -12,6 +12,7 @@ import SmartLinkAnalytics from "./pages/SmartLinkAnalytics";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AccountSettings from "./pages/AccountSettings";
+import Contact from "./pages/Contact";
 import Header from "./components/layout/Header";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PublicBlogPost from "./pages/PublicBlogPost";
@@ -110,6 +111,7 @@ const AppContent = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/link/:slug" element={<SmartLink />} />
         <Route path="/:slug" element={<PublicBlogPost />} />
+        <Route path="/contact" element={<Contact />} />
         
         {/* Protected Routes */}
         <Route
