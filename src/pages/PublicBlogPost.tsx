@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Helmet } from "react-helmet";
 
 const PublicBlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -55,17 +56,40 @@ const PublicBlogPost = () => {
   }
 
   return (
-    <article className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-      {post.featured_image && (
-        <img
-          src={post.featured_image}
-          alt={post.title}
-          className="w-full h-[400px] object-cover rounded-lg mb-8"
-        />
-      )}
-      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
-    </article>
+    <>
+      <Helmet>
+        <title>{post.seo_title || post.title}</title>
+        <meta name="description" content={post.meta_description || post.excerpt || ''} />
+        <meta name="keywords" content={post.focus_keyword || ''} />
+        
+        {/* Open Graph tags */}
+        <meta property="og:title" content={post.seo_title || post.title} />
+        <meta property="og:description" content={post.meta_description || post.excerpt || ''} />
+        {post.featured_image && (
+          <meta property="og:image" content={post.featured_image} />
+        )}
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.seo_title || post.title} />
+        <meta name="twitter:description" content={post.meta_description || post.excerpt || ''} />
+        {post.featured_image && (
+          <meta name="twitter:image" content={post.featured_image} />
+        )}
+      </Helmet>
+      
+      <article className="max-w-3xl mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+        {post.featured_image && (
+          <img
+            src={post.featured_image}
+            alt={post.title}
+            className="w-full h-[400px] object-cover rounded-lg mb-8"
+          />
+        )}
+        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
+      </article>
+    </>
   );
 };
 

@@ -17,6 +17,9 @@ const postSchema = z.object({
   featured_image: z.string().optional(),
   status: z.string().optional(),
   category_id: z.string().optional(),
+  seo_title: z.string().optional(),
+  meta_description: z.string().optional(),
+  focus_keyword: z.string().optional(),
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -40,6 +43,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       featured_image: post?.featured_image || "",
       status: post?.status || "draft",
       category_id: post?.category_id || undefined,
+      seo_title: post?.seo_title || "",
+      meta_description: post?.meta_description || "",
+      focus_keyword: post?.focus_keyword || "",
     },
   });
 
@@ -81,7 +87,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       
       let slug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       
-      // If we're updating and the slug hasn't changed, use the existing slug
       if (post?.id && slug === post.slug) {
         slug = post.slug;
       }
@@ -93,6 +98,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         excerpt: data.excerpt,
         featured_image: data.featured_image,
         status: data.status,
+        seo_title: data.seo_title,
+        meta_description: data.meta_description,
+        focus_keyword: data.focus_keyword,
         updated_at: new Date().toISOString(),
       };
       
@@ -121,7 +129,6 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         return;
       }
 
-      // Update category after successful post save
       if (responseData && responseData[0]) {
         await updatePostCategory(responseData[0].id, data.category_id);
       }
