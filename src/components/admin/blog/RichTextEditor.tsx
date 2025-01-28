@@ -22,7 +22,7 @@ import {
   Text as TextIcon,
   Clock,
   SeparatorHorizontal,
-  ImageEdit,
+  Pencil,
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
