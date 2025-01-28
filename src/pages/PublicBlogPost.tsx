@@ -82,6 +82,9 @@ const PublicBlogPost = () => {
     );
   }
 
+  // Get the author name from either the post's author_name field or the author's profile
+  const authorName = post.author_name || post.author?.name || 'Unknown author';
+
   return (
     <>
       <Helmet>
@@ -118,7 +121,7 @@ const PublicBlogPost = () => {
           
           <div className="flex items-center gap-2">
             <User className="w-4 h-4" />
-            <span className="text-sm">{post.author?.name || 'Unknown author'}</span>
+            <span className="text-sm">{authorName}</span>
           </div>
           
           {post.reading_time && (
