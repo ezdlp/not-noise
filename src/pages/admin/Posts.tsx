@@ -35,7 +35,7 @@ export default function Posts() {
         .from("blog_posts")
         .select(`
           *,
-          blog_post_categories!inner (
+          blog_post_categories (
             blog_categories (
               id,
               name
