@@ -24,7 +24,7 @@ const PublicBlogPost = () => {
         .from('blog_posts')
         .select(`
           *,
-          author:author_id (
+          author:profiles!blog_posts_author_id_fkey (
             name,
             email
           )
