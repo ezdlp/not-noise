@@ -8,7 +8,6 @@ import { PostFormValues } from "./PostEditor";
 import { CategorySelect } from "./CategorySelect";
 import { FeaturedImage } from "./FeaturedImage";
 import { TagsInput } from "./TagsInput";
-import { SeoSection } from "./seo/SeoSection";
 
 interface PostSettingsProps {
   post: PostFormValues;
@@ -77,26 +76,6 @@ export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing 
               onChange={(value) => onUpdate('featured_image', value)}
             />
           </div>
-
-          <Separator />
-
-          <SeoSection
-            title={post.title || ''}
-            content={post.content || ''}
-            focusKeyword={post.focus_keyword || ''}
-            onFocusKeywordChange={(value) => onUpdate('focus_keyword', value)}
-            seoTitle={post.seo_title || ''}
-            onSeoTitleChange={(value) => onUpdate('seo_title', value)}
-            metaDescription={post.meta_description || ''}
-            onMetaDescriptionChange={(value) => onUpdate('meta_description', value)}
-            ogTitle={post.seo_title || ''}
-            onOgTitleChange={(value) => onUpdate('seo_title', value)}
-            ogDescription={post.meta_description || ''}
-            onOgDescriptionChange={(value) => onUpdate('meta_description', value)}
-            ogImage={post.featured_image || ''}
-            onOgImageChange={(value) => onUpdate('featured_image', value)}
-            url={`/blog/${post.slug}`}
-          />
         </div>
 
         <div className="flex justify-between mt-6">

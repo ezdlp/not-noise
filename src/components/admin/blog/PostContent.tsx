@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./RichTextEditor";
 import { SeoSection } from "./seo/SeoSection";
 import { useState } from "react";
-import { TagsInput } from "./TagsInput";
 
 export function PostContent({ form }: any) {
   const [focusKeyword, setFocusKeyword] = useState(form.getValues().focus_keyword || '');
@@ -55,22 +54,6 @@ export function PostContent({ form }: any) {
             <FormLabel>Excerpt</FormLabel>
             <FormControl>
               <Input placeholder="Enter excerpt" {...field} />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="tags"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tags</FormLabel>
-            <FormControl>
-              <TagsInput
-                value={field.value || []}
-                onChange={field.onChange}
-              />
             </FormControl>
           </FormItem>
         )}
