@@ -24,7 +24,8 @@ const PublicBlogPost = () => {
         .from('blog_posts')
         .select(`
           *,
-          author:author_id (
+          author:profiles!blog_posts_author_id_fkey (
+            name,
             email
           )
         `)
@@ -120,7 +121,7 @@ const PublicBlogPost = () => {
           
           <div className="flex items-center gap-2">
             <User className="w-4 h-4" />
-            <span className="text-sm">{post.author?.email || 'Unknown author'}</span>
+            <span className="text-sm">{post.author?.name || 'Unknown author'}</span>
           </div>
           
           {post.reading_time && (
