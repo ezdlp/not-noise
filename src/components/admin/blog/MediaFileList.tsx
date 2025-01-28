@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Copy, Download, FileText, Image, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useMediaLibrary } from "./MediaLibraryContext";
 
 interface MediaFileListProps {
   files: any[];
@@ -19,6 +20,7 @@ interface MediaFileListProps {
   isSelectionMode?: boolean;
   onSelect?: (url: string) => void;
   showInsertButton?: boolean;
+  selectedFiles: Set<string>;
 }
 
 export function MediaFileList({ 
@@ -26,7 +28,8 @@ export function MediaFileList({
   onDelete, 
   isSelectionMode,
   onSelect,
-  showInsertButton = true
+  showInsertButton = true,
+  selectedFiles
 }: MediaFileListProps) {
   const [hoveredFile, setHoveredFile] = useState<string | null>(null);
 
@@ -79,7 +82,9 @@ export function MediaFileList({
           <ContextMenu key={file.id}>
             <ContextMenuTrigger>
               <Card
-                className="relative group cursor-pointer overflow-hidden"
+                className={`relative group cursor-pointer overflow-hidden ${
+                  selectedFiles.has(file.id) ? "ring-2 ring-primary" : ""
+                }`}
                 onMouseEnter={() => setHoveredFile(file.id)}
                 onMouseLeave={() => setHoveredFile(null)}
                 onClick={() => isSelectionMode && handleSelect(file)}
