@@ -198,12 +198,12 @@ export function MediaFileList({
                 )}
               </div>
               
-              <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-medium truncate flex items-center gap-2" title={file.filename}>
                   {getFileIcon(file.mime_type)}
                   <span className="truncate">{file.filename}</span>
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate">
                   {format(new Date(file.created_at), 'PPp')} • 
                   {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
                   {formatFileSize(file.size)}
@@ -231,7 +231,7 @@ export function MediaFileList({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {showInsertButton && (
                     <Button
-                      variant="secondary"
+                      variant="default"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();

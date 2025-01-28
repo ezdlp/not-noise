@@ -129,7 +129,7 @@ export function MediaFileGrid({
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     {showInsertButton && (
                       <Button
-                        variant="secondary"
+                        variant="default"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
