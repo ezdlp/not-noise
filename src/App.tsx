@@ -19,6 +19,7 @@ import PublicBlogPost from "./pages/PublicBlogPost";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 import { Overview, Users, Posts, Settings, UserLinks, Media, Import, SmartLinks } from "./pages/admin";
+import { CookieConsent } from "./components/cookie-consent/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -174,6 +175,7 @@ const AppContent = () => {
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
+      <CookieConsent />
     </div>
   );
 };
