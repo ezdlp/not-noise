@@ -263,8 +263,18 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
     }
   };
 
-  const handleDelete = async (id: string, filePath: string) => {
+  const handleDelete = async (id: string) => {
     try {
+      const { data: fileData } = await supabase
+        .from("media_files")
+        .select("file_path")
+        .eq("id", id)
+        .single();
+
+      if (!fileData) {
+        throw new Error("File not found");
+      }
+
       const { data: usageData, error: usageError } = await supabase
         .from("media_usage")
         .select("post_id")
@@ -279,7 +289,7 @@ function MediaLibraryContent({ onSelect, showInsertButton }: { onSelect: (url: s
 
       const { error: storageError } = await supabase.storage
         .from("media-library")
-        .remove([filePath]);
+        .remove([fileData.file_path]);
 
       if (storageError) throw storageError;
 
