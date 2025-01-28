@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image, AlertTriangle, File } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
@@ -171,15 +171,15 @@ export function MediaFileList({
           <div
             key={file.id}
             className={cn(
-              "relative group border rounded-md p-4",
+              "relative group border rounded-lg p-4 transition-all duration-200",
               isSelectionMode && "cursor-pointer hover:bg-accent/50",
               selectedFiles.has(file.id) && "ring-2 ring-primary",
-              "hover:bg-accent/5 transition-colors duration-200"
+              "hover:shadow-md hover:bg-accent/5"
             )}
             onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
           >
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 relative flex-shrink-0 bg-accent/5 rounded-md overflow-hidden">
+              <div className="w-20 h-20 relative flex-shrink-0 bg-accent/5 rounded-lg overflow-hidden">
                 <FilePreview file={file} publicUrl={publicUrl} />
                 {needsOptimization && (
                   <div className="absolute -top-2 -right-2">
@@ -203,7 +203,7 @@ export function MediaFileList({
                   {getFileIcon(file.mime_type)}
                   <span className="truncate">{file.filename}</span>
                 </h3>
-                <p className="text-sm text-muted-foreground truncate">
+                <p className="text-sm text-muted-foreground">
                   {format(new Date(file.created_at), 'PPp')} • 
                   {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
                   {formatFileSize(file.size)}
@@ -238,7 +238,7 @@ export function MediaFileList({
                           e.stopPropagation();
                           onSelect(publicUrl);
                         }}
-                        className="flex items-center gap-1.5 whitespace-nowrap"
+                        className="flex items-center gap-1.5 whitespace-nowrap bg-primary hover:bg-primary/90"
                       >
                         <Plus className="h-4 w-4" />
                         Insert
