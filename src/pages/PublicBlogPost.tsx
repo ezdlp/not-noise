@@ -24,10 +24,7 @@ const PublicBlogPost = () => {
         .from('blog_posts')
         .select(`
           *,
-          author:profiles!blog_posts_author_id_fkey(
-            name,
-            email
-          )
+          author:profiles(*)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
