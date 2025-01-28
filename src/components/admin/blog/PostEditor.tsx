@@ -35,6 +35,8 @@ interface PostEditorProps {
 export function PostEditor({ post, onClose }: PostEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  console.log("Initial post data:", post);
+
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -56,34 +58,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   });
 
   useEffect(() => {
+    console.log("Form values:", form.getValues());
     console.log("Form isDirty:", form.formState.isDirty);
-    console.log("Current form values:", form.getValues());
   }, [form.watch()]);
-
-  const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
-    if (!categoryId) return;
-
-    const { error: deleteError } = await supabase
-      .from('blog_post_categories')
-      .delete()
-      .eq('post_id', postId);
-
-    if (deleteError) {
-      console.error("Error deleting existing categories:", deleteError);
-      return;
-    }
-
-    const { error: insertError } = await supabase
-      .from('blog_post_categories')
-      .insert([{
-        post_id: postId,
-        category_id: categoryId
-      }]);
-
-    if (insertError) {
-      console.error("Error inserting new category:", insertError);
-    }
-  };
 
   const updatePostTags = async (postId: string, tags: string[]) => {
     console.log("Updating tags for post:", postId, "with tags:", tags);
@@ -102,6 +79,8 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
       // Process each tag
       for (const tagName of tags) {
+        console.log("Processing tag:", tagName);
+        
         // Get or create the tag
         const { data: existingTags, error: tagError } = await supabase
           .from('blog_post_tags')
@@ -115,7 +94,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         }
 
         let tagId;
-        if (existingTags.length === 0) {
+        if (!existingTags || existingTags.length === 0) {
           // Create new tag
           const { data: newTag, error: createError } = await supabase
             .from('blog_post_tags')
@@ -131,8 +110,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             continue;
           }
           tagId = newTag.id;
+          console.log("Created new tag with ID:", tagId);
         } else {
           tagId = existingTags[0].id;
+          console.log("Using existing tag with ID:", tagId);
         }
 
         // Insert the post-tag relationship
@@ -145,7 +126,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
         if (relationError) {
           console.error("Error creating post-tag relationship:", relationError);
+          throw relationError;
         }
+        
+        console.log("Successfully added tag relationship for:", tagName);
       }
     } catch (error) {
       console.error("Error in updatePostTags:", error);

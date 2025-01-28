@@ -40,6 +40,12 @@ export default function Posts() {
               id,
               name
             )
+          ),
+          blog_posts_tags (
+            blog_post_tags (
+              id,
+              name
+            )
           )
         `)
         .order("published_at", { ascending: false });
@@ -49,6 +55,7 @@ export default function Posts() {
       }
 
       const { data, error } = await query;
+      console.log("Fetched posts with tags:", data);
 
       if (error) throw error;
       return data;
