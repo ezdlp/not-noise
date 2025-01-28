@@ -40,15 +40,9 @@ export default function Posts() {
               id,
               name
             )
-          ),
-          blog_posts_tags (
-            blog_post_tags (
-              id,
-              name
-            )
           )
         `)
-        .order("created_at", { ascending: false });
+        .order("published_at", { ascending: false });
 
       if (selectedCategory !== 'all') {
         query = query.eq('blog_post_categories.category_id', selectedCategory);
@@ -177,10 +171,8 @@ export default function Posts() {
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Tags</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Updated</TableHead>
+            <TableHead>Published Date</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -192,21 +184,15 @@ export default function Posts() {
                 {post.blog_post_categories?.[0]?.blog_categories?.name || 'Uncategorized'}
               </TableCell>
               <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {post.blog_posts_tags?.map((tag: any) => (
-                    <Badge key={tag.blog_post_tags.id} variant="secondary">
-                      {tag.blog_post_tags.name}
-                    </Badge>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
                 <Badge variant={post.status === "published" ? "default" : "secondary"}>
                   {post.status}
                 </Badge>
               </TableCell>
-              <TableCell>{new Date(post.created_at).toLocaleDateString()}</TableCell>
-              <TableCell>{new Date(post.updated_at).toLocaleDateString()}</TableCell>
+              <TableCell>
+                {post.published_at 
+                  ? new Date(post.published_at).toLocaleDateString()
+                  : "Not published"}
+              </TableCell>
               <TableCell className="space-x-2">
                 <Button
                   variant="ghost"
