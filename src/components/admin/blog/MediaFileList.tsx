@@ -227,109 +227,111 @@ export function MediaFileList({
                 )}
               </div>
 
-              {!isSelectionMode && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {showInsertButton && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(publicUrl);
-                      }}
-                      className="flex items-center gap-1.5 whitespace-nowrap"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Insert
-                    </Button>
-                  )}
-                  
-                  <Dialog>
-                    <DialogTrigger asChild>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!isSelectionMode && (
+                  <>
+                    {showInsertButton && (
                       <Button
-                        variant="secondary"
+                        variant="default"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setEditingMetadata({
-                            id: file.id,
-                            alt_text: file.alt_text || "",
-                            caption: file.caption || "",
-                            filename: file.filename,
-                          });
+                          onSelect(publicUrl);
                         }}
                         className="flex items-center gap-1.5 whitespace-nowrap"
                       >
-                        <Pencil className="h-4 w-4" />
-                        Edit
+                        <Plus className="h-4 w-4" />
+                        Insert
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Edit Media Details</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="filename">Filename</Label>
-                          <Input
-                            id="filename"
-                            value={editingMetadata?.filename || ""}
-                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, filename: e.target.value } : null)}
-                          />
+                    )}
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingMetadata({
+                              id: file.id,
+                              alt_text: file.alt_text || "",
+                              caption: file.caption || "",
+                              filename: file.filename,
+                            });
+                          }}
+                          className="flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Media Details</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="filename">Filename</Label>
+                            <Input
+                              id="filename"
+                              value={editingMetadata?.filename || ""}
+                              onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, filename: e.target.value } : null)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="alt">Alt Text</Label>
+                            <Input
+                              id="alt"
+                              value={editingMetadata?.alt_text || ""}
+                              onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="caption">Caption</Label>
+                            <Textarea
+                              id="caption"
+                              value={editingMetadata?.caption || ""}
+                              onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, caption: e.target.value } : null)}
+                            />
+                          </div>
+                          <Button onClick={handleMetadataSubmit}>Save Changes</Button>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="alt">Alt Text</Label>
-                          <Input
-                            id="alt"
-                            value={editingMetadata?.alt_text || ""}
-                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="caption">Caption</Label>
-                          <Textarea
-                            id="caption"
-                            value={editingMetadata?.caption || ""}
-                            onChange={(e) => setEditingMetadata(prev => prev ? { ...prev, caption: e.target.value } : null)}
-                          />
-                        </div>
-                        <Button onClick={handleMetadataSubmit}>Save Changes</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
 
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyToClipboard(publicUrl);
-                    }}
-                    className="flex items-center gap-1.5 whitespace-nowrap"
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy URL
-                  </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(publicUrl);
+                      }}
+                      className="flex items-center gap-1.5 whitespace-nowrap"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </Button>
 
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(file.id, file.file_path);
-                    }}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(file.id, file.file_path);
+                      }}
+                      className="flex items-center gap-1.5"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
 
-              {isSelectionMode && selectedFiles.has(file.id) && (
-                <div className="flex-shrink-0">
-                  <CheckCircle2 className="h-6 w-6 text-primary" />
-                </div>
-              )}
+                {isSelectionMode && selectedFiles.has(file.id) && (
+                  <div className="flex-shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
