@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image, AlertTriangle, File } from "lucide-react";
+import { CheckCircle2, Trash2, Plus, Pencil, Copy, FileVideo, FileAudio, Image, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useMediaLibrary } from "./MediaLibraryContext";
 import { useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MediaFileListProps {
   files: any[];
@@ -106,7 +107,6 @@ const FilePreview = ({ file, publicUrl }: { file: any; publicUrl: string }) => {
     );
   }
 
-  return getFileIcon(file.mime_type);
 };
 
 export function MediaFileList({
@@ -152,11 +152,6 @@ export function MediaFileList({
     }
   };
 
-  const checkFileSize = (size: number) => {
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    return size > MAX_SIZE;
-  };
-
   return (
     <div className="space-y-2">
       {files?.map((file) => {
@@ -179,7 +174,8 @@ export function MediaFileList({
             onClick={() => isSelectionMode ? toggleFileSelection(file.id) : null}
           >
             <div className="flex items-start gap-4">
-              <div className="w-20 h-20 relative flex-shrink-0 bg-accent/5 rounded-lg overflow-hidden">
+              {/* Preview Section */}
+              <div className="w-24 h-24 flex-shrink-0 relative bg-accent/5 rounded-lg overflow-hidden">
                 <FilePreview file={file} publicUrl={publicUrl} />
                 {needsOptimization && (
                   <div className="absolute -top-2 -right-2">
@@ -198,20 +194,39 @@ export function MediaFileList({
                 )}
               </div>
               
+              {/* Metadata Section */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate flex items-center gap-2" title={file.filename}>
-                  {getFileIcon(file.mime_type)}
-                  <span className="truncate">{file.filename}</span>
-                </h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <h3 className="font-medium truncate flex items-center gap-2 max-w-[300px]" title={file.filename}>
+                        {getFileIcon(file.mime_type)}
+                        <span className="truncate">{file.filename}</span>
+                      </h3>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{file.filename}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(file.created_at), 'PPp')} • 
                   {file.dimensions ? ` ${file.dimensions.width}x${file.dimensions.height} • ` : ' '}
                   {formatFileSize(file.size)}
                 </p>
                 {file.alt_text && (
-                  <p className="text-sm text-muted-foreground truncate" title={file.alt_text}>
-                    Alt: {file.alt_text}
-                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                          Alt: {file.alt_text}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{file.alt_text}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 {showOptimizationDetails === file.id && suggestions.length > 0 && (
                   <Alert className="mt-2 bg-yellow-50 text-yellow-800 border-yellow-200">
@@ -227,6 +242,7 @@ export function MediaFileList({
                 )}
               </div>
 
+              {/* Actions Section */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {!isSelectionMode && (
                   <>
