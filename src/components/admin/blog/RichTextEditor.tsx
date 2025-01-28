@@ -33,7 +33,6 @@ import { MediaLibrary } from './MediaLibrary';
 import { mergeAttributes } from '@tiptap/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextSelection } from 'prosemirror-state';
 
 interface ImageSettings {
   alt: string;
@@ -124,6 +123,8 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
   const [linkTarget, setLinkTarget] = useState<'_blank' | '_self'>('_self');
   const [editorMode, setEditorMode] = useState<'visual' | 'code'>('visual');
   const [htmlContent, setHtmlContent] = useState(content);
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     alt: '',
     caption: '',
@@ -132,6 +133,12 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     size: 'full',
     alignment: 'center'
   });
+
+  const handleImageSelect = (url: string) => {
+    setSelectedImage(url);
+    setIsMediaDialogOpen(false);
+    setIsImageSettingsOpen(true);
+  };
 
   const editor = useEditor({
     extensions: [
@@ -160,9 +167,9 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       
       const text = editor.getText();
       const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-      const readingTime = Math.ceil(words / 200);
+      const readingTimeValue = Math.ceil(words / 200);
       setWordCount(words);
-      setReadingTime(readingTime);
+      setReadingTime(readingTimeValue);
     },
     editorProps: {
       attributes: {
@@ -216,7 +223,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
         if (selectedImage) {
           editor.chain().focus().setImage(attrs).run();
         } else {
-          editor.chain().focus().setImageAt(imagePos, attrs).run();
+          editor.chain().focus().setImage(attrs).run();
         }
 
         setIsImageSettingsOpen(false);
@@ -595,3 +602,4 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     </div>
   );
 }
+
