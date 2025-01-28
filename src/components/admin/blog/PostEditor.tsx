@@ -20,6 +20,7 @@ const postSchema = z.object({
   seo_title: z.string().optional(),
   meta_description: z.string().optional(),
   focus_keyword: z.string().optional(),
+  published_at: z.string().optional(),
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -46,6 +47,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       seo_title: post?.seo_title || "",
       meta_description: post?.meta_description || "",
       focus_keyword: post?.focus_keyword || "",
+      published_at: post?.published_at || new Date().toISOString(),
     },
   });
 
@@ -101,6 +103,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         seo_title: data.seo_title,
         meta_description: data.meta_description,
         focus_keyword: data.focus_keyword,
+        published_at: data.published_at,
         updated_at: new Date().toISOString(),
       };
       

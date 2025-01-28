@@ -4,6 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "./CategorySelect";
 import { FeaturedImage } from "./FeaturedImage";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface PostSettingsProps {
   post: any;
@@ -41,6 +46,33 @@ export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing 
             onChange={(e) => onUpdate('slug', e.target.value)}
             placeholder="Enter URL slug"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Publication Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !post.published_at && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {post.published_at ? format(new Date(post.published_at), "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={post.published_at ? new Date(post.published_at) : undefined}
+                onSelect={(date) => onUpdate('published_at', date?.toISOString())}
+                disabled={(date) => date > new Date()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="space-y-2">
