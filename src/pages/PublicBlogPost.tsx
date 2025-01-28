@@ -20,29 +20,29 @@ const PublicBlogPost = () => {
     queryKey: ['public-post', slug],
     queryFn: async () => {
       console.log('Fetching post with slug:', slug);
-      const { data: post, error } = await supabase
+      const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
           *,
-          author:profiles!blog_posts_author_id_fkey (
+          author:author_id (
             name,
             email
           )
         `)
         .eq('slug', slug)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching post:', error);
         throw error;
       }
 
-      if (!post) {
+      if (!posts) {
         throw new Error('Post not found');
       }
 
-      return post;
+      return posts;
     },
   });
 
