@@ -257,7 +257,6 @@ export function MediaFileList({
                         className="flex items-center gap-1.5 whitespace-nowrap bg-primary hover:bg-primary/90"
                       >
                         <Plus className="h-4 w-4" />
-                        Insert
                       </Button>
                     )}
                     
@@ -278,7 +277,6 @@ export function MediaFileList({
                           className="flex items-center gap-1.5 whitespace-nowrap"
                         >
                           <Pencil className="h-4 w-4" />
-                          Edit
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -325,7 +323,6 @@ export function MediaFileList({
                       className="flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <Copy className="h-4 w-4" />
-                      Copy URL
                     </Button>
 
                     <Button
