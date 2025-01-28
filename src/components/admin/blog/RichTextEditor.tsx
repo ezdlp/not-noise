@@ -111,7 +111,7 @@ const CustomImage = Image.extend({
     if (link) {
       return ['a', { href: link, target }, ['img', mergeAttributes(this.options.HTMLAttributes, rest)]];
     }
-    return ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    return ['img', mergeAttributes(this.options.HTMLAttributes, rest)];
   },
 });
 
@@ -142,7 +142,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       }),
       CustomImage.configure({
         HTMLAttributes: {
-          class: 'rounded-lg',
+          class: 'rounded-lg cursor-pointer hover:ring-2 hover:ring-primary',
         },
       }),
       Link.configure({
@@ -171,7 +171,6 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       handleClick: (view, pos, event) => {
         const node = view.state.doc.nodeAt(pos);
         if (node?.type.name === 'image') {
-          // Get the node's attributes
           const attrs = node.attrs;
           setImageSettings({
             alt: attrs.alt || '',
@@ -189,44 +188,48 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     },
   });
 
-  const [wordCount, setWordCount] = useState(0);
-  const [readingTime, setReadingTime] = useState(0);
-
-  const handleImageSelect = (url: string) => {
-    setSelectedImage(url);
-    setIsMediaDialogOpen(false);
-    setIsImageSettingsOpen(true);
-  };
-
   const updateSelectedImage = () => {
-    if (editor && selectedImage) {
-      const attrs = {
-        src: selectedImage,
-        alt: imageSettings.alt,
-        title: imageSettings.alt,
-        'data-caption': imageSettings.caption,
-        'data-alignment': imageSettings.alignment,
-        'data-link': imageSettings.link || undefined,
-        'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
-        'data-size': imageSettings.size,
-      };
-
-      editor
-        .chain()
-        .focus()
-        .setImage(attrs)
-        .run();
-
-      setIsImageSettingsOpen(false);
-      setSelectedImage(null);
-      setImageSettings({
-        alt: '',
-        caption: '',
-        link: '',
-        linkTarget: '_blank',
-        size: 'full',
-        alignment: 'center'
+    if (editor) {
+      const { state, dispatch } = editor.view;
+      const { from, to } = state.selection;
+      
+      let imagePos = null;
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (node.type.name === 'image') {
+          imagePos = pos;
+          return false;
+        }
       });
+
+      if (imagePos !== null || selectedImage) {
+        const attrs = {
+          src: selectedImage || state.doc.nodeAt(imagePos)?.attrs.src,
+          alt: imageSettings.alt,
+          title: imageSettings.alt,
+          'data-caption': imageSettings.caption,
+          'data-alignment': imageSettings.alignment,
+          'data-link': imageSettings.link || undefined,
+          'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
+          'data-size': imageSettings.size,
+        };
+
+        if (selectedImage) {
+          editor.chain().focus().setImage(attrs).run();
+        } else {
+          editor.chain().focus().setImageAt(imagePos, attrs).run();
+        }
+
+        setIsImageSettingsOpen(false);
+        setSelectedImage(null);
+        setImageSettings({
+          alt: '',
+          caption: '',
+          link: '',
+          linkTarget: '_blank',
+          size: 'full',
+          alignment: 'center'
+        });
+      }
     }
   };
 
@@ -452,8 +455,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
                 <Label htmlFor="link-target">Link Target</Label>
                 <Select
                   value={imageSettings.linkTarget}
-                  onValueChange={(value: '_blank' | '_self') => 
-                    setImageSettings({ ...imageSettings, linkTarget: value })}
+                  onValueChange={(value: '_blank' | '_self') => setImageSettings({ ...imageSettings, linkTarget: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select link target" />
