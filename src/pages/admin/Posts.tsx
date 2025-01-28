@@ -40,6 +40,12 @@ export default function Posts() {
               id,
               name
             )
+          ),
+          blog_posts_tags (
+            blog_post_tags (
+              id,
+              name
+            )
           )
         `)
         .order("created_at", { ascending: false });
@@ -57,6 +63,19 @@ export default function Posts() {
 
   const handleDelete = async (postId: string) => {
     try {
+      // Delete post tags first
+      const { error: tagsError } = await supabase
+        .from("blog_posts_tags")
+        .delete()
+        .eq("post_id", postId);
+
+      if (tagsError) {
+        console.error("Error deleting post tags:", tagsError);
+        toast.error("Failed to delete post tags");
+        return;
+      }
+
+      // Delete post categories
       const { error: categoriesError } = await supabase
         .from("blog_post_categories")
         .delete()
@@ -68,6 +87,7 @@ export default function Posts() {
         return;
       }
 
+      // Finally delete the post
       const { error: postError } = await supabase
         .from("blog_posts")
         .delete()
@@ -157,6 +177,7 @@ export default function Posts() {
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
+            <TableHead>Tags</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Updated</TableHead>
@@ -169,6 +190,15 @@ export default function Posts() {
               <TableCell>{post.title}</TableCell>
               <TableCell>
                 {post.blog_post_categories?.[0]?.blog_categories?.name || 'Uncategorized'}
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {post.blog_posts_tags?.map((tag: any) => (
+                    <Badge key={tag.blog_post_tags.id} variant="secondary">
+                      {tag.blog_post_tags.name}
+                    </Badge>
+                  ))}
+                </div>
               </TableCell>
               <TableCell>
                 <Badge variant={post.status === "published" ? "default" : "secondary"}>

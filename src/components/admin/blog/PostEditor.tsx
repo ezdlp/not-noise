@@ -21,6 +21,7 @@ const postSchema = z.object({
   meta_description: z.string().optional(),
   focus_keyword: z.string().optional(),
   published_at: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -48,6 +49,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       meta_description: post?.meta_description || "",
       focus_keyword: post?.focus_keyword || "",
       published_at: post?.published_at || new Date().toISOString(),
+      tags: post?.blog_posts_tags?.map((t: any) => t.blog_post_tags.name) || [],
     },
   });
 
@@ -78,6 +80,67 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
     if (insertError) {
       console.error("Error inserting new category:", insertError);
+    }
+  };
+
+  const updatePostTags = async (postId: string, tags: string[]) => {
+    // First, delete existing tags
+    const { error: deleteError } = await supabase
+      .from('blog_posts_tags')
+      .delete()
+      .eq('post_id', postId);
+
+    if (deleteError) {
+      console.error("Error deleting existing tags:", deleteError);
+      return;
+    }
+
+    // Then insert new tags
+    for (const tagName of tags) {
+      // First, get or create the tag
+      const { data: existingTags, error: tagError } = await supabase
+        .from('blog_post_tags')
+        .select('id')
+        .eq('name', tagName)
+        .limit(1);
+
+      if (tagError) {
+        console.error("Error checking existing tag:", tagError);
+        continue;
+      }
+
+      let tagId;
+      if (existingTags.length === 0) {
+        // Create new tag
+        const { data: newTag, error: createError } = await supabase
+          .from('blog_post_tags')
+          .insert([{
+            name: tagName,
+            slug: tagName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          }])
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.error("Error creating new tag:", createError);
+          continue;
+        }
+        tagId = newTag.id;
+      } else {
+        tagId = existingTags[0].id;
+      }
+
+      // Insert the post-tag relationship
+      const { error: relationError } = await supabase
+        .from('blog_posts_tags')
+        .insert([{
+          post_id: postId,
+          tag_id: tagId
+        }]);
+
+      if (relationError) {
+        console.error("Error creating post-tag relationship:", relationError);
+      }
     }
   };
 
@@ -134,6 +197,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
 
       if (responseData && responseData[0]) {
         await updatePostCategory(responseData[0].id, data.category_id);
+        if (data.tags && data.tags.length > 0) {
+          await updatePostTags(responseData[0].id, data.tags);
+        }
       }
 
       console.log("Post saved successfully");
