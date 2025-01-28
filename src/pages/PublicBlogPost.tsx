@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
-import { Calendar, Clock, Share2 } from "lucide-react";
+import { Calendar, Clock, Share2, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { RelatedPosts } from "@/components/blog/RelatedPosts";
 
 const PublicBlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -20,30 +19,25 @@ const PublicBlogPost = () => {
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['public-post', slug],
     queryFn: async () => {
+      console.log('Fetching post with slug:', slug);
       const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
           *,
-          blog_post_categories!inner (
-            category_id,
-            blog_categories (
-              id,
-              name
-            )
-          ),
-          blog_posts_tags (
-            blog_post_tags (
-              id,
-              name
-            )
-          )
+          author:profiles(*)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
         .maybeSingle();
 
-      if (error) throw error;
-      if (!posts) throw new Error('Post not found');
+      if (error) {
+        console.error('Error fetching post:', error);
+        throw error;
+      }
+
+      if (!posts) {
+        throw new Error('Post not found');
+      }
 
       return posts;
     },
@@ -95,12 +89,14 @@ const PublicBlogPost = () => {
         <meta name="description" content={post.meta_description || post.excerpt || ''} />
         <meta name="keywords" content={post.focus_keyword || ''} />
         
+        {/* Open Graph tags */}
         <meta property="og:title" content={post.seo_title || post.title} />
         <meta property="og:description" content={post.meta_description || post.excerpt || ''} />
         {post.featured_image && (
           <meta property="og:image" content={post.featured_image} />
         )}
         
+        {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.seo_title || post.title} />
         <meta name="twitter:description" content={post.meta_description || post.excerpt || ''} />
@@ -118,6 +114,11 @@ const PublicBlogPost = () => {
             <span className="text-sm">
               {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
             </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4" />
+            <span className="text-sm">{post.author?.name || 'Unknown author'}</span>
           </div>
           
           {post.reading_time && (
@@ -161,14 +162,7 @@ const PublicBlogPost = () => {
             className="w-full h-[400px] object-cover rounded-lg mb-8"
           />
         )}
-        
         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
-
-        <RelatedPosts 
-          currentPostId={post.id}
-          categoryId={post.blog_post_categories?.[0]?.category_id}
-          tags={post.blog_posts_tags?.map(t => t.blog_post_tags.name)}
-        />
       </article>
     </>
   );
