@@ -86,63 +86,70 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
   };
 
   const updatePostTags = async (postId: string, tags: string[]) => {
-    // First, delete existing tags
-    const { error: deleteError } = await supabase
-      .from('blog_posts_tags')
-      .delete()
-      .eq('post_id', postId);
+    console.log("Updating tags for post:", postId, "with tags:", tags);
+    
+    try {
+      // First, delete existing tags
+      const { error: deleteError } = await supabase
+        .from('blog_posts_tags')
+        .delete()
+        .eq('post_id', postId);
 
-    if (deleteError) {
-      console.error("Error deleting existing tags:", deleteError);
-      return;
-    }
-
-    // Then insert new tags
-    for (const tagName of tags) {
-      // First, get or create the tag
-      const { data: existingTags, error: tagError } = await supabase
-        .from('blog_post_tags')
-        .select('id')
-        .eq('name', tagName)
-        .limit(1);
-
-      if (tagError) {
-        console.error("Error checking existing tag:", tagError);
-        continue;
+      if (deleteError) {
+        console.error("Error deleting existing tags:", deleteError);
+        throw deleteError;
       }
 
-      let tagId;
-      if (existingTags.length === 0) {
-        // Create new tag
-        const { data: newTag, error: createError } = await supabase
+      // Process each tag
+      for (const tagName of tags) {
+        // Get or create the tag
+        const { data: existingTags, error: tagError } = await supabase
           .from('blog_post_tags')
-          .insert([{
-            name: tagName,
-            slug: tagName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-          }])
           .select('id')
-          .single();
+          .eq('name', tagName)
+          .limit(1);
 
-        if (createError) {
-          console.error("Error creating new tag:", createError);
+        if (tagError) {
+          console.error("Error checking existing tag:", tagError);
           continue;
         }
-        tagId = newTag.id;
-      } else {
-        tagId = existingTags[0].id;
-      }
 
-      // Insert the post-tag relationship
-      const { error: relationError } = await supabase
-        .from('blog_posts_tags')
-        .insert([{
-          post_id: postId,
-          tag_id: tagId
-        }]);
+        let tagId;
+        if (existingTags.length === 0) {
+          // Create new tag
+          const { data: newTag, error: createError } = await supabase
+            .from('blog_post_tags')
+            .insert([{
+              name: tagName,
+              slug: tagName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            }])
+            .select('id')
+            .single();
 
-      if (relationError) {
-        console.error("Error creating post-tag relationship:", relationError);
+          if (createError) {
+            console.error("Error creating new tag:", createError);
+            continue;
+          }
+          tagId = newTag.id;
+        } else {
+          tagId = existingTags[0].id;
+        }
+
+        // Insert the post-tag relationship
+        const { error: relationError } = await supabase
+          .from('blog_posts_tags')
+          .insert([{
+            post_id: postId,
+            tag_id: tagId
+          }]);
+
+        if (relationError) {
+          console.error("Error creating post-tag relationship:", relationError);
+        }
       }
+    } catch (error) {
+      console.error("Error in updatePostTags:", error);
+      throw error;
     }
   };
 
@@ -193,8 +200,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .insert([updateData])
             .select();
 
-      console.log("Supabase complete response:", responseData);
-      console.log("Supabase response error:", error);
+      console.log("Supabase response:", responseData);
       
       if (error) {
         console.error("Error saving post:", error);
@@ -203,9 +209,17 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       }
 
       if (responseData && responseData[0]) {
-        await updatePostCategory(responseData[0].id, data.category_id);
-        if (data.tags && data.tags.length > 0) {
-          await updatePostTags(responseData[0].id, data.tags);
+        const postId = responseData[0].id;
+        
+        // Update category if provided
+        if (data.category_id) {
+          await updatePostCategory(postId, data.category_id);
+        }
+        
+        // Update tags if provided
+        if (data.tags && Array.isArray(data.tags)) {
+          console.log("Updating tags:", data.tags);
+          await updatePostTags(postId, data.tags);
         }
       }
 
