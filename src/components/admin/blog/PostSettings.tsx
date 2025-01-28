@@ -1,17 +1,17 @@
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { PostFormValues } from "./PostEditor";
 import { CategorySelect } from "./CategorySelect";
 import { FeaturedImage } from "./FeaturedImage";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { TagsInput } from "./TagsInput";
+import { SeoSection } from "./seo/SeoSection";
 
 interface PostSettingsProps {
-  post: any;
+  post: PostFormValues;
   onUpdate: (key: string, value: any) => void;
   onClose: () => void;
   isSubmitting: boolean;
@@ -19,91 +19,84 @@ interface PostSettingsProps {
 }
 
 export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing }: PostSettingsProps) {
-  const baseUrl = window.location.origin;
-  const postUrl = `${baseUrl}/${post.slug}`;
-
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">Page Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure your page settings
-        </p>
-      </div>
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div>
+            <Label>Status</Label>
+            <Select
+              value={post.status || 'draft'}
+              onValueChange={(value) => onUpdate('status', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      <Separator />
-
-      <div className="space-y-4">
-        <FeaturedImage
-          value={post.featured_image}
-          onChange={(url) => onUpdate('featured_image', url)}
-        />
-
-        <div className="space-y-2">
-          <Label>Author Name</Label>
-          <Input
-            value={post.author_name || ''}
-            onChange={(e) => onUpdate('author_name', e.target.value)}
-            placeholder="Enter author name"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>URL Slug</Label>
-          <Input
-            value={post.slug || ''}
-            onChange={(e) => onUpdate('slug', e.target.value)}
-            placeholder="Enter URL slug"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Publication Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !post.published_at && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {post.published_at ? format(new Date(post.published_at), "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={post.published_at ? new Date(post.published_at) : undefined}
-                onSelect={(date) => onUpdate('published_at', date?.toISOString())}
-                disabled={(date) => date > new Date()}
-                initialFocus
+          <div className="space-y-4">
+            <div>
+              <Label>Category</Label>
+              <CategorySelect
+                value={post.category_id}
+                onChange={(value) => onUpdate('category_id', value)}
               />
-            </PopoverContent>
-          </Popover>
-        </div>
+            </div>
 
-        <div className="space-y-2">
-          <Label>Category</Label>
-          <CategorySelect
-            value={post.category_id}
-            onChange={(value) => onUpdate('category_id', value)}
+            <div>
+              <Label>Tags</Label>
+              <TagsInput
+                value={post.tags || []}
+                onChange={(value) => onUpdate('tags', value)}
+              />
+            </div>
+
+            <div>
+              <Label>Author Name</Label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md"
+                value={post.author_name || ''}
+                onChange={(e) => onUpdate('author_name', e.target.value)}
+                placeholder="Enter author name"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label>Featured Image</Label>
+            <FeaturedImage
+              value={post.featured_image}
+              onChange={(value) => onUpdate('featured_image', value)}
+            />
+          </div>
+
+          <Separator />
+
+          <SeoSection
+            title={post.seo_title || ''}
+            description={post.meta_description || ''}
+            focusKeyword={post.focus_keyword || ''}
+            onUpdate={onUpdate}
           />
         </div>
 
-        <div className="pt-4 flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex justify-between mt-6">
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Saving..." : (isEditing ? "Update" : "Publish")}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : isEditing ? 'Update Post' : 'Create Post'}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
