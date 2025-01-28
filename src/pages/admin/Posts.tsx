@@ -1,43 +1,42 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PostEditor } from "@/components/admin/blog/PostEditor";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { FileText, Pencil, Trash2, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { PostEditor } from "@/components/admin/blog/PostEditor";
+import { ImportPosts } from "@/components/admin/blog/ImportPosts";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Posts() {
-  const [posts, setPosts] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const fetchPosts = async () => {
-    try {
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_categories")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: posts, isLoading, refetch } = useQuery({
+    queryKey: ["adminPosts", selectedCategory],
+    queryFn: async () => {
       let query = supabase
         .from("blog_posts")
         .select(`
           *,
-          blog_post_categories (
+          blog_post_categories!inner (
             blog_categories (
-              id,
-              name
-            )
-          ),
-          blog_posts_tags (
-            blog_post_tags (
               id,
               name
             )
@@ -51,101 +50,120 @@ export default function Posts() {
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching posts:", error);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleDelete = async (postId: string) => {
+    try {
+      // Delete post tags first
+      const { error: tagsError } = await supabase
+        .from("blog_posts_tags")
+        .delete()
+        .eq("post_id", postId);
+
+      if (tagsError) {
+        console.error("Error deleting post tags:", tagsError);
+        toast.error("Failed to delete post tags");
         return;
       }
 
-      setPosts(data || []);
-    } catch (error) {
-      console.error("Error in fetchPosts:", error);
-    }
-  };
+      // Delete post categories
+      const { error: categoriesError } = await supabase
+        .from("blog_post_categories")
+        .delete()
+        .eq("post_id", postId);
 
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("blog_categories")
-        .select("*")
-        .order("name");
-
-      if (error) {
-        console.error("Error fetching categories:", error);
+      if (categoriesError) {
+        console.error("Error deleting post categories:", categoriesError);
+        toast.error("Failed to delete post categories");
         return;
       }
 
-      setCategories(data || []);
-    } catch (error) {
-      console.error("Error in fetchCategories:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPosts();
-    fetchCategories();
-  }, [selectedCategory]);
-
-  const handleCreatePost = () => {
-    setSelectedPost(null);
-    setIsEditorOpen(true);
-  };
-
-  const handleEditPost = (post: any) => {
-    setSelectedPost(post);
-    setIsEditorOpen(true);
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    try {
-      const { error } = await supabase
+      // Finally delete the post
+      const { error: postError } = await supabase
         .from("blog_posts")
         .delete()
         .eq("id", postId);
 
-      if (error) {
-        console.error("Error deleting post:", error);
+      if (postError) {
+        console.error("Error deleting post:", postError);
         toast.error("Failed to delete post");
         return;
       }
 
       toast.success("Post deleted successfully");
-      fetchPosts();
+      refetch();
     } catch (error) {
-      console.error("Error in handleDeletePost:", error);
+      console.error("Error in delete operation:", error);
       toast.error("An error occurred while deleting the post");
     }
   };
 
-  const handleEditorClose = () => {
-    setIsEditorOpen(false);
-    setSelectedPost(null);
-    fetchPosts();
-  };
+  if (isLoading) return <div>Loading...</div>;
 
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-  };
+  if (isEditing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {selectedPost ? "Edit Page" : "Create New Page"}
+            </h1>
+            <p className="text-muted-foreground">
+              {selectedPost ? "Make changes to your page." : "Create a new page."}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => {
+            setIsEditing(false);
+            setSelectedPost(null);
+          }}>
+            Back to Pages
+          </Button>
+        </div>
+        <PostEditor
+          post={selectedPost}
+          onClose={() => {
+            setIsEditing(false);
+            setSelectedPost(null);
+            refetch();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Blog Posts</h1>
-          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
+          <p className="text-muted-foreground">Manage your pages.</p>
         </div>
-        <Button onClick={handleCreatePost}>Create Post</Button>
+        <div className="flex items-center gap-4">
+          <ImportPosts />
+          <Button onClick={() => setIsEditing(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            Add New Page
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 mb-4">
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories?.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Table>
@@ -159,7 +177,7 @@ export default function Posts() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {posts.map((post) => (
+          {posts?.map((post) => (
             <TableRow key={post.id}>
               <TableCell>{post.title}</TableCell>
               <TableCell>
@@ -178,29 +196,35 @@ export default function Posts() {
               <TableCell className="space-x-2">
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditPost(post)}
+                  size="icon"
+                  onClick={() => {
+                    setSelectedPost(post);
+                    setIsEditing(true);
+                  }}
                 >
-                  Edit
+                  <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeletePost(post.id)}
+                  size="icon"
+                  onClick={() => handleDelete(post.id)}
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                >
+                  <a href={`/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                    <Eye className="h-4 w-4" />
+                  </a>
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-
-      <Sheet open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <SheetContent side="right" className="w-full sm:w-[800px] sm:max-w-none">
-          <PostEditor post={selectedPost} onClose={handleEditorClose} />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
