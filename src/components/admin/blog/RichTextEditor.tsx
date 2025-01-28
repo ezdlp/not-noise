@@ -465,7 +465,11 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
           <DialogHeader>
             <DialogTitle>Media Library</DialogTitle>
           </DialogHeader>
-          <MediaLibrary onSelect={handleImageSelect} onClose={() => setIsMediaDialogOpen(false)} />
+          <MediaLibrary 
+            onSelect={handleImageSelect} 
+            onClose={() => setIsMediaDialogOpen(false)} 
+            showInsertButton={true}
+          />
         </DialogContent>
       </Dialog>
 
