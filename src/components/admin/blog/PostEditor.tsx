@@ -22,6 +22,7 @@ const postSchema = z.object({
   focus_keyword: z.string().optional(),
   published_at: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  author_name: z.string().optional(),
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -50,6 +51,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       focus_keyword: post?.focus_keyword || "",
       published_at: post?.published_at || new Date().toISOString(),
       tags: post?.blog_posts_tags?.map((t: any) => t.blog_post_tags.name) || [],
+      author_name: post?.author_name || "",
     },
   });
 
@@ -168,6 +170,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         focus_keyword: data.focus_keyword,
         published_at: data.published_at,
         updated_at: new Date().toISOString(),
+        author_name: data.author_name,
       };
       
       console.log("Update data being sent:", updateData);
