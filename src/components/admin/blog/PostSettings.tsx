@@ -81,10 +81,21 @@ export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing 
           <Separator />
 
           <SeoSection
-            title={post.seo_title || ''}
-            description={post.meta_description || ''}
+            title={post.title || ''}
+            content={post.content || ''}
             focusKeyword={post.focus_keyword || ''}
-            onUpdate={onUpdate}
+            onFocusKeywordChange={(value) => onUpdate('focus_keyword', value)}
+            seoTitle={post.seo_title || ''}
+            onSeoTitleChange={(value) => onUpdate('seo_title', value)}
+            metaDescription={post.meta_description || ''}
+            onMetaDescriptionChange={(value) => onUpdate('meta_description', value)}
+            ogTitle={post.seo_title || ''}
+            onOgTitleChange={(value) => onUpdate('seo_title', value)}
+            ogDescription={post.meta_description || ''}
+            onOgDescriptionChange={(value) => onUpdate('meta_description', value)}
+            ogImage={post.featured_image || ''}
+            onOgImageChange={(value) => onUpdate('featured_image', value)}
+            url={`/blog/${post.slug}`}
           />
         </div>
 
