@@ -22,6 +22,8 @@ import {
   Text as TextIcon,
   Clock,
   SeparatorHorizontal,
+  ImageEdit,
+  Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -73,7 +75,7 @@ const CustomImage = Image.extend({
         },
       },
       'data-alignment': {
-        default: 'left',
+        default: 'center',
         parseHTML: element => element.getAttribute('data-alignment'),
         renderHTML: attributes => ({
           'data-alignment': attributes['data-alignment'],
@@ -95,15 +97,20 @@ const CustomImage = Image.extend({
         }),
       },
       'data-size': {
-        default: 'medium',
+        default: 'full',
         parseHTML: element => element.getAttribute('data-size'),
         renderHTML: attributes => ({
           'data-size': attributes['data-size'],
+          class: `image-${attributes['data-size']}`,
         }),
       },
     };
   },
   renderHTML({ HTMLAttributes }) {
+    const { 'data-link': link, 'data-link-target': target, ...rest } = HTMLAttributes;
+    if (link) {
+      return ['a', { href: link, target }, ['img', mergeAttributes(this.options.HTMLAttributes, rest)]];
+    }
     return ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
 });
@@ -122,8 +129,8 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     caption: '',
     link: '',
     linkTarget: '_blank',
-    size: 'medium',
-    alignment: 'left'
+    size: 'full',
+    alignment: 'center'
   });
 
   const editor = useEditor({
@@ -133,7 +140,11 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
           levels: [1, 2]
         }
       }),
-      CustomImage,
+      CustomImage.configure({
+        HTMLAttributes: {
+          class: 'rounded-lg',
+        },
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -147,25 +158,32 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       onChange(newContent);
       setHtmlContent(newContent);
       
-      // Fix word count and reading time calculation
       const text = editor.getText();
       const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-      const readingTime = Math.ceil(words / 200); // Assuming average reading speed of 200 words per minute
+      const readingTime = Math.ceil(words / 200);
       setWordCount(words);
       setReadingTime(readingTime);
     },
     editorProps: {
       attributes: {
-        class: 'prose max-w-none p-4 min-h-[400px] focus:outline-none',
+        class: 'prose max-w-none p-4 min-h-[400px] focus:outline-none overflow-y-auto',
       },
       handleClick: (view, pos, event) => {
-        const coordinates = view.coordsAtPos(pos);
-        const transaction = view.state.tr.setSelection(
-          view.state.selection.empty 
-            ? TextSelection.near(view.state.doc.resolve(pos))
-            : view.state.selection
-        );
-        view.dispatch(transaction);
+        const node = view.state.doc.nodeAt(pos);
+        if (node?.type.name === 'image') {
+          // Get the node's attributes
+          const attrs = node.attrs;
+          setImageSettings({
+            alt: attrs.alt || '',
+            caption: attrs['data-caption'] || '',
+            link: attrs['data-link'] || '',
+            linkTarget: attrs['data-link-target'] || '_blank',
+            size: attrs['data-size'] || 'full',
+            alignment: attrs['data-alignment'] || 'center'
+          });
+          setIsImageSettingsOpen(true);
+          return true;
+        }
         return false;
       },
     },
@@ -180,13 +198,45 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
     setIsImageSettingsOpen(true);
   };
 
+  const updateSelectedImage = () => {
+    if (editor && selectedImage) {
+      const attrs = {
+        src: selectedImage,
+        alt: imageSettings.alt,
+        title: imageSettings.alt,
+        'data-caption': imageSettings.caption,
+        'data-alignment': imageSettings.alignment,
+        'data-link': imageSettings.link || undefined,
+        'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
+        'data-size': imageSettings.size,
+      };
+
+      editor
+        .chain()
+        .focus()
+        .setImage(attrs)
+        .run();
+
+      setIsImageSettingsOpen(false);
+      setSelectedImage(null);
+      setImageSettings({
+        alt: '',
+        caption: '',
+        link: '',
+        linkTarget: '_blank',
+        size: 'full',
+        alignment: 'center'
+      });
+    }
+  };
+
   if (!editor) {
     return null;
   }
 
   return (
     <div className="border rounded-md">
-      <div className="border-b p-2 flex gap-1 flex-wrap">
+      <div className="border-b p-2 flex gap-1 flex-wrap sticky top-0 bg-white z-10">
         <div className="flex items-center gap-2 w-full border-b pb-2 mb-2">
           <Tabs value={editorMode} onValueChange={(value: 'visual' | 'code') => setEditorMode(value)}>
             <TabsList>
@@ -302,7 +352,7 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
       </div>
 
       {editorMode === 'visual' && (
-        <EditorContent editor={editor} className="prose max-w-none p-4 min-h-[400px]" />
+        <EditorContent editor={editor} className="prose max-w-none p-4 min-h-[400px] max-h-[600px] overflow-y-auto" />
       )}
 
       {editorMode === 'code' && (
@@ -353,6 +403,41 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
               />
             </div>
             <div className="space-y-2">
+              <Label>Size</Label>
+              <Select
+                value={imageSettings.size}
+                onValueChange={(value: 'small' | 'medium' | 'large' | 'full') => 
+                  setImageSettings({ ...imageSettings, size: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select image size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Small</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="large">Large</SelectItem>
+                  <SelectItem value="full">Full Width</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Alignment</Label>
+              <Select
+                value={imageSettings.alignment}
+                onValueChange={(value: 'left' | 'center' | 'right') => 
+                  setImageSettings({ ...imageSettings, alignment: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select alignment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="image-link">Link URL (optional)</Label>
               <Input
                 id="image-link"
@@ -380,38 +465,9 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
                 </Select>
               </div>
             )}
-            <Button onClick={() => {
-              if (selectedImage) {
-                const imageAttributes = {
-                  src: selectedImage,
-                  alt: imageSettings.alt,
-                  title: imageSettings.alt,
-                  'data-caption': imageSettings.caption,
-                  'data-alignment': imageSettings.alignment,
-                  'data-link': imageSettings.link || undefined,
-                  'data-link-target': imageSettings.link ? imageSettings.linkTarget : undefined,
-                  'data-size': imageSettings.size,
-                  class: `image-${imageSettings.alignment} image-${imageSettings.size}`
-                };
-
-                editor
-                  .chain()
-                  .focus()
-                  .setImage(imageAttributes)
-                  .run();
-
-                setIsImageSettingsOpen(false);
-                setSelectedImage(null);
-                setImageSettings({
-                  alt: '',
-                  caption: '',
-                  link: '',
-                  linkTarget: '_blank',
-                  size: 'medium',
-                  alignment: 'left'
-                });
-              }
-            }}>Insert Image</Button>
+            <Button onClick={updateSelectedImage}>
+              {selectedImage ? 'Insert Image' : 'Update Image'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -475,20 +531,22 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
 
       <style>
         {`
+        .ProseMirror {
+          min-height: 400px;
+          max-height: 600px;
+          overflow-y: auto;
+        }
         .image-left {
           float: left;
-          margin: 0 1em 0.5em 0;
-          max-width: 50%;
+          margin: 0.5em 1em 0.5em 0;
         }
         .image-center {
           display: block;
           margin: 0.5em auto;
-          max-width: 100%;
         }
         .image-right {
           float: right;
-          margin: 0 0 0.5em 1em;
-          max-width: 50%;
+          margin: 0.5em 0 0.5em 1em;
         }
         img[data-caption] {
           display: inline-block;
@@ -503,17 +561,32 @@ export function RichTextEditor({ content, onChange }: { content: string; onChang
           font-size: 0.875em;
           color: #666;
         }
-        img[data-size="small"] {
+        .image-small {
           max-width: 25%;
         }
-        img[data-size="medium"] {
+        .image-medium {
           max-width: 50%;
         }
-        img[data-size="large"] {
+        .image-large {
           max-width: 75%;
         }
-        img[data-size="full"] {
+        .image-full {
           max-width: 100%;
+          margin: 1em 0;
+        }
+        .ProseMirror img {
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
+        }
+        .ProseMirror img:hover {
+          box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+        .editor-toolbar {
+          position: sticky;
+          top: 0;
+          background: white;
+          z-index: 50;
+          border-bottom: 1px solid #e2e8f0;
         }
         `}
       </style>
