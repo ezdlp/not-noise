@@ -146,6 +146,7 @@ export type Database = {
         Row: {
           allow_comments: boolean | null
           author_id: string
+          author_name: string | null
           content: string
           cover_image: string | null
           created_at: string | null
@@ -172,6 +173,7 @@ export type Database = {
         Insert: {
           allow_comments?: boolean | null
           author_id: string
+          author_name?: string | null
           content: string
           cover_image?: string | null
           created_at?: string | null
@@ -198,6 +200,7 @@ export type Database = {
         Update: {
           allow_comments?: boolean | null
           author_id?: string
+          author_name?: string | null
           content?: string
           cover_image?: string | null
           created_at?: string | null

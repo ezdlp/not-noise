@@ -40,6 +40,15 @@ export function PostSettings({ post, onUpdate, onClose, isSubmitting, isEditing 
         />
 
         <div className="space-y-2">
+          <Label>Author Name</Label>
+          <Input
+            value={post.author_name || ''}
+            onChange={(e) => onUpdate('author_name', e.target.value)}
+            placeholder="Enter author name"
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label>URL Slug</Label>
           <Input
             value={post.slug || ''}
