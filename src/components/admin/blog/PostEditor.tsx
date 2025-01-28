@@ -158,6 +158,12 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         slug = post.slug;
       }
 
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user?.id) {
+        toast.error("You must be logged in to save a post");
+        return;
+      }
+
       const updateData = {
         title: data.title,
         content: data.content,
@@ -168,9 +174,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         seo_title: data.seo_title,
         meta_description: data.meta_description,
         focus_keyword: data.focus_keyword,
-        published_at: data.published_at,
+        published_at: data.status === 'published' ? (data.published_at || new Date().toISOString()) : null,
         updated_at: new Date().toISOString(),
         author_name: data.author_name,
+        author_id: session.session.user.id
       };
       
       console.log("Update data being sent:", updateData);
@@ -183,10 +190,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .select()
         : await supabase
             .from('blog_posts')
-            .insert([{
-              ...updateData,
-              author_id: (await supabase.auth.getUser()).data.user?.id,
-            }])
+            .insert([updateData])
             .select();
 
       console.log("Supabase complete response:", responseData);
