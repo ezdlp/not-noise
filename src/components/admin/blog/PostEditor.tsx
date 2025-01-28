@@ -59,6 +59,61 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     return Math.ceil(wordCount / wordsPerMinute);
   };
 
+  const updatePostCategory = async (postId: string, categoryId?: string) => {
+    if (!categoryId) return;
+
+    // First delete any existing category for this post
+    await supabase
+      .from('blog_post_categories')
+      .delete()
+      .eq('post_id', postId);
+
+    // Then insert the new category
+    await supabase
+      .from('blog_post_categories')
+      .insert({ post_id: postId, category_id: categoryId });
+  };
+
+  const updatePostTags = async (postId: string, tags: string[]) => {
+    // First, ensure all tags exist in the blog_post_tags table
+    const tagPromises = tags.map(async (tagName) => {
+      const slug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const { data: existingTag } = await supabase
+        .from('blog_post_tags')
+        .select('id')
+        .eq('name', tagName)
+        .maybeSingle();
+
+      if (existingTag) return existingTag.id;
+
+      const { data: newTag } = await supabase
+        .from('blog_post_tags')
+        .insert({ name: tagName, slug })
+        .select('id')
+        .single();
+
+      return newTag.id;
+    });
+
+    const tagIds = await Promise.all(tagPromises);
+
+    // Delete existing tag relationships
+    await supabase
+      .from('blog_posts_tags')
+      .delete()
+      .eq('post_id', postId);
+
+    // Insert new tag relationships
+    if (tagIds.length > 0) {
+      await supabase
+        .from('blog_posts_tags')
+        .insert(tagIds.map(tagId => ({
+          post_id: postId,
+          tag_id: tagId
+        })));
+    }
+  };
+
   const onSubmit = async (data: PostFormValues) => {
     setIsSubmitting(true);
     try {
@@ -83,6 +138,7 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         published_at: data.published_at,
         reading_time: readingTime,
         updated_at: new Date().toISOString(),
+        author_id: (await supabase.auth.getUser()).data.user?.id
       };
       
       const { data: responseData, error } = post?.id 
@@ -91,12 +147,12 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
             .update(updateData)
             .eq('id', post.id)
             .select()
+            .single()
         : await supabase
             .from('blog_posts')
-            .insert([{
-              ...updateData,
-            }])
-            .select();
+            .insert([updateData])
+            .select()
+            .single();
 
       if (error) {
         console.error("Error saving post:", error);
@@ -104,10 +160,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
         return;
       }
 
-      if (responseData && responseData[0]) {
-        await updatePostCategory(responseData[0].id, data.category_id);
+      if (responseData) {
+        await updatePostCategory(responseData.id, data.category_id);
         if (data.tags && data.tags.length > 0) {
-          await updatePostTags(responseData[0].id, data.tags);
+          await updatePostTags(responseData.id, data.tags);
         }
       }
 
