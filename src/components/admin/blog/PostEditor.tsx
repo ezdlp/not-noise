@@ -62,6 +62,31 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     console.log("Form isDirty:", form.formState.isDirty);
   }, [form.watch()]);
 
+  const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
+    if (!categoryId) return;
+
+    const { error: deleteError } = await supabase
+      .from('blog_post_categories')
+      .delete()
+      .eq('post_id', postId);
+
+    if (deleteError) {
+      console.error("Error deleting existing categories:", deleteError);
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from('blog_post_categories')
+      .insert([{
+        post_id: postId,
+        category_id: categoryId
+      }]);
+
+    if (insertError) {
+      console.error("Error inserting new category:", insertError);
+    }
+  };
+
   const updatePostTags = async (postId: string, tags: string[]) => {
     console.log("Updating tags for post:", postId, "with tags:", tags);
     
