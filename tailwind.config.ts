@@ -25,20 +25,20 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#6851FB", // Majorelle Blue
+          DEFAULT: "#6851FB",
           foreground: "hsl(var(--primary-foreground))",
-          hover: "#A299FC", // 50% Tint
-          disabled: "#4A47A5", // Shade
-          light: "#ECE9FF", // 20% Tint
+          hover: "#A299FC",
+          disabled: "#4A47A5",
+          light: "#ECE9FF",
         },
         secondary: {
-          DEFAULT: "#FE28A2", // Persian Rose
+          DEFAULT: "#FE28A2",
           foreground: "hsl(var(--secondary-foreground))",
           hover: "#D0178B",
           light: "#FFB8D7",
         },
         success: {
-          DEFAULT: "#37D299", // Emerald
+          DEFAULT: "#37D299",
           hover: "#2A8F69",
           light: "#5DE0AE",
         },
@@ -78,15 +78,9 @@ export default {
         sm: "0.25rem",
       },
       boxShadow: {
-        'sm': '0 1px 2px rgba(15, 15, 15, 0.05)',
-        'md': '0 2px 4px rgba(15, 15, 15, 0.05)',
-        'lg': '0 4px 6px rgba(15, 15, 15, 0.05)',
-      },
-      transitionDuration: {
-        '200': '200ms',
-      },
-      transitionTimingFunction: {
-        'out': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'sm': '0 2px 4px rgba(15, 15, 15, 0.05)',
+        'md': '0 2px 4px rgba(15, 15, 15, 0.1)',
+        'lg': '0 4px 6px rgba(15, 15, 15, 0.1)',
       },
       keyframes: {
         "accordion-down": {
@@ -97,10 +91,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "float": "float 6s ease-in-out infinite",
       },
     },
   },
