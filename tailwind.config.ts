@@ -22,37 +22,61 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "#FAFAFA", // Seasalt
+        foreground: "#0F0F0F", // Night
         primary: {
-          DEFAULT: "#6851FB",
+          DEFAULT: "#6851FB", // Majorelle Blue
+          light: "#ECE9FF", // 20% tint
+          medium: "#A299FC", // 50% tint
+          dark: "#4A47A5", // 10% darker
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#D6BCFA",
-          foreground: "#0F0F0F",
+          DEFAULT: "#FE28A2", // Persian Rose
+          light: "#FFB8D7", // 20% tint
+          medium: "#FF49B7", // 50% tint
+          dark: "#D0178B", // 10% darker
+          foreground: "#FFFFFF",
         },
         accent: {
-          DEFAULT: "#F5F3FF",
-          foreground: "#0F0F0F",
+          DEFAULT: "#37D299", // Emerald
+          light: "#E6F4EF", // 20% tint
+          medium: "#5DE0AE", // 50% tint
+          dark: "#2A8F69", // 10% darker
+          foreground: "#FFFFFF",
         },
-        onyx: "#0F0F0F",
+        neutral: {
+          DEFAULT: "#E6E6E6", // Light Neutral Tint
+          light: "#F5F5F5", // 10% tint of Seasalt
+        },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "#F5F5F5",
+          foreground: "#666666",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "#FFFFFF",
+          foreground: "#0F0F0F",
         },
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["DM Sans", "sans-serif"],
         heading: ["Poppins", "sans-serif"],
+      },
+      boxShadow: {
+        'sm': '0 1px 2px rgba(15, 15, 15, 0.05)',
+        'md': '0 2px 4px rgba(15, 15, 15, 0.05)',
+        'lg': '0 4px 6px rgba(15, 15, 15, 0.05)',
+      },
+      borderRadius: {
+        'sm': '0.25rem',
+        DEFAULT: '0.5rem',
+        'lg': '0.75rem',
+      },
+      transitionDuration: {
+        DEFAULT: '200ms',
+      },
+      transitionTimingFunction: {
+        DEFAULT: 'ease-out',
       },
       keyframes: {
         "accordion-down": {
@@ -77,34 +101,6 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 3s ease-in-out infinite",
         "slide-in-bottom": "slide-in-bottom 0.3s ease-out"
-      },
-      typography: {
-        DEFAULT: {
-          css: {
-            maxWidth: 'none',
-            color: 'inherit',
-            a: {
-              color: 'inherit',
-              textDecoration: 'none',
-              fontWeight: '500',
-            },
-            strong: {
-              color: 'inherit',
-            },
-            h1: {
-              color: 'inherit',
-            },
-            h2: {
-              color: 'inherit',
-            },
-            h3: {
-              color: 'inherit',
-            },
-            h4: {
-              color: 'inherit',
-            },
-          },
-        },
       },
     },
   },

@@ -137,10 +137,14 @@ export default function Users() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">Manage your application users.</p>
+          <h1 className="text-3xl font-heading font-bold tracking-tight text-foreground">
+            Users
+          </h1>
+          <p className="text-muted-foreground font-sans">
+            Manage your application users.
+          </p>
         </div>
-        <Button>
+        <Button className="bg-primary hover:bg-primary-medium transition-colors">
           <UserPlus className="mr-2 h-4 w-4" />
           Add New User
         </Button>
@@ -153,7 +157,7 @@ export default function Users() {
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
+            className="pl-8 bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
           />
         </div>
         <Select
@@ -163,7 +167,7 @@ export default function Users() {
             setCurrentPage(0);
           }}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] border-neutral hover:border-primary-medium transition-colors">
             <SelectValue placeholder="Select page size" />
           </SelectTrigger>
           <SelectContent>
@@ -174,113 +178,129 @@ export default function Users() {
         </Select>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Artist Name</TableHead>
-            <TableHead>Genre</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Smart Links</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users?.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>{user.name}</TableCell>
-              <TableCell>{user.artist_name}</TableCell>
-              <TableCell>{user.music_genre}</TableCell>
-              <TableCell>{user.country}</TableCell>
-              <TableCell>{user.user_roles?.[0]?.role || "user"}</TableCell>
-              <TableCell>
-                <Button 
-                  variant="link" 
-                  onClick={() => navigate(`/admin/users/${user.id}/links`)}
-                >
-                  {user.smart_links?.length || 0} links
-                </Button>
-              </TableCell>
-              <TableCell className="space-x-2">
-                <Dialog open={selectedUser?.id === user.id} onOpenChange={(open) => !open && setSelectedUser(null)}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedUser(user)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit User</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                          id="name"
-                          defaultValue={user.name}
-                          onChange={(e) => setSelectedUser(prev => prev ? {...prev, name: e.target.value} : null)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="artist_name">Artist Name</Label>
-                        <Input
-                          id="artist_name"
-                          defaultValue={user.artist_name}
-                          onChange={(e) => setSelectedUser(prev => prev ? {...prev, artist_name: e.target.value} : null)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="music_genre">Genre</Label>
-                        <Input
-                          id="music_genre"
-                          defaultValue={user.music_genre}
-                          onChange={(e) => setSelectedUser(prev => prev ? {...prev, music_genre: e.target.value} : null)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                          id="country"
-                          defaultValue={user.country}
-                          onChange={(e) => setSelectedUser(prev => prev ? {...prev, country: e.target.value} : null)}
-                        />
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        onClick={() => handleEditUser(selectedUser!)}
-                      >
-                        Save Changes
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Button variant="ghost" size="icon">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
+      <div className="rounded-lg border border-neutral bg-card shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-neutral-light hover:bg-neutral-light">
+              <TableHead className="font-heading">Name</TableHead>
+              <TableHead className="font-heading">Artist Name</TableHead>
+              <TableHead className="font-heading">Genre</TableHead>
+              <TableHead className="font-heading">Country</TableHead>
+              <TableHead className="font-heading">Role</TableHead>
+              <TableHead className="font-heading">Smart Links</TableHead>
+              <TableHead className="font-heading">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {users?.map((user) => (
+              <TableRow key={user.id} className="hover:bg-neutral-light transition-colors">
+                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell>{user.artist_name}</TableCell>
+                <TableCell>{user.music_genre}</TableCell>
+                <TableCell>{user.country}</TableCell>
+                <TableCell>{user.user_roles?.[0]?.role || "user"}</TableCell>
+                <TableCell>
+                  <Button 
+                    variant="link" 
+                    onClick={() => navigate(`/admin/users/${user.id}/links`)}
+                    className="text-primary hover:text-primary-medium transition-colors"
+                  >
+                    {user.smart_links?.length || 0} links
+                  </Button>
+                </TableCell>
+                <TableCell className="space-x-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="hover:bg-primary-light transition-colors"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card">
+                      <DialogHeader>
+                        <DialogTitle className="font-heading">Edit User</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Name</Label>
+                          <Input
+                            id="name"
+                            defaultValue={user.name}
+                            onChange={(e) => setSelectedUser(prev => prev ? {...prev, name: e.target.value} : null)}
+                            className="bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="artist_name">Artist Name</Label>
+                          <Input
+                            id="artist_name"
+                            defaultValue={user.artist_name}
+                            onChange={(e) => setSelectedUser(prev => prev ? {...prev, artist_name: e.target.value} : null)}
+                            className="bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="music_genre">Genre</Label>
+                          <Input
+                            id="music_genre"
+                            defaultValue={user.music_genre}
+                            onChange={(e) => setSelectedUser(prev => prev ? {...prev, music_genre: e.target.value} : null)}
+                            className="bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="country">Country</Label>
+                          <Input
+                            id="country"
+                            defaultValue={user.country}
+                            onChange={(e) => setSelectedUser(prev => prev ? {...prev, country: e.target.value} : null)}
+                            className="bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
+                          />
+                        </div>
+                        <Button 
+                          className="w-full bg-primary hover:bg-primary-medium transition-colors"
+                          onClick={() => handleEditUser(selectedUser!)}
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="hover:bg-secondary-light hover:text-secondary transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-      <div className="flex justify-end mt-4">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            disabled={currentPage === 0}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            disabled={!users || users.length < pageSize}
-          >
-            Next
-          </Button>
-        </div>
+      <div className="flex justify-end mt-4 space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+          disabled={currentPage === 0}
+          className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => prev + 1)}
+          disabled={!users || users.length < pageSize}
+          className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
+        >
+          Next
+        </Button>
       </div>
     </div>
   );
