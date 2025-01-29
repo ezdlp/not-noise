@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getUserLocation } from "@/utils/geolocation";
 import { analyticsService } from "@/services/analytics";
+import { Music } from "lucide-react";
 
 interface CookieSettings {
   analytics: boolean;
@@ -107,15 +108,17 @@ export function CookieConsent() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Cookie Preferences</DialogTitle>
-          <DialogDescription>
-            {isEU ? (
-              "We use cookies to enhance your browsing experience. Please choose your cookie preferences below."
-            ) : (
-              "We use cookies to enhance your browsing experience. By continuing to use our site, you agree to our cookie policy."
-            )}
+      <DialogContent className="sm:max-w-[400px] p-6 fixed bottom-4 right-4 shadow-lg animate-slide-in-bottom">
+        <DialogHeader className="flex items-center space-y-2">
+          <div className="flex items-center gap-2">
+            <Music className="w-5 h-5 text-primary" />
+            <DialogTitle className="text-lg font-heading">Before the show starts... 🎸</DialogTitle>
+          </div>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {isEU 
+              ? "We use cookies to enhance your experience. Choose your preferences!"
+              : "We use cookies to enhance your experience. By continuing, you agree to our cookie policy."
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -124,11 +127,12 @@ export function CookieConsent() {
               id="necessary"
               checked={settings.necessary}
               disabled
+              className="mt-1"
             />
             <div className="space-y-1">
-              <Label htmlFor="necessary">Necessary Cookies</Label>
+              <Label htmlFor="necessary" className="font-medium">Necessary Cookies</Label>
               <p className="text-sm text-muted-foreground">
-                These cookies are required for basic site functionality and cannot be disabled.
+                These cookies are required for essential website functionality and cannot be disabled.
               </p>
             </div>
           </div>
@@ -139,11 +143,12 @@ export function CookieConsent() {
               onCheckedChange={(checked) =>
                 setSettings({ ...settings, analytics: checked as boolean })
               }
+              className="mt-1"
             />
             <div className="space-y-1">
-              <Label htmlFor="analytics">Analytics Cookies</Label>
+              <Label htmlFor="analytics" className="font-medium">Analytics Cookies</Label>
               <p className="text-sm text-muted-foreground">
-                Help us improve our website by collecting and reporting information about usage.
+                These cookies help us understand how visitors interact with our website by collecting and reporting anonymous information.
               </p>
             </div>
           </div>
@@ -154,11 +159,12 @@ export function CookieConsent() {
               onCheckedChange={(checked) =>
                 setSettings({ ...settings, marketing: checked as boolean })
               }
+              className="mt-1"
             />
             <div className="space-y-1">
-              <Label htmlFor="marketing">Marketing Cookies</Label>
+              <Label htmlFor="marketing" className="font-medium">Marketing Cookies</Label>
               <p className="text-sm text-muted-foreground">
-                Used to track visitors across websites to display relevant advertisements.
+                These cookies are used to track visitors across websites to enable us to display relevant advertisements.
               </p>
             </div>
           </div>
@@ -166,22 +172,22 @@ export function CookieConsent() {
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {isEU ? (
             <>
-              <Button variant="outline" onClick={handleRejectAll}>
+              <Button variant="outline" onClick={handleRejectAll} className="w-full sm:w-auto">
                 Reject All
               </Button>
-              <Button variant="outline" onClick={handleSavePreferences}>
+              <Button variant="outline" onClick={handleSavePreferences} className="w-full sm:w-auto">
                 Save Preferences
               </Button>
-              <Button onClick={handleAcceptAll}>
+              <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
                 Accept All
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleSavePreferences}>
-                Save Preferences
+              <Button variant="outline" onClick={handleSavePreferences} className="w-full sm:w-auto">
+                Customize
               </Button>
-              <Button onClick={handleAcceptAll}>
+              <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
                 Accept
               </Button>
             </>
