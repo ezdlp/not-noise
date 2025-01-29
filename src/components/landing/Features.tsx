@@ -46,19 +46,19 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full md:w-auto">
-            <div className="relative rounded-xl overflow-hidden max-w-sm mx-auto">
+            <div className="relative rounded-xl overflow-hidden max-w-sm mx-auto min-h-[600px]">
               <div 
-                className="absolute inset-0 z-0 opacity-50"
+                className="absolute inset-0 z-0 opacity-30"
                 style={{
                   backgroundImage: `url('/lovable-uploads/cba066f6-1343-46a8-8bfe-183f60fd95cc.png')`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  filter: 'blur(100px)',
-                  transform: 'scale(1.1)'
+                  filter: 'blur(50px)',
+                  transform: 'scale(1.2)'
                 }}
               />
               
-              <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+              <div className="relative z-10 bg-white/60 backdrop-blur-sm rounded-xl shadow-lg p-6">
                 <div className="w-full md:w-[240px] mx-auto space-y-4">
                   <img 
                     src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
@@ -73,7 +73,7 @@ const Features = () => {
                     ].map((platform) => (
                       <div 
                         key={platform.name} 
-                        className="flex items-center justify-between p-3 border rounded-lg bg-white/80 hover:scale-[1.02] hover:shadow-md transition-all duration-200 cursor-pointer"
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white hover:scale-[1.02] hover:shadow-md transition-all duration-200 cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
