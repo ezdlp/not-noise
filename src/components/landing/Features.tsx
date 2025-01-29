@@ -51,29 +51,45 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="max-w-sm mx-auto space-y-4">
-                <img 
-                  src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
-                  alt="Album Artwork"
-                  className="w-full aspect-square object-cover rounded-lg shadow-md"
-                />
-                <div className="space-y-2">
-                  {[
-                    { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
-                    { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
-                    { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" }
-                  ].map((platform) => (
-                    <div key={platform.name} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
-                        <span className="font-medium">{platform.name}</span>
+            <div className="relative rounded-xl overflow-hidden">
+              {/* Blurred Background */}
+              <div 
+                className="absolute inset-0 z-0"
+                style={{
+                  backgroundImage: `url('/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(100px)',
+                  opacity: 0.5,
+                  transform: 'scale(1.1)'
+                }}
+              />
+              
+              {/* Content */}
+              <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+                <div className="max-w-sm mx-auto space-y-4">
+                  <img 
+                    src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
+                    alt="Album Artwork"
+                    className="w-full aspect-square object-cover rounded-lg shadow-md"
+                  />
+                  <div className="space-y-2">
+                    {[
+                      { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
+                      { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
+                      { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" }
+                    ].map((platform) => (
+                      <div key={platform.name} className="flex items-center justify-between p-3 border rounded-lg bg-white/80">
+                        <div className="flex items-center gap-3">
+                          <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
+                          <span className="font-medium">{platform.name}</span>
+                        </div>
+                        <Button variant="default" size="sm" className="bg-black hover:bg-black/90">
+                          Play
+                        </Button>
                       </div>
-                      <Button variant="default" size="sm" className="bg-black hover:bg-black/90">
-                        Play
-                      </Button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -187,10 +203,15 @@ const Features = () => {
               <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
-                  <span className="text-2xl font-bold text-[#6851FB]">{mockGlobalData.totalListeners}</span>
+                  <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
                 </div>
                 <div className="space-y-4">
-                  {mockGlobalData.regions.map((region) => (
+                  {[
+                    { name: "United States", percentage: 45 },
+                    { name: "United Kingdom", percentage: 25 },
+                    { name: "Brazil", percentage: 20 },
+                    { name: "Mexico", percentage: 10 }
+                  ].map((region) => (
                     <div key={region.name} className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium text-[#271153]">{region.name}</span>
