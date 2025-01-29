@@ -50,7 +50,7 @@ const Features = () => {
               <div 
                 className="absolute inset-0 z-0 opacity-50"
                 style={{
-                  backgroundImage: `url('/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png')`,
+                  backgroundImage: `url('/lovable-uploads/cba066f6-1343-46a8-8bfe-183f60fd95cc.png')`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   filter: 'blur(100px)',
