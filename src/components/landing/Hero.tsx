@@ -25,20 +25,42 @@ export const Hero = () => {
           </CTAButton>
         </div>
         <div className="relative order-first md:order-last">
-          {/* Decorative circle */}
+          {/* Background with subtle grain texture */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border-2 border-primary rounded-full -rotate-12"
-            style={{ opacity: 0.15 }}
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
           />
           
-          {/* Smart Link Mockups */}
-          <div className="relative w-full h-[600px]">
+          {/* Decorative circles */}
+          <div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border-2 rounded-full"
+            style={{ 
+              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.15), rgba(104, 81, 251, 0.3)) 1',
+              transform: 'translate(-50%, -50%) rotate(-12deg)',
+              animation: 'rotate 20s linear infinite',
+            }}
+          />
+          <div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border-2 rounded-full"
+            style={{ 
+              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.1), rgba(104, 81, 251, 0.2)) 1',
+              transform: 'translate(-30%, -50%) rotate(8deg)',
+              animation: 'rotate-reverse 25s linear infinite',
+            }}
+          />
+          
+          {/* Smart Link Mockups Group */}
+          <div 
+            className="relative w-full h-[600px] group hover:-translate-y-4 transition-all duration-500 ease-in-out"
+          >
             {/* Taylor Swift Mockup */}
             <div 
-              className="absolute top-0 left-0 w-[300px] transform -rotate-6 hover:rotate-0 transition-all duration-300 hover:z-10 hover:shadow-lg"
+              className="absolute top-0 left-0 w-[300px] transform -rotate-6 transition-all duration-300"
               style={{
-                animation: "float 6s ease-in-out infinite",
-                boxShadow: "0 2px 4px rgba(15, 15, 15, 0.1)"
+                animation: 'float 6s ease-in-out infinite',
+                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
               }}
             >
               <img
@@ -50,11 +72,11 @@ export const Hero = () => {
             
             {/* Olivia Rodrigo Mockup */}
             <div 
-              className="absolute top-10 left-20 w-[300px] transform rotate-3 hover:rotate-0 transition-all duration-300 hover:z-10 hover:shadow-lg"
+              className="absolute top-10 left-[60px] w-[300px] transform rotate-3 transition-all duration-300"
               style={{
-                animation: "float 6s ease-in-out infinite",
-                animationDelay: "2s",
-                boxShadow: "0 2px 4px rgba(15, 15, 15, 0.1)"
+                animation: 'float 6s ease-in-out infinite',
+                animationDelay: '2s',
+                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
               }}
             >
               <img
@@ -66,11 +88,11 @@ export const Hero = () => {
             
             {/* Tyler Mockup */}
             <div 
-              className="absolute top-20 left-40 w-[300px] transform rotate-12 hover:rotate-0 transition-all duration-300 hover:z-10 hover:shadow-lg"
+              className="absolute top-20 left-[100px] w-[300px] transform rotate-12 transition-all duration-300"
               style={{
-                animation: "float 6s ease-in-out infinite",
-                animationDelay: "4s",
-                boxShadow: "0 2px 4px rgba(15, 15, 15, 0.1)"
+                animation: 'float 6s ease-in-out infinite',
+                animationDelay: '4s',
+                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
               }}
             >
               <img
