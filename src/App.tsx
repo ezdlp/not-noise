@@ -10,10 +10,11 @@ const queryClient = new QueryClient();
 function AppLayout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isSmartLinkRoute = location.pathname.startsWith('/link/');
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
-      {!isAdminRoute && <Header />}
+      {!isAdminRoute && !isSmartLinkRoute && <Header />}
       <AppContent />
     </div>
   );
