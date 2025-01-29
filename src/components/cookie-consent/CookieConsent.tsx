@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -23,12 +24,13 @@ interface CookieSettings {
 
 export function CookieConsent() {
   const location = useLocation();
-  const [open, setOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isEU, setIsEU] = useState(false);
   const [settings, setSettings] = useState<CookieSettings>({
     analytics: false,
     marketing: false,
-    necessary: true, // Always required
+    necessary: true,
   });
 
   // Don't show cookie consent on smart link pages
@@ -57,7 +59,7 @@ export function CookieConsent() {
       if (!hasConsent) {
         const location = await getUserLocation();
         setIsEU(location.isEU);
-        setOpen(true);
+        setShowBanner(true);
       }
     };
     
@@ -75,7 +77,8 @@ export function CookieConsent() {
       marketing: true,
       necessary: true,
     });
-    setOpen(false);
+    setShowBanner(false);
+    setShowSettings(false);
   };
 
   const handleRejectAll = () => {
@@ -89,12 +92,14 @@ export function CookieConsent() {
       marketing: false,
       necessary: true,
     });
-    setOpen(false);
+    setShowBanner(false);
+    setShowSettings(false);
   };
 
   const handleSavePreferences = () => {
     saveConsent(settings);
-    setOpen(false);
+    setShowBanner(false);
+    setShowSettings(false);
   };
 
   const saveConsent = (settings: CookieSettings) => {
@@ -107,93 +112,109 @@ export function CookieConsent() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[400px] p-6 fixed bottom-4 right-4 shadow-lg animate-slide-in-bottom">
-        <DialogHeader className="flex items-center space-y-2">
-          <div className="flex items-center gap-2">
-            <Music className="w-5 h-5 text-primary" />
-            <DialogTitle className="text-lg font-heading">Before the show starts... 🎸</DialogTitle>
+    <>
+      {/* Initial Banner */}
+      {showBanner && (
+        <div className="fixed bottom-4 right-4 w-[300px] bg-background border rounded-lg shadow-lg p-4 animate-slide-in-bottom">
+          <div className="flex items-center gap-2 mb-2">
+            <Music className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-heading">Before the show starts... 🎸</h3>
           </div>
-          <DialogDescription className="text-sm text-muted-foreground">
-            {isEU 
-              ? "We use cookies to enhance your experience. Choose your preferences!"
-              : "We use cookies to enhance your experience. By continuing, you agree to our cookie policy."
-            }
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex items-start space-x-4">
-            <Checkbox
-              id="necessary"
-              checked={settings.necessary}
-              disabled
-              className="mt-1"
-            />
-            <div className="space-y-1">
-              <Label htmlFor="necessary" className="font-medium">Necessary Cookies</Label>
-              <p className="text-sm text-muted-foreground">
-                These cookies are required for essential website functionality and cannot be disabled.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-4">
-            <Checkbox
-              id="analytics"
-              checked={settings.analytics}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, analytics: checked as boolean })
-              }
-              className="mt-1"
-            />
-            <div className="space-y-1">
-              <Label htmlFor="analytics" className="font-medium">Analytics Cookies</Label>
-              <p className="text-sm text-muted-foreground">
-                These cookies help us understand how visitors interact with our website by collecting and reporting anonymous information.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-4">
-            <Checkbox
-              id="marketing"
-              checked={settings.marketing}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, marketing: checked as boolean })
-              }
-              className="mt-1"
-            />
-            <div className="space-y-1">
-              <Label htmlFor="marketing" className="font-medium">Marketing Cookies</Label>
-              <p className="text-sm text-muted-foreground">
-                These cookies are used to track visitors across websites to enable us to display relevant advertisements.
-              </p>
-            </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            We use cookies to enhance your experience.
+          </p>
+          <div className="flex flex-col gap-2">
+            {isEU ? (
+              <>
+                <Button size="sm" onClick={handleAcceptAll}>Accept All</Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={handleRejectAll}>
+                    Reject All
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                    Customize
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Button size="sm" onClick={handleAcceptAll}>Accept</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                  Customize
+                </Button>
+              </>
+            )}
           </div>
         </div>
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          {isEU ? (
-            <>
-              <Button variant="outline" onClick={handleRejectAll} className="w-full sm:w-auto">
-                Reject All
-              </Button>
-              <Button variant="outline" onClick={handleSavePreferences} className="w-full sm:w-auto">
-                Save Preferences
-              </Button>
-              <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
-                Accept All
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={handleSavePreferences} className="w-full sm:w-auto">
-                Customize
-              </Button>
-              <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
-                Accept
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Cookie Settings</DialogTitle>
+            <DialogDescription>
+              Choose which cookies you want to accept.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-start space-x-4">
+              <Checkbox
+                id="necessary"
+                checked={settings.necessary}
+                disabled
+                className="mt-1"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="necessary" className="font-medium">Necessary Cookies</Label>
+                <p className="text-sm text-muted-foreground">
+                  Required for essential website functionality.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-4">
+              <Checkbox
+                id="analytics"
+                checked={settings.analytics}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, analytics: checked as boolean })
+                }
+                className="mt-1"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="analytics" className="font-medium">Analytics Cookies</Label>
+                <p className="text-sm text-muted-foreground">
+                  Help us understand how visitors interact with our website.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-4">
+              <Checkbox
+                id="marketing"
+                checked={settings.marketing}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, marketing: checked as boolean })
+                }
+                className="mt-1"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="marketing" className="font-medium">Marketing Cookies</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable relevant advertisements across websites.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSettings(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePreferences}>
+              Save Preferences
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
