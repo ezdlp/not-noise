@@ -24,7 +24,7 @@ export const Hero = () => {
           <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        <div className="relative order-2 h-[400px] sm:h-[500px] md:h-[600px] mt-12 md:mt-0">
+        <div className="relative order-2 h-[400px] sm:h-[500px] md:h-[600px] mt-12 md:mt-24">
           {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -53,7 +53,7 @@ export const Hero = () => {
           />
           
           {/* Smart Link Mockups Group */}
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full pt-12 md:pt-24">
             {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
               <div 
