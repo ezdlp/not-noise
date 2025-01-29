@@ -85,7 +85,10 @@ const Features = () => {
                       { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
                       { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" }
                     ].map((platform) => (
-                      <div key={platform.name} className="flex items-center justify-between p-3 border rounded-lg bg-white/80">
+                      <div 
+                        key={platform.name} 
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white/80 hover:scale-[1.02] hover:shadow-md transition-all duration-200 cursor-pointer"
+                      >
                         <div className="flex items-center gap-3">
                           <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
                           <span className="font-medium">{platform.name}</span>
@@ -211,7 +214,7 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 h-[400px]">
+            <div className="bg-white rounded-xl shadow-lg p-6 h-[480px]">
               <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-lg p-6 h-full">
                 <div className="flex items-center justify-between mb-6">
                   <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
