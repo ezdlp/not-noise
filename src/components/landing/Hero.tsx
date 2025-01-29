@@ -37,18 +37,18 @@ export const Hero = () => {
 
     // Create particles only in the right half of the screen
     const createParticles = () => {
-      const particleCount = 80; // Increased count
+      const particleCount = 120; // Increased count further
       const rightHalfStart = canvas.width * 0.5; // Start from middle of screen
       
       for (let i = 0; i < particleCount; i++) {
         particles.push({
-          x: rightHalfStart + Math.random() * (canvas.width - rightHalfStart), // Only in right half
+          x: rightHalfStart + Math.random() * (canvas.width - rightHalfStart),
           y: Math.random() * canvas.height,
-          size: 1 + Math.random() * 2, // Smaller size range
+          size: 1 + Math.random() * 2,
           speedX: (Math.random() - 0.5) * 0.3,
           speedY: -0.3 - Math.random() * 0.3,
           color: Math.random() > 0.5 ? '#FE28A2' : '#6851FB',
-          opacity: 0.05 + Math.random() * 0.1 // Lower opacity range
+          opacity: 0.3 + Math.random() * 0.3 // Increased opacity range (30-60%)
         });
       }
     };
@@ -65,9 +65,9 @@ export const Hero = () => {
         // Reset particle position when it goes off screen
         if (particle.y < -10) {
           particle.y = canvas.height + 10;
-          particle.x = (canvas.width * 0.5) + Math.random() * (canvas.width * 0.5); // Respawn in right half
+          particle.x = (canvas.width * 0.5) + Math.random() * (canvas.width * 0.5);
         }
-        if (particle.x < canvas.width * 0.5) particle.x = canvas.width * 0.5; // Keep in right half
+        if (particle.x < canvas.width * 0.5) particle.x = canvas.width * 0.5;
         if (particle.x > canvas.width + 10) particle.x = canvas.width * 0.5;
 
         // Draw particle
@@ -84,12 +84,12 @@ export const Hero = () => {
           const dy = particle.y - particle2.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 60) { // Reduced connection distance
+          if (distance < 60) {
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(particle2.x, particle2.y);
             ctx.strokeStyle = `${particle.color}${Math.round((particle.opacity * 0.3) * 255).toString(16).padStart(2, '0')}`;
-            ctx.lineWidth = 0.3; // Thinner lines
+            ctx.lineWidth = 0.3;
             ctx.stroke();
           }
         });
@@ -147,6 +147,16 @@ export const Hero = () => {
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
               transform: 'translate(-50%, -50%) rotate(-12deg)',
               animation: 'rotate 20s linear infinite',
+            }}
+          />
+          
+          {/* Second decorative square */}
+          <div 
+            className="absolute top-1/2 left-1/2 w-[500px] h-[500px] border-2 rounded-none"
+            style={{ 
+              borderImage: 'linear-gradient(45deg, rgba(254, 40, 162, 0.3), rgba(104, 81, 251, 0.5)) 1',
+              transform: 'translate(-50%, -50%) rotate(12deg)',
+              animation: 'rotate 15s linear infinite reverse',
             }}
           />
           
