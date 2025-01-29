@@ -33,7 +33,7 @@ export const Hero = () => {
             }}
           />
           
-          {/* Decorative squares with gradient borders */}
+          {/* Decorative squares with Majorelle Blue gradients */}
           <div 
             className="absolute top-1/2 left-1/2 w-[500px] h-[500px] border-2 rounded-none"
             style={{ 
@@ -47,7 +47,7 @@ export const Hero = () => {
           <div 
             className="absolute top-1/2 left-1/2 w-[400px] h-[400px] border-2 rounded-none"
             style={{ 
-              borderImage: 'linear-gradient(45deg, rgba(254, 40, 162, 0.3), rgba(104, 81, 251, 0.5)) 1',
+              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
               transform: 'translate(-60%, -50%) rotate(12deg)',
               animation: 'rotate 15s linear infinite reverse',
             }}
