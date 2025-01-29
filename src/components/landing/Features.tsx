@@ -19,6 +19,24 @@ const mockSubscribers = [
   { id: 5, email: "william.jones@example.com", date: "2024-03-23", platform: "Amazon Music" },
 ];
 
+// Mock data for global reach
+const mockGlobalData = {
+  totalListeners: "2.4M",
+  regions: [
+    { name: "United States", percentage: 45, color: "#6851FB" },
+    { name: "United Kingdom", percentage: 15, color: "#271153" },
+    { name: "Brazil", percentage: 12, color: "#D0C7FF" },
+    { name: "Mexico", percentage: 8, color: "#ECE9FF" },
+    { name: "Other", percentage: 20, color: "#A299FC" }
+  ],
+  platforms: {
+    spotify: 45,
+    appleMusic: 30,
+    youtubeMusic: 15,
+    other: 10
+  }
+};
+
 const Features = () => {
   return (
     <section className="py-32 bg-white">
@@ -39,12 +57,31 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-              <img 
-                src="/lovable-uploads/ffe0d3cd-2697-44b2-a427-cdd6fa162697.png"
-                alt="Smart Link Preview"
-                className="w-full object-cover rounded-lg shadow-md"
-              />
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="max-w-sm mx-auto space-y-4">
+                <img 
+                  src="/lovable-uploads/ffe0d3cd-2697-44b2-a427-cdd6fa162697.png"
+                  alt="Album Artwork"
+                  className="w-full aspect-square object-cover rounded-lg shadow-md"
+                />
+                <div className="space-y-2">
+                  {[
+                    { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
+                    { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
+                    { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" }
+                  ].map((platform) => (
+                    <div key={platform.name} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
+                        <span className="font-medium">{platform.name}</span>
+                      </div>
+                      <Button variant="default" size="sm">
+                        Play
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -95,7 +132,7 @@ const Features = () => {
           </div>
         </div>
 
-        {/* Analytics Feature - Keeping unchanged */}
+        {/* Analytics Feature */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -196,12 +233,43 @@ const Features = () => {
           </div>
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="relative h-[400px] bg-gradient-to-br from-[#E5DEFF] to-[#D3E4FD] rounded-lg overflow-hidden p-6">
-                <img 
-                  src="/lovable-uploads/abfcb589-9aa2-4b04-a82f-2ebfd9411181.png"
-                  alt="Global Demographics"
-                  className="w-full h-full object-cover rounded-lg"
-                />
+              <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
+                  <span className="text-2xl font-bold text-[#6851FB]">{mockGlobalData.totalListeners}</span>
+                </div>
+                <div className="space-y-4">
+                  {mockGlobalData.regions.map((region) => (
+                    <div key={region.name} className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-[#271153]">{region.name}</span>
+                        <span className="text-[#6851FB]">{region.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full">
+                        <div 
+                          className="h-2 rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${region.percentage}%`,
+                            backgroundColor: region.color
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 pt-6 border-t border-white/20">
+                  <h5 className="text-sm font-medium text-[#271153] mb-4">Platform Distribution</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(mockGlobalData.platforms).map(([platform, percentage]) => (
+                      <div key={platform} className="text-center">
+                        <div className="text-2xl font-bold text-[#6851FB]">{percentage}%</div>
+                        <div className="text-sm text-[#271153] capitalize">
+                          {platform.replace(/([A-Z])/g, ' $1').trim()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
