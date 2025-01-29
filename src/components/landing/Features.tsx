@@ -210,20 +210,20 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-xl shadow-lg p-8 max-w-md mx-auto h-[480px]">
-              <div className="flex items-center justify-between mb-8">
+            <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-xl shadow-lg p-6 max-w-md mx-auto h-[480px]">
+              <div className="flex items-center justify-between mb-6">
                 <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
                 <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
                   { name: "United States", percentage: 45 },
                   { name: "United Kingdom", percentage: 25 },
                   { name: "Brazil", percentage: 20 },
                   { name: "Mexico", percentage: 10 }
                 ].map((region) => (
-                  <div key={region.name} className="bg-white/90 backdrop-blur-sm rounded-lg p-6">
-                    <div className="flex justify-between items-center mb-3">
+                  <div key={region.name} className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
                       <span className="font-medium text-lg text-[#271153] truncate pr-4">{region.name}</span>
                       <span className="text-[#6851FB] text-lg font-semibold whitespace-nowrap">{region.percentage}%</span>
                     </div>
