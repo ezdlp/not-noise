@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +21,7 @@ interface CookieSettings {
 }
 
 export function CookieConsent() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [isEU, setIsEU] = useState(false);
   const [settings, setSettings] = useState<CookieSettings>({
@@ -27,6 +29,11 @@ export function CookieConsent() {
     marketing: false,
     necessary: true, // Always required
   });
+
+  // Don't show cookie consent on smart link pages
+  if (location.pathname.startsWith('/link/')) {
+    return null;
+  }
 
   useEffect(() => {
     const initAnalytics = async () => {
