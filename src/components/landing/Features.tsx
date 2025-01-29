@@ -49,9 +49,9 @@ const Features = () => {
             <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg overflow-hidden">
               <div className="aspect-square bg-[#271153] rounded-t-3xl p-8 flex items-center justify-center">
                 <img 
-                  src="/lovable-uploads/fd990aa2-0eba-4f47-95c7-ffe77fba67b3.png"
+                  src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
                   alt="Inside Out by Spoon"
-                  className="w-full h-full object-contain rounded-2xl"
+                  className="w-full h-full object-cover rounded-2xl"
                 />
               </div>
               <div className="p-6 space-y-4">
@@ -63,7 +63,6 @@ const Features = () => {
                   {[
                     { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
                     { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" },
-                    { name: "YouTube", icon: "/lovable-uploads/youtube.png" },
                     { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
                     { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" }
                   ].map((platform) => (
