@@ -46,45 +46,40 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full md:w-auto">
-            <div className="relative rounded-xl overflow-hidden max-w-sm mx-auto min-h-[600px]">
-              <div 
-                className="absolute inset-0 z-0 opacity-30"
-                style={{
-                  backgroundImage: `url('/lovable-uploads/cba066f6-1343-46a8-8bfe-183f60fd95cc.png')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(50px)',
-                  transform: 'scale(1.2)'
-                }}
-              />
-              
-              <div className="relative z-10 bg-white/60 backdrop-blur-sm rounded-xl shadow-lg p-6">
-                <div className="w-full md:w-[240px] mx-auto space-y-4">
-                  <img 
-                    src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
-                    alt="Album Artwork"
-                    className="w-full aspect-square object-cover rounded-lg shadow-md"
-                  />
-                  <div className="space-y-2">
-                    {[
-                      { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
-                      { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
-                      { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" }
-                    ].map((platform) => (
-                      <div 
-                        key={platform.name} 
-                        className="flex items-center justify-between p-3 border rounded-lg bg-white hover:scale-[1.02] hover:shadow-md transition-all duration-200 cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
-                          <span className="font-medium">{platform.name}</span>
-                        </div>
-                        <Button variant="default" size="sm" className="bg-black hover:bg-black/90">
-                          Play
-                        </Button>
+            <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg overflow-hidden">
+              <div className="aspect-square bg-[#271153] rounded-t-3xl p-8 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/fd990aa2-0eba-4f47-95c7-ffe77fba67b3.png"
+                  alt="Inside Out by Spoon"
+                  className="w-full h-full object-contain rounded-2xl"
+                />
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="text-center">
+                  <h4 className="text-xl font-bold text-gray-900">Inside Out</h4>
+                  <p className="text-gray-600">Spoon</p>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
+                    { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png" },
+                    { name: "YouTube", icon: "/lovable-uploads/youtube.png" },
+                    { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
+                    { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" }
+                  ].map((platform) => (
+                    <div 
+                      key={platform.name}
+                      className="flex items-center justify-between py-3 border-b last:border-b-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
+                        <span className="font-medium text-gray-900">{platform.name}</span>
                       </div>
-                    ))}
-                  </div>
+                      <Button variant="default" size="sm" className="bg-black hover:bg-black/90 min-w-[80px]">
+                        Play
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -136,7 +131,7 @@ const Features = () => {
             </div>
           </div>
         </div>
-
+        
         {/* Analytics Feature */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
           <div className="flex-1 space-y-4">
@@ -183,7 +178,7 @@ const Features = () => {
             </div>
           </div>
         </div>
-
+        
         {/* Global Reach Feature */}
         <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12 px-4 md:px-0" data-scroll="parallax">
           <div className="flex-1 space-y-4">
@@ -227,7 +222,7 @@ const Features = () => {
             </div>
           </div>
         </div>
-
+        
         {/* Email List Building */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
           <div className="flex-1 space-y-4">
