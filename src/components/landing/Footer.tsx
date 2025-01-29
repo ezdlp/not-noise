@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
-    <footer className="bg-night text-white py-8">
+    <footer className="bg-night text-white py-12">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-center space-x-8 mb-8">
           {[
@@ -19,14 +19,14 @@ export const Footer = () => {
               href={social.href} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-white hover:text-primary-hover transition-colors"
+              className="text-white hover:text-primary transition-colors duration-200"
             >
-              <FontAwesomeIcon icon={social.icon} className="h-5 w-5" />
+              <FontAwesomeIcon icon={social.icon} className="h-6 w-6" />
             </a>
           ))}
         </div>
         <div className="text-center text-sm font-sans">
-          <div className="flex flex-wrap justify-center gap-6 mb-4">
+          <div className="flex flex-wrap justify-center gap-8 mb-6">
             {[
               { to: "/privacy", text: "Privacy Policy" },
               { to: "/terms", text: "Terms of Use" },
@@ -36,7 +36,7 @@ export const Footer = () => {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="text-white hover:text-primary-hover transition-colors"
+                className="text-white hover:text-primary transition-colors duration-200"
               >
                 {link.text}
               </Link>
