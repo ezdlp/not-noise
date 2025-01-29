@@ -93,7 +93,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                 <EditIcon className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate(`/dashboard/analytics/${link.id}`)}>
+              <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/analytics`)}>
                 <BarChart2Icon className="mr-2 h-4 w-4" />
                 Analytics
               </DropdownMenuItem>
@@ -153,7 +153,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => navigate(`/dashboard/analytics/${link.id}`)}
+                  onClick={() => navigate(`/links/${link.id}/analytics`)}
                 >
                   <BarChart2Icon className="h-4 w-4" />
                 </Button>
