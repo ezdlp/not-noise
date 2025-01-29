@@ -18,10 +18,6 @@ export default {
       },
     },
     extend: {
-      fontFamily: {
-        sans: ["DM Sans", ...fontFamily.sans],
-        heading: ["Poppins", ...fontFamily.sans],
-      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -29,12 +25,22 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "#6851FB", // Majorelle Blue
           foreground: "hsl(var(--primary-foreground))",
+          hover: "#A299FC", // 50% Tint
+          disabled: "#4A47A5", // Shade
+          light: "#ECE9FF", // 20% Tint
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT: "#FE28A2", // Persian Rose
           foreground: "hsl(var(--secondary-foreground))",
+          hover: "#D0178B",
+          light: "#FFB8D7",
+        },
+        success: {
+          DEFAULT: "#37D299", // Emerald
+          hover: "#2A8F69",
+          light: "#5DE0AE",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -56,6 +62,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        neutral: {
+          seasalt: "#FAFAFA",
+          night: "#0F0F0F",
+          border: "#E6E6E6",
+        },
+      },
+      fontFamily: {
+        sans: ["DM Sans", ...fontFamily.sans],
+        heading: ["Poppins", ...fontFamily.sans],
       },
       borderRadius: {
         lg: "0.75rem",
