@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -24,7 +23,7 @@ interface CookieSettings {
 
 export function CookieConsent() {
   const location = useLocation();
-  const [showBanner, setShowBanner] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isEU, setIsEU] = useState(false);
   const [settings, setSettings] = useState<CookieSettings>({
@@ -59,7 +58,7 @@ export function CookieConsent() {
       if (!hasConsent) {
         const location = await getUserLocation();
         setIsEU(location.isEU);
-        setShowBanner(true);
+        setShowConsent(true);
       }
     };
     
@@ -77,7 +76,7 @@ export function CookieConsent() {
       marketing: true,
       necessary: true,
     });
-    setShowBanner(false);
+    setShowConsent(false);
     setShowSettings(false);
   };
 
@@ -92,13 +91,13 @@ export function CookieConsent() {
       marketing: false,
       necessary: true,
     });
-    setShowBanner(false);
+    setShowConsent(false);
     setShowSettings(false);
   };
 
   const handleSavePreferences = () => {
     saveConsent(settings);
-    setShowBanner(false);
+    setShowConsent(false);
     setShowSettings(false);
   };
 
@@ -113,48 +112,50 @@ export function CookieConsent() {
 
   return (
     <>
-      {/* Initial Banner */}
-      {showBanner && (
-        <div className="fixed bottom-4 right-4 w-[300px] bg-background border rounded-lg shadow-lg p-4 animate-slide-in-bottom">
-          <div className="flex items-center gap-2 mb-2">
-            <Music className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-heading">Before the show starts... 🎸</h3>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            We use cookies to enhance your experience.
-          </p>
-          <div className="flex flex-col gap-2">
+      {/* Main Consent Dialog */}
+      <Dialog open={showConsent} onOpenChange={setShowConsent}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Music className="w-5 h-5 text-primary" />
+              <DialogTitle>Before the show starts... 🎸</DialogTitle>
+            </div>
+            <DialogDescription>
+              We use cookies to enhance your experience and analyze site usage. Your privacy matters - choose your preferences below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
             {isEU ? (
               <>
-                <Button size="sm" onClick={handleAcceptAll}>Accept All</Button>
+                <Button onClick={handleAcceptAll}>Accept All</Button>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handleRejectAll}>
+                  <Button variant="outline" onClick={handleRejectAll} className="flex-1">
                     Reject All
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                  <Button variant="outline" onClick={() => setShowSettings(true)} className="flex-1">
                     Customize
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <Button size="sm" onClick={handleAcceptAll}>Accept</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowSettings(true)}>
+                <Button onClick={handleAcceptAll}>Accept</Button>
+                <Button variant="outline" onClick={() => setShowSettings(true)}>
                   Customize
                 </Button>
               </>
             )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Cookie Settings</DialogTitle>
             <DialogDescription>
-              Choose which cookies you want to accept.
+              Choose which cookies you want to accept. Your choices help us provide a better experience.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
