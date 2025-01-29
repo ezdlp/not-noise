@@ -7,16 +7,16 @@ export const TrustedLabels = () => {
         </h2>
         <div className="flex justify-center items-center gap-16 flex-wrap">
           {[
-            { src: "/lovable-uploads/home/capitol-records.png", alt: "Capitol Records" },
-            { src: "/lovable-uploads/home/Def_Jam_Recording.png", alt: "Def Jam" },
-            { src: "/lovable-uploads/home/Universal_Music_Group.png", alt: "Universal Music" },
-            { src: "/lovable-uploads/home/1024px-Columbia_Records_.png", alt: "Columbia Records" },
+            { src: "/lovable-uploads/home/capitol-records.png", alt: "Capitol Records", height: "h-6" },
+            { src: "/lovable-uploads/home/Def_Jam_Recording.png", alt: "Def Jam", height: "h-8" },
+            { src: "/lovable-uploads/home/Universal_Music_Group.png", alt: "Universal Music", height: "h-8" },
+            { src: "/lovable-uploads/home/1024px-Columbia_Records_.png", alt: "Columbia Records", height: "h-6" },
           ].map((logo) => (
             <img 
               key={logo.alt}
               src={logo.src} 
               alt={logo.alt} 
-              className="h-6 opacity-70 hover:opacity-100 transition-opacity"
+              className={`${logo.height} opacity-70 hover:opacity-100 transition-opacity`}
             />
           ))}
         </div>

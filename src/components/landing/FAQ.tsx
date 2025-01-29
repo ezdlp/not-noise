@@ -30,9 +30,9 @@ const faqs = [
 
 export const FAQ = () => {
   return (
-    <section className="py-48 px-4 bg-night">
+    <section className="py-24 px-4 bg-night">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-primary-hover text-center font-heading">
+        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-night text-center font-heading">
           Frequently Asked Questions
         </h2>
         <Accordion type="single" collapsible className="w-full space-y-4">

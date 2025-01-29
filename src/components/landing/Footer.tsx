@@ -19,7 +19,7 @@ export const Footer = () => {
               href={social.href} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-white/80 hover:text-primary-hover transition-colors"
+              className="text-white hover:text-primary-hover transition-colors"
             >
               <FontAwesomeIcon icon={social.icon} className="h-5 w-5" />
             </a>
@@ -36,7 +36,7 @@ export const Footer = () => {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className="text-white/80 hover:text-primary-hover transition-colors"
+                className="text-white hover:text-primary-hover transition-colors"
               >
                 {link.text}
               </Link>
