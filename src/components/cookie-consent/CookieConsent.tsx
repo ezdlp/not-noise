@@ -114,7 +114,7 @@ export function CookieConsent() {
     <>
       {/* Main Consent Dialog */}
       <Dialog open={showConsent} onOpenChange={setShowConsent}>
-        <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />
+        {showConsent && <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />}
         <DialogContent className="sm:max-w-[500px] bg-[#fafafa] z-50">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -175,7 +175,7 @@ export function CookieConsent() {
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />
+        {showSettings && <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />}
         <DialogContent className="sm:max-w-[500px] bg-[#fafafa] z-50">
           <DialogHeader>
             <DialogTitle className="text-base">Cookie Settings <Cookie className="inline-block w-4 h-4 text-[#0f0f0f]" /></DialogTitle>
