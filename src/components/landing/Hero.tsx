@@ -24,7 +24,7 @@ export const Hero = () => {
           <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        <div className="relative order-2 h-[280px] sm:h-[400px] md:h-[600px] mt-2 md:mt-0">
+        <div className="relative order-2 h-[400px] sm:h-[500px] md:h-[600px] mt-12 md:mt-0">
           {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -58,7 +58,7 @@ export const Hero = () => {
             <div className="md:hidden relative h-full flex items-center justify-center">
               {/* Left mockup */}
               <div 
-                className="absolute left-0 bottom-12 w-[45%] transform -rotate-6 z-10 transition-all duration-300"
+                className="absolute left-0 bottom-0 w-[45%] transform -rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <img
@@ -70,24 +70,24 @@ export const Hero = () => {
               
               {/* Center mockup - larger and elevated */}
               <div 
-                className="absolute w-[55%] transform translate-y-[-10%] z-20 transition-all duration-300"
+                className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
               >
                 <img
-                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
-                  alt="Olivia Rodrigo Smart Link"
+                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                 />
               </div>
               
               {/* Right mockup */}
               <div 
-                className="absolute right-0 bottom-12 w-[45%] transform rotate-6 z-10 transition-all duration-300"
+                className="absolute right-0 bottom-0 w-[45%] transform rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
-                  alt="Tyler Smart Link"
+                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
+                  alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
                 />
               </div>
@@ -118,8 +118,8 @@ export const Hero = () => {
                 }}
               >
                 <img
-                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
-                  alt="Olivia Rodrigo Smart Link"
+                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                 />
               </div>
@@ -133,8 +133,8 @@ export const Hero = () => {
                 }}
               >
                 <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
-                  alt="Tyler Smart Link"
+                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
+                  alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
                 />
               </div>
