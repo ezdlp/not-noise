@@ -35,18 +35,20 @@ export const Hero = () => {
       opacity: number;
     }> = [];
 
-    // Create particles
+    // Create particles only in the right half of the screen
     const createParticles = () => {
-      const particleCount = 40;
+      const particleCount = 80; // Increased count
+      const rightHalfStart = canvas.width * 0.5; // Start from middle of screen
+      
       for (let i = 0; i < particleCount; i++) {
         particles.push({
-          x: Math.random() * canvas.width,
+          x: rightHalfStart + Math.random() * (canvas.width - rightHalfStart), // Only in right half
           y: Math.random() * canvas.height,
-          size: 3 + Math.random() * 3,
-          speedX: (Math.random() - 0.5) * 0.5,
-          speedY: -0.5 - Math.random() * 0.5,
+          size: 1 + Math.random() * 2, // Smaller size range
+          speedX: (Math.random() - 0.5) * 0.3,
+          speedY: -0.3 - Math.random() * 0.3,
           color: Math.random() > 0.5 ? '#FE28A2' : '#6851FB',
-          opacity: 0.1 + Math.random() * 0.2
+          opacity: 0.05 + Math.random() * 0.1 // Lower opacity range
         });
       }
     };
@@ -63,10 +65,10 @@ export const Hero = () => {
         // Reset particle position when it goes off screen
         if (particle.y < -10) {
           particle.y = canvas.height + 10;
-          particle.x = Math.random() * canvas.width;
+          particle.x = (canvas.width * 0.5) + Math.random() * (canvas.width * 0.5); // Respawn in right half
         }
-        if (particle.x < -10) particle.x = canvas.width + 10;
-        if (particle.x > canvas.width + 10) particle.x = -10;
+        if (particle.x < canvas.width * 0.5) particle.x = canvas.width * 0.5; // Keep in right half
+        if (particle.x > canvas.width + 10) particle.x = canvas.width * 0.5;
 
         // Draw particle
         ctx.beginPath();
@@ -82,12 +84,12 @@ export const Hero = () => {
           const dy = particle.y - particle2.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 100) {
+          if (distance < 60) { // Reduced connection distance
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(particle2.x, particle2.y);
-            ctx.strokeStyle = `${particle.color}${Math.round((particle.opacity * 0.5) * 255).toString(16).padStart(2, '0')}`;
-            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = `${particle.color}${Math.round((particle.opacity * 0.3) * 255).toString(16).padStart(2, '0')}`;
+            ctx.lineWidth = 0.3; // Thinner lines
             ctx.stroke();
           }
         });
@@ -109,7 +111,7 @@ export const Hero = () => {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 pointer-events-none"
-        style={{ opacity: 0.6 }}
+        style={{ opacity: 0.8 }}
       />
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
         <div className="text-left relative z-10">
