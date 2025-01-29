@@ -1,15 +1,13 @@
-import { Link2, BarChart3, Globe2, Mail, Activity, Download } from "lucide-react";
+import { Link2, BarChart3, Globe2, Mail, Activity } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Mock data for the analytics chart
 const mockData = Array.from({ length: 7 }, (_, i) => ({
   date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  views: Math.floor(Math.random() * 100) + 50,
-  clicks: Math.floor(Math.random() * 50) + 20
+  views: Math.floor(Math.random() * 100) + 80, // Ensuring views are higher
+  clicks: Math.floor(Math.random() * 40) + 20  // Lower click numbers
 }));
 
 // Mock data for email subscribers
@@ -19,15 +17,6 @@ const mockSubscribers = [
   { id: 3, email: "michael.brown@example.com", date: "2024-03-24", platform: "YouTube Music" },
   { id: 4, email: "sophia.davis@example.com", date: "2024-03-23", platform: "Spotify" },
   { id: 5, email: "william.jones@example.com", date: "2024-03-23", platform: "Amazon Music" },
-];
-
-// Mock data for global reach
-const mockCountryData = [
-  { country: "United States", visits: 2345 },
-  { country: "United Kingdom", visits: 1234 },
-  { country: "Germany", visits: 987 },
-  { country: "Japan", visits: 876 },
-  { country: "Brazil", visits: 765 },
 ];
 
 const Features = () => {
@@ -53,9 +42,9 @@ const Features = () => {
             <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
               <div className="h-[200px] bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg mb-6 flex items-center justify-center">
                 <img 
-                  src="/lovable-uploads/soundraiser-logo/Iso A.svg"
+                  src="/lovable-uploads/4e092258-e3b5-4a09-bf43-c783bf998b95.png"
                   alt="Album artwork"
-                  className="w-32 h-32 object-contain"
+                  className="w-[200px] h-[200px] object-cover rounded-lg"
                 />
               </div>
               <div className="space-y-3">
@@ -93,13 +82,12 @@ const Features = () => {
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
               <div className="relative p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl mb-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center mb-6">
                   <img 
-                    src="/lovable-uploads/fb2d5a27-a139-4b3c-b391-64e6690afca2.png" 
-                    alt="Meta Pixel" 
-                    className="w-12 h-12"
+                    src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
+                    alt="Meta logo" 
+                    className="w-24 h-auto"
                   />
-                  <Switch />
                 </div>
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -121,22 +109,12 @@ const Features = () => {
                     </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3].map((_, i) => (
-                      <div 
-                        key={i}
-                        className="w-2 h-2 bg-[#6851FB] rounded-full animate-bounce"
-                        style={{ animationDelay: `${i * 200}ms` }}
-                      />
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Analytics Feature - Keeping unchanged */}
         {/* Analytics Feature */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
@@ -194,15 +172,14 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
+            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 backdrop-blur-sm">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
+                <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white/80 hover:bg-white">
                   Export CSV
                 </Button>
               </div>
-              <div className="overflow-hidden rounded-lg border">
+              <div className="overflow-hidden rounded-lg bg-white/80 backdrop-blur-sm">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -239,31 +216,29 @@ const Features = () => {
           </div>
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="relative">
-                <img 
-                  src="/lovable-uploads/54d53ec6-a05d-4cf2-ae38-13515de09118.png"
-                  alt="World map"
-                  className="w-full rounded-lg opacity-20"
+              <div className="relative h-[300px] bg-gradient-to-br from-[#E5DEFF] to-[#D3E4FD] rounded-lg overflow-hidden">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d60978881.06149194!2d-95.665!3d37.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1710876233664!5m2!1sen!2sus"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="rounded-lg"
                 />
-                <div className="absolute inset-0">
-                  {mockCountryData.map((country, index) => (
-                    <div
-                      key={country.country}
-                      className="absolute animate-pulse"
-                      style={{
-                        top: `${20 + (index * 15)}%`,
-                        left: `${10 + (index * 18)}%`,
-                      }}
-                    >
-                      <div className="relative">
-                        <div className="w-3 h-3 bg-[#6851FB] rounded-full" />
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow-lg text-sm whitespace-nowrap">
-                          {country.country}: {country.visits} visits
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {[
+                  { top: '30%', left: '20%', size: 'lg' },
+                  { top: '40%', left: '45%', size: 'sm' },
+                  { top: '25%', left: '70%', size: 'md' },
+                ].map((point, index) => (
+                  <div
+                    key={index}
+                    className={`absolute ${point.size === 'lg' ? 'w-4 h-4' : point.size === 'md' ? 'w-3 h-3' : 'w-2 h-2'} 
+                              bg-[#6851FB] rounded-full animate-ping`}
+                    style={{ top: point.top, left: point.left }}
+                  />
+                ))}
               </div>
             </div>
           </div>
