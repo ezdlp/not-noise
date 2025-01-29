@@ -9,7 +9,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Contact from "@/pages/Contact";
 import Index from "@/pages/Index";
-import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminOverview from "@/pages/admin/Overview";
 import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminSmartLinks from "@/pages/admin/SmartLinks";
