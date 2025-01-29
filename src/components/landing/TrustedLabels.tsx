@@ -5,7 +5,7 @@ export const TrustedLabels = () => {
         <h2 className="text-3xl md:text-4xl font-semibold text-neutral-night mb-12 font-heading">
           Trusted by artists from these labels
         </h2>
-        <div className="grid grid-cols-2 md:flex md:flex-row justify-center items-center gap-8 md:gap-20">
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20">
           {[
             { src: "/lovable-uploads/home/capitol-records.png", alt: "Capitol Records", height: "h-12" },
             { src: "/lovable-uploads/home/Def_Jam_Recording.png", alt: "Def Jam", height: "h-12" },

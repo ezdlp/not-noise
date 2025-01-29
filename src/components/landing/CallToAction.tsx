@@ -5,9 +5,9 @@ export const CallToAction = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-48 px-4 bg-white">
+    <section className="py-24 md:py-48 px-6 md:px-4 bg-white">
       <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-4xl md:text-5xl font-bold mb-6 text-night font-heading whitespace-nowrap">
+        <h2 className="text-3xl md:text-5xl font-bold mb-6 text-night font-heading">
           Start Growing Your Music Career Today
         </h2>
         <p className="text-[16px] text-[#333333] mb-10 max-w-2xl mx-auto font-sans">
@@ -15,7 +15,7 @@ export const CallToAction = () => {
         </p>
         <CTAButton 
           onClick={() => navigate("/create")}
-          className="px-8 py-4 shadow-md hover:bg-primary-hover hover:scale-[1.02] transition-all duration-200"
+          className="px-6 md:px-8 py-3 md:py-4 shadow-md hover:bg-primary-hover hover:scale-[1.02] transition-all duration-200 w-full md:w-auto"
         >
           Create Your Smart Link
         </CTAButton>
