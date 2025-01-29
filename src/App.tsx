@@ -3,15 +3,15 @@ import { useLocation } from "react-router-dom";
 import { analyticsService } from "./services/analyticsService";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { Overview } from "@/pages/admin/Overview";
-import { Users } from "@/pages/admin/Users";
-import { Posts } from "@/pages/admin/Posts";
-import { Settings } from "@/pages/admin/Settings";
-import { UserLinks } from "@/pages/admin/UserLinks";
-import { Media } from "@/pages/admin/MediaLibrary";
-import { Import } from "@/pages/admin/Import";
-import { SmartLinks } from "@/pages/admin/SmartLinks";
-import { Analytics } from "@/pages/admin/Analytics";
+import Overview from "@/pages/admin/Overview";
+import Users from "@/pages/admin/Users";
+import Posts from "@/pages/admin/Posts";
+import Settings from "@/pages/admin/Settings";
+import UserLinks from "@/pages/admin/UserLinks";
+import Media from "@/pages/admin/MediaLibrary";
+import Import from "@/pages/admin/Import";
+import SmartLinks from "@/pages/admin/SmartLinks";
+import Analytics from "@/pages/admin/Analytics";
 import SmartLinkAnalytics from "@/pages/SmartLinkAnalytics";
 
 function App() {
