@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getUserLocation } from "@/utils/geolocation";
 import { analyticsService } from "@/services/analytics";
-import { Music } from "lucide-react";
+import { Cookie } from "lucide-react";
 
 interface CookieSettings {
   analytics: boolean;
@@ -114,33 +114,57 @@ export function CookieConsent() {
     <>
       {/* Main Consent Dialog */}
       <Dialog open={showConsent} onOpenChange={setShowConsent}>
-        <DialogContent className="sm:max-w-[500px]">
+        <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />
+        <DialogContent className="sm:max-w-[500px] bg-[#fafafa] z-50">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
-              <Music className="w-5 h-5 text-primary" />
-              <DialogTitle>Before the show starts... 🎸</DialogTitle>
+              <DialogTitle className="text-base">
+                Before the show starts... Cookie Settings <Cookie className="inline-block w-4 h-4 text-[#0f0f0f]" />
+              </DialogTitle>
             </div>
-            <DialogDescription>
-              We use cookies to enhance your experience and analyze site usage. Your privacy matters - choose your preferences below.
+            <DialogDescription className="text-sm">
+              We use cookies to improve your experience and analyze site usage.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
             {isEU ? (
               <>
-                <Button onClick={handleAcceptAll}>Accept All</Button>
+                <Button 
+                  onClick={handleAcceptAll}
+                  className="bg-[#0f0f0f] hover:bg-[#0f0f0f]/90 text-white"
+                >
+                  Accept Cookies
+                </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleRejectAll} className="flex-1">
-                    Reject All
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRejectAll} 
+                    className="flex-1 border-[#0f0f0f] text-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white"
+                  >
+                    Reject Cookies
                   </Button>
-                  <Button variant="outline" onClick={() => setShowSettings(true)} className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowSettings(true)} 
+                    className="flex-1 border-[#0f0f0f] text-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white"
+                  >
                     Customize
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <Button onClick={handleAcceptAll}>Accept</Button>
-                <Button variant="outline" onClick={() => setShowSettings(true)}>
+                <Button 
+                  onClick={handleAcceptAll}
+                  className="bg-[#0f0f0f] hover:bg-[#0f0f0f]/90 text-white"
+                >
+                  Accept Cookies
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSettings(true)}
+                  className="border-[#0f0f0f] text-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white"
+                >
                   Customize
                 </Button>
               </>
@@ -151,11 +175,12 @@ export function CookieConsent() {
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[500px]">
+        <div className="fixed inset-0 bg-[#0f0f0f] bg-opacity-60 z-40" />
+        <DialogContent className="sm:max-w-[500px] bg-[#fafafa] z-50">
           <DialogHeader>
-            <DialogTitle>Cookie Settings</DialogTitle>
-            <DialogDescription>
-              Choose which cookies you want to accept. Your choices help us provide a better experience.
+            <DialogTitle className="text-base">Cookie Settings <Cookie className="inline-block w-4 h-4 text-[#0f0f0f]" /></DialogTitle>
+            <DialogDescription className="text-sm">
+              Choose which cookies you want to accept.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -207,10 +232,17 @@ export function CookieConsent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSettings(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSettings(false)}
+              className="border-[#0f0f0f] text-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSavePreferences}>
+            <Button 
+              onClick={handleSavePreferences}
+              className="bg-[#0f0f0f] hover:bg-[#0f0f0f]/90 text-white"
+            >
               Save Preferences
             </Button>
           </DialogFooter>
