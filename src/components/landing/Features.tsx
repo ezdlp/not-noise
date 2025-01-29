@@ -61,20 +61,19 @@ const Features = () => {
             <div className="relative rounded-xl overflow-hidden max-w-sm mx-auto">
               {/* Blurred Background */}
               <div 
-                className="absolute inset-0 z-0"
+                className="absolute inset-0 z-0 opacity-50"
                 style={{
                   backgroundImage: `url('/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png')`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   filter: 'blur(100px)',
-                  opacity: 0.5,
                   transform: 'scale(1.1)'
                 }}
               />
               
               {/* Content */}
               <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
-                <div className="max-w-[200px] mx-auto space-y-4">
+                <div className="w-[240px] mx-auto space-y-4">
                   <img 
                     src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
                     alt="Album Artwork"
@@ -227,8 +226,8 @@ const Features = () => {
                   ].map((region) => (
                     <div key={region.name} className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-[#271153]">{region.name}</span>
-                        <span className="text-[#6851FB]">{region.percentage}%</span>
+                        <span className="font-medium text-[#271153] truncate pr-4">{region.name}</span>
+                        <span className="text-[#6851FB] whitespace-nowrap">{region.percentage}%</span>
                       </div>
                       <div className="w-full bg-gray-100 h-2 rounded-full">
                         <div 
