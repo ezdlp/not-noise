@@ -11,6 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 interface AnalyticsStats {
   day: string;
@@ -21,7 +23,7 @@ interface AnalyticsStats {
 }
 
 function Analytics() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ["analytics"],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
@@ -33,6 +35,40 @@ function Analytics() {
       return data;
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('analytics_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'analytics_page_views'
+        },
+        () => {
+          refetch();
+          toast.info('New page view recorded');
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'analytics_events'
+        },
+        () => {
+          refetch();
+          toast.info('New event recorded');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (isLoading) {
     return (
