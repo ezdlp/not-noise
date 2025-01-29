@@ -5,29 +5,27 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-6 md:py-20 bg-white overflow-hidden">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-4 md:gap-12 items-center">
-        {/* Text Section - Now first on mobile */}
-        <div className="text-left relative z-10 md:order-1">
-          <h1 className="text-[2.5rem] sm:text-4xl md:text-5xl lg:text-[72px] leading-[1.1] font-bold mb-3 md:mb-6 font-heading text-night">
+    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-4 md:py-20 bg-white overflow-hidden">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 md:gap-12 items-center">
+        <div className="text-left relative z-10 order-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[72px] leading-tight font-bold mb-4 md:mb-6 font-heading text-night">
             Elevate Your Music With{" "}
             <span className="text-primary">Smart Links</span>
           </h1>
-          <p className="text-base md:text-lg text-[#333333] mb-4 md:mb-8 max-w-xl leading-relaxed font-sans">
+          <p className="text-base md:text-lg text-[#333333] mb-6 md:mb-8 max-w-xl leading-relaxed font-sans">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
             onClick={() => navigate("/create")}
-            className="inline-flex px-6 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
+            className="w-auto px-6 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
           >
             Get Started For Free
           </CTAButton>
-          <p className="mt-2 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
+          <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        {/* Mockups Section - Now second on mobile */}
-        <div className="relative md:order-2 h-[260px] sm:h-[340px] md:h-[600px] mt-2 md:mt-0">
-          {/* Grain texture background */}
+        <div className="relative order-2 h-[280px] sm:h-[400px] md:h-[600px] mt-2 md:mt-0">
+          {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
             style={{
@@ -35,7 +33,7 @@ export const Hero = () => {
             }}
           />
           
-          {/* Decorative squares - Hidden on mobile */}
+          {/* Decorative squares - visible only on desktop */}
           <div 
             className="absolute top-1/2 left-1/2 w-[200px] sm:w-[300px] md:w-[500px] h-[200px] sm:h-[300px] md:h-[500px] border-2 rounded-none hidden md:block"
             style={{ 
@@ -55,56 +53,82 @@ export const Hero = () => {
           />
           
           {/* Smart Link Mockups Group */}
-          <div className="relative w-full h-full group transition-all duration-500 ease-in-out hover:-translate-y-4">
-            {/* Taylor Swift Mockup */}
-            <div 
-              className="absolute top-1/2 left-1/2 w-[120px] sm:w-[160px] md:w-[300px] transform -translate-x-[85%] -translate-y-[60%] -rotate-6 transition-all duration-300"
-              style={{
-                animation: 'float 6s ease-in-out infinite',
-                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
-              }}
-            >
-              <img
-                src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
-                alt="Taylor Swift Smart Link"
-                className="w-full rounded-xl"
-              />
+          <div className="relative w-full h-full md:group md:hover:-translate-y-4 md:transition-all md:duration-500 md:ease-in-out">
+            {/* Mobile Layout - Side by side with triangle composition */}
+            <div className="md:hidden grid grid-cols-2 gap-3 px-2">
+              {/* First row - Two mockups side by side */}
+              <div className="shadow-sm rounded-xl">
+                <img
+                  src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
+                  alt="Taylor Swift Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
+              <div className="shadow-sm rounded-xl">
+                <img
+                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
+                  alt="Olivia Rodrigo Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
+              {/* Second row - Centered mockup */}
+              <div className="col-span-2 w-2/3 mx-auto mt-3 shadow-sm rounded-xl">
+                <img
+                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  alt="Tyler Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
             </div>
-            
-            {/* Olivia Rodrigo Mockup */}
-            <div 
-              className="absolute top-1/2 left-1/2 w-[120px] sm:w-[160px] md:w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300"
-              style={{
-                animation: 'float 6s ease-in-out infinite',
-                animationDelay: '2s',
-                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
-              }}
-            >
-              <img
-                src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
-                alt="Olivia Rodrigo Smart Link"
-                className="w-full rounded-xl"
-              />
-            </div>
-            
-            {/* Tyler Mockup */}
-            <div 
-              className="absolute top-1/2 left-1/2 w-[120px] sm:w-[160px] md:w-[300px] transform -translate-x-[15%] -translate-y-[40%] rotate-12 transition-all duration-300"
-              style={{
-                animation: 'float 6s ease-in-out infinite',
-                animationDelay: '4s',
-                boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
-              }}
-            >
-              <img
-                src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
-                alt="Tyler Smart Link"
-                className="w-full rounded-xl"
-              />
+
+            {/* Desktop Layout - Floating mockups */}
+            <div className="hidden md:block">
+              <div 
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[80%] -translate-y-[60%] -rotate-6 transition-all duration-300"
+                style={{
+                  animation: 'float 6s ease-in-out infinite',
+                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                }}
+              >
+                <img
+                  src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
+                  alt="Taylor Swift Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
+              
+              <div 
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300"
+                style={{
+                  animation: 'float 6s ease-in-out infinite',
+                  animationDelay: '2s',
+                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                }}
+              >
+                <img
+                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
+                  alt="Olivia Rodrigo Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
+              
+              <div 
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[20%] -translate-y-[40%] rotate-12 transition-all duration-300"
+                style={{
+                  animation: 'float 6s ease-in-out infinite',
+                  animationDelay: '4s',
+                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                }}
+              >
+                <img
+                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  alt="Tyler Smart Link"
+                  className="w-full rounded-xl"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
