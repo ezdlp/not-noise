@@ -33,17 +33,24 @@ const mockGlobalData = {
 
 const Features = () => {
   return (
-    <section className="py-32 bg-white">
+    <section className="py-32 bg-white relative">
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-night font-heading">
           From One Link to Endless Plays
         </h2>
         
+        {/* Connecting Lines */}
+        <div className="absolute left-1/2 top-[25%] bottom-[75%] w-px border-l-2 border-dashed border-primary/20" />
+        <div className="absolute left-1/2 top-[50%] bottom-[50%] w-px border-l-2 border-dashed border-primary/20" />
+        <div className="absolute left-1/2 top-[75%] bottom-[25%] w-px border-l-2 border-dashed border-primary/20" />
+        
         {/* One Link Feature */}
-        <div className="mt-24 flex flex-col lg:flex-row items-center gap-12">
+        <div className="mt-24 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <Link2 className="w-6 h-6 text-[#6851FB]" />
+              <div className="p-3 rounded-lg bg-primary-light">
+                <Link2 className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-2xl font-semibold">One Link for All Platforms</h3>
             </div>
             <p className="text-lg text-gray-600">
@@ -51,7 +58,7 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="relative rounded-xl overflow-hidden">
+            <div className="relative rounded-xl overflow-hidden max-w-sm mx-auto">
               {/* Blurred Background */}
               <div 
                 className="absolute inset-0 z-0"
@@ -67,7 +74,7 @@ const Features = () => {
               
               {/* Content */}
               <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
-                <div className="max-w-sm mx-auto space-y-4">
+                <div className="max-w-[200px] mx-auto space-y-4">
                   <img 
                     src="/lovable-uploads/22968a81-5926-495f-a455-f522820e639f.png"
                     alt="Album Artwork"
@@ -97,10 +104,12 @@ const Features = () => {
         </div>
 
         {/* Meta Pixel Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
+        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-6 h-6 text-[#6851FB]" />
+              <div className="p-3 rounded-lg bg-primary-light">
+                <Activity className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-2xl font-semibold">Meta Pixel Integration</h3>
             </div>
             <p className="text-lg text-gray-600">
@@ -143,10 +152,12 @@ const Features = () => {
         </div>
 
         {/* Analytics Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
+        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w-6 h-6 text-[#6851FB]" />
+              <div className="p-3 rounded-lg bg-primary-light">
+                <BarChart3 className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-2xl font-semibold">Real-Time Analytics</h3>
             </div>
             <p className="text-lg text-gray-600">
@@ -188,10 +199,12 @@ const Features = () => {
         </div>
 
         {/* Global Reach Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
+        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <Globe2 className="w-6 h-6 text-[#6851FB]" />
+              <div className="p-3 rounded-lg bg-primary-light">
+                <Globe2 className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-2xl font-semibold">Global Reach</h3>
             </div>
             <p className="text-lg text-gray-600">
@@ -199,8 +212,8 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 h-[400px]">
+              <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-lg p-6 h-full">
                 <div className="flex items-center justify-between mb-6">
                   <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
                   <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
@@ -232,10 +245,12 @@ const Features = () => {
         </div>
 
         {/* Email List Building */}
-        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
+        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <Mail className="w-6 h-6 text-[#6851FB]" />
+              <div className="p-3 rounded-lg bg-primary-light">
+                <Mail className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-2xl font-semibold">Email List Building</h3>
             </div>
             <p className="text-lg text-gray-600">
@@ -243,7 +258,7 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1">
-            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 backdrop-blur-sm h-[400px]">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
                 <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white/80 hover:bg-white">
