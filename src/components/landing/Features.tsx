@@ -19,18 +19,6 @@ const mockSubscribers = [
   { id: 5, email: "william.jones@example.com", date: "2024-03-23", platform: "Amazon Music" },
 ];
 
-// Mock data for global reach
-const mockGlobalData = {
-  totalListeners: "2.4M",
-  regions: [
-    { name: "United States", percentage: 45 },
-    { name: "United Kingdom", percentage: 15 },
-    { name: "Brazil", percentage: 12 },
-    { name: "Mexico", percentage: 8 },
-    { name: "Other", percentage: 20 }
-  ]
-};
-
 const Features = () => {
   return (
     <section className="py-32 bg-white relative">
@@ -163,8 +151,8 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="h-[300px]">
+            <div className="bg-white rounded-xl shadow-lg p-2 sm:p-3 md:p-6">
+              <div className="h-[300px] -mx-2 sm:mx-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={mockData}>
                     <CartesianGrid strokeDasharray="3 3" />
