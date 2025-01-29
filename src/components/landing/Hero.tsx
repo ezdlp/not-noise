@@ -54,9 +54,8 @@ export const Hero = () => {
           
           {/* Smart Link Mockups Group */}
           <div className="relative w-full h-full">
-            {/* Mobile Layout - Overlapping mockups */}
+            {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
-              {/* Left mockup */}
               <div 
                 className="absolute left-0 bottom-0 w-[45%] transform -rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
@@ -68,7 +67,6 @@ export const Hero = () => {
                 />
               </div>
               
-              {/* Center mockup - larger and elevated */}
               <div 
                 className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
@@ -80,7 +78,6 @@ export const Hero = () => {
                 />
               </div>
               
-              {/* Right mockup */}
               <div 
                 className="absolute right-0 bottom-0 w-[45%] transform rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
@@ -93,13 +90,13 @@ export const Hero = () => {
               </div>
             </div>
 
-            {/* Desktop Layout - Floating mockups */}
+            {/* Desktop Layout */}
             <div className="hidden md:block">
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[80%] -translate-y-[60%] -rotate-6 transition-all duration-300"
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[80%] -translate-y-[60%] -rotate-6 transition-all duration-300 hover:scale-105"
                 style={{
                   animation: 'float 6s ease-in-out infinite',
-                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
                 }}
               >
                 <img
@@ -110,11 +107,12 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300"
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300 hover:scale-105"
                 style={{
                   animation: 'float 6s ease-in-out infinite',
                   animationDelay: '2s',
-                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                  filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
+                  zIndex: 20
                 }}
               >
                 <img
@@ -125,11 +123,11 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[20%] -translate-y-[40%] rotate-12 transition-all duration-300"
+                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[20%] -translate-y-[40%] rotate-12 transition-all duration-300 hover:scale-105"
                 style={{
                   animation: 'float 6s ease-in-out infinite',
                   animationDelay: '4s',
-                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.1)'
+                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
                 }}
               >
                 <img
