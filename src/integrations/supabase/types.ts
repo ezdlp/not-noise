@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_page_views: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+          ip_hash: string | null
+          session_id: string | null
+          url: string
+          user_agent: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          session_id?: string | null
+          url: string
+          user_agent?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          session_id?: string | null
+          url?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string | null
@@ -623,6 +680,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_analytics_stats: {
+        Args: {
+          p_start_date: string
+        }
+        Returns: {
+          day: string
+          page_views: number
+          unique_visitors: number
+          registered_users: number
+          active_users: number
+        }[]
+      }
       get_daily_stats: {
         Args: {
           p_smart_link_id: string

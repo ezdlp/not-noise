@@ -6,3 +6,4 @@ export { default as UserLinks } from "./UserLinks";
 export { default as Media } from "./MediaLibrary";
 export { default as Import } from "./Import";
 export { default as SmartLinks } from "./SmartLinks";
+export { default as Analytics } from "./Analytics";

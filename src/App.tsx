@@ -18,7 +18,7 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import PublicBlogPost from "./pages/PublicBlogPost";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
-import { Overview, Users, Posts, Settings, UserLinks, Media, Import, SmartLinks } from "./pages/admin";
+import { Overview, Users, Posts, Settings, UserLinks, Media, Import, SmartLinks, Analytics } from "./pages/admin";
 import { CookieConsent } from "./components/cookie-consent/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -166,6 +166,7 @@ const AppContent = () => {
           }
         >
           <Route index element={<Overview />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="users" element={<Users />} />
           <Route path="users/:userId/links" element={<UserLinks />} />
           <Route path="smart-links" element={<SmartLinks />} />
