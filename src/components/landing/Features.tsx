@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 // Mock data for the analytics chart
 const mockData = Array.from({ length: 7 }, (_, i) => ({
   date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  views: Math.floor(Math.random() * 100) + 80, // Ensuring views are higher
-  clicks: Math.floor(Math.random() * 40) + 20  // Lower click numbers
+  views: Math.floor(Math.random() * 100) + 80,
+  clicks: Math.floor(Math.random() * 40) + 20
 }));
 
 // Mock data for email subscribers
@@ -40,30 +40,11 @@ const Features = () => {
           </div>
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-              <div className="h-[200px] bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg mb-6 flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/4e092258-e3b5-4a09-bf43-c783bf998b95.png"
-                  alt="Album artwork"
-                  className="w-[200px] h-[200px] object-cover rounded-lg"
-                />
-              </div>
-              <div className="space-y-3">
-                {['Spotify', 'Apple Music', 'YouTube Music', 'Amazon Music'].map((platform) => (
-                  <div key={platform} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={`/lovable-uploads/${platform.toLowerCase().replace(' ', '')}.png`}
-                        alt={platform}
-                        className="w-8 h-8 object-contain"
-                      />
-                      <span className="font-medium">{platform}</span>
-                    </div>
-                    <Button variant="default" className="bg-black hover:bg-black/90">
-                      Listen
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <img 
+                src="/lovable-uploads/ffe0d3cd-2697-44b2-a427-cdd6fa162697.png"
+                alt="Smart Link Preview"
+                className="w-full object-cover rounded-lg shadow-md"
+              />
             </div>
           </div>
         </div>
@@ -92,20 +73,20 @@ const Features = () => {
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">Page Views</span>
-                      <span className="text-[#6851FB]">+24%</span>
+                      <span className="font-medium">Ad Clicks</span>
+                      <span className="text-[#6851FB]">860</span>
                     </div>
                     <div className="w-full bg-gray-200 h-2 rounded-full">
-                      <div className="bg-[#6851FB] h-2 rounded-full" style={{ width: '75%' }}></div>
+                      <div className="bg-[#6851FB] h-2 rounded-full" style={{ width: '80%' }}></div>
                     </div>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">Conversions</span>
-                      <span className="text-emerald-500">+12%</span>
+                      <span className="text-emerald-500">208</span>
                     </div>
                     <div className="w-full bg-gray-200 h-2 rounded-full">
-                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '24%' }}></div>
                     </div>
                   </div>
                 </div>
@@ -115,7 +96,6 @@ const Features = () => {
         </div>
 
         {/* Analytics Feature - Keeping unchanged */}
-        {/* Analytics Feature */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -216,29 +196,12 @@ const Features = () => {
           </div>
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="relative h-[300px] bg-gradient-to-br from-[#E5DEFF] to-[#D3E4FD] rounded-lg overflow-hidden">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d60978881.06149194!2d-95.665!3d37.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1710876233664!5m2!1sen!2sus"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="rounded-lg"
+              <div className="relative h-[400px] bg-gradient-to-br from-[#E5DEFF] to-[#D3E4FD] rounded-lg overflow-hidden p-6">
+                <img 
+                  src="/lovable-uploads/abfcb589-9aa2-4b04-a82f-2ebfd9411181.png"
+                  alt="Global Demographics"
+                  className="w-full h-full object-cover rounded-lg"
                 />
-                {[
-                  { top: '30%', left: '20%', size: 'lg' },
-                  { top: '40%', left: '45%', size: 'sm' },
-                  { top: '25%', left: '70%', size: 'md' },
-                ].map((point, index) => (
-                  <div
-                    key={index}
-                    className={`absolute ${point.size === 'lg' ? 'w-4 h-4' : point.size === 'md' ? 'w-3 h-3' : 'w-2 h-2'} 
-                              bg-[#6851FB] rounded-full animate-ping`}
-                    style={{ top: point.top, left: point.left }}
-                  />
-                ))}
               </div>
             </div>
           </div>
