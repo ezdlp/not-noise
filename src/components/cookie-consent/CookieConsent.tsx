@@ -11,6 +11,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getUserLocation } from "@/utils/geolocation";
+import { analyticsService } from "@/services/analytics";
 
 interface CookieSettings {
   analytics: boolean;
@@ -26,6 +27,21 @@ export function CookieConsent() {
     marketing: false,
     necessary: true, // Always required
   });
+
+  useEffect(() => {
+    const initAnalytics = async () => {
+      await analyticsService.initialize();
+      const hasConsent = localStorage.getItem("cookieConsent");
+      if (hasConsent) {
+        const savedSettings = JSON.parse(hasConsent);
+        if (savedSettings.analytics || savedSettings.marketing) {
+          analyticsService.enableAnalytics();
+        }
+      }
+    };
+
+    initAnalytics();
+  }, []);
 
   useEffect(() => {
     const checkConsent = async () => {
@@ -75,8 +91,11 @@ export function CookieConsent() {
 
   const saveConsent = (settings: CookieSettings) => {
     localStorage.setItem("cookieConsent", JSON.stringify(settings));
-    // Here you would implement the actual cookie settings
-    // For example, enabling/disabling Google Analytics, Meta Pixel, etc.
+    if (settings.analytics || settings.marketing) {
+      analyticsService.enableAnalytics();
+    } else {
+      analyticsService.disableAnalytics();
+    }
   };
 
   return (
