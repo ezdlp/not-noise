@@ -27,9 +27,9 @@ export const Hero = () => {
         <div className="relative order-first md:order-last">
           {/* Background with subtle grain texture */}
           <div 
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            className="absolute inset-0 opacity-[0.06] pointer-events-none"
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             }}
           />
           
@@ -50,21 +50,13 @@ export const Hero = () => {
               animation: 'rotate-reverse 25s linear infinite',
             }}
           />
-          <div 
-            className="absolute top-1/2 left-1/2 w-[400px] h-[400px] border-2 rounded-none"
-            style={{ 
-              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.15), rgba(74, 71, 165, 0.25)) 1',
-              transform: 'translate(-40%, -60%) rotate(45deg)',
-              animation: 'rotate 15s linear infinite',
-            }}
-          />
           
           {/* Floating particles */}
           <div className="absolute inset-0 overflow-hidden">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(30)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1 h-1 bg-primary/10 rounded-full"
+                className="absolute w-2 h-2 bg-primary/15 rounded-full"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
@@ -79,9 +71,6 @@ export const Hero = () => {
           <div 
             className="relative w-full h-[600px] group transition-all duration-500 ease-in-out hover:-translate-y-4"
           >
-            {/* Blur effect behind mockups */}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent blur-xl" />
-            
             {/* Taylor Swift Mockup */}
             <div 
               className="absolute top-0 left-0 w-[300px] transform -rotate-6 transition-all duration-300"
