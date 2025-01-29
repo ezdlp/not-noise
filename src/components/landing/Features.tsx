@@ -98,7 +98,7 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-8 max-w-md mx-auto">
+            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-8 max-w-md mx-auto">
               <div className="flex items-center mb-8">
                 <img 
                   src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
@@ -129,7 +129,7 @@ const Features = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Analytics Feature */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
           <div className="flex-1 space-y-4">
