@@ -29,26 +29,33 @@ export const Hero = () => {
       x: number;
       y: number;
       size: number;
-      speedX: number;
-      speedY: number;
+      angle: number;
+      radius: number;
+      speed: number;
       color: string;
       opacity: number;
     }> = [];
 
-    // Create particles only in the right half of the screen
+    // Create particles in orbital paths
     const createParticles = () => {
-      const particleCount = 120; // Increased count further
-      const rightHalfStart = canvas.width * 0.5; // Start from middle of screen
+      const particleCount = 80;
+      const centerX = canvas.width * 0.75; // Center of orbits
+      const centerY = canvas.height * 0.5;
       
       for (let i = 0; i < particleCount; i++) {
+        const radius = 150 + Math.random() * 200; // Different orbital radiuses
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.001 + Math.random() * 0.001; // Orbital speed
+        
         particles.push({
-          x: rightHalfStart + Math.random() * (canvas.width - rightHalfStart),
-          y: Math.random() * canvas.height,
-          size: 1 + Math.random() * 2,
-          speedX: (Math.random() - 0.5) * 0.3,
-          speedY: -0.3 - Math.random() * 0.3,
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius,
+          size: 0.5 + Math.random(),
+          angle,
+          radius,
+          speed,
           color: Math.random() > 0.5 ? '#FE28A2' : '#6851FB',
-          opacity: 0.3 + Math.random() * 0.3 // Increased opacity range (30-60%)
+          opacity: 0.3 + Math.random() * 0.3
         });
       }
     };
@@ -59,16 +66,13 @@ export const Hero = () => {
 
       // Update and draw particles
       particles.forEach((particle, index) => {
-        particle.x += particle.speedX;
-        particle.y += particle.speedY;
-
-        // Reset particle position when it goes off screen
-        if (particle.y < -10) {
-          particle.y = canvas.height + 10;
-          particle.x = (canvas.width * 0.5) + Math.random() * (canvas.width * 0.5);
-        }
-        if (particle.x < canvas.width * 0.5) particle.x = canvas.width * 0.5;
-        if (particle.x > canvas.width + 10) particle.x = canvas.width * 0.5;
+        // Update particle position in circular motion
+        particle.angle += particle.speed;
+        const centerX = canvas.width * 0.75;
+        const centerY = canvas.height * 0.5;
+        
+        particle.x = centerX + Math.cos(particle.angle) * particle.radius;
+        particle.y = centerY + Math.sin(particle.angle) * particle.radius;
 
         // Draw particle
         ctx.beginPath();
@@ -84,7 +88,7 @@ export const Hero = () => {
           const dy = particle.y - particle2.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 60) {
+          if (distance < 50) {
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(particle2.x, particle2.y);
@@ -145,7 +149,7 @@ export const Hero = () => {
             className="absolute top-1/2 left-1/2 w-[600px] h-[600px] border-2 rounded-none"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-50%, -50%) rotate(-12deg)',
+              transform: 'translate(-60%, -50%) rotate(-12deg)',
               animation: 'rotate 20s linear infinite',
             }}
           />
@@ -155,7 +159,7 @@ export const Hero = () => {
             className="absolute top-1/2 left-1/2 w-[500px] h-[500px] border-2 rounded-none"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(254, 40, 162, 0.3), rgba(104, 81, 251, 0.5)) 1',
-              transform: 'translate(-50%, -50%) rotate(12deg)',
+              transform: 'translate(-40%, -50%) rotate(12deg)',
               animation: 'rotate 15s linear infinite reverse',
             }}
           />
