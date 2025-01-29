@@ -23,6 +23,7 @@ export const Hero = () => {
           >
             Get Started For Free
           </CTAButton>
+          <p className="mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
         <div className="relative order-first md:order-last">
           {/* Background with subtle grain texture */}
@@ -38,7 +39,7 @@ export const Hero = () => {
             className="absolute top-1/2 left-1/2 w-[500px] h-[500px] border-2 rounded-none"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-80%, -50%) rotate(-12deg)',
+              transform: 'translate(-60%, -50%) rotate(-12deg)',
               animation: 'rotate 20s linear infinite',
             }}
           />
@@ -48,7 +49,7 @@ export const Hero = () => {
             className="absolute top-1/2 left-1/2 w-[400px] h-[400px] border-2 rounded-none"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-60%, -50%) rotate(12deg)',
+              transform: 'translate(-40%, -50%) rotate(12deg)',
               animation: 'rotate 15s linear infinite reverse',
             }}
           />
@@ -90,7 +91,7 @@ export const Hero = () => {
             
             {/* Tyler Mockup */}
             <div 
-              className="absolute top-20 left-[200px] w-[300px] transform rotate-12 transition-all duration-300"
+              className="absolute top-20 left-[240px] w-[300px] transform rotate-12 transition-all duration-300"
               style={{
                 animation: 'float 6s ease-in-out infinite',
                 animationDelay: '4s',
@@ -103,6 +104,25 @@ export const Hero = () => {
                 className="w-full rounded-xl"
               />
             </div>
+          </div>
+
+          {/* Minimal scroll indicator */}
+          <div 
+            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center opacity-0 animate-fade-in"
+            style={{ animationDelay: '2s', animationFillMode: 'forwards' }}
+          >
+            <span className="text-sm text-gray-400 mb-2">Explore</span>
+            <svg 
+              className="w-4 h-4 text-gray-400 animate-bounce" 
+              fill="none" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth="2" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+            </svg>
           </div>
         </div>
       </div>
