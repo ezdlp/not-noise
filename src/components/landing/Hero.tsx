@@ -29,7 +29,7 @@ export const Hero = () => {
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
             }}
           />
           
@@ -39,7 +39,7 @@ export const Hero = () => {
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
               transform: 'translate(-60%, -50%) rotate(-12deg)',
-              animation: 'rotate 20s linear infinite',
+              animation: 'rotate 20s linear infinite'
             }}
           />
           
@@ -48,15 +48,14 @@ export const Hero = () => {
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
               transform: 'translate(-20%, -50%) rotate(12deg)',
-              animation: 'rotate 15s linear infinite reverse',
+              animation: 'rotate 15s linear infinite reverse'
             }}
           />
           
           {/* Smart Link Mockups Group */}
-          <div className="relative w-full h-full md:group md:hover:-translate-y-4 md:transition-all md:duration-500 md:ease-in-out">
+          <div className="relative w-full h-full">
             {/* Mobile Layout - Side by side with triangle composition */}
             <div className="md:hidden grid grid-cols-2 gap-3 px-2">
-              {/* First row - Two mockups side by side */}
               <div className="shadow-sm rounded-xl">
                 <img
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
@@ -71,7 +70,6 @@ export const Hero = () => {
                   className="w-full rounded-xl"
                 />
               </div>
-              {/* Second row - Centered mockup */}
               <div className="col-span-2 w-2/3 mx-auto mt-3 shadow-sm rounded-xl">
                 <img
                   src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
@@ -131,4 +129,5 @@ export const Hero = () => {
         </div>
       </div>
     </div>
-  </div>
+  );
+};
