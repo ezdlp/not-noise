@@ -27,7 +27,7 @@ export default {
         primary: {
           DEFAULT: "#6851FB",
           foreground: "hsl(var(--primary-foreground))",
-          hover: "#A299FC",
+          hover: "#0F0F0F",
           disabled: "#4A47A5",
           light: "#ECE9FF",
         },
