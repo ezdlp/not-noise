@@ -254,7 +254,7 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 backdrop-blur-sm h-[400px] overflow-hidden">
+            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 h-[400px] overflow-hidden">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
                 <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white/80 hover:bg-white">
@@ -263,24 +263,26 @@ const Features = () => {
               </div>
               <div className="overflow-x-auto">
                 <div className="min-w-[500px] md:min-w-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Platform</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockSubscribers.map((subscriber) => (
-                        <TableRow key={subscriber.id}>
-                          <TableCell className="font-medium">{subscriber.email}</TableCell>
-                          <TableCell>{subscriber.platform}</TableCell>
-                          <TableCell>{subscriber.date}</TableCell>
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-gray-50/50">
+                          <TableHead>Email</TableHead>
+                          <TableHead>Platform</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {mockSubscribers.map((subscriber) => (
+                          <TableRow key={subscriber.id} className="hover:bg-gray-50/50">
+                            <TableCell className="font-medium">{subscriber.email}</TableCell>
+                            <TableCell>{subscriber.platform}</TableCell>
+                            <TableCell>{subscriber.date}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
             </div>
