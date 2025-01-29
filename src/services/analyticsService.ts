@@ -50,15 +50,14 @@ class AnalyticsService {
 
   private async getLocationInfo() {
     try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const { ip } = await response.json();
-      const ipHash = await this.hashIP(ip);
+      const { data, error } = await supabase.functions.invoke('get-location')
       
-      const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-      const { country_name } = await geoResponse.json();
+      if (error) throw error;
+      
+      const ipHash = await this.hashIP(data.ip);
       
       return {
-        country: country_name,
+        country: data.country,
         ip_hash: ipHash
       };
     } catch (error) {
