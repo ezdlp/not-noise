@@ -117,33 +117,31 @@ const Features = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-              <div className="relative p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl mb-6">
-                <div className="flex items-center mb-6">
-                  <img 
-                    src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
-                    alt="Meta logo" 
-                    className="w-24 h-auto"
-                  />
-                </div>
-                <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">Ad Clicks</span>
-                      <span className="text-[#6851FB]">860</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-2 rounded-full">
-                      <div className="bg-[#6851FB] h-2 rounded-full" style={{ width: '80%' }}></div>
-                    </div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-8 max-w-md mx-auto">
+              <div className="flex items-center mb-8">
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
+                  alt="Meta logo" 
+                  className="w-24 h-auto"
+                />
+              </div>
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-medium text-lg">Ad Clicks</span>
+                    <span className="text-[#6851FB] text-lg font-semibold">860</span>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">Conversions</span>
-                      <span className="text-emerald-500">208</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-2 rounded-full">
-                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '24%' }}></div>
-                    </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full">
+                    <div className="bg-[#6851FB] h-2.5 rounded-full" style={{ width: '80%' }}></div>
+                  </div>
+                </div>
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-medium text-lg">Conversions</span>
+                    <span className="text-emerald-500 text-lg font-semibold">208</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full">
+                    <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '24%' }}></div>
                   </div>
                 </div>
               </div>
