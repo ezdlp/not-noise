@@ -10,15 +10,17 @@ function MediaLibrary() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Media Library</h1>
+        <h1 className="text-3xl font-heading font-semibold tracking-tight">Media Library</h1>
       </div>
-      <MediaLibraryComponent 
-        onSelect={handleSelect}
-        onClose={handleClose}
-        showInsertButton={false}
-      />
+      <div className="bg-white rounded-lg shadow-modern p-6">
+        <MediaLibraryComponent 
+          onSelect={handleSelect}
+          onClose={handleClose}
+          showInsertButton={false}
+        />
+      </div>
     </div>
   );
 }

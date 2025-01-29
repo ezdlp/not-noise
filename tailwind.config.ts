@@ -1,14 +1,14 @@
-import type { Config } from "tailwindcss";
+import { type Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 export default {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
-  prefix: "",
   theme: {
     container: {
       center: true,
@@ -18,65 +18,60 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["DM Sans", ...fontFamily.sans],
+        heading: ["Poppins", ...fontFamily.sans],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "#FAFAFA", // Seasalt
-        foreground: "#0F0F0F", // Night
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#6851FB", // Majorelle Blue
-          light: "#ECE9FF", // 20% tint
-          medium: "#A299FC", // 50% tint
-          dark: "#4A47A5", // 10% darker
-          foreground: "#FFFFFF",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "#FE28A2", // Persian Rose
-          light: "#FFB8D7", // 20% tint
-          medium: "#FF49B7", // 50% tint
-          dark: "#D0178B", // 10% darker
-          foreground: "#FFFFFF",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
-        accent: {
-          DEFAULT: "#37D299", // Emerald
-          light: "#E6F4EF", // 20% tint
-          medium: "#5DE0AE", // 50% tint
-          dark: "#2A8F69", // 10% darker
-          foreground: "#FFFFFF",
-        },
-        neutral: {
-          DEFAULT: "#E6E6E6", // Light Neutral Tint
-          light: "#F5F5F5", // 10% tint of Seasalt
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "#F5F5F5",
-          foreground: "#666666",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#0F0F0F",
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
-      fontFamily: {
-        sans: ["DM Sans", "sans-serif"],
-        heading: ["Poppins", "sans-serif"],
+      borderRadius: {
+        lg: "0.75rem",
+        md: "0.5rem",
+        sm: "0.25rem",
       },
       boxShadow: {
         'sm': '0 1px 2px rgba(15, 15, 15, 0.05)',
         'md': '0 2px 4px rgba(15, 15, 15, 0.05)',
         'lg': '0 4px 6px rgba(15, 15, 15, 0.05)',
       },
-      borderRadius: {
-        'sm': '0.25rem',
-        DEFAULT: '0.5rem',
-        'lg': '0.75rem',
-      },
       transitionDuration: {
-        DEFAULT: '200ms',
+        '200': '200ms',
       },
       transitionTimingFunction: {
-        DEFAULT: 'ease-out',
+        'out': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         "accordion-down": {
@@ -87,25 +82,12 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        "slide-in-bottom": {
-          "0%": { transform: "translateY(100%)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" }
-        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        float: "float 3s ease-in-out infinite",
-        "slide-in-bottom": "slide-in-bottom 0.3s ease-out"
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;
