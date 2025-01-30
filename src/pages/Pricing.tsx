@@ -72,7 +72,6 @@ export default function Pricing() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-muted-foreground">/forever</span>
                 </div>
-                <div className="min-h-[72px]"></div>
               </div>
 
               <div className="space-y-6">
@@ -136,7 +135,9 @@ export default function Pricing() {
               >
                 Get Started Free
               </Button>
-              <span className="text-sm text-muted-foreground mt-2 block text-center">No credit card required</span>
+            </div>
+            <div className="mt-2 text-center">
+              <span className="text-sm text-muted-foreground">No credit card required</span>
             </div>
           </Card>
 
