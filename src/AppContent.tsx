@@ -11,6 +11,7 @@ import Contact from "@/pages/Contact";
 import Index from "@/pages/Index";
 import Pricing from "@/pages/Pricing";
 import Blog from "@/pages/Blog";
+import PublicBlogPost from "@/pages/PublicBlogPost";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminOverview from "@/pages/admin/Overview";
 import AdminAnalytics from "@/pages/admin/Analytics";
@@ -32,6 +33,7 @@ const AppContent = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
+      <Route path="/:slug" element={<PublicBlogPost />} />
       
       {/* Smart Link public view */}
       <Route path="/link/:slug" element={<SmartLink />} />
