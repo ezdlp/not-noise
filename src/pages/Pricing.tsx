@@ -72,6 +72,8 @@ export default function Pricing() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-muted-foreground">/forever</span>
                 </div>
+                {/* Added min-height to match Pro plan spacing */}
+                <div className="min-h-[40px]"></div>
               </div>
 
               <div className="space-y-6 flex-1">
@@ -130,6 +132,7 @@ export default function Pricing() {
                 <Button 
                   variant="outline"
                   onClick={() => navigate("/register")}
+                  className="w-full max-w-[200px]"
                 >
                   Get Started Free
                 </Button>
@@ -240,7 +243,7 @@ export default function Pricing() {
               </div>
 
               <Button 
-                className="mt-8 bg-primary hover:bg-primary/90"
+                className="mt-8 bg-primary hover:bg-primary/90 w-full max-w-[200px] mx-auto"
                 onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
               >
                 Upgrade Now
