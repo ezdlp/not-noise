@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Check, Crown } from "lucide-react";
+import { Mail, Lock, User, Music, Check, Crown, Eye, EyeOff, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,15 @@ export default function Register() {
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecial: false,
+  });
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -53,12 +62,21 @@ export default function Register() {
     };
   }, [navigate, selectedPlan]);
 
-  const calculatePasswordStrength = (password: string) => {
+  const checkPasswordRequirements = (password: string) => {
+    setPasswordRequirements({
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[^A-Za-z0-9]/.test(password),
+    });
+
     let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (password.match(/[A-Z]/)) strength += 25;
-    if (password.match(/[0-9]/)) strength += 25;
-    if (password.match(/[^A-Za-z0-9]/)) strength += 25;
+    if (password.length >= 8) strength += 20;
+    if (/[A-Z]/.test(password)) strength += 20;
+    if (/[a-z]/.test(password)) strength += 20;
+    if (/[0-9]/.test(password)) strength += 20;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 20;
     setPasswordStrength(strength);
   };
 
@@ -68,7 +86,7 @@ export default function Register() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (name === "password") {
-      calculatePasswordStrength(value);
+      checkPasswordRequirements(value);
     }
   };
 
@@ -275,31 +293,73 @@ export default function Register() {
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
               <Progress value={passwordStrength} className="h-1" />
-              <p className="text-sm text-muted-foreground">
-                Password strength: {passwordStrength}%
-              </p>
+              <div className="space-y-2 text-sm">
+                {Object.entries(passwordRequirements).map(([key, met]) => (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-2 ${
+                      met ? "text-success" : "text-muted-foreground"
+                    }`}
+                  >
+                    {met ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                    <span>
+                      {key === "minLength" && "At least 8 characters"}
+                      {key === "hasUppercase" && "One uppercase letter"}
+                      {key === "hasLowercase" && "One lowercase letter"}
+                      {key === "hasNumber" && "One number"}
+                      {key === "hasSpecial" && "One special character"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="pl-10"
+                className="pl-10 pr-10"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
           </div>
 
