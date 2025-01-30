@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Crown, Star, Info } from "lucide-react";
+import { Crown, Star, Info, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -79,9 +79,11 @@ export default function Pricing() {
                   <h4 className="text-sm font-medium">Features included:</h4>
                   <div className="grid gap-3">
                     <div className="flex items-center gap-2 text-sm">
-                      10 Smart Links
+                      <Check className="h-4 w-4 text-muted-foreground" />
+                      Up to 10 Smart Links
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
                       <div className="flex items-center gap-2">
                         Basic Analytics
                         <TooltipProvider>
@@ -97,6 +99,7 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
                       <div className="flex items-center gap-2">
                         Basic Streaming Platforms
                         <TooltipProvider>
@@ -112,22 +115,26 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
                       Custom URL Slugs
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
                       Meta Pixel Integration
                     </div>
                   </div>
                 </div>
               </div>
 
-              <Button 
-                variant="outline"
-                className="mt-8"
-                onClick={() => navigate("/register")}
-              >
-                Get Started Free
-              </Button>
+              <div className="mt-8 flex flex-col items-center">
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate("/register")}
+                >
+                  Get Started Free
+                </Button>
+                <span className="text-sm text-muted-foreground mt-2">No credit card required</span>
+              </div>
             </div>
           </Card>
 
@@ -160,6 +167,7 @@ export default function Pricing() {
                       </div>
                     </>
                   )}
+                  <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
                 </div>
               </div>
 
@@ -168,9 +176,11 @@ export default function Pricing() {
                   <h4 className="text-sm font-medium">Everything in Free, plus:</h4>
                   <div className="grid gap-3">
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Unlimited Smart Links
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       <div className="flex items-center gap-2">
                         All Streaming Platforms + Reordering
                         <TooltipProvider>
@@ -186,6 +196,7 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       <div className="flex items-center gap-2">
                         Advanced Analytics
                         <TooltipProvider>
@@ -201,21 +212,27 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Fan Email Collection
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Remove Soundraiser Branding
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Priority Support (24/7 response within 12 hours)
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Bulk Analytics Export
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Smart Link Social Media Cards
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Early Access to New Features
                     </div>
                   </div>
