@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ChevronDown, ChevronUp } from "lucide-react";
+import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible } from "@/components/ui/collapsible";
 import { useState, useEffect } from "react";
 import { FeatureLimits } from "./FeatureLimits";
 
@@ -78,22 +78,11 @@ export function SubscriptionBanner() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {isFreeTier && (
-              <Button className="bg-primary hover:bg-primary/90">
-                Upgrade Now
-              </Button>
-            )}
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                {isOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-          </div>
+          {isFreeTier && (
+            <Button className="bg-primary hover:bg-primary/90">
+              Upgrade Now
+            </Button>
+          )}
         </div>
       </div>
       <FeatureLimits />
