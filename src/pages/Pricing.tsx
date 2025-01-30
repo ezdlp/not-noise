@@ -72,7 +72,6 @@ export default function Pricing() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-muted-foreground">/forever</span>
                 </div>
-                <div className="min-h-[72px]"></div>
               </div>
 
               <div className="space-y-6">
@@ -136,7 +135,7 @@ export default function Pricing() {
               >
                 Get Started Free
               </Button>
-              <span className="text-sm text-muted-foreground mt-2 block">No credit card required</span>
+              <span className="text-sm text-muted-foreground mt-2 block text-center">No credit card required</span>
             </div>
           </Card>
 
@@ -242,12 +241,14 @@ export default function Pricing() {
               </div>
             </div>
 
-            <Button 
-              className="mt-8 bg-primary hover:bg-primary/90 w-full"
-              onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-            >
-              Upgrade Now
-            </Button>
+            <div className="mt-8">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+              >
+                Upgrade Now
+              </Button>
+            </div>
           </Card>
         </div>
 
