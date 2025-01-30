@@ -26,8 +26,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     name: "",
-    artistName: "",
-    musicGenre: "",
+    artist_name: "", // Changed from artistName to artist_name
+    music_genre: "", // Changed from musicGenre to music_genre
     country: "",
   });
   const [loading, setLoading] = useState(false);
@@ -113,8 +113,8 @@ export default function Register() {
         options: {
           data: {
             name: formData.name || "-",
-            artistName: formData.artistName || "-",
-            musicGenre: formData.musicGenre || "Unknown",
+            artist_name: formData.artist_name || "-", // Changed from artistName
+            music_genre: formData.music_genre || "Unknown", // Changed from musicGenre
             country: formData.country || "-",
             email_confirm: true
           }
@@ -207,10 +207,10 @@ export default function Register() {
             <div className="relative">
               <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                name="artistName"
+                name="artist_name"
                 type="text"
                 placeholder="Artist Name"
-                value={formData.artistName}
+                value={formData.artist_name}
                 onChange={handleInputChange}
                 className="pl-10"
                 required
@@ -218,10 +218,10 @@ export default function Register() {
             </div>
 
             <Select
-              name="musicGenre"
-              value={formData.musicGenre}
+              name="music_genre"
+              value={formData.music_genre}
               onValueChange={(value) =>
-                handleInputChange({ target: { name: "musicGenre", value } })
+                handleInputChange({ target: { name: "music_genre", value } })
               }
               required
             >
@@ -387,4 +387,3 @@ export default function Register() {
     </div>
   );
 }
-
