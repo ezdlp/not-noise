@@ -11,14 +11,27 @@ export function SubscriptionBanner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      // First get the user's subscription
+      const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
-        .select("*, subscription_features!inner(*)")
+        .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (subscriptionError) throw subscriptionError;
+      
+      // Then get the features for their tier
+      const { data: features, error: featuresError } = await supabase
+        .from("subscription_features")
+        .select("*")
+        .eq("tier", subscriptionData.tier);
+
+      if (featuresError) throw featuresError;
+
+      return {
+        ...subscriptionData,
+        features
+      };
     },
   });
 

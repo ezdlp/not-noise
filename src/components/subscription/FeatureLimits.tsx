@@ -11,17 +11,30 @@ export function FeatureLimits() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Get the user's subscription tier first
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .select("tier")
+        .eq("user_id", user.id)
+        .single();
+
+      if (subscriptionError) throw subscriptionError;
+
+      // Get features for the user's tier
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
         .select("*")
-        .eq("tier", "free");
+        .eq("tier", subscription.tier);
 
+      if (featuresError) throw featuresError;
+
+      // Get current usage
       const { data: usage, error: usageError } = await supabase
         .from("feature_usage")
         .select("*")
         .eq("user_id", user.id);
 
-      if (featuresError || usageError) throw featuresError || usageError;
+      if (usageError) throw usageError;
 
       return {
         features,
