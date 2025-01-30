@@ -72,6 +72,7 @@ export default function Pricing() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-muted-foreground">/forever</span>
                 </div>
+                <div className="min-h-[72px]"></div>
               </div>
 
               <div className="space-y-6">
