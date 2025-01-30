@@ -43,7 +43,6 @@ export default function Register() {
     hasUppercase: false,
     hasLowercase: false,
     hasNumber: false,
-    hasSpecial: false,
   });
 
   useEffect(() => {
@@ -68,15 +67,13 @@ export default function Register() {
       hasUppercase: /[A-Z]/.test(password),
       hasLowercase: /[a-z]/.test(password),
       hasNumber: /[0-9]/.test(password),
-      hasSpecial: /[^A-Za-z0-9]/.test(password),
     });
 
     let strength = 0;
-    if (password.length >= 8) strength += 20;
-    if (/[A-Z]/.test(password)) strength += 20;
-    if (/[a-z]/.test(password)) strength += 20;
-    if (/[0-9]/.test(password)) strength += 20;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 20;
+    if (password.length >= 8) strength += 25;
+    if (/[A-Z]/.test(password)) strength += 25;
+    if (/[a-z]/.test(password)) strength += 25;
+    if (/[0-9]/.test(password)) strength += 25;
     setPasswordStrength(strength);
   };
 
@@ -312,27 +309,35 @@ export default function Register() {
                   )}
                 </button>
               </div>
-              <Progress value={passwordStrength} className="h-1" />
-              <div className="space-y-2 text-sm">
-                {Object.entries(passwordRequirements).map(([key, met]) => (
+              <Progress 
+                value={passwordStrength} 
+                className="h-1" 
+                style={{
+                  backgroundColor: '#ECE9FF',
+                  '--progress-background': '#6851FB'
+                } as React.CSSProperties} 
+              />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {[
+                  { key: 'minLength', label: 'At least 8 characters' },
+                  { key: 'hasUppercase', label: 'One uppercase letter' },
+                  { key: 'hasLowercase', label: 'One lowercase letter' },
+                  { key: 'hasNumber', label: 'One number' },
+                ].map(({ key, label }) => (
                   <div
                     key={key}
                     className={`flex items-center gap-2 ${
-                      met ? "text-success" : "text-muted-foreground"
+                      passwordRequirements[key as keyof typeof passwordRequirements]
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     }`}
                   >
-                    {met ? (
+                    {passwordRequirements[key as keyof typeof passwordRequirements] ? (
                       <Check className="h-4 w-4" />
                     ) : (
                       <X className="h-4 w-4" />
                     )}
-                    <span>
-                      {key === "minLength" && "At least 8 characters"}
-                      {key === "hasUppercase" && "One uppercase letter"}
-                      {key === "hasLowercase" && "One lowercase letter"}
-                      {key === "hasNumber" && "One number"}
-                      {key === "hasSpecial" && "One special character"}
-                    </span>
+                    <span>{label}</span>
                   </div>
                 ))}
               </div>
