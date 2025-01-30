@@ -26,8 +26,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     name: "",
-    artist_name: "",
-    music_genre: "",
+    artistName: "", // Changed to camelCase
+    musicGenre: "", // Changed to camelCase
     country: "",
   });
   const [loading, setLoading] = useState(false);
@@ -128,8 +128,8 @@ export default function Register() {
         options: {
           data: {
             name: formData.name,
-            artistName: formData.artist_name,
-            musicGenre: formData.music_genre,
+            artistName: formData.artistName, // Using camelCase from form
+            musicGenre: formData.musicGenre, // Using camelCase from form
             country: formData.country,
             email_confirm: true
           }
@@ -222,10 +222,10 @@ export default function Register() {
             <div className="relative">
               <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                name="artist_name"
+                name="artistName"
                 type="text"
                 placeholder="Artist Name"
-                value={formData.artist_name}
+                value={formData.artistName}
                 onChange={handleInputChange}
                 className="pl-10"
                 required
@@ -233,10 +233,10 @@ export default function Register() {
             </div>
 
             <Select
-              name="music_genre"
-              value={formData.music_genre}
+              name="musicGenre"
+              value={formData.musicGenre}
               onValueChange={(value) =>
-                handleInputChange({ target: { name: "music_genre", value } })
+                handleInputChange({ target: { name: "musicGenre", value } })
               }
               required
             >
@@ -452,4 +452,3 @@ export default function Register() {
     </div>
   );
 }
-
