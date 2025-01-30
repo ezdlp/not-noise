@@ -128,8 +128,8 @@ export default function Register() {
         options: {
           data: {
             name: formData.name,
-            artistName: formData.artist_name, // Changed to camelCase
-            musicGenre: formData.music_genre, // Changed to camelCase
+            artistName: formData.artist_name,
+            musicGenre: formData.music_genre,
             country: formData.country,
             email_confirm: true
           }
