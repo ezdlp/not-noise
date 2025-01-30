@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Globe, Check } from "lucide-react";
+import { Mail, Lock, User, Music, Globe, Check, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -32,20 +33,25 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/dashboard");
+        if (selectedPlan === 'pro') {
+          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM'); // yearly plan ID
+        } else {
+          navigate("/dashboard");
+        }
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, selectedPlan]);
 
   const calculatePasswordStrength = (password: string) => {
     let strength = 0;
@@ -66,6 +72,26 @@ export default function Register() {
     }
   };
 
+  const handleSubscribe = async (priceId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { priceId },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start checkout process",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -81,7 +107,6 @@ export default function Register() {
     setError(null);
 
     try {
-      // Sign up with user metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -102,10 +127,10 @@ export default function Register() {
       if (authData.user) {
         toast({
           title: "Registration successful!",
-          description: "Your account has been created. You can now log in.",
+          description: selectedPlan === 'pro' 
+            ? "Your account has been created. Redirecting to payment..."
+            : "Your account has been created. You can now start using the app.",
         });
-        
-        navigate("/login");
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -130,6 +155,17 @@ export default function Register() {
             Sign up to start creating smart links
           </p>
         </div>
+
+        <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as 'free' | 'pro')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="free" className="text-sm">
+              Free Plan
+            </TabsTrigger>
+            <TabsTrigger value="pro" className="text-sm">
+              Pro Plan
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {error && (
           <Alert variant="destructive">
@@ -253,29 +289,55 @@ export default function Register() {
 
           <Card className="p-4 bg-muted/50">
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Starting with Free Plan</h3>
-              <div className="space-y-2">
-                {[
-                  "Create up to 10 smart links",
-                  "Basic analytics (Views, Clicks, CTR)",
-                  "Basic streaming platforms",
-                  "Custom URL slugs",
-                  "Meta Pixel integration",
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">{feature}</span>
+              <div className="flex items-center gap-2">
+                {selectedPlan === 'free' ? (
+                  <h3 className="text-sm font-medium text-muted-foreground">Free Plan Features</h3>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium text-primary">Pro Plan Features</h3>
                   </div>
-                ))}
+                )}
               </div>
-              <div className="text-xs text-muted-foreground">
-                <Button
-                  variant="link"
-                  className="h-auto p-0 text-xs"
-                  onClick={() => window.open("/pricing", "_blank")}
-                >
-                  Compare all features
-                </Button>
+              <div className="space-y-2">
+                {selectedPlan === 'free' ? (
+                  <>
+                    {[
+                      "Create up to 10 smart links",
+                      "Basic analytics (Views, Clicks, CTR)",
+                      "Basic streaming platforms",
+                      "Custom URL slugs",
+                      "Meta Pixel integration",
+                    ].map((feature, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {[
+                      "Unlimited smart links",
+                      "Advanced analytics with platform-specific data",
+                      "All streaming platforms + reordering",
+                      "Fan email collection",
+                      "Remove Soundraiser branding",
+                      "Priority support",
+                      "Bulk analytics export",
+                      "Smart link social media cards",
+                      "Early access to new features",
+                    ].map((feature, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                    <p className="text-xs text-primary mt-2">
+                      $4.16/mo billed annually (Save 17%)
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </Card>
@@ -285,7 +347,7 @@ export default function Register() {
             className="w-full"
             disabled={loading}
           >
-            {loading ? "Creating account..." : "Create account"}
+            {loading ? "Creating account..." : selectedPlan === 'pro' ? "Create account & Continue to payment" : "Create account"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
