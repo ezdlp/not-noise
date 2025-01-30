@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Crown, Star, Info, Check } from "lucide-react";
+import { Crown, Star, Info, Check, ShieldCheck, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -274,11 +276,21 @@ export default function Pricing() {
         </div>
 
         <div className="mt-12 flex flex-col items-center">
-          <div className="flex items-center gap-4 mb-4">
-            <img src="/visa.svg" alt="Visa" className="h-8" />
-            <img src="/mastercard.svg" alt="Mastercard" className="h-8" />
-            <img src="/amex.svg" alt="American Express" className="h-8" />
+          <div className="flex items-center gap-6 mb-6">
+            <FontAwesomeIcon 
+              icon={faCcVisa} 
+              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
+            />
+            <FontAwesomeIcon 
+              icon={faCcMastercard} 
+              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
+            />
+            <FontAwesomeIcon 
+              icon={faCcAmex} 
+              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
+            />
           </div>
+
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Need help choosing?</span>
             <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/contact")}>
