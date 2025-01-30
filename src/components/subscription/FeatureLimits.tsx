@@ -85,11 +85,19 @@ export function FeatureLimits() {
             <div className="grid grid-cols-1 gap-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Basic Analytics</span>
+                <span className="text-sm">Basic Analytics (Views, Clicks, CTR)</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Basic Platforms</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Custom URL Slugs</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Meta Pixel Integration</span>
               </div>
             </div>
           </div>
@@ -104,15 +112,15 @@ export function FeatureLimits() {
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-500" />
-                <span className="text-sm">Meta Pixel Integration</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-red-500" />
-                <span className="text-sm">Custom URL Slugs</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-red-500" />
                 <span className="text-sm">Platform Reordering</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-red-500" />
+                <span className="text-sm">Advanced Analytics (click per streaming platform, daily performance, fan locations, trends)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-red-500" />
+                <span className="text-sm">Remove Soundraiser Branding</span>
               </div>
             </div>
           </div>
@@ -127,7 +135,11 @@ export function FeatureLimits() {
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-500" />
-                <span className="text-sm">Anghami</span>
+                <span className="text-sm">Beatport</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-red-500" />
+                <span className="text-sm">Bandcamp</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-500" />
@@ -135,11 +147,19 @@ export function FeatureLimits() {
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-500" />
-                <span className="text-sm">Beatport</span>
+                <span className="text-sm">Anghami</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-500" />
                 <span className="text-sm">Boomplay</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-red-500" />
+                <span className="text-sm">Yandex Music</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-red-500" />
+                <span className="text-sm">Audius</span>
               </div>
             </div>
           </div>
