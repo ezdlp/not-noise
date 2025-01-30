@@ -26,8 +26,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     name: "",
-    artist_name: "", // Changed from artistName to artist_name
-    music_genre: "", // Changed from musicGenre to music_genre
+    artist_name: "",
+    music_genre: "",
     country: "",
   });
   const [loading, setLoading] = useState(false);
@@ -112,10 +112,10 @@ export default function Register() {
         password: formData.password,
         options: {
           data: {
-            name: formData.name || "-",
-            artist_name: formData.artist_name || "-", // Changed from artistName
-            music_genre: formData.music_genre || "Unknown", // Changed from musicGenre
-            country: formData.country || "-",
+            name: formData.name,
+            artist_name: formData.artist_name,
+            music_genre: formData.music_genre,
+            country: formData.country,
             email_confirm: true
           }
         }
