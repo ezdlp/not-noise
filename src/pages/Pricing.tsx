@@ -153,10 +153,10 @@ export default function Pricing() {
                     </>
                   ) : (
                     <>
-                      <span className="text-4xl font-bold">$50</span>
-                      <span className="text-muted-foreground">/year</span>
+                      <span className="text-4xl font-bold">$4.16</span>
+                      <span className="text-muted-foreground">/mo</span>
                       <div className="text-sm text-primary mt-1">
-                        $4.16/mo billed annually (Save 17%)
+                        billed annually (Save 17%)
                       </div>
                     </>
                   )}
