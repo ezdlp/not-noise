@@ -111,7 +111,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              Spotify, Apple Music, YouTube Music, and more
+                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -191,7 +191,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              Access to all major music platforms including Tidal, Beatport, Bandcamp, and more
+                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store, Tidal, Beatport, Bandcamp, Napster, Anghami, Boomplay, Yandex Music, Audius
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -217,6 +217,18 @@ export default function Pricing() {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       Remove Soundraiser Branding
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Priority Support (24/7 response within 12 hours)
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Bulk Analytics Export
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Smart Link Social Media Cards
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Early Access to New Features
                     </div>
                   </div>
                 </div>

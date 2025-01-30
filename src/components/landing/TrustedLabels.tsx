@@ -3,7 +3,7 @@ export const TrustedLabels = () => {
     <section className="py-20 px-4 bg-gradient-to-b from-primary-light/30 to-primary-light/10">
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-semibold text-neutral-night mb-12 font-heading">
-          Trusted by artists from these labels
+          Trusted by 10,000+ artists, including talent from major labels
         </h2>
         <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20">
           {[
