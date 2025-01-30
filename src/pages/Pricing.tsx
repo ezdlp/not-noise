@@ -75,18 +75,12 @@ export default function Pricing() {
               </div>
 
               <div className="space-y-6 flex-1">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">Smart Links</span>
-                    </div>
-                    <span className="text-sm font-medium">10 links</span>
-                  </div>
-                </div>
-
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Features included:</h4>
                   <div className="grid gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      10 Smart Links
+                    </div>
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         Basic Analytics
@@ -170,18 +164,12 @@ export default function Pricing() {
               </div>
 
               <div className="space-y-6 flex-1">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">Smart Links</span>
-                    </div>
-                    <span className="text-sm font-medium">Unlimited</span>
-                  </div>
-                </div>
-
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Everything in Free, plus:</h4>
                   <div className="grid gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      Unlimited Smart Links
+                    </div>
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         All Streaming Platforms + Reordering
@@ -245,10 +233,7 @@ export default function Pricing() {
         </div>
 
         <div className="mt-16">
-          <h2 className="text-2xl font-bold mb-8">
-            Trusted by 10,000+ artists, including talent from major labels
-          </h2>
-          <TrustedLabels />
+          <TrustedLabels isPricingPage={true} />
         </div>
 
         <div className="mt-16 max-w-2xl mx-auto">

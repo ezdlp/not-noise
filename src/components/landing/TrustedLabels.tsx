@@ -1,9 +1,16 @@
-export const TrustedLabels = () => {
+interface TrustedLabelsProps {
+  isPricingPage?: boolean;
+}
+
+export const TrustedLabels = ({ isPricingPage = false }: TrustedLabelsProps) => {
   return (
     <section className="py-20 px-4 bg-gradient-to-b from-primary-light/30 to-primary-light/10">
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-semibold text-neutral-night mb-12 font-heading">
-          Trusted by 10,000+ artists, including talent from major labels
+          {isPricingPage 
+            ? "Trusted by 10,000+ artists, including talent from major labels"
+            : "Trusted by artists from these labels"
+          }
         </h2>
         <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20">
           {[
