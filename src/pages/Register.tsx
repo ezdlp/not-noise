@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Mail, Lock, User, Music, Check, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthError } from "@supabase/supabase-js";
+import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
@@ -107,18 +107,6 @@ export default function Register() {
     setError(null);
 
     try {
-      // First check if user exists
-      const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (existingUser?.user) {
-        setError("An account with this email already exists. Please sign in instead.");
-        setLoading(false);
-        return;
-      }
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -129,15 +117,28 @@ export default function Register() {
             artistName: formData.artistName,
             musicGenre: formData.musicGenre,
             country: formData.country,
-            email_confirm: true
           }
         }
       });
 
       if (authError) {
-        if (authError.message.includes("already registered") || authError.message.includes("already exists")) {
-          setError("An account with this email already exists. Please sign in instead.");
-          return;
+        if (authError instanceof AuthApiError) {
+          switch (authError.status) {
+            case 400:
+              if (authError.message.includes("already registered")) {
+                setError("An account with this email already exists. Please sign in instead.");
+                return;
+              }
+              break;
+            case 422:
+              setError("Invalid email format. Please enter a valid email address.");
+              return;
+            case 500:
+              setError("There was an issue creating your account. Please try again later.");
+              return;
+            default:
+              setError(authError.message);
+          }
         }
         throw authError;
       }
