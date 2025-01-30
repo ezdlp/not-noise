@@ -112,10 +112,11 @@ export default function Register() {
         password: formData.password,
         options: {
           data: {
-            name: formData.name,
-            artistName: formData.artistName,
-            musicGenre: formData.musicGenre,
-            country: formData.country,
+            name: formData.name || "-",
+            artistName: formData.artistName || "-",
+            musicGenre: formData.musicGenre || "Unknown",
+            country: formData.country || "-",
+            email_confirm: true
           }
         }
       });
