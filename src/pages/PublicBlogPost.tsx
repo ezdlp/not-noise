@@ -43,9 +43,11 @@ const PublicBlogPost = () => {
     queryKey: ['related-posts', post?.id],
     enabled: !!post?.id,
     queryFn: async () => {
+      // Get tag IDs from current post
       const tags = post.blog_posts_tags.map(pt => pt.tag.id);
       
-      const { data, error } = await supabase
+      // First get posts with matching tags
+      const { data: relatedByTags } = await supabase
         .from('blog_posts')
         .select(`
           *,
@@ -58,8 +60,23 @@ const PublicBlogPost = () => {
         .in('blog_posts_tags.tag_id', tags)
         .limit(3);
 
-      if (error) throw error;
-      return data || [];
+      const tagRelatedPosts = relatedByTags || [];
+
+      // If we have less than 3 related posts, get recent posts to fill
+      if (tagRelatedPosts.length < 3) {
+        const excludeIds = [post.id, ...tagRelatedPosts.map(p => p.id)];
+        const { data: recentPosts } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('status', 'published')
+          .not('id', 'in', `(${excludeIds.join(',')})`)
+          .order('published_at', { ascending: false })
+          .limit(3 - tagRelatedPosts.length);
+
+        return [...tagRelatedPosts, ...(recentPosts || [])];
+      }
+
+      return tagRelatedPosts;
     },
   });
 
@@ -192,7 +209,7 @@ const PublicBlogPost = () => {
         {relatedPosts && relatedPosts.length > 0 && (
           <section className="border-t pt-12 mt-12">
             <h2 className="text-2xl font-bold mb-6">Related Posts</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedPosts.map((relatedPost: any) => (
                 <Card key={relatedPost.id} className="hover:shadow-md transition-shadow">
                   <a href={`/${relatedPost.slug}`} className="block p-4">
