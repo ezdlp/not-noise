@@ -67,7 +67,6 @@ export function FeatureLimits() {
           <Progress
             value={(smartLinksUsed / smartLinksLimit) * 100}
             className="h-2 bg-[#D0C7FF]"
-            indicatorClassName="bg-[#6851FB]"
           />
         </div>
 

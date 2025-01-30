@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
 import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner";
-import { FeatureLimits } from "@/components/subscription/FeatureLimits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -47,12 +46,9 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       <div className="grid grid-cols-1 gap-4">
-        {/* Subscription Section with connected components */}
+        {/* Subscription Section */}
         <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
           <SubscriptionBanner />
-          <div className="border-t border-border/50">
-            <FeatureLimits />
-          </div>
         </div>
         
         {/* Dashboard Overview Section */}

@@ -96,9 +96,7 @@ export function SubscriptionBanner() {
           </div>
         </div>
       </div>
-      <div className="border-t border-border/50">
-        <FeatureLimits />
-      </div>
+      <FeatureLimits />
     </Collapsible>
   );
 }
