@@ -706,6 +706,8 @@ export type Database = {
           feature_limit: number | null
           feature_name: string
           id: string
+          price_annual: number | null
+          price_monthly: number | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string | null
         }
@@ -714,6 +716,8 @@ export type Database = {
           feature_limit?: number | null
           feature_name: string
           id?: string
+          price_annual?: number | null
+          price_monthly?: number | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string | null
         }
@@ -722,6 +726,8 @@ export type Database = {
           feature_limit?: number | null
           feature_name?: string
           id?: string
+          price_annual?: number | null
+          price_monthly?: number | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string | null
         }
@@ -737,6 +743,9 @@ export type Database = {
           id: string
           is_early_adopter: boolean | null
           is_lifetime: boolean | null
+          last_payment_date: string | null
+          payment_status: string | null
+          price_id: string | null
           status: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -753,6 +762,9 @@ export type Database = {
           id?: string
           is_early_adopter?: boolean | null
           is_lifetime?: boolean | null
+          last_payment_date?: string | null
+          payment_status?: string | null
+          price_id?: string | null
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -769,6 +781,9 @@ export type Database = {
           id?: string
           is_early_adopter?: boolean | null
           is_lifetime?: boolean | null
+          last_payment_date?: string | null
+          payment_status?: string | null
+          price_id?: string | null
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
