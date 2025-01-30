@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
-import { Calendar, Clock, Share2, Tag, User } from "lucide-react";
+import { Calendar, Clock, Share2, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 const PublicBlogPost = () => {
@@ -44,10 +43,8 @@ const PublicBlogPost = () => {
     queryKey: ['related-posts', post?.id],
     enabled: !!post?.id,
     queryFn: async () => {
-      // Get tags for the current post
       const tags = post.blog_posts_tags.map(pt => pt.tag.id);
       
-      // Find posts with matching tags, excluding current post
       const { data, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -151,17 +148,6 @@ const PublicBlogPost = () => {
             <Clock className="w-4 h-4" />
             <span className="text-sm">{readingTime} min read</span>
           </div>
-
-          {post.blog_posts_tags?.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Tag className="w-4 h-4" />
-              {post.blog_posts_tags.map((pt: any) => (
-                <Badge key={pt.tag.id} variant="secondary">
-                  {pt.tag.name}
-                </Badge>
-              ))}
-            </div>
-          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
