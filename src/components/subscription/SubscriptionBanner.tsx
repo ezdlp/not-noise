@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, AlertCircle } from "lucide-react";
+import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function SubscriptionBanner() {
@@ -11,7 +11,6 @@ export function SubscriptionBanner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // First get the user's subscription
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
@@ -20,7 +19,6 @@ export function SubscriptionBanner() {
 
       if (subscriptionError) throw subscriptionError;
       
-      // Then get the features for their tier
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
         .select("*")
@@ -41,7 +39,7 @@ export function SubscriptionBanner() {
   const isEarlyAdopter = subscription.is_early_adopter;
 
   return (
-    <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+    <div className="p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-primary/10">
@@ -69,6 +67,6 @@ export function SubscriptionBanner() {
           </Button>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

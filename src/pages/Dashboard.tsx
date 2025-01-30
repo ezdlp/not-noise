@@ -46,22 +46,27 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
-      <SubscriptionBanner />
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-3">
-          <h2 className="text-2xl font-bold mb-4">Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DashboardStats data={links} />
+      <div className="grid grid-cols-1 gap-4">
+        {/* Subscription Section with connected components */}
+        <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
+          <SubscriptionBanner />
+          <div className="border-t border-border/50">
+            <FeatureLimits />
           </div>
         </div>
         
-        <div className="md:col-span-1">
-          <FeatureLimits />
+        {/* Dashboard Overview Section */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-4">
+            <h2 className="text-2xl font-bold mb-4">Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <DashboardStats data={links} />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <SmartLinksList links={links} isLoading={isLoading} />
+        <SmartLinksList links={links} isLoading={isLoading} />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Link2, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,6 @@ export function FeatureLimits() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Get the user's subscription tier first
       const { data: subscription, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("tier")
@@ -20,7 +18,6 @@ export function FeatureLimits() {
 
       if (subscriptionError) throw subscriptionError;
 
-      // Get features for the user's tier
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
         .select("*")
@@ -28,7 +25,6 @@ export function FeatureLimits() {
 
       if (featuresError) throw featuresError;
 
-      // Get current usage
       const { data: usage, error: usageError } = await supabase
         .from("feature_usage")
         .select("*")
@@ -54,8 +50,7 @@ export function FeatureLimits() {
   )?.usage_count || 0;
 
   return (
-    <Card className="p-4">
-      <h3 className="font-semibold mb-4">Feature Usage</h3>
+    <div className="p-6">
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -84,6 +79,6 @@ export function FeatureLimits() {
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
