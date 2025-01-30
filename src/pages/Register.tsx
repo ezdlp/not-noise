@@ -10,13 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Globe } from "lucide-react";
+import { Mail, Lock, User, Music, Globe, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
+import { Card } from "@/components/ui/card";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -249,6 +250,35 @@ export default function Register() {
               />
             </div>
           </div>
+
+          <Card className="p-4 bg-muted/50">
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Starting with Free Plan</h3>
+              <div className="space-y-2">
+                {[
+                  "Create up to 10 smart links",
+                  "Basic analytics (Views, Clicks, CTR)",
+                  "Basic streaming platforms",
+                  "Custom URL slugs",
+                  "Meta Pixel integration",
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => window.open("/pricing", "_blank")}
+                >
+                  Compare all features
+                </Button>
+              </div>
+            </div>
+          </Card>
 
           <Button
             type="submit"
