@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Globe, Check, Crown } from "lucide-react";
+import { Mail, Lock, User, Music, Check, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
@@ -156,17 +156,6 @@ export default function Register() {
           </p>
         </div>
 
-        <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as 'free' | 'pro')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="free" className="text-sm">
-              Free Plan
-            </TabsTrigger>
-            <TabsTrigger value="pro" className="text-sm">
-              Pro Plan
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -289,19 +278,21 @@ export default function Register() {
 
           <Card className="p-4 bg-muted/50">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                {selectedPlan === 'free' ? (
-                  <h3 className="text-sm font-medium text-muted-foreground">Free Plan Features</h3>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Crown className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-medium text-primary">Pro Plan Features</h3>
-                  </div>
-                )}
-              </div>
+              <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as 'free' | 'pro')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="free" className="text-sm">
+                    Free Plan
+                  </TabsTrigger>
+                  <TabsTrigger value="pro" className="text-sm">
+                    Pro Plan
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
               <div className="space-y-2">
                 {selectedPlan === 'free' ? (
                   <>
+                    <h3 className="text-sm font-medium text-muted-foreground">Free Plan Features</h3>
                     {[
                       "Create up to 10 smart links",
                       "Basic analytics (Views, Clicks, CTR)",
@@ -317,6 +308,10 @@ export default function Register() {
                   </>
                 ) : (
                   <>
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium text-primary">Pro Plan Features</h3>
+                    </div>
                     {[
                       "Unlimited smart links",
                       "Advanced analytics with platform-specific data",
