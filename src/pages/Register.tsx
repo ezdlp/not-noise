@@ -128,10 +128,9 @@ export default function Register() {
         options: {
           data: {
             name: formData.name,
-            artistName: formData.artistName, // Using camelCase from form
-            musicGenre: formData.musicGenre, // Using camelCase from form
-            country: formData.country,
-            email_confirm: true
+            artistName: formData.artistName,
+            musicGenre: formData.musicGenre,
+            country: formData.country
           }
         }
       });
@@ -452,3 +451,4 @@ export default function Register() {
     </div>
   );
 }
+
