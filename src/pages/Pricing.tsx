@@ -35,22 +35,70 @@ export default function Pricing() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
         <p className="text-lg text-muted-foreground">
-          Get started with our Pro plan and unlock all features
+          Start with our Free plan or upgrade to Pro for unlimited features
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-        {/* Monthly Plan */}
+        {/* Free Plan */}
         <Card className="p-8">
           <div className="flex flex-col h-full">
             <div>
-              <h3 className="text-2xl font-bold">Pro Plan</h3>
+              <h3 className="text-2xl font-bold">Free Plan</h3>
               <div className="mt-4 flex items-baseline">
-                <span className="text-5xl font-extrabold">$19</span>
-                <span className="ml-1 text-xl text-muted-foreground">/month</span>
+                <span className="text-5xl font-extrabold">$0</span>
+                <span className="ml-1 text-xl text-muted-foreground">/forever</span>
               </div>
               <p className="mt-4 text-muted-foreground">
-                Perfect for growing artists and musicians
+                Perfect for getting started
+              </p>
+            </div>
+
+            <ul className="mt-8 space-y-4 flex-1">
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>10 Smart Links</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Basic Platforms</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Basic Analytics</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Meta Pixel Integration</span>
+              </li>
+            </ul>
+
+            <Button 
+              variant="outline"
+              className="mt-8"
+              onClick={() => navigate("/register")}
+            >
+              Get Started Free
+            </Button>
+          </div>
+        </Card>
+
+        {/* Pro Plan */}
+        <Card className="p-8 border-primary">
+          <div className="flex flex-col h-full">
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold">Pro Plan</h3>
+                <span className="px-3 py-1 text-sm bg-primary/10 text-primary rounded-full">
+                  Save 17%
+                </span>
+              </div>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-5xl font-extrabold">$4.99</span>
+                <span className="ml-1 text-xl text-muted-foreground">/month</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                or $50/year (save ~17%)
               </p>
             </div>
 
@@ -61,71 +109,40 @@ export default function Pricing() {
               </li>
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>Advanced Analytics</span>
+                <span>All Platforms + Platform Reordering</span>
               </li>
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>Custom Domains</span>
+                <span>Full Analytics (platform-specific clicks, daily performance, fan locations)</span>
               </li>
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>Priority Support</span>
+                <span>Email Capture</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>No Soundraiser Branding</span>
+              </li>
+              <li className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span>Meta Pixel Integration</span>
               </li>
             </ul>
 
-            <Button 
-              className="mt-8 bg-primary hover:bg-primary/90"
-              onClick={() => handleSubscribe('price_1QmuqgFx6uwYcH3S7OiAn1Y7')}
-            >
-              Subscribe Monthly
-            </Button>
-          </div>
-        </Card>
-
-        {/* Annual Plan */}
-        <Card className="p-8 border-primary">
-          <div className="flex flex-col h-full">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold">Pro Plan</h3>
-                <span className="px-3 py-1 text-sm bg-primary/10 text-primary rounded-full">
-                  Save 20%
-                </span>
-              </div>
-              <div className="mt-4 flex items-baseline">
-                <span className="text-5xl font-extrabold">$180</span>
-                <span className="ml-1 text-xl text-muted-foreground">/year</span>
-              </div>
-              <p className="mt-4 text-muted-foreground">
-                Best value for serious artists
-              </p>
+            <div className="mt-8 space-y-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => handleSubscribe('price_1QmuqgFx6uwYcH3S7OiAn1Y7')}
+              >
+                Subscribe Monthly
+              </Button>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+              >
+                Subscribe Yearly
+              </Button>
             </div>
-
-            <ul className="mt-8 space-y-4 flex-1">
-              <li className="flex items-center">
-                <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>All Monthly Plan Features</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>2 Months Free</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>Priority Email Support</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="h-5 w-5 text-green-500 mr-2" />
-                <span>Early Access to New Features</span>
-              </li>
-            </ul>
-
-            <Button 
-              className="mt-8 bg-primary hover:bg-primary/90"
-              onClick={() => handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-            >
-              Subscribe Yearly
-            </Button>
           </div>
         </Card>
       </div>
