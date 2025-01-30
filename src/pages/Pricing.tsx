@@ -275,8 +275,8 @@ export default function Pricing() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center">
-          <div className="flex items-center gap-6 mb-6">
+        <div className="mt-12 flex flex-col items-center space-y-8">
+          <div className="flex items-center gap-6">
             <FontAwesomeIcon 
               icon={faCcVisa} 
               className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
@@ -289,6 +289,17 @@ export default function Pricing() {
               icon={faCcAmex} 
               className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
             />
+          </div>
+
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 text-success hover:text-success-hover transition-colors">
+              <Lock className="h-5 w-5" />
+              <span className="text-sm font-medium">Secure Payments</span>
+            </div>
+            <div className="flex items-center gap-2 text-success hover:text-success-hover transition-colors">
+              <ShieldCheck className="h-5 w-5" />
+              <span className="text-sm font-medium">SSL Encryption</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
