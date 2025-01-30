@@ -58,8 +58,8 @@ export default function Pricing() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Free Plan */}
-          <Card className="p-8 relative">
-            <div className="flex flex-col h-full">
+          <Card className="p-8 relative flex flex-col">
+            <div className="flex-1">
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-2">
                   <Star className="h-5 w-5 text-primary" />
@@ -72,11 +72,10 @@ export default function Pricing() {
                   <span className="text-4xl font-bold">$0</span>
                   <span className="text-muted-foreground">/forever</span>
                 </div>
-                {/* Added min-height to match Pro plan spacing */}
-                <div className="min-h-[40px]"></div>
+                <div className="min-h-[72px]"></div>
               </div>
 
-              <div className="space-y-6 flex-1">
+              <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Features included:</h4>
                   <div className="grid gap-3">
@@ -127,26 +126,26 @@ export default function Pricing() {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="mt-8 flex flex-col items-center">
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate("/register")}
-                  className="w-full max-w-[200px]"
-                >
-                  Get Started Free
-                </Button>
-                <span className="text-sm text-muted-foreground mt-2">No credit card required</span>
-              </div>
+            <div className="mt-8">
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/register")}
+                className="w-full"
+              >
+                Get Started Free
+              </Button>
+              <span className="text-sm text-muted-foreground mt-2 block">No credit card required</span>
             </div>
           </Card>
 
           {/* Pro Plan */}
-          <Card className="p-8 border-primary relative">
+          <Card className="p-8 border-primary relative flex flex-col">
             <div className="absolute -top-3 right-4 bg-primary px-3 py-1 rounded-full text-white text-sm">
               Most Popular
             </div>
-            <div className="flex flex-col h-full">
+            <div className="flex-1">
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-2">
                   <Crown className="h-5 w-5 text-primary" />
@@ -174,7 +173,7 @@ export default function Pricing() {
                 </div>
               </div>
 
-              <div className="space-y-6 flex-1">
+              <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Everything in Free, plus:</h4>
                   <div className="grid gap-3">
@@ -241,14 +240,14 @@ export default function Pricing() {
                   </div>
                 </div>
               </div>
-
-              <Button 
-                className="mt-8 bg-primary hover:bg-primary/90 w-full max-w-[200px] mx-auto"
-                onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-              >
-                Upgrade Now
-              </Button>
             </div>
+
+            <Button 
+              className="mt-8 bg-primary hover:bg-primary/90 w-full"
+              onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+            >
+              Upgrade Now
+            </Button>
           </Card>
         </div>
 
