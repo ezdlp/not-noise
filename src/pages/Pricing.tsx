@@ -136,9 +136,6 @@ export default function Pricing() {
                 Get Started Free
               </Button>
             </div>
-            <div className="mt-2 text-center">
-              <span className="text-sm text-muted-foreground">No credit card required</span>
-            </div>
           </Card>
 
           {/* Pro Plan */}
