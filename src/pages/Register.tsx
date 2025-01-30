@@ -26,8 +26,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     name: "",
-    artistName: "", // Changed to camelCase
-    musicGenre: "", // Changed to camelCase
+    artistName: "",
+    musicGenre: "",
     country: "",
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function Register() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         if (selectedPlan === 'pro') {
-          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM'); // yearly plan ID
+          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM');
         } else {
           navigate("/dashboard");
         }
@@ -60,6 +60,22 @@ export default function Register() {
       authListener.subscription.unsubscribe();
     };
   }, [navigate, selectedPlan]);
+
+  const validateForm = () => {
+    if (!formData.email || !formData.password || !formData.name || !formData.artistName || !formData.musicGenre || !formData.country) {
+      setError("All fields are required");
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+    if (passwordStrength < 75) {
+      setError("Password is not strong enough");
+      return false;
+    }
+    return true;
+  };
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -109,12 +125,8 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (passwordStrength < 75) {
-      setError("Password is not strong enough");
+    
+    if (!validateForm()) {
       return;
     }
 
