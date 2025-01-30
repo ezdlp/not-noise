@@ -111,7 +111,6 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: null,
           data: {
             name: formData.name,
             artistName: formData.artistName,
@@ -125,11 +124,8 @@ export default function Register() {
         if (authError instanceof AuthApiError) {
           switch (authError.status) {
             case 400:
-              if (authError.message.includes("already registered")) {
-                setError("An account with this email already exists. Please sign in instead.");
-                return;
-              }
-              break;
+              setError("Invalid email format or password requirements not met");
+              return;
             case 422:
               setError("Invalid email format. Please enter a valid email address.");
               return;
@@ -154,11 +150,7 @@ export default function Register() {
     } catch (error) {
       console.error("Registration error:", error);
       if (error instanceof AuthError) {
-        if (error.message.includes("already registered") || error.message.includes("already exists")) {
-          setError("An account with this email already exists. Please sign in instead.");
-        } else {
-          setError(error.message);
-        }
+        setError(error.message);
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -394,3 +386,4 @@ export default function Register() {
     </div>
   );
 }
+
