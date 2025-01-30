@@ -13,7 +13,7 @@ import {
 import { Mail, Lock, User, Music, Check, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
@@ -107,6 +107,18 @@ export default function Register() {
     setError(null);
 
     try {
+      // First check if user exists
+      const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (existingUser?.user) {
+        setError("An account with this email already exists. Please sign in instead.");
+        setLoading(false);
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -122,7 +134,13 @@ export default function Register() {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message.includes("already registered") || authError.message.includes("already exists")) {
+          setError("An account with this email already exists. Please sign in instead.");
+          return;
+        }
+        throw authError;
+      }
 
       if (authData.user) {
         toast({
@@ -135,7 +153,11 @@ export default function Register() {
     } catch (error) {
       console.error("Registration error:", error);
       if (error instanceof AuthError) {
-        setError(error.message);
+        if (error.message.includes("already registered") || error.message.includes("already exists")) {
+          setError("An account with this email already exists. Please sign in instead.");
+        } else {
+          setError(error.message);
+        }
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -158,7 +180,18 @@ export default function Register() {
 
         {error && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error}
+              {error.includes("already exists") && (
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal ml-2"
+                  onClick={() => navigate("/login")}
+                >
+                  Click here to login
+                </Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 
