@@ -26,8 +26,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     name: "",
-    artistName: "",
-    musicGenre: "",
+    artist_name: "",
+    music_genre: "",
     country: "",
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function Register() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         if (selectedPlan === 'pro') {
-          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM');
+          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM'); // yearly plan ID
         } else {
           navigate("/dashboard");
         }
@@ -60,22 +60,6 @@ export default function Register() {
       authListener.subscription.unsubscribe();
     };
   }, [navigate, selectedPlan]);
-
-  const validateForm = () => {
-    if (!formData.email || !formData.password || !formData.name || !formData.artistName || !formData.musicGenre || !formData.country) {
-      setError("All fields are required");
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return false;
-    }
-    if (passwordStrength < 75) {
-      setError("Password is not strong enough");
-      return false;
-    }
-    return true;
-  };
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -125,8 +109,12 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (passwordStrength < 75) {
+      setError("Password is not strong enough");
       return;
     }
 
@@ -140,9 +128,10 @@ export default function Register() {
         options: {
           data: {
             name: formData.name,
-            artistName: formData.artistName,
-            musicGenre: formData.musicGenre,
-            country: formData.country
+            artist_name: formData.artist_name,
+            music_genre: formData.music_genre,
+            country: formData.country,
+            email_confirm: true
           }
         }
       });
@@ -233,10 +222,10 @@ export default function Register() {
             <div className="relative">
               <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                name="artistName"
+                name="artist_name"
                 type="text"
                 placeholder="Artist Name"
-                value={formData.artistName}
+                value={formData.artist_name}
                 onChange={handleInputChange}
                 className="pl-10"
                 required
@@ -244,10 +233,10 @@ export default function Register() {
             </div>
 
             <Select
-              name="musicGenre"
-              value={formData.musicGenre}
+              name="music_genre"
+              value={formData.music_genre}
               onValueChange={(value) =>
-                handleInputChange({ target: { name: "musicGenre", value } })
+                handleInputChange({ target: { name: "music_genre", value } })
               }
               required
             >
@@ -463,4 +452,3 @@ export default function Register() {
     </div>
   );
 }
-
