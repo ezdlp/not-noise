@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Check, Crown } from "lucide-react";
+import { Crown, Star, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TrustedLabels } from "@/components/landing/TrustedLabels";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -41,7 +43,6 @@ export default function Pricing() {
           Start with our Free plan or upgrade to Pro for unlimited features
         </p>
 
-        {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-4 mb-12">
           <span className={billingPeriod === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>
             Monthly billing
@@ -61,11 +62,11 @@ export default function Pricing() {
             <div className="flex flex-col h-full">
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-2">
-                  <Crown className="h-5 w-5 text-primary" />
+                  <Star className="h-5 w-5 text-primary" />
                   <h3 className="text-2xl font-bold">Free Plan</h3>
                 </div>
                 <p className="text-muted-foreground">
-                  Perfect for getting started
+                  Perfect for emerging artists
                 </p>
                 <div className="mt-4">
                   <span className="text-4xl font-bold">$0</span>
@@ -83,24 +84,30 @@ export default function Pricing() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium mb-2">Available Features</h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Basic Analytics (Views, Clicks, CTR)</span>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium">Features included:</h4>
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        Basic Analytics
+                        <Tooltip content="Views, Clicks, and CTR tracking">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Basic Platforms</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        Basic Streaming Platforms
+                        <Tooltip content="Spotify, Apple Music, YouTube Music, and more">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Custom URL Slugs</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      Custom URL Slugs
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Meta Pixel Integration</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      Meta Pixel Integration
                     </div>
                   </div>
                 </div>
@@ -128,7 +135,7 @@ export default function Pricing() {
                   <h3 className="text-2xl font-bold">Pro Plan</h3>
                 </div>
                 <p className="text-muted-foreground">
-                  For creators who want more
+                  For artists who want more
                 </p>
                 <div className="mt-4">
                   {billingPeriod === 'monthly' ? (
@@ -158,62 +165,30 @@ export default function Pricing() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium mb-2">Everything in Free, plus:</h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">All Platforms + Platform Reordering</span>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium">Everything in Free, plus:</h4>
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        All Streaming Platforms + Reordering
+                        <Tooltip content="Access to all major music platforms including Tidal, Beatport, Bandcamp, and more">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Advanced Analytics (platform-specific clicks, daily performance, fan locations)</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        Advanced Analytics
+                        <Tooltip content="Platform-specific clicks, daily performance, and fan locations">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Fan Email Collection</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      Fan Email Collection
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Remove Soundraiser Branding</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium mb-2">Additional Platforms</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Tidal</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Beatport</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Bandcamp</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Napster</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Anghami</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Boomplay</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Yandex Music</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Audius</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      Remove Soundraiser Branding
                     </div>
                   </div>
                 </div>
@@ -227,6 +202,45 @@ export default function Pricing() {
               </Button>
             </div>
           </Card>
+        </div>
+
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold mb-8">
+            Trusted by 10,000+ artists, including talent from major labels
+          </h2>
+          <TrustedLabels />
+        </div>
+
+        <div className="mt-16 max-w-2xl mx-auto">
+          <h3 className="text-xl font-semibold mb-6">Frequently Asked Questions</h3>
+          <div className="space-y-6 text-left">
+            <div>
+              <h4 className="font-medium mb-2">Can I upgrade anytime?</h4>
+              <p className="text-muted-foreground">Yes, you can upgrade to Pro at any time and immediately access all premium features.</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">What happens if I exceed the free plan limits?</h4>
+              <p className="text-muted-foreground">You'll need to upgrade to Pro to create more smart links, but your existing links will continue to work.</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Can I cancel anytime?</h4>
+              <p className="text-muted-foreground">Yes, you can cancel your Pro subscription at any time. Your premium features will remain active until the end of your billing period.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col items-center">
+          <div className="flex items-center gap-4 mb-4">
+            <img src="/visa.svg" alt="Visa" className="h-8" />
+            <img src="/mastercard.svg" alt="Mastercard" className="h-8" />
+            <img src="/amex.svg" alt="American Express" className="h-8" />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Need help choosing?</span>
+            <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/contact")}>
+              Contact our team
+            </Button>
+          </div>
         </div>
       </div>
     </div>
