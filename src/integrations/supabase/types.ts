@@ -321,6 +321,30 @@ export type Database = {
           },
         ]
       }
+      early_adopter_counter: {
+        Row: {
+          created_at: string | null
+          current_count: number | null
+          id: string
+          max_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_count?: number | null
+          id?: string
+          max_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_count?: number | null
+          id?: string
+          max_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_subscribers: {
         Row: {
           email: string
@@ -349,6 +373,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_usage: {
+        Row: {
+          created_at: string | null
+          feature_name: string
+          id: string
+          last_reset_at: string | null
+          updated_at: string | null
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          feature_name: string
+          id?: string
+          last_reset_at?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          feature_name?: string
+          id?: string
+          last_reset_at?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       link_views: {
         Row: {
@@ -646,6 +700,84 @@ export type Database = {
           },
         ]
       }
+      subscription_features: {
+        Row: {
+          created_at: string | null
+          feature_limit: number | null
+          feature_name: string
+          id: string
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          feature_limit?: number | null
+          feature_name: string
+          id?: string
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          feature_limit?: number | null
+          feature_name?: string
+          id?: string
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_period: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          is_early_adopter: boolean | null
+          is_lifetime: boolean | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          billing_period?: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          is_early_adopter?: boolean | null
+          is_lifetime?: boolean | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          billing_period?: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          is_early_adopter?: boolean | null
+          is_lifetime?: boolean | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -706,6 +838,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      billing_period: "monthly" | "annual"
+      subscription_tier: "free" | "pro" | "platinum"
     }
     CompositeTypes: {
       [_ in never]: never
