@@ -44,7 +44,6 @@ export default function Blog() {
               title={post.title}
               featuredImage={post.featured_image}
               publishedAt={post.published_at}
-              slug={post.slug}
             />
           ))}
         </div>
