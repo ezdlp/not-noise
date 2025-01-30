@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -90,17 +90,31 @@ export default function Pricing() {
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         Basic Analytics
-                        <Tooltip content="Views, Clicks, and CTR tracking">
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </Tooltip>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Views, Clicks, and CTR tracking
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         Basic Streaming Platforms
-                        <Tooltip content="Spotify, Apple Music, YouTube Music, and more">
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </Tooltip>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Spotify, Apple Music, YouTube Music, and more
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -171,17 +185,31 @@ export default function Pricing() {
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         All Streaming Platforms + Reordering
-                        <Tooltip content="Access to all major music platforms including Tidal, Beatport, Bandcamp, and more">
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </Tooltip>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Access to all major music platforms including Tidal, Beatport, Bandcamp, and more
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-2">
                         Advanced Analytics
-                        <Tooltip content="Platform-specific clicks, daily performance, and fan locations">
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </Tooltip>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Platform-specific clicks, daily performance, and fan locations
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
