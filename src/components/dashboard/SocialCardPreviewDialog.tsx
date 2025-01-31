@@ -4,6 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -39,8 +40,17 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden max-w-[600px] w-[600px]">
-        <div className="relative w-full aspect-square bg-black">
+      <DialogContent className="p-6 overflow-hidden max-w-[600px] w-[600px] rounded-xl">
+        {/* Close button */}
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="h-5 w-5 text-gray-500" />
+        </button>
+
+        {/* Preview container */}
+        <div className="relative w-full aspect-square bg-black rounded-none overflow-hidden">
           {/* Container for the 1080x1080 preview */}
           <div 
             className="absolute inset-0"
