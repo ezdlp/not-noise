@@ -1,92 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { createCanvas, loadImage } from 'https://deno.land/x/canvas@v1.4.1/mod.ts'
+import puppeteer from 'https://deno.land/x/puppeteer@16.2.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-interface PlatformConfig {
-  width: number;
-  height: number;
-  artworkSize: number;
-}
-
-const platformConfigs: Record<string, PlatformConfig> = {
-  instagram_square: {
-    width: 1080,
-    height: 1080,
-    artworkSize: 500,
-  },
-}
-
-async function generateSocialAsset(
-  artworkUrl: string,
-  platform: string,
-  config: PlatformConfig,
-  title: string,
-  artistName: string
-): Promise<Uint8Array> {
-  console.log('Generating social asset with config:', config);
-  
-  // Create canvas with platform dimensions
-  const canvas = createCanvas(config.width, config.height);
-  const ctx = canvas.getContext('2d');
-
-  // Load artwork image
-  const artwork = await loadImage(artworkUrl);
-  console.log('Artwork loaded successfully');
-
-  // Draw blurred background
-  ctx.filter = 'blur(20px)';
-  ctx.drawImage(artwork, 0, 0, config.width, config.height);
-  ctx.filter = 'none';
-
-  // Add semi-transparent overlay
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-  ctx.fillRect(0, 0, config.width, config.height);
-
-  // Calculate centered position for artwork
-  const x = (config.width - config.artworkSize) / 2;
-  const y = (config.height - config.artworkSize) / 2;
-
-  // Draw sharp artwork centered
-  ctx.drawImage(artwork, x, y, config.artworkSize, config.artworkSize);
-
-  // Configure text styling
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-
-  // Draw artist name above artwork
-  ctx.font = 'bold 48px Arial';
-  ctx.fillText(artistName, config.width / 2, y - 40);
-
-  // Draw title below artwork
-  ctx.font = '36px Arial';
-  ctx.fillText(title, config.width / 2, y + config.artworkSize + 60);
-
-  // Draw "Listen on" text
-  ctx.font = '24px Arial';
-  ctx.fillText('Listen on:', config.width / 2, y + config.artworkSize + 120);
-
-  // Draw platform icons placeholder text (we'll add actual icons in a future update)
-  ctx.font = '32px Arial';
-  ctx.fillText('Spotify • Apple Music • YouTube Music', config.width / 2, y + config.artworkSize + 160);
-
-  try {
-    const pngData = canvas.toBuffer('image/png');
-    console.log('Canvas encoded to PNG successfully');
-    return pngData;
-  } catch (error) {
-    console.error('Error encoding canvas:', error);
-    throw new Error(`Failed to encode canvas: ${error.message}`);
-  }
 }
 
 serve(async (req) => {
@@ -113,11 +32,78 @@ serve(async (req) => {
 
     console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
 
-    // Get platform configuration
-    const platformConfig = platformConfigs[platform];
-    if (!platformConfig) {
-      throw new Error('Invalid platform specified');
-    }
+    // Launch browser
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'] })
+    const page = await browser.newPage()
+
+    // Set viewport to match desired image dimensions
+    await page.setViewport({ width: 1200, height: 630 })
+
+    // Create HTML content
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+          <style>
+            body { margin: 0; padding: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="relative w-[1200px] h-[630px] overflow-hidden bg-black font-['DM_Sans']">
+            <div 
+              class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style="background-image: url('${artworkUrl}'); filter: blur(30px) brightness(0.7); transform: scale(1.1);"
+            ></div>
+            
+            <div class="relative h-full flex flex-col items-center justify-center p-12 z-10">
+              <h2 class="text-4xl font-bold text-white mb-8 text-center">${artistName}</h2>
+              
+              <img 
+                src="${artworkUrl}"
+                alt="${title} cover"
+                class="w-80 h-80 object-cover rounded-2xl shadow-2xl mb-8"
+              />
+              
+              <h1 class="text-5xl font-bold text-white mb-12 text-center">${title}</h1>
+              
+              <div class="flex items-center justify-center gap-6">
+                <img 
+                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/spotify.png"
+                  alt="Spotify"
+                  class="w-12 h-12 object-contain brightness-0 invert"
+                />
+                <img 
+                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/applemusic.png"
+                  alt="Apple Music"
+                  class="w-12 h-12 object-contain brightness-0 invert"
+                />
+                <img 
+                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/youtubemusic.png"
+                  alt="YouTube Music"
+                  class="w-12 h-12 object-contain brightness-0 invert"
+                />
+              </div>
+              
+              <div class="absolute bottom-8 left-0 right-0 text-center">
+                <p class="text-white/60 text-lg">Listen Now on notnoise</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    // Set content and wait for images to load
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+
+    // Take screenshot
+    const screenshot = await page.screenshot({ type: 'png' })
+
+    // Close browser
+    await browser.close()
 
     // Create Supabase client
     const supabaseClient = createClient(
@@ -125,9 +111,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     )
-
-    // Generate the social media asset
-    const pngBytes = await generateSocialAsset(artworkUrl, platform, platformConfig, title, artistName);
 
     // Generate a unique filename
     const timestamp = new Date().getTime()
@@ -140,7 +123,7 @@ serve(async (req) => {
     const { data: uploadData, error: uploadError } = await supabaseClient
       .storage
       .from('social-media-assets')
-      .upload(filePath, pngBytes, {
+      .upload(filePath, screenshot, {
         contentType: 'image/png',
         upsert: true
       })
