@@ -62,6 +62,25 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
     console.log("Form isDirty:", form.formState.isDirty);
   }, [form.watch()]);
 
+  const createUniqueSlug = async (baseSlug: string): Promise<string> => {
+    // First try with the base slug
+    const { data: existingPost } = await supabase
+      .from("blog_posts")
+      .select("slug")
+      .eq("slug", baseSlug)
+      .maybeSingle();
+    
+    if (!existingPost) {
+      return baseSlug;
+    }
+    
+    // If exists, append a timestamp
+    const timestamp = Date.now();
+    const uniqueSlug = `${baseSlug}-${timestamp}`;
+    
+    return uniqueSlug;
+  };
+
   const updatePostCategory = async (postId: string, categoryId: string | undefined) => {
     if (!categoryId) return;
 
@@ -170,8 +189,9 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       
       let slug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       
-      if (post?.id && slug === post.slug) {
-        slug = post.slug;
+      // Only generate a new slug if this is a new post or if the slug has changed
+      if (!post?.id || slug !== post.slug) {
+        slug = await createUniqueSlug(slug);
       }
 
       const { data: session } = await supabase.auth.getSession();
@@ -220,12 +240,10 @@ export function PostEditor({ post, onClose }: PostEditorProps) {
       if (responseData && responseData[0]) {
         const postId = responseData[0].id;
         
-        // Update category if provided
         if (data.category_id) {
           await updatePostCategory(postId, data.category_id);
         }
         
-        // Update tags if provided
         if (data.tags && Array.isArray(data.tags)) {
           console.log("Updating tags:", data.tags);
           await updatePostTags(postId, data.tags);
