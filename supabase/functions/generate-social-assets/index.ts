@@ -59,10 +59,10 @@ async function generateSocialAsset(
   ctx.fillText('Listen Now', config.width / 2, y + config.artworkSize + 50);
 
   try {
-    // Convert canvas to PNG bytes
-    const pngBytes = await canvas.encode();
+    // Convert canvas to PNG bytes - using the correct method
+    const pngData = canvas.toBuffer('image/png');
     console.log('Canvas encoded to PNG successfully');
-    return pngBytes;
+    return pngData;
   } catch (error) {
     console.error('Error encoding canvas:', error);
     throw new Error(`Failed to encode canvas: ${error.message}`);
