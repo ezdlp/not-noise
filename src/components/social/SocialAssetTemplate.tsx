@@ -2,10 +2,13 @@ import { useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
+
+type SocialPlatform = Database['public']['Enums']['social_media_platform'];
 
 interface SocialAssetTemplateProps {
   smartLinkId: string;
-  platform: string;
+  platform: SocialPlatform;
   artworkUrl: string;
   title: string;
   artistName: string;
@@ -76,7 +79,7 @@ export function SocialAssetTemplate({
           .from('social_media_assets')
           .insert({
             smart_link_id: smartLinkId,
-            platform,
+            platform: platform,
             image_url: publicUrl
           });
 
