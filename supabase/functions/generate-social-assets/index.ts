@@ -27,7 +27,7 @@ async function generateSocialAsset(
   artworkUrl: string,
   platform: string,
   config: PlatformConfig
-): Promise<Blob> {
+): Promise<Uint8Array> {
   console.log('Generating social asset with config:', config);
   
   // Create canvas with platform dimensions
@@ -58,10 +58,10 @@ async function generateSocialAsset(
   ctx.textAlign = 'center';
   ctx.fillText('Listen Now', config.width / 2, y + config.artworkSize + 50);
 
-  // Convert canvas to blob
-  const blob = await canvas.toBlob();
-  console.log('Canvas converted to blob successfully');
-  return blob;
+  // Convert canvas to PNG bytes
+  const pngBytes = await canvas.encode('png');
+  console.log('Canvas encoded to PNG successfully');
+  return pngBytes;
 }
 
 serve(async (req) => {
@@ -102,7 +102,7 @@ serve(async (req) => {
     )
 
     // Generate the social media asset
-    const assetBlob = await generateSocialAsset(artworkUrl, platform, platformConfig);
+    const pngBytes = await generateSocialAsset(artworkUrl, platform, platformConfig);
 
     // Generate a unique filename
     const timestamp = new Date().getTime()
@@ -115,7 +115,7 @@ serve(async (req) => {
     const { data: uploadData, error: uploadError } = await supabaseClient
       .storage
       .from('social-media-assets')
-      .upload(filePath, assetBlob, {
+      .upload(filePath, pngBytes, {
         contentType: 'image/png',
         upsert: true
       })
