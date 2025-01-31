@@ -76,7 +76,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     }
 
     setIsGenerating(true);
-    const toastId = toast.loading("Generating social media asset...");
+    const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-social-assets', {
@@ -96,14 +96,14 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         throw new Error('No image URL returned');
       }
 
-      toast.dismiss(toastId);
+      toast.dismiss(loadingToast);
       toast.success("Asset generated successfully!");
 
       // Open the generated image in a new tab
       window.open(data.imageUrl, '_blank');
     } catch (error) {
       console.error('Error generating asset:', error);
-      toast.dismiss(toastId);
+      toast.dismiss(loadingToast);
       toast.error("Failed to generate social media asset");
     } finally {
       setIsGenerating(false);
