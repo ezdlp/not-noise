@@ -20,12 +20,13 @@ const PublicBlogPost = () => {
   const { data: post, isLoading } = useQuery({
     queryKey: ['public-post', slug],
     queryFn: async () => {
+      // Updated query to use LEFT JOIN for tags
       const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
           *,
           author:profiles(*),
-          blog_posts_tags!inner (
+          blog_posts_tags (
             tag:blog_post_tags(*)
           ),
           blog_post_categories!inner (
@@ -38,6 +39,8 @@ const PublicBlogPost = () => {
 
       if (error) throw error;
       if (!posts) throw new Error('Post not found');
+      
+      console.log('Fetched post:', posts); // Debug log
       return posts;
     },
   });
