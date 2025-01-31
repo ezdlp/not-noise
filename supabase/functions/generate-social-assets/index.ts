@@ -33,8 +33,7 @@ serve(async (req) => {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--single-process',
-        '--disable-gpu'
+        '--single-process'
       ]
     })
     
@@ -106,8 +105,7 @@ serve(async (req) => {
     // Take screenshot
     const screenshot = await page.screenshot({ 
       type: 'png',
-      fullPage: true,
-      omitBackground: true
+      encoding: 'binary'
     })
 
     // Close browser
