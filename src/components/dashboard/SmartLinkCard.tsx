@@ -9,6 +9,7 @@ import {
   TrashIcon,
   CopyIcon,
   CheckIcon,
+  ImageIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ interface SmartLinkCardProps {
 export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -67,6 +69,42 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     }
   };
 
+  const generateSocialAsset = async () => {
+    if (!link.artwork_url) {
+      toast.error("This smart link doesn't have artwork");
+      return;
+    }
+
+    setIsGenerating(true);
+    const toastId = toast.loading("Generating social media asset...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-social-assets', {
+        body: {
+          smartLinkId: link.id,
+          platform: 'instagram_square',
+          artworkUrl: link.artwork_url
+        }
+      });
+
+      if (error) throw error;
+
+      toast.dismiss(toastId);
+      toast.success("Asset generated successfully!");
+
+      // Open the generated image in a new tab
+      if (data?.imageUrl) {
+        window.open(data.imageUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error generating asset:', error);
+      toast.dismiss(toastId);
+      toast.error("Failed to generate social media asset");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <Card className="flex flex-col md:flex-row gap-4 p-4">
       <div className="flex-shrink-0">
@@ -96,6 +134,10 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/analytics`)}>
                 <BarChart2Icon className="mr-2 h-4 w-4" />
                 Analytics
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={generateSocialAsset} disabled={isGenerating}>
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Generate Test Asset
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive"
