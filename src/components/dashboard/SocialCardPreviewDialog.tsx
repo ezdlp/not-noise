@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Square, Rectangle } from "lucide-react";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -17,6 +17,8 @@ interface SocialCardPreviewDialogProps {
   onGenerate: () => void;
 }
 
+type Format = "post" | "story";
+
 export function SocialCardPreviewDialog({
   open,
   onOpenChange,
@@ -24,6 +26,7 @@ export function SocialCardPreviewDialog({
   onGenerate,
 }: SocialCardPreviewDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
 
   useEffect(() => {
@@ -40,26 +43,57 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-6 overflow-hidden max-w-[600px] w-[600px] rounded-xl">
+      <DialogContent className="p-12 overflow-hidden max-w-[700px] w-[700px] rounded-xl">
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="absolute right-8 top-8 p-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <X className="h-5 w-5 text-gray-500" />
         </button>
 
+        {/* Format switcher */}
+        <div className="absolute left-12 bottom-8 flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Format:</span>
+          <div className="flex gap-2">
+            <Button
+              variant={format === "post" ? "default" : "outline"}
+              onClick={() => setFormat("post")}
+              className="flex items-center gap-2"
+            >
+              <Square className="h-4 w-4" />
+              Post
+            </Button>
+            <Button
+              variant={format === "story" ? "default" : "outline"}
+              onClick={() => setFormat("story")}
+              className="flex items-center gap-2"
+            >
+              <Rectangle className="h-4 w-4" />
+              Story
+            </Button>
+          </div>
+        </div>
+
         {/* Preview container */}
-        <div className="relative w-full aspect-square bg-black rounded-none overflow-hidden">
-          {/* Container for the 1080x1080 preview */}
+        <div className="relative w-full bg-black rounded-none overflow-hidden" 
+             style={{ 
+               aspectRatio: format === "post" ? "1/1" : "9/16",
+               maxHeight: format === "post" ? "600px" : "800px"
+             }}>
+          {/* Container for the preview */}
           <div 
             className="absolute inset-0"
             style={{ 
-              transform: 'scale(0.555)', // 600/1080 ≈ 0.555
+              transform: format === "post" ? 'scale(0.555)' : 'scale(0.416)', // 600/1080 or 800/1920
               transformOrigin: 'top left',
             }}
           >
-            <div className="relative w-[1080px] h-[1080px]">
+            <div className="relative" 
+                 style={{ 
+                   width: format === "post" ? "1080px" : "1080px",
+                   height: format === "post" ? "1080px" : "1920px"
+                 }}>
               {/* Background with blur */}
               <div 
                 className="absolute inset-0"
@@ -78,27 +112,39 @@ export function SocialCardPreviewDialog({
               />
 
               {/* Content */}
-              <div className="relative w-full h-full flex flex-col items-center justify-center p-10 gap-10">
+              <div className="relative w-full h-full flex flex-col items-center justify-center p-10 gap-10"
+                   style={{
+                     paddingTop: format === "story" ? "250px" : "34px",
+                     paddingBottom: format === "story" ? "150px" : "34px",
+                   }}>
                 <img 
                   src={smartLink.artwork_url} 
                   alt={smartLink.title}
-                  className="w-[500px] h-[500px] rounded-lg object-cover shadow-2xl"
+                  className={`rounded-lg object-cover shadow-2xl ${
+                    format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
+                  }`}
                 />
                 <div className="text-center">
-                  <h1 className="text-5xl font-bold text-white mb-4">{smartLink.title}</h1>
-                  <p className="text-3xl text-white/90">{smartLink.artist_name}</p>
+                  <h1 className={`font-bold text-white mb-4 ${
+                    format === "post" ? "text-5xl" : "text-6xl"
+                  }`}>{smartLink.title}</h1>
+                  <p className={`text-white/90 ${
+                    format === "post" ? "text-3xl" : "text-4xl"
+                  }`}>{smartLink.artist_name}</p>
                 </div>
 
                 {/* Platform logos section */}
                 <div className="mt-auto text-center">
-                  <p className="text-white text-xl mb-6">NOW AVAILABLE ON</p>
+                  <p className={`text-white mb-6 ${
+                    format === "post" ? "text-xl" : "text-2xl"
+                  }`}>NOW AVAILABLE ON</p>
                   <div className="flex justify-center items-center gap-8">
                     {platformIcons.map((platform) => (
                       <img
                         key={platform.id}
                         src={platform.icon}
                         alt={platform.id}
-                        className="w-12 h-12 object-contain"
+                        className={format === "post" ? "w-12 h-12" : "w-16 h-16"}
                       />
                     ))}
                   </div>
@@ -109,7 +155,7 @@ export function SocialCardPreviewDialog({
         </div>
 
         {/* Generate button */}
-        <div className="absolute bottom-4 right-4">
+        <div className="absolute bottom-8 right-12">
           <Button 
             onClick={() => {
               setIsLoading(true);
