@@ -25,11 +25,8 @@ const PublicBlogPost = () => {
         .select(`
           *,
           author:profiles(*),
-          blog_posts_tags!inner (
-            tag:blog_post_tags(*)
-          ),
-          blog_post_categories!inner (
-            category:blog_categories(*)
+          category:blog_post_categories!inner (
+            blog_categories(*)
           )
         `)
         .eq('slug', slug)
@@ -42,50 +39,9 @@ const PublicBlogPost = () => {
     },
   });
 
-  const isPage = post?.blog_post_categories?.some(
-    pc => pc.category.name.toLowerCase() === 'page'
+  const isPage = post?.category?.some(
+    pc => pc.blog_categories?.name.toLowerCase() === 'page'
   );
-
-  const { data: relatedPosts } = useQuery({
-    queryKey: ['related-posts', post?.id],
-    enabled: !!post?.id && !isPage,
-    queryFn: async () => {
-      // Get tag IDs from current post
-      const tags = post.blog_posts_tags.map(pt => pt.tag.id);
-      
-      // First get posts with matching tags
-      const { data: relatedByTags } = await supabase
-        .from('blog_posts')
-        .select(`
-          *,
-          blog_posts_tags!inner (
-            tag:blog_post_tags(*)
-          )
-        `)
-        .neq('id', post.id)
-        .eq('status', 'published')
-        .in('blog_posts_tags.tag_id', tags)
-        .limit(3);
-
-      const tagRelatedPosts = relatedByTags || [];
-
-      // If we have less than 3 related posts, get recent posts to fill
-      if (tagRelatedPosts.length < 3) {
-        const excludeIds = [post.id, ...tagRelatedPosts.map(p => p.id)];
-        const { data: recentPosts } = await supabase
-          .from('blog_posts')
-          .select('*')
-          .eq('status', 'published')
-          .not('id', 'in', `(${excludeIds.join(',')})`)
-          .order('published_at', { ascending: false })
-          .limit(3 - tagRelatedPosts.length);
-
-        return [...tagRelatedPosts, ...(recentPosts || [])];
-      }
-
-      return tagRelatedPosts;
-    },
-  });
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
@@ -215,11 +171,11 @@ const PublicBlogPost = () => {
           dangerouslySetInnerHTML={{ __html: post.content }} 
         />
 
-        {!isPage && relatedPosts && relatedPosts.length > 0 && (
+        {!isPage && post.related_posts && post.related_posts.length > 0 && (
           <section className="border-t pt-12 mt-12">
             <h2 className="text-2xl font-bold mb-6">Related Posts</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {relatedPosts.map((relatedPost: any) => (
+              {post.related_posts.map((relatedPost: any) => (
                 <Card key={relatedPost.id} className="hover:shadow-md transition-shadow">
                   <a href={`/${relatedPost.slug}`} className="block p-4">
                     {relatedPost.featured_image && (
