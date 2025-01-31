@@ -43,7 +43,7 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="pt-6 px-6 pb-12 overflow-hidden max-w-[700px] w-[700px] rounded-xl">
+      <DialogContent className="pt-6 px-6 pb-24 max-w-[700px] w-[700px] min-h-[700px] rounded-xl">
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
@@ -52,21 +52,17 @@ export function SocialCardPreviewDialog({
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        {/* Preview container with proper scaling */}
-        <div className="relative w-full bg-neutral-night rounded-lg overflow-hidden">
-          <div className="relative" style={{ 
-            width: "100%",
-            paddingTop: format === "post" ? "100%" : "177.78%",
-          }}>
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        {/* Preview container with fixed dimensions and proper scaling */}
+        <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
+          <div className="relative w-full h-full">
+            <div className="absolute inset-0 flex items-center justify-center">
               {/* Content container with proper dimensions */}
               <div 
-                className="relative transition-all duration-300 ease-out"
+                className="relative transition-all duration-300 ease-out origin-center"
                 style={{ 
                   width: "1080px",
                   height: format === "post" ? "1080px" : "1920px",
-                  transform: format === "post" ? "scale(0.555)" : "scale(0.312)",
-                  transformOrigin: "center",
+                  transform: format === "post" ? "scale(0.48)" : "scale(0.27)",
                 }}
               >
                 {/* Background with contained blur */}
@@ -136,8 +132,8 @@ export function SocialCardPreviewDialog({
           </div>
         </div>
 
-        {/* Bottom controls with proper spacing */}
-        <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center">
+        {/* Bottom controls with fixed positioning */}
+        <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center bg-white py-3">
           {/* Format switcher */}
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-night">Format:</span>
