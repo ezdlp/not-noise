@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   UsersIcon, 
-  NewspaperIcon, 
+  FolderIcon, 
   LayoutDashboardIcon,
   Settings,
   ImageIcon,
@@ -42,9 +42,9 @@ const menuItems = [
     href: "/admin/smart-links",
   },
   {
-    title: "Pages",
-    icon: NewspaperIcon,
-    href: "/admin/posts",
+    title: "Content",
+    icon: FolderIcon,
+    href: "/admin/content",
   },
   {
     title: "Media Library",

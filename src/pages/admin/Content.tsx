@@ -10,7 +10,7 @@ import { ImportPosts } from "@/components/admin/blog/ImportPosts";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function Posts() {
+export default function Content() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -116,17 +116,17 @@ export default function Posts() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {selectedPost ? "Edit Page" : "Create New Page"}
+              {selectedPost ? "Edit Content" : "Create New Content"}
             </h1>
             <p className="text-muted-foreground">
-              {selectedPost ? "Make changes to your page." : "Create a new page."}
+              {selectedPost ? "Make changes to your content." : "Create new content."}
             </p>
           </div>
           <Button variant="outline" onClick={() => {
             setIsEditing(false);
             setSelectedPost(null);
           }}>
-            Back to Pages
+            Back to Content
           </Button>
         </div>
         <PostEditor
@@ -150,7 +150,7 @@ export default function Posts() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Content</h1>
-          <p className="text-muted-foreground">Manage your posts and pages.</p>
+          <p className="text-muted-foreground">Manage your content, including pages and blog posts.</p>
         </div>
         <div className="flex items-center gap-4">
           <ImportPosts />
