@@ -1,8 +1,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -41,13 +39,14 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[600px] p-0">
-        <div className="relative w-full aspect-square bg-black overflow-hidden">
+      <DialogContent className="p-0 overflow-hidden max-w-[600px] w-[600px]">
+        <div className="relative w-full aspect-square bg-black">
           {/* Container for the 1080x1080 preview */}
           <div 
-            className="absolute inset-0 origin-center"
+            className="absolute inset-0"
             style={{ 
               transform: 'scale(0.555)', // 600/1080 ≈ 0.555
+              transformOrigin: 'top left',
             }}
           >
             <div className="relative w-[1080px] h-[1080px]">
