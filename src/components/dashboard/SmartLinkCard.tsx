@@ -93,20 +93,29 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
 
       if (templateError) throw templateError;
 
-      // Create a temporary container for the HTML
+      // Create a temporary container and add it to the body
       const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '-9999px';
       container.innerHTML = templateResponse;
       document.body.appendChild(container);
 
       // Wait for fonts and images to load
       await document.fonts.ready;
+      const images = Array.from(container.getElementsByTagName('img'));
       await Promise.all(
-        Array.from(container.getElementsByTagName('img'))
-          .map(img => img.complete ? Promise.resolve() : new Promise(resolve => img.onload = resolve))
+        images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+        })
       );
 
-      // Convert to image using html-to-image
-      const dataUrl = await toPng(container.firstChild as HTMLElement, {
+      // Convert to image
+      const dataUrl = await toPng(container, {
         quality: 1,
         pixelRatio: 2,
       });
