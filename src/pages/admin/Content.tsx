@@ -35,7 +35,7 @@ export default function Content() {
         .from("blog_posts")
         .select(`
           *,
-          blog_post_categories!inner (
+          blog_post_categories (
             blog_categories (
               id,
               name
@@ -141,8 +141,11 @@ export default function Content() {
     );
   }
 
-  const isPage = (post: any) => {
-    return post.blog_post_categories?.[0]?.blog_categories?.name === "Page";
+  const getContentType = (post: any) => {
+    if (!post.blog_post_categories?.length) {
+      return "Undefined";
+    }
+    return post.blog_post_categories[0]?.blog_categories?.name === "Page" ? "Page" : "Blog Post";
   };
 
   return (
@@ -192,8 +195,8 @@ export default function Content() {
             <TableRow key={post.id}>
               <TableCell>{post.title}</TableCell>
               <TableCell>
-                <Badge variant={isPage(post) ? "secondary" : "default"}>
-                  {isPage(post) ? "Page" : "Blog Post"}
+                <Badge variant={getContentType(post) === "Undefined" ? "destructive" : "default"}>
+                  {getContentType(post)}
                 </Badge>
               </TableCell>
               <TableCell>
