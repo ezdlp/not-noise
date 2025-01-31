@@ -27,6 +27,9 @@ const PublicBlogPost = () => {
           author:profiles(*),
           blog_posts_tags!inner (
             tag:blog_post_tags(*)
+          ),
+          blog_post_categories!inner (
+            category:blog_categories(*)
           )
         `)
         .eq('slug', slug)
@@ -39,9 +42,13 @@ const PublicBlogPost = () => {
     },
   });
 
+  const isPage = post?.blog_post_categories?.some(
+    pc => pc.category.name.toLowerCase() === 'page'
+  );
+
   const { data: relatedPosts } = useQuery({
     queryKey: ['related-posts', post?.id],
-    enabled: !!post?.id,
+    enabled: !!post?.id && !isPage,
     queryFn: async () => {
       // Get tag IDs from current post
       const tags = post.blog_posts_tags.map(pt => pt.tag.id);
@@ -148,52 +155,54 @@ const PublicBlogPost = () => {
       <article className="max-w-3xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
         
-        <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm">
-              {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
-            </span>
+        {!isPage && (
+          <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm">
+                {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              <span className="text-sm">{authorName}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm">{readingTime} min read</span>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Share2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleShare('twitter')}>
+                  Share on X (Twitter)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('facebook')}>
+                  Share on Facebook
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+                  Share on LinkedIn
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                  Share on WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('email')}>
+                  Share via Email
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            <span className="text-sm">{authorName}</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            <span className="text-sm">{readingTime} min read</span>
-          </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleShare('twitter')}>
-                Share on X (Twitter)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleShare('facebook')}>
-                Share on Facebook
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleShare('linkedin')}>
-                Share on LinkedIn
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
-                Share on WhatsApp
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleShare('email')}>
-                Share via Email
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        )}
 
-        {post.featured_image && (
+        {!isPage && post.featured_image && (
           <img
             src={post.featured_image}
             alt={post.title}
@@ -206,7 +215,7 @@ const PublicBlogPost = () => {
           dangerouslySetInnerHTML={{ __html: post.content }} 
         />
 
-        {relatedPosts && relatedPosts.length > 0 && (
+        {!isPage && relatedPosts && relatedPosts.length > 0 && (
           <section className="border-t pt-12 mt-12">
             <h2 className="text-2xl font-bold mb-6">Related Posts</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
