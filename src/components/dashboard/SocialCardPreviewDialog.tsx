@@ -29,20 +29,36 @@ export function SocialCardPreviewDialog({
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
 
-  // Base dimensions
-  const containerWidth = 700; // Dialog width
-  const containerHeight = 580; // Preview container height
-  const baseWidth = 1080; // Base width for both formats
-  const postHeight = 1080; // Square post
-  const storyHeight = 1920; // Story format (9:16)
+  // Container dimensions
+  const containerWidth = 700;
+  const containerHeight = 580;
+  const padding = 40; // 20px padding on each side
 
-  const getScale = () => {
-    const targetHeight = format === "post" ? postHeight : storyHeight;
-    // Calculate scale based on both width and height constraints
-    const scaleByWidth = (containerWidth * 0.9) / baseWidth; // 90% of container width
-    const scaleByHeight = (containerHeight * 0.9) / targetHeight; // 90% of container height
-    // Use the smaller scale to ensure content fits both dimensions
-    return Math.min(scaleByWidth, scaleByHeight);
+  // Available space
+  const availableWidth = containerWidth - (padding * 2);
+  const availableHeight = containerHeight - (padding * 2);
+
+  // Calculate dimensions and scale
+  const getScaledDimensions = () => {
+    // Base width is always 1080px
+    const baseWidth = 1080;
+    // Height depends on format
+    const baseHeight = format === "post" ? 1080 : 1920;
+
+    // Calculate scale based on available space while maintaining aspect ratio
+    const scaleByWidth = availableWidth / baseWidth;
+    const scaleByHeight = availableHeight / baseHeight;
+    const scale = Math.min(scaleByWidth, scaleByHeight);
+
+    // Calculate actual dimensions after scaling
+    const scaledWidth = baseWidth * scale;
+    const scaledHeight = baseHeight * scale;
+
+    return {
+      scale,
+      width: scaledWidth,
+      height: scaledHeight,
+    };
   };
 
   useEffect(() => {
@@ -57,9 +73,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const scale = getScale();
-  const contentWidth = baseWidth * scale;
-  const contentHeight = (format === "post" ? postHeight : storyHeight) * scale;
+  const { scale, width, height } = getScaledDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,11 +91,12 @@ export function SocialCardPreviewDialog({
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Content container with proper scaling and centering */}
             <div 
-              className="relative transition-all duration-300 ease-out origin-center"
               style={{ 
-                width: `${baseWidth}px`,
-                height: format === "post" ? `${postHeight}px` : `${storyHeight}px`,
+                width: `${width}px`,
+                height: `${height}px`,
                 transform: `scale(${scale})`,
+                transformOrigin: 'center',
+                position: 'absolute',
               }}
             >
               {/* Background with contained blur */}
@@ -101,7 +116,7 @@ export function SocialCardPreviewDialog({
               {/* Content with proper safe zones */}
               <div className="relative h-full flex flex-col items-center">
                 <div 
-                  className="w-full flex-1 flex flex-col items-center justify-center px-10 transition-all duration-300"
+                  className="w-full flex-1 flex flex-col items-center justify-center px-10"
                   style={{
                     paddingTop: format === "story" ? "250px" : "34px",
                     paddingBottom: format === "story" ? "150px" : "34px",
@@ -111,24 +126,24 @@ export function SocialCardPreviewDialog({
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
-                    className={`rounded-lg object-cover shadow-lg transition-all duration-300 ${
+                    className={`rounded-lg object-cover shadow-lg ${
                       format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
                     }`}
                   />
 
                   {/* Text content */}
                   <div className="text-center mt-10">
-                    <h1 className={`font-heading font-bold text-white mb-4 transition-all duration-300 ${
+                    <h1 className={`font-heading font-bold text-white mb-4 ${
                       format === "post" ? "text-5xl" : "text-6xl"
                     }`}>{smartLink.title}</h1>
-                    <p className={`text-white/90 transition-all duration-300 ${
+                    <p className={`text-white/90 ${
                       format === "post" ? "text-3xl" : "text-4xl"
                     }`}>{smartLink.artist_name}</p>
                   </div>
 
                   {/* Platform icons */}
                   <div className="mt-auto text-center">
-                    <p className={`text-white mb-6 transition-all duration-300 ${
+                    <p className={`text-white mb-6 ${
                       format === "post" ? "text-xl" : "text-2xl"
                     }`}>NOW AVAILABLE ON</p>
                     <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
@@ -137,7 +152,7 @@ export function SocialCardPreviewDialog({
                           key={platform.id}
                           src={platform.icon}
                           alt={platform.id}
-                          className={`transition-all duration-300 ${
+                          className={`${
                             format === "post" ? "w-12 h-12" : "w-16 h-16"
                           }`}
                         />
