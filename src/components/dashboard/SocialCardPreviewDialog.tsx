@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { X, Square, Rectangle } from "lucide-react";
+import { X, Square, RectangleVertical } from "lucide-react";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -69,7 +69,7 @@ export function SocialCardPreviewDialog({
               onClick={() => setFormat("story")}
               className="flex items-center gap-2"
             >
-              <Rectangle className="h-4 w-4" />
+              <RectangleVertical className="h-4 w-4" />
               Story
             </Button>
           </div>
