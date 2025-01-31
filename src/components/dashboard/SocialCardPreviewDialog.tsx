@@ -49,13 +49,12 @@ export function SocialCardPreviewDialog({
     const scale = Math.min(scaleX, scaleY);
     
     // Calculate final dimensions
-    const width = originalWidth * scale;
-    const height = originalHeight * scale;
+    const width = Math.floor(originalWidth * scale);
+    const height = Math.floor(originalHeight * scale);
 
     return {
       width,
       height,
-      scale,
     };
   };
 
@@ -123,9 +122,11 @@ export function SocialCardPreviewDialog({
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
-                    className={`rounded-lg object-cover shadow-lg ${
-                      format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
-                    }`}
+                    className="rounded-lg object-cover shadow-lg"
+                    style={{
+                      width: format === "post" ? `${width * 0.8}px` : `${width * 0.7}px`,
+                      height: format === "post" ? `${width * 0.8}px` : `${width * 0.7}px`,
+                    }}
                   />
 
                   {/* Text content */}
