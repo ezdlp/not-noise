@@ -83,7 +83,9 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         body: {
           smartLinkId: link.id,
           platform: 'instagram_square',
-          artworkUrl: link.artwork_url
+          artworkUrl: link.artwork_url,
+          title: link.title,
+          artistName: link.artist_name
         }
       });
 

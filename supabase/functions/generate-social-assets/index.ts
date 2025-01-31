@@ -18,15 +18,16 @@ const platformConfigs: Record<string, PlatformConfig> = {
   instagram_square: {
     width: 1080,
     height: 1080,
-    artworkSize: 600,
+    artworkSize: 500,
   },
-  // Add more platform configurations as needed
 }
 
 async function generateSocialAsset(
   artworkUrl: string,
   platform: string,
-  config: PlatformConfig
+  config: PlatformConfig,
+  title: string,
+  artistName: string
 ): Promise<Uint8Array> {
   console.log('Generating social asset with config:', config);
   
@@ -38,28 +39,47 @@ async function generateSocialAsset(
   const artwork = await loadImage(artworkUrl);
   console.log('Artwork loaded successfully');
 
-  // Fill background with gradient
-  const gradient = ctx.createLinearGradient(0, 0, config.width, config.height);
-  gradient.addColorStop(0, '#6851FB');  // Majorelle Blue
-  gradient.addColorStop(1, '#4A47A5');  // Darker shade
-  ctx.fillStyle = gradient;
+  // Draw blurred background
+  ctx.filter = 'blur(20px)';
+  ctx.drawImage(artwork, 0, 0, config.width, config.height);
+  ctx.filter = 'none';
+
+  // Add semi-transparent overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
   ctx.fillRect(0, 0, config.width, config.height);
 
   // Calculate centered position for artwork
   const x = (config.width - config.artworkSize) / 2;
   const y = (config.height - config.artworkSize) / 2;
 
-  // Draw artwork centered
+  // Draw sharp artwork centered
   ctx.drawImage(artwork, x, y, config.artworkSize, config.artworkSize);
 
-  // Add platform-specific overlays or text if needed
+  // Configure text styling
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '30px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('Listen Now', config.width / 2, y + config.artworkSize + 50);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+
+  // Draw artist name above artwork
+  ctx.font = 'bold 48px Arial';
+  ctx.fillText(artistName, config.width / 2, y - 40);
+
+  // Draw title below artwork
+  ctx.font = '36px Arial';
+  ctx.fillText(title, config.width / 2, y + config.artworkSize + 60);
+
+  // Draw "Listen on" text
+  ctx.font = '24px Arial';
+  ctx.fillText('Listen on:', config.width / 2, y + config.artworkSize + 120);
+
+  // Draw platform icons placeholder text (we'll add actual icons in a future update)
+  ctx.font = '32px Arial';
+  ctx.fillText('Spotify • Apple Music • YouTube Music', config.width / 2, y + config.artworkSize + 160);
 
   try {
-    // Convert canvas to PNG bytes - using the correct method
     const pngData = canvas.toBuffer('image/png');
     console.log('Canvas encoded to PNG successfully');
     return pngData;
@@ -85,13 +105,13 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { smartLinkId, platform, artworkUrl } = await req.json()
+    const { smartLinkId, platform, artworkUrl, title, artistName } = await req.json()
     
-    if (!smartLinkId || !platform || !artworkUrl) {
+    if (!smartLinkId || !platform || !artworkUrl || !title || !artistName) {
       throw new Error('Missing required parameters')
     }
 
-    console.log('Generating asset for:', { smartLinkId, platform, artworkUrl })
+    console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
 
     // Get platform configuration
     const platformConfig = platformConfigs[platform];
@@ -107,7 +127,7 @@ serve(async (req) => {
     )
 
     // Generate the social media asset
-    const pngBytes = await generateSocialAsset(artworkUrl, platform, platformConfig);
+    const pngBytes = await generateSocialAsset(artworkUrl, platform, platformConfig, title, artistName);
 
     // Generate a unique filename
     const timestamp = new Date().getTime()
