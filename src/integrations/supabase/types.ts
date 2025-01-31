@@ -700,6 +700,41 @@ export type Database = {
           },
         ]
       }
+      social_media_assets: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string
+          platform: Database["public"]["Enums"]["social_media_platform"]
+          smart_link_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url: string
+          platform: Database["public"]["Enums"]["social_media_platform"]
+          smart_link_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          platform?: Database["public"]["Enums"]["social_media_platform"]
+          smart_link_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_assets_smart_link_id_fkey"
+            columns: ["smart_link_id"]
+            isOneToOne: false
+            referencedRelation: "smart_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_features: {
         Row: {
           created_at: string | null
@@ -854,6 +889,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       billing_period: "monthly" | "annual"
+      social_media_platform:
+        | "instagram_square"
+        | "instagram_story"
+        | "twitter"
+        | "facebook"
+        | "linkedin"
       subscription_tier: "free" | "pro" | "platinum"
     }
     CompositeTypes: {

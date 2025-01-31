@@ -1,1 +1,8 @@
 project_id = "owtufhdsuuyrgmxytclj"
+
+[api]
+enabled = true
+url = "https://owtufhdsuuyrgmxytclj.supabase.co"
+
+[functions.generate-social-assets]
+verify_jwt = true
