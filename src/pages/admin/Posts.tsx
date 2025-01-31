@@ -141,18 +141,22 @@ export default function Posts() {
     );
   }
 
+  const isPage = (post: any) => {
+    return post.blog_post_categories?.[0]?.blog_categories?.name === "Page";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pages</h1>
-          <p className="text-muted-foreground">Manage your pages.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Content</h1>
+          <p className="text-muted-foreground">Manage your posts and pages.</p>
         </div>
         <div className="flex items-center gap-4">
           <ImportPosts />
           <Button onClick={() => setIsEditing(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Add New Page
+            Add New Content
           </Button>
         </div>
       </div>
@@ -177,7 +181,7 @@ export default function Posts() {
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
-            <TableHead>Category</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Published Date</TableHead>
             <TableHead>Actions</TableHead>
@@ -188,7 +192,9 @@ export default function Posts() {
             <TableRow key={post.id}>
               <TableCell>{post.title}</TableCell>
               <TableCell>
-                {post.blog_post_categories?.[0]?.blog_categories?.name || 'Uncategorized'}
+                <Badge variant={isPage(post) ? "secondary" : "default"}>
+                  {isPage(post) ? "Page" : "Blog Post"}
+                </Badge>
               </TableCell>
               <TableCell>
                 <Badge variant={post.status === "published" ? "default" : "secondary"}>
