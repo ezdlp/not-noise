@@ -17,10 +17,11 @@ import { Card } from "@/components/ui/card";
 const PublicBlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, error } = useQuery({
     queryKey: ['public-post', slug],
     queryFn: async () => {
-      // Updated query to use LEFT JOIN for tags
+      console.log('Fetching post with slug:', slug);
+      
       const { data: posts, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -29,7 +30,7 @@ const PublicBlogPost = () => {
           blog_posts_tags (
             tag:blog_post_tags(*)
           ),
-          blog_post_categories!inner (
+          blog_post_categories (
             category:blog_categories(*)
           )
         `)
@@ -37,12 +38,21 @@ const PublicBlogPost = () => {
         .eq('status', 'published')
         .maybeSingle();
 
-      if (error) throw error;
-      if (!posts) throw new Error('Post not found');
+      if (error) {
+        console.error('Error fetching post:', error);
+        throw error;
+      }
       
-      console.log('Fetched post:', posts); // Debug log
+      if (!posts) {
+        console.log('No post found with slug:', slug);
+        throw new Error('Post not found');
+      }
+      
+      console.log('Successfully fetched post:', posts);
       return posts;
     },
+    retry: false,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const isPage = post?.blog_post_categories?.some(
@@ -53,15 +63,18 @@ const PublicBlogPost = () => {
     queryKey: ['related-posts', post?.id],
     enabled: !!post?.id && !isPage,
     queryFn: async () => {
-      // Get tag IDs from current post
-      const tags = post.blog_posts_tags.map(pt => pt.tag.id);
+      const tags = post.blog_posts_tags?.map(pt => pt.tag.id) || [];
       
-      // First get posts with matching tags
+      if (tags.length === 0) {
+        console.log('No tags found for related posts query');
+        return [];
+      }
+
       const { data: relatedByTags } = await supabase
         .from('blog_posts')
         .select(`
           *,
-          blog_posts_tags!inner (
+          blog_posts_tags (
             tag:blog_post_tags(*)
           )
         `)
@@ -72,7 +85,6 @@ const PublicBlogPost = () => {
 
       const tagRelatedPosts = relatedByTags || [];
 
-      // If we have less than 3 related posts, get recent posts to fill
       if (tagRelatedPosts.length < 3) {
         const excludeIds = [post.id, ...tagRelatedPosts.map(p => p.id)];
         const { data: recentPosts } = await supabase
@@ -89,6 +101,33 @@ const PublicBlogPost = () => {
       return tagRelatedPosts;
     },
   });
+
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <Skeleton className="h-12 w-3/4 mb-4" />
+        <Skeleton className="h-6 w-1/2 mb-8" />
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-red-500">
+          {error ? 'Error loading post' : 'Post not found'}
+        </h1>
+        <p className="text-gray-600 mt-2">
+          {error ? 'Please try again later.' : 'The requested post could not be found.'}
+        </p>
+      </div>
+    );
+  }
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
@@ -110,28 +149,6 @@ const PublicBlogPost = () => {
     const words = content.trim().split(/\s+/).length;
     return Math.ceil(words / wordsPerMinute);
   };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <Skeleton className="h-12 w-3/4 mb-4" />
-        <Skeleton className="h-6 w-1/2 mb-8" />
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-red-500">Post not found</h1>
-      </div>
-    );
-  }
 
   const readingTime = calculateReadingTime(post.content);
   const authorName = post.author_name || post.author?.name || 'Unknown author';
