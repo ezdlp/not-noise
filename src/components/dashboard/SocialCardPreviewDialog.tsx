@@ -29,6 +29,20 @@ export function SocialCardPreviewDialog({
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
 
+  // Calculate dimensions and scale
+  const containerWidth = 700; // Dialog width
+  const containerHeight = 580; // Preview container height
+  const baseWidth = 1080; // Base width for both formats
+  const postHeight = 1080;
+  const storyHeight = 1920;
+
+  const getScale = () => {
+    const targetHeight = format === "post" ? postHeight : storyHeight;
+    const scaleX = (containerWidth - 40) / baseWidth; // Subtract padding
+    const scaleY = (containerHeight - 40) / targetHeight; // Subtract padding
+    return Math.min(scaleX, scaleY);
+  };
+
   useEffect(() => {
     // Load platform icons
     const icons = [
@@ -52,78 +66,77 @@ export function SocialCardPreviewDialog({
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        {/* Preview container with fixed dimensions and proper scaling */}
+        {/* Preview container */}
         <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
-          <div className="relative w-full h-full">
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Content container with proper dimensions */}
-              <div 
-                className="relative transition-all duration-300 ease-out origin-center"
-                style={{ 
-                  width: "1080px",
-                  height: format === "post" ? "1080px" : "1920px",
-                  transform: format === "post" ? "scale(0.48)" : "scale(0.27)",
-                }}
-              >
-                {/* Background with contained blur */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div 
-                    className="absolute inset-0 scale-110"
-                    style={{ 
-                      background: `url(${smartLink.artwork_url})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      filter: 'blur(20px)',
-                    }}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Content container */}
+            <div 
+              className="relative transition-all duration-300 ease-out"
+              style={{ 
+                width: "1080px",
+                height: format === "post" ? "1080px" : "1920px",
+                transform: `scale(${getScale()})`,
+                transformOrigin: "center center",
+              }}
+            >
+              {/* Background with contained blur */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div 
+                  className="absolute inset-0 scale-110"
+                  style={{ 
+                    background: `url(${smartLink.artwork_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'blur(20px)',
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/30" />
+              </div>
+
+              {/* Content with proper safe zones */}
+              <div className="relative h-full flex flex-col items-center">
+                <div 
+                  className="w-full flex-1 flex flex-col items-center justify-center px-10 transition-all duration-300"
+                  style={{
+                    paddingTop: format === "story" ? "250px" : "34px",
+                    paddingBottom: format === "story" ? "150px" : "34px",
+                  }}
+                >
+                  {/* Artwork */}
+                  <img 
+                    src={smartLink.artwork_url} 
+                    alt={smartLink.title}
+                    className={`rounded-lg object-cover shadow-lg transition-all duration-300 ${
+                      format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
+                    }`}
                   />
-                  <div className="absolute inset-0 bg-black/30" />
-                </div>
 
-                {/* Content with proper safe zones */}
-                <div className="relative h-full flex flex-col items-center">
-                  <div 
-                    className="w-full flex-1 flex flex-col items-center justify-center px-10 transition-all duration-300"
-                    style={{
-                      paddingTop: format === "story" ? "250px" : "34px",
-                      paddingBottom: format === "story" ? "150px" : "34px",
-                    }}
-                  >
-                    {/* Artwork */}
-                    <img 
-                      src={smartLink.artwork_url} 
-                      alt={smartLink.title}
-                      className={`rounded-lg object-cover shadow-lg transition-all duration-300 ${
-                        format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
-                      }`}
-                    />
+                  {/* Text content */}
+                  <div className="text-center mt-10">
+                    <h1 className={`font-heading font-bold text-white mb-4 transition-all duration-300 ${
+                      format === "post" ? "text-5xl" : "text-6xl"
+                    }`}>{smartLink.title}</h1>
+                    <p className={`text-white/90 transition-all duration-300 ${
+                      format === "post" ? "text-3xl" : "text-4xl"
+                    }`}>{smartLink.artist_name}</p>
+                  </div>
 
-                    {/* Text content */}
-                    <div className="text-center mt-10">
-                      <h1 className={`font-heading font-bold text-white mb-4 transition-all duration-300 ${
-                        format === "post" ? "text-5xl" : "text-6xl"
-                      }`}>{smartLink.title}</h1>
-                      <p className={`text-white/90 transition-all duration-300 ${
-                        format === "post" ? "text-3xl" : "text-4xl"
-                      }`}>{smartLink.artist_name}</p>
-                    </div>
-
-                    {/* Platform icons with grid layout */}
-                    <div className="mt-auto text-center">
-                      <p className={`text-white mb-6 transition-all duration-300 ${
-                        format === "post" ? "text-xl" : "text-2xl"
-                      }`}>NOW AVAILABLE ON</p>
-                      <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
-                        {platformIcons.map((platform) => (
-                          <img
-                            key={platform.id}
-                            src={platform.icon}
-                            alt={platform.id}
-                            className={`transition-all duration-300 ${
-                              format === "post" ? "w-12 h-12" : "w-16 h-16"
-                            }`}
-                          />
-                        ))}
-                      </div>
+                  {/* Platform icons */}
+                  <div className="mt-auto text-center">
+                    <p className={`text-white mb-6 transition-all duration-300 ${
+                      format === "post" ? "text-xl" : "text-2xl"
+                    }`}>NOW AVAILABLE ON</p>
+                    <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
+                      {platformIcons.map((platform) => (
+                        <img
+                          key={platform.id}
+                          src={platform.icon}
+                          alt={platform.id}
+                          className={`transition-all duration-300 ${
+                            format === "post" ? "w-12 h-12" : "w-16 h-16"
+                          }`}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -132,7 +145,7 @@ export function SocialCardPreviewDialog({
           </div>
         </div>
 
-        {/* Bottom controls with fixed positioning */}
+        {/* Bottom controls */}
         <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center bg-white py-3">
           {/* Format switcher */}
           <div className="flex items-center gap-4">
