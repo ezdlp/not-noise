@@ -58,10 +58,15 @@ async function generateSocialAsset(
   ctx.textAlign = 'center';
   ctx.fillText('Listen Now', config.width / 2, y + config.artworkSize + 50);
 
-  // Convert canvas to PNG bytes
-  const pngBytes = await canvas.encode('png');
-  console.log('Canvas encoded to PNG successfully');
-  return pngBytes;
+  try {
+    // Convert canvas to PNG bytes
+    const pngBytes = await canvas.encode();
+    console.log('Canvas encoded to PNG successfully');
+    return pngBytes;
+  } catch (error) {
+    console.error('Error encoding canvas:', error);
+    throw new Error(`Failed to encode canvas: ${error.message}`);
+  }
 }
 
 serve(async (req) => {
