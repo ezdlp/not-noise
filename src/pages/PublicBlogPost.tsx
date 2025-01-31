@@ -43,6 +43,22 @@ const PublicBlogPost = () => {
     pc => pc.blog_categories?.name.toLowerCase() === 'page'
   );
 
+  const { data: relatedPosts } = useQuery({
+    queryKey: ['related-posts', post?.id],
+    enabled: !!post?.id && !isPage,
+    queryFn: async () => {
+      const { data: recentPosts } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('status', 'published')
+        .neq('id', post.id)
+        .order('published_at', { ascending: false })
+        .limit(3);
+
+      return recentPosts || [];
+    },
+  });
+
   const handleShare = (platform: string) => {
     const url = window.location.href;
     const title = post?.title || '';
@@ -171,11 +187,11 @@ const PublicBlogPost = () => {
           dangerouslySetInnerHTML={{ __html: post.content }} 
         />
 
-        {!isPage && post.related_posts && post.related_posts.length > 0 && (
+        {!isPage && relatedPosts && relatedPosts.length > 0 && (
           <section className="border-t pt-12 mt-12">
             <h2 className="text-2xl font-bold mb-6">Related Posts</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {post.related_posts.map((relatedPost: any) => (
+              {relatedPosts.map((relatedPost: any) => (
                 <Card key={relatedPost.id} className="hover:shadow-md transition-shadow">
                   <a href={`/${relatedPost.slug}`} className="block p-4">
                     {relatedPost.featured_image && (
