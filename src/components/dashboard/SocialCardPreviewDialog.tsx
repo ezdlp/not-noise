@@ -29,35 +29,46 @@ export function SocialCardPreviewDialog({
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
 
-  // Container dimensions
+  // Fixed dimensions for the preview container
   const containerWidth = 700;
   const containerHeight = 580;
-  const padding = 40; // 20px padding on each side
+  const padding = 40;
 
-  // Available space
-  const availableWidth = containerWidth - (padding * 2);
-  const availableHeight = containerHeight - (padding * 2);
-
-  // Calculate dimensions and scale
-  const getScaledDimensions = () => {
-    // Base width is always 1080px
+  // Calculate dimensions that maintain aspect ratio and fit container
+  const getPreviewDimensions = () => {
+    const availableWidth = containerWidth - (padding * 2);
+    const availableHeight = containerHeight - (padding * 2);
+    
+    // Base dimensions for social media assets
     const baseWidth = 1080;
-    // Height depends on format
     const baseHeight = format === "post" ? 1080 : 1920;
+    const aspectRatio = baseWidth / baseHeight;
 
-    // Calculate scale based on available space while maintaining aspect ratio
-    const scaleByWidth = availableWidth / baseWidth;
-    const scaleByHeight = availableHeight / baseHeight;
-    const scale = Math.min(scaleByWidth, scaleByHeight);
+    let width, height;
+    
+    if (format === "post") {
+      // For square posts, use the smaller dimension
+      const size = Math.min(availableWidth, availableHeight);
+      width = size;
+      height = size;
+    } else {
+      // For stories, maintain 9:16 aspect ratio
+      height = availableHeight;
+      width = height * (9/16);
+      
+      // If width exceeds available width, scale down
+      if (width > availableWidth) {
+        width = availableWidth;
+        height = width * (16/9);
+      }
+    }
 
-    // Calculate actual dimensions after scaling
-    const scaledWidth = baseWidth * scale;
-    const scaledHeight = baseHeight * scale;
+    const scale = width / baseWidth;
 
     return {
+      width,
+      height,
       scale,
-      width: scaledWidth,
-      height: scaledHeight,
     };
   };
 
@@ -73,7 +84,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { scale, width, height } = getScaledDimensions();
+  const { width, height, scale } = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,6 +109,7 @@ export function SocialCardPreviewDialog({
                 transformOrigin: 'center',
                 position: 'absolute',
               }}
+              className="bg-primary overflow-hidden"
             >
               {/* Background with contained blur */}
               <div className="absolute inset-0 overflow-hidden">
