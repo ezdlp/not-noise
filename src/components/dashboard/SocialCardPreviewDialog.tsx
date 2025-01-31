@@ -48,13 +48,10 @@ export function SocialCardPreviewDialog({
     const scaleY = availableHeight / originalHeight;
     const scale = Math.min(scaleX, scaleY);
     
-    // Calculate final dimensions
-    const width = Math.floor(originalWidth * scale);
-    const height = Math.floor(originalHeight * scale);
-
     return {
-      width,
-      height,
+      width: Math.floor(originalWidth * scale),
+      height: Math.floor(originalHeight * scale),
+      scale
     };
   };
 
@@ -70,12 +67,12 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { width, height } = getPreviewDimensions();
+  const { width, height, scale } = getPreviewDimensions();
+  const artworkSize = Math.floor(width * (format === "post" ? 0.8 : 0.7));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="pt-6 px-6 pb-24 max-w-[700px] w-[700px] min-h-[700px] rounded-xl">
-        {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors"
@@ -83,19 +80,19 @@ export function SocialCardPreviewDialog({
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        {/* Preview container */}
         <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Content container with proper scaling and centering */}
             <div 
               style={{ 
                 width: `${width}px`,
                 height: `${height}px`,
-                position: 'absolute',
+                transform: 'translate(-50%, -50%)',
+                left: '50%',
+                top: '50%',
+                position: 'absolute'
               }}
               className="bg-primary overflow-hidden"
             >
-              {/* Background with contained blur */}
               <div className="absolute inset-0 overflow-hidden">
                 <div 
                   className="absolute inset-0 scale-110"
@@ -109,27 +106,24 @@ export function SocialCardPreviewDialog({
                 <div className="absolute inset-0 bg-black/30" />
               </div>
 
-              {/* Content with proper safe zones */}
               <div className="relative h-full flex flex-col items-center">
                 <div 
                   className="w-full flex-1 flex flex-col items-center justify-center px-10"
                   style={{
-                    paddingTop: format === "story" ? "250px" : "34px",
-                    paddingBottom: format === "story" ? "150px" : "34px",
+                    paddingTop: format === "story" ? `${Math.floor(height * 0.15)}px` : "34px",
+                    paddingBottom: format === "story" ? `${Math.floor(height * 0.1)}px` : "34px",
                   }}
                 >
-                  {/* Artwork */}
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
                     className="rounded-lg object-cover shadow-lg"
                     style={{
-                      width: format === "post" ? `${width * 0.8}px` : `${width * 0.7}px`,
-                      height: format === "post" ? `${width * 0.8}px` : `${width * 0.7}px`,
+                      width: `${artworkSize}px`,
+                      height: `${artworkSize}px`,
                     }}
                   />
 
-                  {/* Text content */}
                   <div className="text-center mt-10">
                     <h1 className={`font-heading font-bold text-white mb-4 ${
                       format === "post" ? "text-5xl" : "text-6xl"
@@ -139,7 +133,6 @@ export function SocialCardPreviewDialog({
                     }`}>{smartLink.artist_name}</p>
                   </div>
 
-                  {/* Platform icons */}
                   <div className="mt-auto text-center">
                     <p className={`text-white mb-6 ${
                       format === "post" ? "text-xl" : "text-2xl"
@@ -163,9 +156,7 @@ export function SocialCardPreviewDialog({
           </div>
         </div>
 
-        {/* Bottom controls */}
         <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center bg-white py-3">
-          {/* Format switcher */}
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-night">Format:</span>
             <div className="flex gap-2">
@@ -196,7 +187,6 @@ export function SocialCardPreviewDialog({
             </div>
           </div>
 
-          {/* Generate button */}
           <Button 
             onClick={() => {
               setIsLoading(true);
