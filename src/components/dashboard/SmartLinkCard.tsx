@@ -79,7 +79,8 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-social-assets', {
+      // First get the HTML template from the Edge Function
+      const { data: templateResponse, error: templateError } = await supabase.functions.invoke('generate-social-assets', {
         body: {
           smartLinkId: link.id,
           platform: 'instagram_square',
@@ -89,20 +90,56 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         }
       });
 
-      if (error) {
-        console.error('Function error:', error);
-        throw error;
-      }
+      if (templateError) throw templateError;
 
-      if (!data?.imageUrl) {
-        throw new Error('No image URL returned');
-      }
+      // Create a temporary container for the HTML
+      const container = document.createElement('div');
+      container.innerHTML = templateResponse;
+      document.body.appendChild(container);
+
+      // Wait for fonts and images to load
+      await document.fonts.ready;
+      await Promise.all(
+        Array.from(container.getElementsByTagName('img'))
+          .map(img => img.complete ? Promise.resolve() : new Promise(resolve => img.onload = resolve))
+      );
+
+      // Convert to image using html-to-image
+      const dataUrl = await htmlToImage.toPng(container.firstChild as HTMLElement, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+
+      // Remove the temporary container
+      document.body.removeChild(container);
+
+      // Convert data URL to Blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      // Upload to Supabase Storage
+      const filename = `${link.id}-instagram_square-${Date.now()}.png`;
+      const filePath = `${link.id}/${filename}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('social-media-assets')
+        .upload(filePath, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('social-media-assets')
+        .getPublicUrl(filePath);
 
       toast.dismiss(loadingToast);
       toast.success("Asset generated successfully!");
 
       // Open the generated image in a new tab
-      window.open(data.imageUrl, '_blank');
+      window.open(publicUrl, '_blank');
     } catch (error) {
       console.error('Error generating asset:', error);
       toast.dismiss(loadingToast);

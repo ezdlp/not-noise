@@ -1,116 +1,85 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-}
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Parse request body
-    const { smartLinkId, platform, artworkUrl, title, artistName } = await req.json()
-    
-    if (!smartLinkId || !platform || !artworkUrl || !title || !artistName) {
-      throw new Error('Missing required parameters')
-    }
+    const { smartLinkId, platform, artworkUrl, title, artistName } = await req.json();
+    console.log("Generating asset for:", { smartLinkId, platform, artworkUrl, title, artistName });
 
-    console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
-
-    // Generate a unique filename
-    const timestamp = new Date().getTime()
-    const filename = `${smartLinkId}-${platform}-${timestamp}.png`
-    const filePath = `${smartLinkId}/${filename}`
-
-    // Create HTML content
-    const html = `
+    // Create HTML template
+    const template = `
       <!DOCTYPE html>
       <html>
         <head>
-          <meta charset="UTF-8">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+          <meta charset="utf-8">
           <style>
-            body { margin: 0; padding: 0; }
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            body {
+              margin: 0;
+              font-family: 'Inter', sans-serif;
+              width: 1080px;
+              height: 1080px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: #6851FB;
+              color: white;
+              padding: 40px;
+              box-sizing: border-box;
+            }
+            .artwork {
+              width: 500px;
+              height: 500px;
+              border-radius: 8px;
+              margin-bottom: 40px;
+              box-shadow: 0 4px 60px rgba(0, 0, 0, 0.2);
+            }
+            .title {
+              font-size: 48px;
+              font-weight: 700;
+              text-align: center;
+              margin: 0 0 16px;
+              max-width: 800px;
+            }
+            .artist {
+              font-size: 32px;
+              font-weight: 500;
+              opacity: 0.9;
+            }
           </style>
         </head>
         <body>
-          <div class="relative w-[1200px] h-[630px] overflow-hidden bg-black font-['DM_Sans']">
-            <div 
-              class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style="background-image: url('${artworkUrl}'); filter: blur(30px) brightness(0.7); transform: scale(1.1);"
-            ></div>
-            
-            <div class="relative h-full flex flex-col items-center justify-center p-12 z-10">
-              <h2 class="text-4xl font-bold text-white mb-8 text-center">${artistName}</h2>
-              
-              <img 
-                src="${artworkUrl}"
-                alt="${title} cover"
-                class="w-80 h-80 object-cover rounded-2xl shadow-2xl mb-8"
-              />
-              
-              <h1 class="text-5xl font-bold text-white mb-12 text-center">${title}</h1>
-              
-              <div class="flex items-center justify-center gap-6">
-                <img 
-                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/spotify.png"
-                  alt="Spotify"
-                  class="w-12 h-12 object-contain brightness-0 invert"
-                />
-                <img 
-                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/applemusic.png"
-                  alt="Apple Music"
-                  class="w-12 h-12 object-contain brightness-0 invert"
-                />
-                <img 
-                  src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/youtubemusic.png"
-                  alt="YouTube Music"
-                  class="w-12 h-12 object-contain brightness-0 invert"
-                />
-              </div>
-              
-              <div class="absolute bottom-8 left-0 right-0 text-center">
-                <p class="text-white/60 text-lg">Listen Now on notnoise</p>
-              </div>
-            </div>
-          </div>
+          <img src="${artworkUrl}" class="artwork" crossorigin="anonymous" />
+          <h1 class="title">${title}</h1>
+          <p class="artist">${artistName}</p>
         </body>
       </html>
-    `
+    `;
 
-    // Return the HTML content for client-side rendering
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        html: html,
-        filePath: filePath
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    )
-
+    // Return the template with proper headers
+    return new Response(template, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/html",
+      },
+    });
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
-      }
-    )
+    console.error("Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+      status: 400,
+    });
   }
-})
+});
