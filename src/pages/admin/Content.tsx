@@ -108,6 +108,30 @@ export default function Content() {
     }
   };
 
+  const getContentType = (post: any) => {
+    if (!post.blog_post_categories?.length) {
+      return "Undefined";
+    }
+    return post.blog_post_categories[0]?.blog_categories?.name === "Page" ? "Page" : "Blog Post";
+  };
+
+  const getContentTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case "Page":
+        return "bg-primary-light text-primary hover:bg-primary-light/90";
+      case "Blog Post":
+        return "bg-[#A299FC] text-white hover:bg-[#A299FC]/90";
+      default:
+        return "bg-destructive text-destructive-foreground hover:bg-destructive/90";
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    return status === "published" 
+      ? "bg-success text-white hover:bg-success-hover"
+      : "bg-[#E6E6E6] text-[#666666] hover:bg-[#E6E6E6]/90";
+  };
+
   if (isLoading) return <div>Loading...</div>;
 
   if (isEditing) {
@@ -115,17 +139,21 @@ export default function Content() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight text-night">
               {selectedPost ? "Edit Content" : "Create New Content"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[#666666]">
               {selectedPost ? "Make changes to your content." : "Create new content."}
             </p>
           </div>
-          <Button variant="outline" onClick={() => {
-            setIsEditing(false);
-            setSelectedPost(null);
-          }}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setIsEditing(false);
+              setSelectedPost(null);
+            }}
+            className="border-[#E6E6E6] text-[#666666] hover:bg-[#FAFAFA] hover:text-night"
+          >
             Back to Content
           </Button>
         </div>
@@ -141,23 +169,22 @@ export default function Content() {
     );
   }
 
-  const getContentType = (post: any) => {
-    if (!post.blog_post_categories?.length) {
-      return "Undefined";
-    }
-    return post.blog_post_categories[0]?.blog_categories?.name === "Page" ? "Page" : "Blog Post";
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Content</h1>
-          <p className="text-muted-foreground">Manage your content, including pages and blog posts.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-night">Content</h1>
+          <p className="text-[#666666]">Manage your content, including pages and blog posts.</p>
         </div>
         <div className="flex items-center gap-4">
-          <ImportPosts />
-          <Button onClick={() => setIsEditing(true)}>
+          <Button 
+            variant="outline"
+            onClick={() => {}} 
+            className="border-[#E6E6E6] text-[#666666] hover:bg-[#FAFAFA] hover:text-night"
+          >
+            <ImportPosts />
+          </Button>
+          <Button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-primary-hover">
             <FileText className="mr-2 h-4 w-4" />
             Add New Content
           </Button>
@@ -166,7 +193,7 @@ export default function Content() {
 
       <div className="flex items-center gap-4 mb-4">
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] border-[#E6E6E6] text-[#666666] hover:border-primary">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
@@ -180,67 +207,75 @@ export default function Content() {
         </Select>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Published Date</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {posts?.map((post) => (
-            <TableRow key={post.id}>
-              <TableCell>{post.title}</TableCell>
-              <TableCell>
-                <Badge variant={getContentType(post) === "Undefined" ? "destructive" : "default"}>
-                  {getContentType(post)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={post.status === "published" ? "default" : "secondary"}>
-                  {post.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {post.published_at 
-                  ? new Date(post.published_at).toLocaleDateString()
-                  : "Not published"}
-              </TableCell>
-              <TableCell className="space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setSelectedPost(post);
-                    setIsEditing(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(post.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  asChild
-                >
-                  <a href={`/${post.slug}`} target="_blank" rel="noopener noreferrer">
-                    <Eye className="h-4 w-4" />
-                  </a>
-                </Button>
-              </TableCell>
+      <div className="rounded-md border border-[#E6E6E6]">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-[#FAFAFA]">
+              <TableHead className="text-night font-medium">Title</TableHead>
+              <TableHead className="text-night font-medium">Type</TableHead>
+              <TableHead className="text-night font-medium">Status</TableHead>
+              <TableHead className="text-night font-medium">Published Date</TableHead>
+              <TableHead className="text-night font-medium">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {posts?.map((post) => {
+              const contentType = getContentType(post);
+              return (
+                <TableRow key={post.id} className="hover:bg-[#ECE9FF]">
+                  <TableCell className="font-medium text-night">{post.title}</TableCell>
+                  <TableCell>
+                    <Badge className={getContentTypeBadgeVariant(contentType)}>
+                      {contentType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusBadgeVariant(post.status)}>
+                      {post.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-[#666666]">
+                    {post.published_at 
+                      ? new Date(post.published_at).toLocaleDateString()
+                      : "Not published"}
+                  </TableCell>
+                  <TableCell className="space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedPost(post);
+                        setIsEditing(true);
+                      }}
+                      className="text-night hover:text-primary hover:bg-primary-light"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(post.id)}
+                      className="text-night hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                      className="text-night hover:text-primary hover:bg-primary-light"
+                    >
+                      <a href={`/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
