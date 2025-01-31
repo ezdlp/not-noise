@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toPng } from 'html-to-image';
+import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
 
 interface SmartLinkCardProps {
   link: any;
@@ -38,6 +39,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -80,13 +82,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      // Create a temporary container
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '-9999px';
-      document.body.appendChild(container);
-
       // Get the HTML template from the Edge Function
       const { data: templateHtml, error: templateError } = await supabase.functions.invoke('generate-social-assets', {
         body: {
@@ -99,6 +94,13 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
       });
 
       if (templateError) throw templateError;
+
+      // Create a temporary container
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '-9999px';
+      document.body.appendChild(container);
 
       // Set the HTML content
       container.innerHTML = templateHtml;
@@ -160,111 +162,121 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
       toast.error("Failed to generate social media asset");
     } finally {
       setIsGenerating(false);
+      setPreviewOpen(false);
     }
   };
 
   return (
-    <Card className="flex flex-col md:flex-row gap-4 p-4">
-      <div className="flex-shrink-0">
-        <img
-          src={link.artwork_url || "/placeholder.svg"}
-          alt={link.title}
-          className="w-24 h-24 object-cover rounded-lg"
-        />
-      </div>
-      <div className="flex-grow space-y-2">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-semibold">{link.title}</h3>
-            <p className="text-sm text-muted-foreground">{link.artist_name}</p>
+    <>
+      <Card className="flex flex-col md:flex-row gap-4 p-4">
+        <div className="flex-shrink-0">
+          <img
+            src={link.artwork_url || "/placeholder.svg"}
+            alt={link.title}
+            className="w-24 h-24 object-cover rounded-lg"
+          />
+        </div>
+        <div className="flex-grow space-y-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold">{link.title}</h3>
+              <p className="text-sm text-muted-foreground">{link.artist_name}</p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVerticalIcon className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
+                  <EditIcon className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/analytics`)}>
+                  <BarChart2Icon className="mr-2 h-4 w-4" />
+                  Analytics
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreviewOpen(true)} disabled={isGenerating}>
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Generate Test Asset
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={handleDelete}
+                >
+                  <TrashIcon className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVerticalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
-                <EditIcon className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/analytics`)}>
-                <BarChart2Icon className="mr-2 h-4 w-4" />
-                Analytics
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={generateSocialAsset} disabled={isGenerating}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Generate Test Asset
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={handleDelete}
-              >
-                <TrashIcon className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  asChild
-                >
-                  <Link to={`/link/${link.slug}`} target="_blank">
-                    <ExternalLinkIcon className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View Link</p>
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex flex-wrap gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    asChild
+                  >
+                    <Link to={`/link/${link.slug}`} target="_blank">
+                      <ExternalLinkIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View Link</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={copyToClipboard}
-                >
-                  {isCopied ? (
-                    <CheckIcon className="h-4 w-4" />
-                  ) : (
-                    <CopyIcon className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copy URL</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={copyToClipboard}
+                  >
+                    {isCopied ? (
+                      <CheckIcon className="h-4 w-4" />
+                    ) : (
+                      <CopyIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy URL</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => navigate(`/links/${link.id}/analytics`)}
-                >
-                  <BarChart2Icon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Analytics</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => navigate(`/links/${link.id}/analytics`)}
+                  >
+                    <BarChart2Icon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Analytics</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      <SocialCardPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        smartLink={link}
+        onGenerate={generateSocialAsset}
+      />
+    </>
   );
 }
