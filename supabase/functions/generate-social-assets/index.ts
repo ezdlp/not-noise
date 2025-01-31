@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Canvas, loadImage } from 'https://deno.land/x/canvas@v1.4.1/mod.ts'
+import { Canvas, loadImage } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,12 +16,10 @@ const PLATFORM_DIMENSIONS: Record<string, PlatformDimensions> = {
   instagram_square: { width: 1080, height: 1080 },
   instagram_story: { width: 1080, height: 1920 },
   twitter: { width: 1200, height: 675 },
-  facebook: { width: 1200, height: 630 },
-  linkedin: { width: 1200, height: 627 }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -44,6 +42,12 @@ serve(async (req) => {
       )
     }
 
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Create canvas with platform dimensions
     const canvas = new Canvas(dimensions.width, dimensions.height)
     const ctx = canvas.getContext('2d')
@@ -51,56 +55,54 @@ serve(async (req) => {
     // Load and draw artwork
     const artwork = await loadImage(artworkUrl)
     
-    // Calculate dimensions to maintain aspect ratio
-    const scale = Math.max(
-      dimensions.width / artwork.width,
-      dimensions.height / artwork.height
+    // Calculate scaled dimensions maintaining aspect ratio
+    const scale = Math.min(
+      dimensions.width / artwork.width(),
+      dimensions.height / artwork.height()
     )
     
-    const scaledWidth = artwork.width * scale
-    const scaledHeight = artwork.height * scale
+    const scaledWidth = artwork.width() * scale
+    const scaledHeight = artwork.height() * scale
     
-    // Center the image
+    // Center the artwork
     const x = (dimensions.width - scaledWidth) / 2
     const y = (dimensions.height - scaledHeight) / 2
-    
-    // Draw background (blurred version of artwork)
+
+    // Draw blurred background (artwork scaled up and blurred)
     ctx.filter = 'blur(20px)'
-    ctx.drawImage(artwork, x, y, scaledWidth, scaledHeight)
-    ctx.filter = 'none'
+    ctx.drawImage(
+      artwork,
+      -50, -50,
+      dimensions.width + 100,
+      dimensions.height + 100
+    )
     
-    // Draw main artwork
+    // Reset filter and draw centered artwork
+    ctx.filter = 'none'
     ctx.drawImage(artwork, x, y, scaledWidth, scaledHeight)
 
     // Convert canvas to buffer
-    const buffer = canvas.toBuffer()
+    const buffer = await canvas.toBuffer()
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Upload to storage
-    const fileName = `${smartLinkId}/${platform}_${Date.now()}.png`
+    // Upload to Supabase Storage
+    const filePath = `${smartLinkId}/${platform}_${new Date().getTime()}.png`
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('social-media-assets')
-      .upload(fileName, buffer, {
+      .upload(filePath, buffer, {
         contentType: 'image/png',
         upsert: true
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
       throw uploadError
     }
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('social-media-assets')
-      .getPublicUrl(fileName)
+      .getPublicUrl(filePath)
 
-    // Save to database
+    // Save to social_media_assets table
     const { error: dbError } = await supabase
       .from('social_media_assets')
       .insert({
@@ -110,7 +112,6 @@ serve(async (req) => {
       })
 
     if (dbError) {
-      console.error('Database error:', dbError)
       throw dbError
     }
 
@@ -119,14 +120,20 @@ serve(async (req) => {
         success: true,
         url: publicUrl
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
     )
 
   } catch (error) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     )
   }
 })
