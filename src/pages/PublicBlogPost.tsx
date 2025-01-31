@@ -176,58 +176,60 @@ const PublicBlogPost = () => {
         <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
         
         {!isPage && (
-          <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm">
-                {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
-              </span>
+          <>
+            <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm">
+                  {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : 'Draft'}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm">{authorName}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">{readingTime} min read</span>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Share2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Share</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleShare('twitter')}>
+                    Share on X (Twitter)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('facebook')}>
+                    Share on Facebook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+                    Share on LinkedIn
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                    Share on WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('email')}>
+                    Share via Email
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span className="text-sm">{authorName}</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm">{readingTime} min read</span>
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleShare('twitter')}>
-                  Share on X (Twitter)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare('facebook')}>
-                  Share on Facebook
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare('linkedin')}>
-                  Share on LinkedIn
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
-                  Share on WhatsApp
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare('email')}>
-                  Share via Email
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
 
-        {!isPage && post.featured_image && (
-          <img
-            src={post.featured_image}
-            alt={post.title}
-            className="w-full h-[400px] object-cover rounded-lg mb-12"
-          />
+            {post.featured_image && (
+              <img
+                src={post.featured_image}
+                alt={post.title}
+                className="w-full h-[400px] object-cover rounded-lg mb-12"
+              />
+            )}
+          </>
         )}
 
         <div 
