@@ -39,31 +39,18 @@ export function SocialCardPreviewDialog({
     const availableWidth = containerWidth - (padding * 2);
     const availableHeight = containerHeight - (padding * 2);
     
-    // Base dimensions for social media assets
-    const baseWidth = 1080;
-    const baseHeight = format === "post" ? 1080 : 1920;
-    const aspectRatio = baseWidth / baseHeight;
-
-    let width, height;
+    // Original dimensions
+    const originalWidth = 1080;
+    const originalHeight = format === "post" ? 1080 : 1920;
     
-    if (format === "post") {
-      // For square posts, use the smaller dimension
-      const size = Math.min(availableWidth, availableHeight);
-      width = size;
-      height = size;
-    } else {
-      // For stories, maintain 9:16 aspect ratio
-      height = availableHeight;
-      width = height * (9/16);
-      
-      // If width exceeds available width, scale down
-      if (width > availableWidth) {
-        width = availableWidth;
-        height = width * (16/9);
-      }
-    }
-
-    const scale = width / baseWidth;
+    // Calculate scale based on container constraints
+    const scaleX = availableWidth / originalWidth;
+    const scaleY = availableHeight / originalHeight;
+    const scale = Math.min(scaleX, scaleY);
+    
+    // Calculate final dimensions
+    const width = originalWidth * scale;
+    const height = originalHeight * scale;
 
     return {
       width,
@@ -84,7 +71,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { width, height, scale } = getPreviewDimensions();
+  const { width, height } = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,8 +92,6 @@ export function SocialCardPreviewDialog({
               style={{ 
                 width: `${width}px`,
                 height: `${height}px`,
-                transform: `scale(${scale})`,
-                transformOrigin: 'center',
                 position: 'absolute',
               }}
               className="bg-primary overflow-hidden"
