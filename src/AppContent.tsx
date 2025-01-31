@@ -18,7 +18,7 @@ import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminSmartLinks from "@/pages/admin/SmartLinks";
 import AdminUserLinks from "@/pages/admin/UserLinks";
 import AdminUsers from "@/pages/admin/Users";
-import AdminPosts from "@/pages/admin/Posts";
+import AdminContent from "@/pages/admin/Content";
 import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminImport from "@/pages/admin/Import";
@@ -52,7 +52,7 @@ const AppContent = () => {
         <Route path="smart-links" element={<AdminSmartLinks />} />
         <Route path="user-links" element={<AdminUserLinks />} />
         <Route path="users" element={<AdminUsers />} />
-        <Route path="posts" element={<AdminPosts />} />
+        <Route path="content" element={<AdminContent />} />
         <Route path="media" element={<AdminMediaLibrary />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="import" element={<AdminImport />} />
