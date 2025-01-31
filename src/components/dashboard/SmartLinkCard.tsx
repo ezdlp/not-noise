@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { toPng } from 'html-to-image';
 
 interface SmartLinkCardProps {
   link: any;
@@ -105,7 +106,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
       );
 
       // Convert to image using html-to-image
-      const dataUrl = await htmlToImage.toPng(container.firstChild as HTMLElement, {
+      const dataUrl = await toPng(container.firstChild as HTMLElement, {
         quality: 1,
         pixelRatio: 2,
       });
