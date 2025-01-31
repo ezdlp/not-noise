@@ -27,13 +27,14 @@ serve(async (req) => {
 
     console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
 
-    // Launch browser with minimal permissions and sandbox disabled
+    // Launch browser with minimal permissions
     const browser = await puppeteer.launch({
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--single-process'
+        '--single-process',
+        '--disable-gpu'
       ]
     })
     
@@ -105,7 +106,8 @@ serve(async (req) => {
     // Take screenshot
     const screenshot = await page.screenshot({ 
       type: 'png',
-      encoding: 'binary'
+      encoding: 'binary',
+      captureBeyondViewport: false
     })
 
     // Close browser
