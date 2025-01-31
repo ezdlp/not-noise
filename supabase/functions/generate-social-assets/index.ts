@@ -18,11 +18,6 @@ serve(async (req) => {
   }
 
   try {
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-      throw new Error('Method not allowed')
-    }
-
     // Parse request body
     const { smartLinkId, platform, artworkUrl, title, artistName } = await req.json()
     
