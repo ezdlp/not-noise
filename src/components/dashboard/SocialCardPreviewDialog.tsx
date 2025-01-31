@@ -29,18 +29,20 @@ export function SocialCardPreviewDialog({
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
 
-  // Calculate dimensions and scale
+  // Base dimensions
   const containerWidth = 700; // Dialog width
   const containerHeight = 580; // Preview container height
   const baseWidth = 1080; // Base width for both formats
-  const postHeight = 1080;
-  const storyHeight = 1920;
+  const postHeight = 1080; // Square post
+  const storyHeight = 1920; // Story format (9:16)
 
   const getScale = () => {
     const targetHeight = format === "post" ? postHeight : storyHeight;
-    const scaleX = (containerWidth - 40) / baseWidth; // Subtract padding
-    const scaleY = (containerHeight - 40) / targetHeight; // Subtract padding
-    return Math.min(scaleX, scaleY);
+    // Calculate scale based on both width and height constraints
+    const scaleByWidth = (containerWidth * 0.9) / baseWidth; // 90% of container width
+    const scaleByHeight = (containerHeight * 0.9) / targetHeight; // 90% of container height
+    // Use the smaller scale to ensure content fits both dimensions
+    return Math.min(scaleByWidth, scaleByHeight);
   };
 
   useEffect(() => {
@@ -54,6 +56,10 @@ export function SocialCardPreviewDialog({
     ];
     setPlatformIcons(icons);
   }, []);
+
+  const scale = getScale();
+  const contentWidth = baseWidth * scale;
+  const contentHeight = (format === "post" ? postHeight : storyHeight) * scale;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,14 +75,13 @@ export function SocialCardPreviewDialog({
         {/* Preview container */}
         <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Content container */}
+            {/* Content container with proper scaling and centering */}
             <div 
-              className="relative transition-all duration-300 ease-out"
+              className="relative transition-all duration-300 ease-out origin-center"
               style={{ 
-                width: "1080px",
-                height: format === "post" ? "1080px" : "1920px",
-                transform: `scale(${getScale()})`,
-                transformOrigin: "center center",
+                width: `${baseWidth}px`,
+                height: format === "post" ? `${postHeight}px` : `${storyHeight}px`,
+                transform: `scale(${scale})`,
               }}
             >
               {/* Background with contained blur */}
