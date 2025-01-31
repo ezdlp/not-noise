@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import puppeteer from 'https://deno.land/x/puppeteer@16.2.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,23 +25,6 @@ serve(async (req) => {
     }
 
     console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
-
-    // Launch browser with minimal permissions
-    const browser = await puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--single-process',
-        '--disable-gpu',
-        '--disable-software-rasterizer'
-      ]
-    })
-    
-    const page = await browser.newPage()
-
-    // Set viewport to match desired image dimensions
-    await page.setViewport({ width: 1200, height: 630 })
 
     // Create HTML content
     const html = `
@@ -101,20 +83,6 @@ serve(async (req) => {
       </html>
     `
 
-    // Set content and wait for images to load
-    await page.setContent(html, { waitUntil: 'networkidle0' })
-
-    // Take screenshot
-    const screenshot = await page.screenshot({ 
-      type: 'png',
-      encoding: 'binary',
-      captureBeyondViewport: false,
-      fullPage: false
-    })
-
-    // Close browser
-    await browser.close()
-
     // Create Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -126,48 +94,12 @@ serve(async (req) => {
     const filename = `${smartLinkId}-${platform}-${timestamp}.png`
     const filePath = `${smartLinkId}/${filename}`
 
-    console.log('Uploading to storage...')
-
-    // Upload to storage
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('social-media-assets')
-      .upload(filePath, screenshot, {
-        contentType: 'image/png',
-        upsert: true
-      })
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      throw new Error('Failed to upload generated asset')
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('social-media-assets')
-      .getPublicUrl(filePath)
-
-    console.log('Asset generated successfully:', publicUrl)
-
-    // Store asset record in database
-    const { error: dbError } = await supabase
-      .from('social_media_assets')
-      .insert({
-        smart_link_id: smartLinkId,
-        platform,
-        image_url: publicUrl
-      })
-
-    if (dbError) {
-      console.error('Database error:', dbError)
-      // Don't throw here, as we still want to return the URL
-    }
-
+    // Return the HTML content for client-side rendering
     return new Response(
       JSON.stringify({ 
         success: true,
-        imageUrl: publicUrl
+        html: html,
+        filePath: filePath
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
