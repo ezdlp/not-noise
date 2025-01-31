@@ -34,7 +34,8 @@ serve(async (req) => {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--single-process',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-software-rasterizer'
       ]
     })
     
@@ -107,14 +108,15 @@ serve(async (req) => {
     const screenshot = await page.screenshot({ 
       type: 'png',
       encoding: 'binary',
-      captureBeyondViewport: false
+      captureBeyondViewport: false,
+      fullPage: false
     })
 
     // Close browser
     await browser.close()
 
     // Create Supabase client
-    const supabaseAdmin = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
@@ -127,7 +129,7 @@ serve(async (req) => {
     console.log('Uploading to storage...')
 
     // Upload to storage
-    const { data: uploadData, error: uploadError } = await supabaseAdmin
+    const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('social-media-assets')
       .upload(filePath, screenshot, {
@@ -141,7 +143,7 @@ serve(async (req) => {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabaseAdmin
+    const { data: { publicUrl } } = supabase
       .storage
       .from('social-media-assets')
       .getPublicUrl(filePath)
@@ -149,7 +151,7 @@ serve(async (req) => {
     console.log('Asset generated successfully:', publicUrl)
 
     // Store asset record in database
-    const { error: dbError } = await supabaseAdmin
+    const { error: dbError } = await supabase
       .from('social_media_assets')
       .insert({
         smart_link_id: smartLinkId,
