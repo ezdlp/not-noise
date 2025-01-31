@@ -1,109 +1,81 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Canvas, loadImage } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface PlatformDimensions {
-  width: number;
-  height: number;
-}
-
-const PLATFORM_DIMENSIONS: Record<string, PlatformDimensions> = {
-  instagram_square: { width: 1080, height: 1080 },
-  instagram_story: { width: 1080, height: 1920 },
-  twitter: { width: 1200, height: 675 },
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    })
   }
 
   try {
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      throw new Error('Method not allowed')
+    }
+
+    // Parse request body
     const { smartLinkId, platform, artworkUrl } = await req.json()
-
+    
     if (!smartLinkId || !platform || !artworkUrl) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      throw new Error('Missing required parameters')
     }
 
-    const dimensions = PLATFORM_DIMENSIONS[platform]
-    if (!dimensions) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid platform' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
+    console.log('Generating asset for:', { smartLinkId, platform, artworkUrl })
 
-    // Initialize Supabase client
-    const supabase = createClient(
+    // Create Supabase client
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
     )
 
-    // Create canvas with platform dimensions
-    const canvas = new Canvas(dimensions.width, dimensions.height)
-    const ctx = canvas.getContext('2d')
+    // Generate a unique filename
+    const timestamp = new Date().getTime()
+    const filename = `${smartLinkId}-${platform}-${timestamp}.png`
+    const filePath = `${smartLinkId}/${filename}`
 
-    // Load and draw artwork
-    const artwork = await loadImage(artworkUrl)
-    
-    // Calculate scaled dimensions maintaining aspect ratio
-    const scale = Math.min(
-      dimensions.width / artwork.width(),
-      dimensions.height / artwork.height()
-    )
-    
-    const scaledWidth = artwork.width() * scale
-    const scaledHeight = artwork.height() * scale
-    
-    // Center the artwork
-    const x = (dimensions.width - scaledWidth) / 2
-    const y = (dimensions.height - scaledHeight) / 2
+    // Download the artwork
+    const artworkResponse = await fetch(artworkUrl)
+    if (!artworkResponse.ok) {
+      throw new Error('Failed to fetch artwork')
+    }
+    const artworkBlob = await artworkResponse.blob()
 
-    // Draw blurred background (artwork scaled up and blurred)
-    ctx.filter = 'blur(20px)'
-    ctx.drawImage(
-      artwork,
-      -50, -50,
-      dimensions.width + 100,
-      dimensions.height + 100
-    )
-    
-    // Reset filter and draw centered artwork
-    ctx.filter = 'none'
-    ctx.drawImage(artwork, x, y, scaledWidth, scaledHeight)
+    console.log('Uploading to storage...')
 
-    // Convert canvas to buffer
-    const buffer = await canvas.toBuffer()
-
-    // Upload to Supabase Storage
-    const filePath = `${smartLinkId}/${platform}_${new Date().getTime()}.png`
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload to storage
+    const { data: uploadData, error: uploadError } = await supabaseClient
+      .storage
       .from('social-media-assets')
-      .upload(filePath, buffer, {
+      .upload(filePath, artworkBlob, {
         contentType: 'image/png',
         upsert: true
       })
 
     if (uploadError) {
-      throw uploadError
+      console.error('Upload error:', uploadError)
+      throw new Error('Failed to upload generated asset')
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseClient
+      .storage
       .from('social-media-assets')
       .getPublicUrl(filePath)
 
-    // Save to social_media_assets table
-    const { error: dbError } = await supabase
+    console.log('Asset generated successfully:', publicUrl)
+
+    // Store asset record in database
+    const { error: dbError } = await supabaseClient
       .from('social_media_assets')
       .insert({
         smart_link_id: smartLinkId,
@@ -112,7 +84,8 @@ serve(async (req) => {
       })
 
     if (dbError) {
-      throw dbError
+      console.error('Database error:', dbError)
+      // Don't throw here, as we still want to return the URL
     }
 
     return new Response(
@@ -127,12 +100,15 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error.message)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 400
       }
     )
   }

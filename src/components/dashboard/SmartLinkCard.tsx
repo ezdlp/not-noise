@@ -87,15 +87,20 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function error:', error);
+        throw error;
+      }
+
+      if (!data?.imageUrl) {
+        throw new Error('No image URL returned');
+      }
 
       toast.dismiss(toastId);
       toast.success("Asset generated successfully!");
 
       // Open the generated image in a new tab
-      if (data?.imageUrl) {
-        window.open(data.imageUrl, '_blank');
-      }
+      window.open(data.imageUrl, '_blank');
     } catch (error) {
       console.error('Error generating asset:', error);
       toast.dismiss(toastId);
