@@ -80,8 +80,15 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      // First get the HTML template from the Edge Function
-      const { data: templateResponse, error: templateError } = await supabase.functions.invoke('generate-social-assets', {
+      // Create a temporary container
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '-9999px';
+      document.body.appendChild(container);
+
+      // Get the HTML template from the Edge Function
+      const { data: templateHtml, error: templateError } = await supabase.functions.invoke('generate-social-assets', {
         body: {
           smartLinkId: link.id,
           platform: 'instagram_square',
@@ -93,31 +100,28 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
 
       if (templateError) throw templateError;
 
-      // Create a temporary container and add it to the body
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '-9999px';
-      container.innerHTML = templateResponse;
-      document.body.appendChild(container);
+      // Set the HTML content
+      container.innerHTML = templateHtml;
 
-      // Wait for fonts and images to load
+      // Wait for fonts to load
       await document.fonts.ready;
-      const images = Array.from(container.getElementsByTagName('img'));
-      await Promise.all(
-        images.map(img => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-          });
-        })
-      );
 
-      // Convert to image
+      // Wait for the artwork image to load
+      const artworkImg = container.querySelector('.artwork') as HTMLImageElement;
+      if (!artworkImg) throw new Error('Artwork image not found in template');
+
+      await new Promise((resolve, reject) => {
+        artworkImg.onload = resolve;
+        artworkImg.onerror = () => reject(new Error('Failed to load artwork image'));
+      });
+
+      // Convert to image with proper dimensions
       const dataUrl = await toPng(container, {
         quality: 1,
         pixelRatio: 2,
+        width: 1080,
+        height: 1080,
+        backgroundColor: '#6851FB',
       });
 
       // Remove the temporary container
@@ -128,7 +132,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
       const blob = await res.blob();
 
       // Upload to Supabase Storage
-      const filename = `${link.id}-instagram_square-${Date.now()}.png`;
+      const filename = `${link.id}-instagram-square-${Date.now()}.png`;
       const filePath = `${link.id}/${filename}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
