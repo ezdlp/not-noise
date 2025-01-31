@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { X, Square, RectangleVertical } from "lucide-react";
+import { Square, RectangleVertical, X } from "lucide-react";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -43,7 +43,7 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-6 overflow-hidden max-w-[700px] w-[700px] rounded-xl">
+      <DialogContent className="pt-6 px-6 pb-12 overflow-hidden max-w-[700px] w-[700px] rounded-xl">
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
@@ -52,79 +52,83 @@ export function SocialCardPreviewDialog({
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        {/* Preview container */}
-        <div 
-          className="relative w-full bg-neutral-night rounded-lg overflow-hidden transition-all duration-300 ease-out" 
-          style={{ 
-            aspectRatio: format === "post" ? "1/1" : "9/16",
-            maxHeight: format === "post" ? "600px" : "800px"
-          }}
-        >
-          {/* Container for the preview */}
-          <div 
-            className="absolute inset-0"
-            style={{ 
-              transform: format === "post" ? 'scale(0.555)' : 'scale(0.416)',
-              transformOrigin: 'top left',
-            }}
-          >
-            <div 
-              className="relative" 
-              style={{ 
-                width: format === "post" ? "1080px" : "1080px",
-                height: format === "post" ? "1080px" : "1920px"
-              }}
-            >
-              {/* Background with blur */}
+        {/* Preview container with proper scaling */}
+        <div className="relative w-full bg-neutral-night rounded-lg overflow-hidden">
+          <div className="relative" style={{ 
+            width: "100%",
+            paddingTop: format === "post" ? "100%" : "177.78%",
+          }}>
+            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+              {/* Content container with proper dimensions */}
               <div 
-                className="absolute inset-0"
+                className="relative transition-all duration-300 ease-out"
                 style={{ 
-                  background: `url(${smartLink.artwork_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(20px)',
-                }}
-              />
-              <div className="absolute inset-0 bg-black/30" />
-
-              {/* Content */}
-              <div 
-                className="relative w-full h-full flex flex-col items-center justify-center p-10 gap-10"
-                style={{
-                  paddingTop: format === "story" ? "250px" : "34px",
-                  paddingBottom: format === "story" ? "150px" : "34px",
+                  width: "1080px",
+                  height: format === "post" ? "1080px" : "1920px",
+                  transform: format === "post" ? "scale(0.555)" : "scale(0.312)",
+                  transformOrigin: "center",
                 }}
               >
-                <img 
-                  src={smartLink.artwork_url} 
-                  alt={smartLink.title}
-                  className={`rounded-lg object-cover shadow-lg ${
-                    format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
-                  }`}
-                />
-                <div className="text-center">
-                  <h1 className={`font-heading font-bold text-white mb-4 ${
-                    format === "post" ? "text-5xl" : "text-6xl"
-                  }`}>{smartLink.title}</h1>
-                  <p className={`text-white/90 ${
-                    format === "post" ? "text-3xl" : "text-4xl"
-                  }`}>{smartLink.artist_name}</p>
+                {/* Background with contained blur */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div 
+                    className="absolute inset-0 scale-110"
+                    style={{ 
+                      background: `url(${smartLink.artwork_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      filter: 'blur(20px)',
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/30" />
                 </div>
 
-                {/* Platform logos section */}
-                <div className="mt-auto text-center">
-                  <p className={`text-white mb-6 ${
-                    format === "post" ? "text-xl" : "text-2xl"
-                  }`}>NOW AVAILABLE ON</p>
-                  <div className="flex justify-center items-center gap-8">
-                    {platformIcons.map((platform) => (
-                      <img
-                        key={platform.id}
-                        src={platform.icon}
-                        alt={platform.id}
-                        className={format === "post" ? "w-12 h-12" : "w-16 h-16"}
-                      />
-                    ))}
+                {/* Content with proper safe zones */}
+                <div className="relative h-full flex flex-col items-center">
+                  <div 
+                    className="w-full flex-1 flex flex-col items-center justify-center px-10 transition-all duration-300"
+                    style={{
+                      paddingTop: format === "story" ? "250px" : "34px",
+                      paddingBottom: format === "story" ? "150px" : "34px",
+                    }}
+                  >
+                    {/* Artwork */}
+                    <img 
+                      src={smartLink.artwork_url} 
+                      alt={smartLink.title}
+                      className={`rounded-lg object-cover shadow-lg transition-all duration-300 ${
+                        format === "post" ? "w-[500px] h-[500px]" : "w-[800px] h-[800px]"
+                      }`}
+                    />
+
+                    {/* Text content */}
+                    <div className="text-center mt-10">
+                      <h1 className={`font-heading font-bold text-white mb-4 transition-all duration-300 ${
+                        format === "post" ? "text-5xl" : "text-6xl"
+                      }`}>{smartLink.title}</h1>
+                      <p className={`text-white/90 transition-all duration-300 ${
+                        format === "post" ? "text-3xl" : "text-4xl"
+                      }`}>{smartLink.artist_name}</p>
+                    </div>
+
+                    {/* Platform icons with grid layout */}
+                    <div className="mt-auto text-center">
+                      <p className={`text-white mb-6 transition-all duration-300 ${
+                        format === "post" ? "text-xl" : "text-2xl"
+                      }`}>NOW AVAILABLE ON</p>
+                      <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
+                        {platformIcons.map((platform) => (
+                          <img
+                            key={platform.id}
+                            src={platform.icon}
+                            alt={platform.id}
+                            className={`transition-all duration-300 ${
+                              format === "post" ? "w-12 h-12" : "w-16 h-16"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -132,7 +136,7 @@ export function SocialCardPreviewDialog({
           </div>
         </div>
 
-        {/* Bottom controls */}
+        {/* Bottom controls with proper spacing */}
         <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center">
           {/* Format switcher */}
           <div className="flex items-center gap-4">
@@ -141,7 +145,7 @@ export function SocialCardPreviewDialog({
               <Button
                 variant={format === "post" ? "secondary" : "outline"}
                 onClick={() => setFormat("post")}
-                className={`flex items-center gap-2 transition-colors ${
+                className={`flex items-center gap-2 transition-all duration-200 ${
                   format === "post" 
                     ? "bg-primary-light text-primary hover:bg-primary-light/80" 
                     : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
@@ -153,7 +157,7 @@ export function SocialCardPreviewDialog({
               <Button
                 variant={format === "story" ? "secondary" : "outline"}
                 onClick={() => setFormat("story")}
-                className={`flex items-center gap-2 transition-colors ${
+                className={`flex items-center gap-2 transition-all duration-200 ${
                   format === "story" 
                     ? "bg-primary-light text-primary hover:bg-primary-light/80" 
                     : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
