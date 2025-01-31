@@ -41,57 +41,65 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[650px] p-0 overflow-hidden">
-        <div className="relative w-[1080px] h-[1080px] mx-auto overflow-hidden"
-          style={{ 
-            transform: 'scale(0.45)',
-            transformOrigin: 'top center',
-          }}
-        >
-          {/* Background with blur */}
+      <DialogContent className="max-w-[600px] p-0">
+        <div className="relative w-full aspect-square bg-black overflow-hidden">
+          {/* Container for the 1080x1080 preview */}
           <div 
-            className="absolute inset-0"
+            className="absolute inset-0 origin-center"
             style={{ 
-              background: `url(${smartLink.artwork_url})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: 'blur(20px)',
+              transform: 'scale(0.555)', // 600/1080 ≈ 0.555
             }}
-          />
-          <div 
-            className="absolute inset-0"
-            style={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-            }}
-          />
+          >
+            <div className="relative w-[1080px] h-[1080px]">
+              {/* Background with blur */}
+              <div 
+                className="absolute inset-0"
+                style={{ 
+                  background: `url(${smartLink.artwork_url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(20px)',
+                }}
+              />
+              <div 
+                className="absolute inset-0"
+                style={{ 
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                }}
+              />
 
-          <div className="relative w-full h-full flex flex-col items-center justify-center p-10 gap-10">
-            <img 
-              src={smartLink.artwork_url} 
-              alt={smartLink.title}
-              className="w-[500px] h-[500px] rounded-lg object-cover shadow-2xl"
-            />
-            <div className="text-center">
-              <h1 className="text-5xl font-bold text-white mb-4">{smartLink.title}</h1>
-              <p className="text-3xl text-white/90">{smartLink.artist_name}</p>
-            </div>
+              {/* Content */}
+              <div className="relative w-full h-full flex flex-col items-center justify-center p-10 gap-10">
+                <img 
+                  src={smartLink.artwork_url} 
+                  alt={smartLink.title}
+                  className="w-[500px] h-[500px] rounded-lg object-cover shadow-2xl"
+                />
+                <div className="text-center">
+                  <h1 className="text-5xl font-bold text-white mb-4">{smartLink.title}</h1>
+                  <p className="text-3xl text-white/90">{smartLink.artist_name}</p>
+                </div>
 
-            {/* Platform logos section */}
-            <div className="mt-auto text-center">
-              <p className="text-white text-xl mb-6">NOW AVAILABLE ON</p>
-              <div className="flex justify-center items-center gap-8">
-                {platformIcons.map((platform) => (
-                  <img
-                    key={platform.id}
-                    src={platform.icon}
-                    alt={platform.id}
-                    className="w-12 h-12 object-contain"
-                  />
-                ))}
+                {/* Platform logos section */}
+                <div className="mt-auto text-center">
+                  <p className="text-white text-xl mb-6">NOW AVAILABLE ON</p>
+                  <div className="flex justify-center items-center gap-8">
+                    {platformIcons.map((platform) => (
+                      <img
+                        key={platform.id}
+                        src={platform.icon}
+                        alt={platform.id}
+                        className="w-12 h-12 object-contain"
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Generate button */}
         <div className="absolute bottom-4 right-4">
           <Button 
             onClick={() => {
