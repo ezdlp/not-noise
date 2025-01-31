@@ -93,9 +93,7 @@ export function SocialCardPreviewDialog({
                 <div 
                   className="absolute inset-0 scale-110"
                   style={{ 
-                    background: `url(${smartLink.artwork_url})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
+                    background: `url(${smartLink.artwork_url}) center center / cover`,
                     filter: 'blur(20px)',
                   }}
                 />
