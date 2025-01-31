@@ -6,7 +6,6 @@ import { FileText, Pencil, Trash2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { PostEditor } from "@/components/admin/blog/PostEditor";
-import { ImportPosts } from "@/components/admin/blog/ImportPosts";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -177,13 +176,6 @@ export default function Content() {
           <p className="text-[#666666]">Manage your content, including pages and blog posts.</p>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline"
-            onClick={() => {}} 
-            className="border-[#E6E6E6] text-[#666666] hover:bg-[#FAFAFA] hover:text-night"
-          >
-            <ImportPosts />
-          </Button>
           <Button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-primary-hover">
             <FileText className="mr-2 h-4 w-4" />
             Add New Content
