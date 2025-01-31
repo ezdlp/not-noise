@@ -5,7 +5,7 @@ import puppeteer from 'https://deno.land/x/puppeteer@16.2.0/mod.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 }
 
 serve(async (req) => {
@@ -27,8 +27,16 @@ serve(async (req) => {
 
     console.log('Generating asset for:', { smartLinkId, platform, artworkUrl, title, artistName })
 
-    // Launch browser
-    const browser = await puppeteer.launch({ args: ['--no-sandbox'] })
+    // Launch browser with minimal permissions
+    const browser = await puppeteer.launch({
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--single-process'
+      ]
+    })
+    
     const page = await browser.newPage()
 
     // Set viewport to match desired image dimensions
@@ -101,10 +109,9 @@ serve(async (req) => {
     await browser.close()
 
     // Create Supabase client
-    const supabaseClient = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     // Generate a unique filename
@@ -115,7 +122,7 @@ serve(async (req) => {
     console.log('Uploading to storage...')
 
     // Upload to storage
-    const { data: uploadData, error: uploadError } = await supabaseClient
+    const { data: uploadData, error: uploadError } = await supabaseAdmin
       .storage
       .from('social-media-assets')
       .upload(filePath, screenshot, {
@@ -129,7 +136,7 @@ serve(async (req) => {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabaseClient
+    const { data: { publicUrl } } = supabaseAdmin
       .storage
       .from('social-media-assets')
       .getPublicUrl(filePath)
@@ -137,7 +144,7 @@ serve(async (req) => {
     console.log('Asset generated successfully:', publicUrl)
 
     // Store asset record in database
-    const { error: dbError } = await supabaseClient
+    const { error: dbError } = await supabaseAdmin
       .from('social_media_assets')
       .insert({
         smart_link_id: smartLinkId,
@@ -162,7 +169,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error.message)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({
         success: false,
