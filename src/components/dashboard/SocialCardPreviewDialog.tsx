@@ -60,12 +60,15 @@ export function SocialCardPreviewDialog({
       ? Math.floor(width * 0.55) 
       : Math.floor(width * 0.65);
     
-    // Calculate safe zones and spacing
-    const topSafeZone = Math.floor(height * 0.14);
-    const bottomSafeZone = Math.floor(height * 0.17);
+    // Calculate text sizes and spacing based on artwork size
     const titleSize = Math.floor(artworkSize * 0.25); // 25% of artwork size
     const artistNameSize = Math.floor(titleSize * 0.7); // 70% of title size
     const platformIconSize = Math.floor(width * 0.08); // 8% of container width
+    const platformIconGap = Math.floor(width * 0.05); // 5% of container width
+    
+    // Calculate safe zones
+    const topSafeZone = Math.floor(height * 0.14);
+    const bottomSafeZone = Math.floor(height * 0.17);
     
     return {
       containerWidth,
@@ -73,42 +76,14 @@ export function SocialCardPreviewDialog({
       width,
       height,
       artworkSize,
-      topSafeZone,
-      bottomSafeZone,
       titleSize,
       artistNameSize,
       platformIconSize,
+      platformIconGap,
+      topSafeZone,
+      bottomSafeZone,
     };
   };
-
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = smartLink.artwork_url;
-    
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      let r = 0, g = 0, b = 0;
-
-      for (let i = 0; i < imageData.length; i += 4) {
-        r += imageData[i];
-        g += imageData[i + 1];
-        b += imageData[i + 2];
-      }
-
-      const pixelCount = imageData.length / 4;
-      const avgColor = `rgb(${Math.floor(r/pixelCount)}, ${Math.floor(g/pixelCount)}, ${Math.floor(b/pixelCount)})`;
-      setDominantColor(avgColor);
-    };
-  }, [smartLink.artwork_url]);
 
   useEffect(() => {
     const icons = [
@@ -215,13 +190,13 @@ export function SocialCardPreviewDialog({
                   <div className="text-center space-y-3 mt-8">
                     <h1 
                       className="font-heading font-bold tracking-tight text-white"
-                      style={{ fontSize: `${dimensions.titleSize}px` }}
+                      style={{ fontSize: `${dimensions.titleSize}px`, lineHeight: 1.1 }}
                     >
                       {smartLink.title}
                     </h1>
                     <p 
                       className="text-white/90 font-medium"
-                      style={{ fontSize: `${dimensions.artistNameSize}px` }}
+                      style={{ fontSize: `${dimensions.artistNameSize}px`, lineHeight: 1.2 }}
                     >
                       {smartLink.artist_name}
                     </p>
@@ -238,7 +213,10 @@ export function SocialCardPreviewDialog({
                   >
                     NOW AVAILABLE ON
                   </p>
-                  <div className="grid grid-flow-col auto-cols-max gap-5 place-content-center">
+                  <div 
+                    className="grid grid-flow-col auto-cols-max place-content-center"
+                    style={{ gap: `${dimensions.platformIconGap}px` }}
+                  >
                     {platformIcons.map((platform) => (
                       <img
                         key={platform.id}
