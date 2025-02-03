@@ -129,7 +129,7 @@ export function SocialCardPreviewDialog({
         </button>
 
         <div 
-          className="w-full bg-neutral-night rounded-lg overflow-hidden flex items-center justify-center"
+          className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
           style={{ 
             width: `${containerWidth}px`, 
             height: `${containerHeight}px`
