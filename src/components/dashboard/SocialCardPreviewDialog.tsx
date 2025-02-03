@@ -38,21 +38,35 @@ export function SocialCardPreviewDialog({
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    const scaleX = maxWidth / originalWidth;
-    const scaleY = maxHeight / originalHeight;
-    const scale = Math.min(scaleX, scaleY);
+    // For story format, we want to maintain aspect ratio within the container
+    const containerWidth = maxWidth;
+    const containerHeight = maxHeight;
     
-    const width = Math.floor(originalWidth * scale);
-    const height = Math.floor(originalHeight * scale);
+    let width, height;
+    
+    if (format === "post") {
+      const scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+      width = Math.floor(originalWidth * scale);
+      height = Math.floor(originalHeight * scale);
+    } else {
+      // For story, calculate dimensions to fit height while maintaining aspect ratio
+      const scale = Math.min(
+        maxHeight / originalHeight,
+        (maxWidth * 0.6) / originalWidth // Use 60% of container width max for story
+      );
+      width = Math.floor(originalWidth * scale);
+      height = Math.floor(originalHeight * scale);
+    }
     
     // Calculate safe zones based on the scaled height
     const topSafeZone = Math.floor(height * 0.14); // 14% of height
     const bottomSafeZone = Math.floor(height * 0.17); // 17% of height
     
     return {
+      containerWidth,
+      containerHeight,
       width,
       height,
-      scale,
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
         : Math.floor(width * 0.65),
@@ -102,7 +116,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { width, height, artworkSize, topSafeZone, bottomSafeZone } = getPreviewDimensions();
+  const { containerWidth, containerHeight, width, height, artworkSize, topSafeZone, bottomSafeZone } = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,129 +129,128 @@ export function SocialCardPreviewDialog({
         </button>
 
         <div 
-          className="w-full bg-neutral-night rounded-lg overflow-hidden"
-          style={{ height: `${height}px`, width: `${width}px`, margin: '0 auto' }}
+          className="w-full bg-neutral-night rounded-lg overflow-hidden flex items-center justify-center"
+          style={{ 
+            width: `${containerWidth}px`, 
+            height: `${containerHeight}px`
+          }}
         >
-          <div className="relative w-full h-full">
-            <div 
-              className="overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ 
-                width: `${width}px`,
-                height: `${height}px`,
-              }}
-            >
-              <div className="absolute inset-0 overflow-hidden">
-                <div 
-                  className="absolute inset-0 scale-110"
-                  style={{ 
-                    background: `url(${smartLink.artwork_url}) center center / cover`,
-                    filter: 'blur(20px)',
-                  }}
-                />
-                <div 
-                  className="absolute inset-0" 
-                  style={{
-                    background: `linear-gradient(180deg, 
-                      rgba(0,0,0,0.4) 0%, 
-                      rgba(0,0,0,0.3) 50%, 
-                      rgba(0,0,0,0.6) 100%
-                    )`
-                  }}
-                />
-              </div>
-
-              {format === "post" ? (
-                <div className="relative h-full flex flex-col items-center justify-between py-8">
-                  <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-                    <img 
-                      src={smartLink.artwork_url} 
-                      alt={smartLink.title}
-                      className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
-                      style={{
-                        width: `${artworkSize}px`,
-                        height: `${artworkSize}px`,
-                      }}
-                    />
-                    <div className="text-center space-y-3 px-4">
-                      <h1 className="font-heading font-bold tracking-tight text-white text-3xl md:text-4xl">
-                        {smartLink.title}
-                      </h1>
-                      <p className="text-white/90 font-medium text-xl md:text-2xl">
-                        {smartLink.artist_name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-center mt-auto">
-                    <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
-                      NOW AVAILABLE ON
-                    </p>
-                    <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
-                      {platformIcons.map((platform) => (
-                        <img
-                          key={platform.id}
-                          src={platform.icon}
-                          alt={platform.id}
-                          className="w-5 h-5 opacity-90 filter brightness-0 invert"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative h-full">
-                  {/* Top content */}
-                  <div 
-                    className="absolute top-0 left-0 right-0 flex flex-col items-center"
-                    style={{ marginTop: `${topSafeZone}px` }}
-                  >
-                    <img 
-                      src={smartLink.artwork_url} 
-                      alt={smartLink.title}
-                      className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
-                      style={{
-                        width: `${artworkSize}px`,
-                        height: `${artworkSize}px`,
-                      }}
-                    />
-                    <div className="text-center space-y-3 mt-8">
-                      <h1 className="font-heading font-bold tracking-tight text-white" 
-                          style={{ fontSize: `${Math.max(32, width * 0.08)}px` }}>
-                        {smartLink.title}
-                      </h1>
-                      <p className="text-white/90 font-medium"
-                         style={{ fontSize: `${Math.max(24, width * 0.06)}px` }}>
-                        {smartLink.artist_name}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bottom content */}
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 text-center"
-                    style={{ marginBottom: `${bottomSafeZone}px` }}
-                  >
-                    <p className="text-white/70 uppercase tracking-widest font-medium mb-6"
-                       style={{ fontSize: `${Math.max(12, width * 0.02)}px` }}>
-                      NOW AVAILABLE ON
-                    </p>
-                    <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
-                      {platformIcons.map((platform) => (
-                        <img
-                          key={platform.id}
-                          src={platform.icon}
-                          alt={platform.id}
-                          className="opacity-90 filter brightness-0 invert"
-                          style={{ 
-                            width: `${Math.max(24, width * 0.035)}px`,
-                            height: `${Math.max(24, width * 0.035)}px`
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+          <div 
+            className="relative overflow-hidden"
+            style={{ 
+              width: `${width}px`,
+              height: `${height}px`,
+            }}
+          >
+            <div className="absolute inset-0 overflow-hidden">
+              <div 
+                className="absolute inset-0 scale-110"
+                style={{ 
+                  background: `url(${smartLink.artwork_url}) center center / cover`,
+                  filter: 'blur(20px)',
+                }}
+              />
+              <div 
+                className="absolute inset-0" 
+                style={{
+                  background: `linear-gradient(180deg, 
+                    rgba(0,0,0,0.4) 0%, 
+                    rgba(0,0,0,0.3) 50%, 
+                    rgba(0,0,0,0.6) 100%
+                  )`
+                }}
+              />
             </div>
+
+            {format === "post" ? (
+              <div className="relative h-full flex flex-col items-center justify-between py-8">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+                  <img 
+                    src={smartLink.artwork_url} 
+                    alt={smartLink.title}
+                    className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
+                    style={{
+                      width: `${artworkSize}px`,
+                      height: `${artworkSize}px`,
+                    }}
+                  />
+                  <div className="text-center space-y-3 px-4">
+                    <h1 className="font-heading font-bold tracking-tight text-white text-3xl md:text-4xl">
+                      {smartLink.title}
+                    </h1>
+                    <p className="text-white/90 font-medium text-xl md:text-2xl">
+                      {smartLink.artist_name}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-center mt-auto">
+                  <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
+                    NOW AVAILABLE ON
+                  </p>
+                  <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
+                    {platformIcons.map((platform) => (
+                      <img
+                        key={platform.id}
+                        src={platform.icon}
+                        alt={platform.id}
+                        className="w-5 h-5 opacity-90 filter brightness-0 invert"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="relative h-full">
+                <div 
+                  className="absolute top-0 left-0 right-0 flex flex-col items-center"
+                  style={{ marginTop: `${topSafeZone}px` }}
+                >
+                  <img 
+                    src={smartLink.artwork_url} 
+                    alt={smartLink.title}
+                    className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
+                    style={{
+                      width: `${artworkSize}px`,
+                      height: `${artworkSize}px`,
+                    }}
+                  />
+                  <div className="text-center space-y-3 mt-8">
+                    <h1 className="font-heading font-bold tracking-tight text-white" 
+                        style={{ fontSize: `${Math.max(32, width * 0.08)}px` }}>
+                      {smartLink.title}
+                    </h1>
+                    <p className="text-white/90 font-medium"
+                       style={{ fontSize: `${Math.max(24, width * 0.06)}px` }}>
+                      {smartLink.artist_name}
+                    </p>
+                  </div>
+                </div>
+
+                <div 
+                  className="absolute bottom-0 left-0 right-0 text-center"
+                  style={{ marginBottom: `${bottomSafeZone}px` }}
+                >
+                  <p className="text-white/70 uppercase tracking-widest font-medium mb-6"
+                     style={{ fontSize: `${Math.max(12, width * 0.02)}px` }}>
+                    NOW AVAILABLE ON
+                  </p>
+                  <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
+                    {platformIcons.map((platform) => (
+                      <img
+                        key={platform.id}
+                        src={platform.icon}
+                        alt={platform.id}
+                        className="opacity-90 filter brightness-0 invert"
+                        style={{ 
+                          width: `${Math.max(24, width * 0.035)}px`,
+                          height: `${Math.max(24, width * 0.035)}px`
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
