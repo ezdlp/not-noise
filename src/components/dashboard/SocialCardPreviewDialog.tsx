@@ -32,7 +32,8 @@ export function SocialCardPreviewDialog({
 
   // Calculate dimensions based on viewport and format
   const getPreviewDimensions = () => {
-    const maxWidth = Math.min(700, window.innerWidth * 0.9);
+    // Increased maxWidth for better button spacing
+    const maxWidth = Math.min(800, window.innerWidth * 0.9);
     const maxHeight = window.innerHeight * 0.8;
     
     // Original dimensions (Instagram standards)
@@ -52,7 +53,6 @@ export function SocialCardPreviewDialog({
       width,
       height,
       scale,
-      // Story format: artwork takes 65% of width, Post format: 55% of width
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
         : Math.floor(width * 0.65)
@@ -104,7 +104,7 @@ export function SocialCardPreviewDialog({
 
   // Constants for Instagram story safe zones
   const STORY_TOP_SAFE_ZONE = 88;
-  const STORY_BOTTOM_SAFE_ZONE = 100;
+  const STORY_BOTTOM_SAFE_ZONE = 140; // Increased bottom safe zone for better spacing
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
