@@ -67,7 +67,7 @@ export function SocialCardPreviewDialog({
   }, []);
 
   const { width, height } = getPreviewDimensions();
-  const artworkSize = Math.floor(width * 0.75); // Increased from 0.7 to 0.75 for larger artwork
+  const artworkSize = Math.floor(width * 0.65); // Reduced from 0.75 to 0.65 for better proportion
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,8 +99,8 @@ export function SocialCardPreviewDialog({
                 <div className="absolute inset-0 bg-black/30" />
               </div>
 
-              <div className="relative h-full flex flex-col items-center justify-between py-8">
-                <div className="flex-1 flex flex-col items-center justify-center space-y-8 px-8">
+              <div className="relative h-full flex flex-col items-center justify-between py-6">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-6 px-6">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -111,25 +111,25 @@ export function SocialCardPreviewDialog({
                     }}
                   />
 
-                  <div className="text-center">
-                    <h1 className="font-heading font-bold text-white mb-4 text-4xl md:text-5xl">
+                  <div className="text-center space-y-2">
+                    <h1 className="font-heading font-bold text-white text-2xl md:text-3xl">
                       {smartLink.title}
                     </h1>
-                    <p className="text-white/90 text-2xl md:text-3xl">
+                    <p className="text-white/90 text-lg md:text-xl">
                       {smartLink.artist_name}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-center mt-auto">
-                  <p className="text-white mb-4 text-xl">NOW AVAILABLE ON</p>
-                  <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
+                <div className="text-center mt-4">
+                  <p className="text-white text-sm mb-3">NOW AVAILABLE ON</p>
+                  <div className="grid grid-flow-col auto-cols-max gap-4 place-content-center">
                     {platformIcons.map((platform) => (
                       <img
                         key={platform.id}
                         src={platform.icon}
                         alt={platform.id}
-                        className="w-10 h-10"
+                        className="w-6 h-6"
                       />
                     ))}
                   </div>
