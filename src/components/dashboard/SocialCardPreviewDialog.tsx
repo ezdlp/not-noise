@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Square, RectangleVertical, X } from "lucide-react";
+import { Square, RectangleVertical } from "lucide-react";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -30,7 +30,6 @@ export function SocialCardPreviewDialog({
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
   const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
-  // Calculate dimensions based on viewport and format
   const getPreviewDimensions = () => {
     const maxWidth = Math.min(800, window.innerWidth * 0.9);
     const maxHeight = window.innerHeight * 0.8;
@@ -121,13 +120,6 @@ export function SocialCardPreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors z-10"
-        >
-          <X className="h-5 w-5 text-neutral-night" />
-        </button>
-
         <div 
           className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
           style={{ 
