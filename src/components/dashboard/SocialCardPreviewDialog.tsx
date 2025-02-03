@@ -52,10 +52,10 @@ export function SocialCardPreviewDialog({
       width,
       height,
       scale,
-      // Story format: artwork takes 45% of width, Post format: 55% of width
+      // Story format: artwork takes 65% of width, Post format: 55% of width
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
-        : Math.floor(width * 0.45)
+        : Math.floor(width * 0.65)
     };
   };
 
@@ -183,7 +183,7 @@ export function SocialCardPreviewDialog({
                 </div>
               ) : (
                 <div className="relative h-full flex flex-col items-center justify-center py-24">
-                  <div className="flex flex-col items-center justify-center space-y-16">
+                  <div className="flex flex-col items-center justify-center space-y-20">
                     <img 
                       src={smartLink.artwork_url} 
                       alt={smartLink.title}
@@ -193,17 +193,20 @@ export function SocialCardPreviewDialog({
                         height: `${artworkSize}px`,
                       }}
                     />
-                    <div className="text-center space-y-6 px-8">
-                      <h1 className="font-heading font-bold tracking-tight text-white text-6xl">
+                    <div className="text-center space-y-8 px-8">
+                      <h1 className="font-heading font-bold tracking-tight text-white" 
+                          style={{ fontSize: `${Math.max(32, width * 0.08)}px` }}>
                         {smartLink.title}
                       </h1>
-                      <p className="text-white/90 font-medium text-4xl">
+                      <p className="text-white/90 font-medium"
+                         style={{ fontSize: `${Math.max(24, width * 0.06)}px` }}>
                         {smartLink.artist_name}
                       </p>
                     </div>
                   </div>
                   <div className="absolute bottom-24 left-0 right-0 text-center">
-                    <p className="text-white/70 text-base uppercase tracking-widest font-medium mb-8">
+                    <p className="text-white/70 uppercase tracking-widest font-medium mb-8"
+                       style={{ fontSize: `${Math.max(14, width * 0.025)}px` }}>
                       NOW AVAILABLE ON
                     </p>
                     <div className="grid grid-flow-col auto-cols-max gap-10 place-content-center">
@@ -212,7 +215,11 @@ export function SocialCardPreviewDialog({
                           key={platform.id}
                           src={platform.icon}
                           alt={platform.id}
-                          className="w-10 h-10 opacity-90 filter brightness-0 invert"
+                          className="opacity-90 filter brightness-0 invert"
+                          style={{ 
+                            width: `${Math.max(32, width * 0.05)}px`,
+                            height: `${Math.max(32, width * 0.05)}px`
+                          }}
                         />
                       ))}
                     </div>
