@@ -32,13 +32,12 @@ export function SocialCardPreviewDialog({
 
   // Fixed dimensions for the preview container
   const containerWidth = 700;
-  const containerHeight = 580;
-  const padding = 40;
+  const containerHeight = format === "post" ? 700 : 580;
 
   // Calculate dimensions that maintain aspect ratio and fit container
   const getPreviewDimensions = () => {
-    const availableWidth = containerWidth - (padding * 2);
-    const availableHeight = containerHeight - (padding * 2);
+    const availableWidth = containerWidth;
+    const availableHeight = containerHeight;
     
     // Original dimensions
     const originalWidth = 1080;
@@ -100,20 +99,20 @@ export function SocialCardPreviewDialog({
 
   const { width, height } = getPreviewDimensions();
   const artworkSize = format === "post" 
-    ? Math.floor(width * 0.65) 
+    ? Math.floor(width * 0.55) 
     : Math.floor(width * 0.55);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="pt-6 px-6 pb-24 max-w-[700px] w-[700px] min-h-[700px] rounded-xl">
+      <DialogContent className="p-0 max-w-[700px] w-[700px] rounded-xl">
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors"
+          className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors z-10"
         >
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
+        <div className="w-full h-[700px] bg-neutral-night rounded-lg overflow-hidden">
           <div className="relative w-full h-full flex items-center justify-center">
             <div 
               className="overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -145,7 +144,7 @@ export function SocialCardPreviewDialog({
               <div className={`relative h-full flex flex-col items-center ${
                 format === "story" ? "justify-between py-12" : "justify-between py-8"
               }`}>
-                <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -174,7 +173,7 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
 
-                <div className={`text-center ${format === "story" ? "mt-6" : "mt-4"}`}>
+                <div className="text-center mt-auto">
                   <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
                     NOW AVAILABLE ON
                   </p>
@@ -194,7 +193,7 @@ export function SocialCardPreviewDialog({
           </div>
         </div>
 
-        <div className="absolute left-6 right-6 bottom-6 flex justify-between items-center bg-white py-3">
+        <div className="px-6 py-4 flex justify-between items-center bg-white">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-neutral-night">Format:</span>
             <div className="flex gap-2">
