@@ -55,16 +55,16 @@ export function SocialCardPreviewDialog({
       height = Math.floor(originalHeight * scale);
     }
     
-    // Calculate artwork size - 55% for post, 60% for story
+    // Artwork size - reduced for post format to create more space
     const artworkSize = format === "post" 
-      ? Math.floor(width * 0.55) 
-      : Math.floor(width * 0.60);
+      ? Math.floor(width * 0.48) // Reduced from 0.55 to 0.48 for post
+      : Math.floor(width * 0.60); // Keep story format as is
     
     // Significantly reduced text sizes for better proportions
-    const titleSize = Math.floor(artworkSize * 0.15); // Reduced from 22% to 15%
-    const artistNameSize = Math.floor(titleSize * 0.8); // Increased from 65% to 80% of title for better balance
-    const platformIconSize = Math.floor(width * 0.08);
-    const platformIconGap = Math.floor(width * 0.04);
+    const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15)); // Smaller for post
+    const artistNameSize = Math.floor(titleSize * 0.8);
+    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08)); // Smaller icons for post
+    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04)); // Adjusted gap
     
     const topSafeZone = Math.floor(height * 0.12);
     const bottomSafeZone = Math.floor(height * 0.15);
@@ -136,8 +136,8 @@ export function SocialCardPreviewDialog({
             </div>
 
             {format === "post" ? (
-              <div className="relative h-full flex flex-col items-center justify-between py-8">
-                <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+              <div className="relative h-full flex flex-col items-center justify-between py-12">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-8">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -147,7 +147,7 @@ export function SocialCardPreviewDialog({
                       height: `${dimensions.artworkSize}px`,
                     }}
                   />
-                  <div className="text-center space-y-3 px-4">
+                  <div className="text-center space-y-4 px-8">
                     <h1 
                       className="font-heading font-bold tracking-tight text-white"
                       style={{ fontSize: `${dimensions.titleSize}px`, lineHeight: 1.1 }}
@@ -164,12 +164,15 @@ export function SocialCardPreviewDialog({
                 </div>
                 <div className="text-center mt-auto">
                   <p 
-                    className="text-white/70 uppercase tracking-widest font-medium mb-4"
-                    style={{ fontSize: `${Math.max(10, dimensions.width * 0.015)}px` }}
+                    className="text-white/70 uppercase tracking-widest font-medium mb-6"
+                    style={{ fontSize: `${Math.max(10, dimensions.width * 0.012)}px` }}
                   >
                     NOW AVAILABLE ON
                   </p>
-                  <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
+                  <div 
+                    className="grid grid-flow-col auto-cols-max place-content-center"
+                    style={{ gap: `${dimensions.platformIconGap}px` }}
+                  >
                     {platformIcons.map((platform) => (
                       <img
                         key={platform.id}
