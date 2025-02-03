@@ -9,7 +9,6 @@ import {
   TrashIcon,
   CopyIcon,
   CheckIcon,
-  ImageIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,7 +26,6 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { toPng } from 'html-to-image';
 import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
 
 interface SmartLinkCardProps {
@@ -38,7 +36,6 @@ interface SmartLinkCardProps {
 export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleDelete = async () => {
@@ -77,93 +74,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
       toast.error("This smart link doesn't have artwork");
       return;
     }
-
-    setIsGenerating(true);
-    const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
-
-    try {
-      // Get the HTML template from the Edge Function
-      const { data: templateHtml, error: templateError } = await supabase.functions.invoke('generate-social-assets', {
-        body: {
-          smartLinkId: link.id,
-          platform: 'instagram_square',
-          artworkUrl: link.artwork_url,
-          title: link.title,
-          artistName: link.artist_name
-        }
-      });
-
-      if (templateError) throw templateError;
-
-      // Create a temporary container
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '-9999px';
-      document.body.appendChild(container);
-
-      // Set the HTML content
-      container.innerHTML = templateHtml;
-
-      // Wait for fonts to load
-      await document.fonts.ready;
-
-      // Wait for the artwork image to load
-      const artworkImg = container.querySelector('.artwork') as HTMLImageElement;
-      if (!artworkImg) throw new Error('Artwork image not found in template');
-
-      await new Promise((resolve, reject) => {
-        artworkImg.onload = resolve;
-        artworkImg.onerror = () => reject(new Error('Failed to load artwork image'));
-      });
-
-      // Convert to image with proper dimensions
-      const dataUrl = await toPng(container, {
-        quality: 1,
-        pixelRatio: 2,
-        width: 1080,
-        height: 1080,
-        backgroundColor: '#6851FB',
-      });
-
-      // Remove the temporary container
-      document.body.removeChild(container);
-
-      // Convert data URL to Blob
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-
-      // Upload to Supabase Storage
-      const filename = `${link.id}-instagram-square-${Date.now()}.png`;
-      const filePath = `${link.id}/${filename}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('social-media-assets')
-        .upload(filePath, blob, {
-          contentType: 'image/png',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('social-media-assets')
-        .getPublicUrl(filePath);
-
-      toast.dismiss(loadingToast);
-      toast.success("Asset generated successfully!");
-
-      // Open the generated image in a new tab
-      window.open(publicUrl, '_blank');
-    } catch (error) {
-      console.error('Error generating asset:', error);
-      toast.dismiss(loadingToast);
-      toast.error("Failed to generate social media asset");
-    } finally {
-      setIsGenerating(false);
-      setPreviewOpen(false);
-    }
+    setPreviewOpen(true);
   };
 
   return (
@@ -197,7 +108,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <BarChart2Icon className="mr-2 h-4 w-4" />
                   Analytics
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreviewOpen(true)} disabled={isGenerating}>
+                <DropdownMenuItem onClick={generateSocialAsset}>
                   <ImageIcon className="mr-2 h-4 w-4" />
                   Generate Test Asset
                 </DropdownMenuItem>

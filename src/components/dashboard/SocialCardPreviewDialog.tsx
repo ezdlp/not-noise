@@ -4,8 +4,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Square, RectangleVertical } from "lucide-react";
+import { toPng } from 'html-to-image';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -14,6 +17,7 @@ interface SocialCardPreviewDialogProps {
     title: string;
     artist_name: string;
     artwork_url: string;
+    id: string;
   };
   onGenerate: () => void;
 }
@@ -29,6 +33,7 @@ export function SocialCardPreviewDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const getPreviewDimensions = () => {
     const maxWidth = Math.min(800, window.innerWidth * 0.9);
@@ -55,16 +60,14 @@ export function SocialCardPreviewDialog({
       height = Math.floor(originalHeight * scale);
     }
     
-    // Artwork size - reduced for post format to create more space
     const artworkSize = format === "post" 
-      ? Math.floor(width * 0.48) // Reduced from 0.55 to 0.48 for post
-      : Math.floor(width * 0.60); // Keep story format as is
+      ? Math.floor(width * 0.48) 
+      : Math.floor(width * 0.60); 
     
-    // Significantly reduced text sizes for better proportions
-    const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15)); // Smaller for post
+    const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15)); 
     const artistNameSize = Math.floor(titleSize * 0.8);
-    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08)); // Smaller icons for post
-    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04)); // Adjusted gap
+    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08)); 
+    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04)); 
     
     const topSafeZone = Math.floor(height * 0.12);
     const bottomSafeZone = Math.floor(height * 0.15);
@@ -97,6 +100,64 @@ export function SocialCardPreviewDialog({
 
   const dimensions = getPreviewDimensions();
 
+  const handleGenerate = async () => {
+    if (!previewRef.current) return;
+    
+    setIsLoading(true);
+    const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
+
+    try {
+      const dataUrl = await toPng(previewRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+        width: 1080,
+        height: format === "post" ? 1080 : 1920,
+        backgroundColor: '#6851FB',
+      });
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      const filename = `${smartLink.id}-instagram-${format}-${Date.now()}.png`;
+      const filePath = `${smartLink.id}/${filename}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('social-media-assets')
+        .upload(filePath, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('social-media-assets')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('social_media_assets')
+        .insert({
+          smart_link_id: smartLink.id,
+          platform: 'instagram_' + format,
+          image_url: publicUrl
+        });
+
+      if (dbError) throw dbError;
+
+      toast.dismiss(loadingToast);
+      toast.success("Asset generated successfully!");
+
+      window.open(publicUrl, '_blank');
+    } catch (error) {
+      console.error('Error generating asset:', error);
+      toast.dismiss(loadingToast);
+      toast.error("Failed to generate social media asset");
+    } finally {
+      setIsLoading(false);
+      onOpenChange(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
@@ -109,6 +170,7 @@ export function SocialCardPreviewDialog({
           }}
         >
           <div 
+            ref={previewRef}
             className="relative overflow-hidden"
             style={{ 
               width: `${dimensions.width}px`,
@@ -284,11 +346,7 @@ export function SocialCardPreviewDialog({
           </div>
 
           <Button 
-            onClick={() => {
-              setIsLoading(true);
-              onGenerate();
-              setIsLoading(false);
-            }}
+            onClick={handleGenerate}
             disabled={isLoading}
             className="bg-primary hover:bg-primary-hover text-white"
           >
