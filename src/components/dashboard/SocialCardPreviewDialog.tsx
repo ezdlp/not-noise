@@ -102,6 +102,10 @@ export function SocialCardPreviewDialog({
 
   const { width, height, artworkSize } = getPreviewDimensions();
 
+  // Constants for Instagram story safe zones
+  const STORY_TOP_SAFE_ZONE = 88;
+  const STORY_BOTTOM_SAFE_ZONE = 100;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
@@ -182,8 +186,12 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
               ) : (
-                <div className="relative h-full flex flex-col items-center justify-center py-24">
-                  <div className="flex flex-col items-center justify-center space-y-20">
+                <div className="relative h-full flex flex-col items-center justify-between py-8">
+                  {/* Story Format Layout */}
+                  <div 
+                    className="flex flex-col items-center"
+                    style={{ marginTop: `${STORY_TOP_SAFE_ZONE}px` }}
+                  >
                     <img 
                       src={smartLink.artwork_url} 
                       alt={smartLink.title}
@@ -193,7 +201,7 @@ export function SocialCardPreviewDialog({
                         height: `${artworkSize}px`,
                       }}
                     />
-                    <div className="text-center space-y-8 px-8">
+                    <div className="text-center space-y-3 mt-8">
                       <h1 className="font-heading font-bold tracking-tight text-white" 
                           style={{ fontSize: `${Math.max(32, width * 0.08)}px` }}>
                         {smartLink.title}
@@ -204,12 +212,16 @@ export function SocialCardPreviewDialog({
                       </p>
                     </div>
                   </div>
-                  <div className="absolute bottom-24 left-0 right-0 text-center">
-                    <p className="text-white/70 uppercase tracking-widest font-medium mb-8"
-                       style={{ fontSize: `${Math.max(14, width * 0.025)}px` }}>
+
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 text-center pb-8"
+                    style={{ marginBottom: `${STORY_BOTTOM_SAFE_ZONE}px` }}
+                  >
+                    <p className="text-white/70 uppercase tracking-widest font-medium mb-6"
+                       style={{ fontSize: `${Math.max(12, width * 0.02)}px` }}>
                       NOW AVAILABLE ON
                     </p>
-                    <div className="grid grid-flow-col auto-cols-max gap-10 place-content-center">
+                    <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
                       {platformIcons.map((platform) => (
                         <img
                           key={platform.id}
@@ -217,8 +229,8 @@ export function SocialCardPreviewDialog({
                           alt={platform.id}
                           className="opacity-90 filter brightness-0 invert"
                           style={{ 
-                            width: `${Math.max(32, width * 0.05)}px`,
-                            height: `${Math.max(32, width * 0.05)}px`
+                            width: `${Math.max(24, width * 0.035)}px`,
+                            height: `${Math.max(24, width * 0.035)}px`
                           }}
                         />
                       ))}
