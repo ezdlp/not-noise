@@ -56,7 +56,6 @@ export function SocialCardPreviewDialog({
   };
 
   useEffect(() => {
-    // Load platform icons
     const icons = [
       { id: 'spotify', icon: '/lovable-uploads/spotify.png' },
       { id: 'appleMusic', icon: '/lovable-uploads/applemusic.png' },
@@ -68,7 +67,7 @@ export function SocialCardPreviewDialog({
   }, []);
 
   const { width, height } = getPreviewDimensions();
-  const artworkSize = Math.floor(width * (format === "post" ? 0.8 : 0.7));
+  const artworkSize = Math.floor(width * 0.75); // Increased from 0.7 to 0.75 for larger artwork
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,14 +99,8 @@ export function SocialCardPreviewDialog({
                 <div className="absolute inset-0 bg-black/30" />
               </div>
 
-              <div className="relative h-full flex flex-col items-center">
-                <div 
-                  className="w-full flex-1 flex flex-col items-center justify-center px-10"
-                  style={{
-                    paddingTop: format === "story" ? `${Math.floor(height * 0.15)}px` : "34px",
-                    paddingBottom: format === "story" ? `${Math.floor(height * 0.1)}px` : "34px",
-                  }}
-                >
+              <div className="relative h-full flex flex-col items-center justify-between py-8">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-8 px-8">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -118,31 +111,27 @@ export function SocialCardPreviewDialog({
                     }}
                   />
 
-                  <div className="text-center mt-10">
-                    <h1 className={`font-heading font-bold text-white mb-4 ${
-                      format === "post" ? "text-5xl" : "text-6xl"
-                    }`}>{smartLink.title}</h1>
-                    <p className={`text-white/90 ${
-                      format === "post" ? "text-3xl" : "text-4xl"
-                    }`}>{smartLink.artist_name}</p>
+                  <div className="text-center">
+                    <h1 className="font-heading font-bold text-white mb-4 text-4xl md:text-5xl">
+                      {smartLink.title}
+                    </h1>
+                    <p className="text-white/90 text-2xl md:text-3xl">
+                      {smartLink.artist_name}
+                    </p>
                   </div>
+                </div>
 
-                  <div className="mt-auto text-center">
-                    <p className={`text-white mb-6 ${
-                      format === "post" ? "text-xl" : "text-2xl"
-                    }`}>NOW AVAILABLE ON</p>
-                    <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
-                      {platformIcons.map((platform) => (
-                        <img
-                          key={platform.id}
-                          src={platform.icon}
-                          alt={platform.id}
-                          className={`${
-                            format === "post" ? "w-12 h-12" : "w-16 h-16"
-                          }`}
-                        />
-                      ))}
-                    </div>
+                <div className="text-center mt-auto">
+                  <p className="text-white mb-4 text-xl">NOW AVAILABLE ON</p>
+                  <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
+                    {platformIcons.map((platform) => (
+                      <img
+                        key={platform.id}
+                        src={platform.icon}
+                        alt={platform.id}
+                        className="w-10 h-10"
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
