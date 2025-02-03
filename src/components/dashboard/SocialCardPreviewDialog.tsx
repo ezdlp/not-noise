@@ -142,8 +142,8 @@ export function SocialCardPreviewDialog({
                 />
               </div>
 
-              <div className={`relative h-full flex flex-col items-center justify-between ${
-                format === "story" ? "py-12" : "py-8"
+              <div className={`relative h-full flex flex-col items-center ${
+                format === "story" ? "justify-between py-12" : "justify-between py-8"
               }`}>
                 <div className="flex-1 flex flex-col items-center justify-center space-y-8">
                   <img 
@@ -174,7 +174,7 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
 
-                <div className="text-center mt-6">
+                <div className={`text-center ${format === "story" ? "mt-6" : "mt-4"}`}>
                   <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
                     NOW AVAILABLE ON
                   </p>
