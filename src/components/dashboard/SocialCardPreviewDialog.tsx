@@ -32,22 +32,22 @@ export function SocialCardPreviewDialog({
 
   // Calculate dimensions based on viewport and format
   const getPreviewDimensions = () => {
-    // Increased maxWidth for better button spacing
     const maxWidth = Math.min(800, window.innerWidth * 0.9);
     const maxHeight = window.innerHeight * 0.8;
     
-    // Original dimensions (Instagram standards)
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    // Calculate scale based on container constraints
     const scaleX = maxWidth / originalWidth;
     const scaleY = maxHeight / originalHeight;
     const scale = Math.min(scaleX, scaleY);
     
-    // Calculate final dimensions maintaining aspect ratio
     const width = Math.floor(originalWidth * scale);
     const height = Math.floor(originalHeight * scale);
+    
+    // Calculate safe zones based on the scaled height
+    const topSafeZone = Math.floor(height * 0.14); // 14% of height
+    const bottomSafeZone = Math.floor(height * 0.17); // 17% of height
     
     return {
       width,
@@ -55,7 +55,9 @@ export function SocialCardPreviewDialog({
       scale,
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
-        : Math.floor(width * 0.65)
+        : Math.floor(width * 0.65),
+      topSafeZone,
+      bottomSafeZone
     };
   };
 
@@ -100,11 +102,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { width, height, artworkSize } = getPreviewDimensions();
-
-  // Constants for Instagram story safe zones
-  const STORY_TOP_SAFE_ZONE = 88;
-  const STORY_BOTTOM_SAFE_ZONE = 140; // Increased bottom safe zone for better spacing
+  const { width, height, artworkSize, topSafeZone, bottomSafeZone } = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,7 +118,7 @@ export function SocialCardPreviewDialog({
           className="w-full bg-neutral-night rounded-lg overflow-hidden"
           style={{ height: `${height}px`, width: `${width}px`, margin: '0 auto' }}
         >
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full">
             <div 
               className="overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               style={{ 
@@ -169,7 +167,7 @@ export function SocialCardPreviewDialog({
                       </p>
                     </div>
                   </div>
-                  <div className="text-center">
+                  <div className="text-center mt-auto">
                     <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
                       NOW AVAILABLE ON
                     </p>
@@ -186,11 +184,11 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
               ) : (
-                <div className="relative h-full flex flex-col items-center justify-between py-8">
-                  {/* Story Format Layout */}
+                <div className="relative h-full">
+                  {/* Top content */}
                   <div 
-                    className="flex flex-col items-center"
-                    style={{ marginTop: `${STORY_TOP_SAFE_ZONE}px` }}
+                    className="absolute top-0 left-0 right-0 flex flex-col items-center"
+                    style={{ marginTop: `${topSafeZone}px` }}
                   >
                     <img 
                       src={smartLink.artwork_url} 
@@ -213,9 +211,10 @@ export function SocialCardPreviewDialog({
                     </div>
                   </div>
 
+                  {/* Bottom content */}
                   <div 
-                    className="absolute bottom-0 left-0 right-0 text-center pb-8"
-                    style={{ marginBottom: `${STORY_BOTTOM_SAFE_ZONE}px` }}
+                    className="absolute bottom-0 left-0 right-0 text-center"
+                    style={{ marginBottom: `${bottomSafeZone}px` }}
                   >
                     <p className="text-white/70 uppercase tracking-widest font-medium mb-6"
                        style={{ fontSize: `${Math.max(12, width * 0.02)}px` }}>
