@@ -33,7 +33,7 @@ export function SocialCardPreviewDialog({
   // Fixed width for the preview container
   const containerWidth = 700;
   // Dynamic height based on format
-  const containerHeight = format === "post" ? 700 : 1245; // 9:16 ratio for story
+  const containerHeight = format === "post" ? 700 : 1245;
 
   // Calculate dimensions that maintain aspect ratio and fit container
   const getPreviewDimensions = () => {
@@ -57,9 +57,10 @@ export function SocialCardPreviewDialog({
       width,
       height,
       scale,
+      // Story format: artwork takes 45% of width, Post format: 55% of width
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
-        : Math.floor(width * 0.8) // Larger artwork for story format
+        : Math.floor(width * 0.45)
     };
   };
 
@@ -149,9 +150,13 @@ export function SocialCardPreviewDialog({
               </div>
 
               <div className={`relative h-full flex flex-col items-center ${
-                format === "story" ? "justify-between py-12" : "justify-between py-8"
+                format === "story" 
+                  ? "justify-center py-12 space-y-8" 
+                  : "justify-between py-8"
               }`}>
-                <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+                <div className={`flex-1 flex flex-col items-center justify-center ${
+                  format === "story" ? "space-y-8" : "space-y-6"
+                }`}>
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -165,14 +170,14 @@ export function SocialCardPreviewDialog({
                   <div className="text-center space-y-3 px-4">
                     <h1 className={`font-heading font-bold tracking-tight text-white ${
                       format === "story" 
-                        ? "text-2xl md:text-3xl" 
+                        ? "text-3xl md:text-4xl" 
                         : "text-3xl md:text-4xl"
                     }`}>
                       {smartLink.title}
                     </h1>
                     <p className={`text-white/90 font-medium ${
                       format === "story" 
-                        ? "text-lg md:text-xl" 
+                        ? "text-2xl md:text-3xl" 
                         : "text-xl md:text-2xl"
                     }`}>
                       {smartLink.artist_name}
