@@ -138,7 +138,7 @@ export function SocialCardPreviewDialog({
         .from('social_media_assets')
         .insert({
           smart_link_id: smartLink.id,
-          platform: 'instagram_' + format,
+          platform: format === 'post' ? 'instagram_square' : 'instagram_story',
           image_url: publicUrl
         });
 
@@ -357,3 +357,4 @@ export function SocialCardPreviewDialog({
     </Dialog>
   );
 }
+

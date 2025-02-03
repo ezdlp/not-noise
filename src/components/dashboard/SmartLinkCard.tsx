@@ -9,6 +9,7 @@ import {
   TrashIcon,
   CopyIcon,
   CheckIcon,
+  ImageIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -191,3 +192,4 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     </>
   );
 }
+
