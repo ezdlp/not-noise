@@ -96,11 +96,11 @@ export function SocialCardPreviewDialog({
                     filter: 'blur(20px)',
                   }}
                 />
-                <div className="absolute inset-0 bg-black/40" /> {/* Increased opacity for better contrast */}
+                <div className="absolute inset-0 bg-black/40" />
               </div>
 
-              <div className="relative h-full flex flex-col items-center justify-between py-8"> {/* Increased padding */}
-                <div className="flex-1 flex flex-col items-center justify-center space-y-8"> {/* Increased spacing */}
+              <div className="relative h-full flex flex-col items-center justify-between py-8">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-8">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -111,7 +111,7 @@ export function SocialCardPreviewDialog({
                     }}
                   />
 
-                  <div className="text-center space-y-3"> {/* Adjusted spacing */}
+                  <div className="text-center space-y-3">
                     <h1 className={`font-heading font-bold text-white ${format === 'story' ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
                       {smartLink.title}
                     </h1>
@@ -129,7 +129,7 @@ export function SocialCardPreviewDialog({
                         key={platform.id}
                         src={platform.icon}
                         alt={platform.id}
-                        className="w-5 h-5 opacity-90" // Slightly reduced size and added opacity
+                        className="w-5 h-5 opacity-90 filter brightness-0 invert"
                       />
                     ))}
                   </div>
