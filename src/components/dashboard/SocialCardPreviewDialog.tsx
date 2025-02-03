@@ -188,7 +188,7 @@ export function SocialCardPreviewDialog({
                 </div>
               ) : (
                 <div className="relative h-full flex flex-col items-center justify-between py-16">
-                  <div className="flex flex-col items-center justify-center space-y-12 flex-1">
+                  <div className="flex flex-col items-center justify-center space-y-12">
                     <img 
                       src={smartLink.artwork_url} 
                       alt={smartLink.title}
