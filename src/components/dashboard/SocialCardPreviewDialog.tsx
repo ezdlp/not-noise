@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -28,7 +29,6 @@ export function SocialCardPreviewDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
-  const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
   const getPreviewDimensions = () => {
     const maxWidth = Math.min(800, window.innerWidth * 0.9);
@@ -55,20 +55,20 @@ export function SocialCardPreviewDialog({
       height = Math.floor(originalHeight * scale);
     }
     
-    // Calculate artwork size - 65% of width for story, 55% for post
+    // Calculate artwork size - 55% for post, 60% for story
     const artworkSize = format === "post" 
       ? Math.floor(width * 0.55) 
-      : Math.floor(width * 0.65);
+      : Math.floor(width * 0.60);
     
     // Calculate text sizes and spacing based on artwork size
-    const titleSize = Math.floor(artworkSize * 0.25); // 25% of artwork size
-    const artistNameSize = Math.floor(titleSize * 0.7); // 70% of title size
-    const platformIconSize = Math.floor(width * 0.08); // 8% of container width
-    const platformIconGap = Math.floor(width * 0.05); // 5% of container width
+    const titleSize = Math.floor(artworkSize * 0.22); // Reduced from 25% to 22%
+    const artistNameSize = Math.floor(titleSize * 0.65); // Reduced from 70% to 65%
+    const platformIconSize = Math.floor(width * 0.08);
+    const platformIconGap = Math.floor(width * 0.04); // Reduced from 5% to 4%
     
-    // Calculate safe zones
-    const topSafeZone = Math.floor(height * 0.14);
-    const bottomSafeZone = Math.floor(height * 0.17);
+    // Calculate safe zones with adjusted percentages
+    const topSafeZone = Math.floor(height * 0.12); // Reduced from 14% to 12%
+    const bottomSafeZone = Math.floor(height * 0.15); // Reduced from 17% to 15%
     
     return {
       containerWidth,
@@ -101,6 +101,7 @@ export function SocialCardPreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
+        <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
         <div 
           className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
           style={{ 
@@ -148,10 +149,16 @@ export function SocialCardPreviewDialog({
                     }}
                   />
                   <div className="text-center space-y-3 px-4">
-                    <h1 className="font-heading font-bold tracking-tight text-white text-3xl md:text-4xl">
+                    <h1 
+                      className="font-heading font-bold tracking-tight text-white"
+                      style={{ fontSize: `${dimensions.titleSize}px`, lineHeight: 1.1 }}
+                    >
                       {smartLink.title}
                     </h1>
-                    <p className="text-white/90 font-medium text-xl md:text-2xl">
+                    <p 
+                      className="text-white/90 font-medium"
+                      style={{ fontSize: `${dimensions.artistNameSize}px`, lineHeight: 1.2 }}
+                    >
                       {smartLink.artist_name}
                     </p>
                   </div>
