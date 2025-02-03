@@ -40,7 +40,7 @@ export function SocialCardPreviewDialog({
     const availableWidth = containerWidth;
     const availableHeight = containerHeight;
     
-    // Original dimensions
+    // Original dimensions (Instagram standards)
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
@@ -49,14 +49,20 @@ export function SocialCardPreviewDialog({
     const scaleY = availableHeight / originalHeight;
     const scale = Math.min(scaleX, scaleY);
     
+    // Calculate final dimensions maintaining aspect ratio
+    const width = Math.floor(originalWidth * scale);
+    const height = Math.floor(originalHeight * scale);
+    
     return {
-      width: Math.floor(originalWidth * scale),
-      height: Math.floor(originalHeight * scale),
-      scale
+      width,
+      height,
+      scale,
+      artworkSize: format === "post" 
+        ? Math.floor(width * 0.55) 
+        : Math.floor(width * 0.8) // Larger artwork for story format
     };
   };
 
-  // Extract dominant color from artwork
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -98,10 +104,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { width, height } = getPreviewDimensions();
-  const artworkSize = format === "post" 
-    ? Math.floor(width * 0.55) 
-    : Math.floor(width * 0.55);
+  const { width, height, artworkSize } = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
