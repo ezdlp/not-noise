@@ -42,39 +42,28 @@ export function SocialCardPreviewDialog({
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    const containerWidth = maxWidth;
-    const containerHeight = maxHeight;
-    
     let width, height;
     
     if (format === "post") {
       const scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
       width = Math.floor(originalWidth * scale);
-      height = Math.floor(originalHeight * scale);
+      height = width; // Square aspect ratio
     } else {
-      const scale = Math.min(
-        maxHeight / originalHeight,
-        (maxWidth * 0.6) / originalWidth
-      );
+      const scale = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
       width = Math.floor(originalWidth * scale);
       height = Math.floor(originalHeight * scale);
     }
     
     const artworkSize = format === "post" 
-      ? Math.floor(width * 0.48) 
-      : Math.floor(width * 0.60); 
+      ? Math.floor(width * 0.6)  // Increased from 0.48
+      : Math.floor(width * 0.75); // Increased from 0.60
     
-    const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15)); 
+    const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15));
     const artistNameSize = Math.floor(titleSize * 0.8);
-    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08)); 
-    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04)); 
-    
-    const topSafeZone = Math.floor(height * 0.12);
-    const bottomSafeZone = Math.floor(height * 0.15);
+    const platformIconSize = Math.floor(width * (format === "post" ? 0.08 : 0.1)); // Increased sizes
+    const platformIconGap = Math.floor(width * (format === "post" ? 0.04 : 0.05));
     
     return {
-      containerWidth,
-      containerHeight,
       width,
       height,
       artworkSize,
@@ -82,8 +71,6 @@ export function SocialCardPreviewDialog({
       artistNameSize,
       platformIconSize,
       platformIconGap,
-      topSafeZone,
-      bottomSafeZone,
     };
   };
 
@@ -163,35 +150,35 @@ export function SocialCardPreviewDialog({
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
         <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
         <div 
-          className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
+          className="w-full bg-primary rounded-lg overflow-hidden flex items-center justify-center p-8"
           style={{ 
-            width: `${dimensions.containerWidth}px`, 
-            height: `${dimensions.containerHeight}px`
+            minHeight: `${dimensions.height + 64}px` // Added padding
           }}
         >
           <div 
             ref={previewRef}
-            className="relative overflow-hidden"
+            className="relative overflow-hidden rounded-lg"
             style={{ 
               width: `${dimensions.width}px`,
               height: `${dimensions.height}px`,
+              backgroundColor: '#6851FB',
             }}
           >
             <div className="absolute inset-0 overflow-hidden">
               <div 
-                className="absolute inset-0 scale-110"
+                className="absolute inset-0 scale-110 opacity-50"
                 style={{ 
                   background: `url(${smartLink.artwork_url}) center center / cover`,
-                  filter: 'blur(20px)',
+                  filter: 'blur(30px)', // Increased blur
                 }}
               />
               <div 
                 className="absolute inset-0" 
                 style={{
                   background: `linear-gradient(180deg, 
-                    rgba(0,0,0,0.4) 0%, 
-                    rgba(0,0,0,0.3) 50%, 
-                    rgba(0,0,0,0.6) 100%
+                    rgba(104, 81, 251, 0.85) 0%, 
+                    rgba(104, 81, 251, 0.75) 50%, 
+                    rgba(104, 81, 251, 0.9) 100%
                   )`
                 }}
               />
@@ -227,7 +214,7 @@ export function SocialCardPreviewDialog({
                 <div className="text-center mt-auto">
                   <p 
                     className="text-white/70 uppercase tracking-widest font-medium mb-6"
-                    style={{ fontSize: `${Math.max(10, dimensions.width * 0.012)}px` }}
+                    style={{ fontSize: `${Math.max(12, dimensions.width * 0.015)}px` }}
                   >
                     NOW AVAILABLE ON
                   </p>
@@ -251,11 +238,8 @@ export function SocialCardPreviewDialog({
                 </div>
               </div>
             ) : (
-              <div className="relative h-full">
-                <div 
-                  className="absolute top-0 left-0 right-0 flex flex-col items-center"
-                  style={{ marginTop: `${dimensions.topSafeZone}px` }}
-                >
+              <div className="relative h-full flex flex-col items-center justify-between py-16">
+                <div className="flex-1 flex flex-col items-center justify-center space-y-8">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
@@ -265,7 +249,7 @@ export function SocialCardPreviewDialog({
                       height: `${dimensions.artworkSize}px`,
                     }}
                   />
-                  <div className="text-center space-y-3 mt-8">
+                  <div className="text-center space-y-4 px-8">
                     <h1 
                       className="font-heading font-bold tracking-tight text-white"
                       style={{ fontSize: `${dimensions.titleSize}px`, lineHeight: 1.1 }}
@@ -280,14 +264,10 @@ export function SocialCardPreviewDialog({
                     </p>
                   </div>
                 </div>
-
-                <div 
-                  className="absolute bottom-0 left-0 right-0 text-center"
-                  style={{ marginBottom: `${dimensions.bottomSafeZone}px` }}
-                >
+                <div className="text-center mt-auto">
                   <p 
                     className="text-white/70 uppercase tracking-widest font-medium mb-6"
-                    style={{ fontSize: `${Math.max(12, dimensions.width * 0.02)}px` }}
+                    style={{ fontSize: `${Math.max(14, dimensions.width * 0.02)}px` }}
                   >
                     NOW AVAILABLE ON
                   </p>
@@ -357,4 +337,3 @@ export function SocialCardPreviewDialog({
     </Dialog>
   );
 }
-
