@@ -107,23 +107,12 @@ export function SocialCardPreviewDialog({
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      const node = previewRef.current;
-      node.style.transform = 'scale(1)';  // Reset any scaling
-      
-      const dataUrl = await toPng(node, {
+      const dataUrl = await toPng(previewRef.current, {
         quality: 1,
-        pixelRatio: 3,
-        width: format === "post" ? 1080 : 1080,
+        pixelRatio: 2,
+        width: 1080,
         height: format === "post" ? 1080 : 1920,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-        },
-        filter: (node) => {
-          // Skip button elements and their children
-          const isButton = node.tagName?.toLowerCase() === 'button';
-          return !isButton;
-        },
+        backgroundColor: '#6851FB',
       });
 
       const res = await fetch(dataUrl);
@@ -182,14 +171,10 @@ export function SocialCardPreviewDialog({
         >
           <div 
             ref={previewRef}
-            className="relative overflow-hidden bg-[#6851FB]"
+            className="relative overflow-hidden"
             style={{ 
-              width: format === "post" ? "1080px" : "1080px",
-              height: format === "post" ? "1080px" : "1920px",
-              transform: `scale(${format === "post" ? 
-                dimensions.width / 1080 : 
-                dimensions.height / 1920})`,
-              transformOrigin: 'top left'
+              width: `${dimensions.width}px`,
+              height: `${dimensions.height}px`,
             }}
           >
             <div className="absolute inset-0 overflow-hidden">
@@ -372,3 +357,4 @@ export function SocialCardPreviewDialog({
     </Dialog>
   );
 }
+
