@@ -32,11 +32,6 @@ export function CookieConsent() {
     necessary: true,
   });
 
-  // Don't show cookie consent on smart link pages
-  if (location.pathname.startsWith('/link/')) {
-    return null;
-  }
-
   useEffect(() => {
     const initAnalytics = async () => {
       await analyticsService.initialize();
@@ -109,6 +104,11 @@ export function CookieConsent() {
       analyticsService.disableAnalytics();
     }
   };
+
+  // Don't show cookie consent on smart link pages
+  if (location.pathname.startsWith('/link/')) {
+    return null;
+  }
 
   return (
     <>
