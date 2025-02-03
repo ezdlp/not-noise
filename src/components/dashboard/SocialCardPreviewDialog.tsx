@@ -30,23 +30,18 @@ export function SocialCardPreviewDialog({
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
   const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
-  // Fixed width for the preview container
-  const containerWidth = 700;
-  // Dynamic height based on format
-  const containerHeight = format === "post" ? 700 : 1245;
-
-  // Calculate dimensions that maintain aspect ratio and fit container
+  // Calculate dimensions based on viewport and format
   const getPreviewDimensions = () => {
-    const availableWidth = containerWidth;
-    const availableHeight = containerHeight;
+    const maxWidth = Math.min(700, window.innerWidth * 0.9);
+    const maxHeight = window.innerHeight * 0.8;
     
     // Original dimensions (Instagram standards)
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
     // Calculate scale based on container constraints
-    const scaleX = availableWidth / originalWidth;
-    const scaleY = availableHeight / originalHeight;
+    const scaleX = maxWidth / originalWidth;
+    const scaleY = maxHeight / originalHeight;
     const scale = Math.min(scaleX, scaleY);
     
     // Calculate final dimensions maintaining aspect ratio
@@ -109,7 +104,7 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 max-w-[700px] w-[700px] rounded-xl">
+      <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors z-10"
@@ -119,7 +114,7 @@ export function SocialCardPreviewDialog({
 
         <div 
           className="w-full bg-neutral-night rounded-lg overflow-hidden"
-          style={{ height: `${containerHeight}px` }}
+          style={{ height: `${height}px`, width: `${width}px`, margin: '0 auto' }}
         >
           <div className="relative w-full h-full flex items-center justify-center">
             <div 
