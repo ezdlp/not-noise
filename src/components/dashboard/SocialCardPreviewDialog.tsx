@@ -30,23 +30,29 @@ export function SocialCardPreviewDialog({
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
   const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
-  // Fixed width for the preview container
-  const containerWidth = 700;
-  // Dynamic height based on format
-  const containerHeight = format === "post" ? 700 : 1245;
+  // Dynamic container dimensions based on format
+  const getContainerDimensions = () => {
+    // For story format (9:16), we want the height to be 80vh and width calculated accordingly
+    if (format === "story") {
+      const height = Math.min(800, window.innerHeight * 0.8); // 80vh but max 800px
+      const width = (height * 9) / 16; // Maintain 9:16 aspect ratio
+      return { width, height };
+    }
+    // For post format (1:1), we use a fixed width and equal height
+    return { width: 700, height: 700 };
+  };
 
   // Calculate dimensions that maintain aspect ratio and fit container
   const getPreviewDimensions = () => {
-    const availableWidth = containerWidth;
-    const availableHeight = containerHeight;
+    const container = getContainerDimensions();
     
     // Original dimensions (Instagram standards)
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
     // Calculate scale based on container constraints
-    const scaleX = availableWidth / originalWidth;
-    const scaleY = availableHeight / originalHeight;
+    const scaleX = container.width / originalWidth;
+    const scaleY = container.height / originalHeight;
     const scale = Math.min(scaleX, scaleY);
     
     // Calculate final dimensions maintaining aspect ratio
@@ -56,11 +62,9 @@ export function SocialCardPreviewDialog({
     return {
       width,
       height,
-      scale,
-      // Story format: artwork takes 45% of width, Post format: 55% of width
       artworkSize: format === "post" 
         ? Math.floor(width * 0.55) 
-        : Math.floor(width * 0.45)
+        : Math.floor(width * 0.65) // Increased from 0.45 to 0.65 for better story format
     };
   };
 
@@ -81,7 +85,6 @@ export function SocialCardPreviewDialog({
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let r = 0, g = 0, b = 0;
 
-      // Sample pixels for average color
       for (let i = 0; i < imageData.length; i += 4) {
         r += imageData[i];
         g += imageData[i + 1];
@@ -106,10 +109,11 @@ export function SocialCardPreviewDialog({
   }, []);
 
   const { width, height, artworkSize } = getPreviewDimensions();
+  const containerDimensions = getContainerDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 max-w-[700px] w-[700px] rounded-xl">
+      <DialogContent className="p-0 max-w-[90vw] rounded-xl">
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-6 top-6 p-2 hover:bg-neutral-seasalt rounded-full transition-colors z-10"
@@ -119,7 +123,10 @@ export function SocialCardPreviewDialog({
 
         <div 
           className="w-full bg-neutral-night rounded-lg overflow-hidden"
-          style={{ height: `${containerHeight}px` }}
+          style={{ 
+            width: `${containerDimensions.width}px`,
+            height: `${containerDimensions.height}px` 
+          }}
         >
           <div className="relative w-full h-full flex items-center justify-center">
             <div 
@@ -187,7 +194,7 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
               ) : (
-                <div className="relative h-full flex flex-col items-center justify-center py-24">
+                <div className="relative h-full flex flex-col items-center justify-between py-24">
                   <div className="flex flex-col items-center justify-center space-y-16">
                     <img 
                       src={smartLink.artwork_url} 
