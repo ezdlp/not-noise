@@ -30,9 +30,10 @@ export function SocialCardPreviewDialog({
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
   const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
-  // Fixed dimensions for the preview container
+  // Fixed width for the preview container
   const containerWidth = 700;
-  const containerHeight = format === "post" ? 700 : 580;
+  // Dynamic height based on format
+  const containerHeight = format === "post" ? 700 : 1245; // 9:16 ratio for story
 
   // Calculate dimensions that maintain aspect ratio and fit container
   const getPreviewDimensions = () => {
@@ -112,7 +113,10 @@ export function SocialCardPreviewDialog({
           <X className="h-5 w-5 text-neutral-night" />
         </button>
 
-        <div className="w-full h-[700px] bg-neutral-night rounded-lg overflow-hidden">
+        <div 
+          className="w-full bg-neutral-night rounded-lg overflow-hidden"
+          style={{ height: `${containerHeight}px` }}
+        >
           <div className="relative w-full h-full flex items-center justify-center">
             <div 
               className="overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
