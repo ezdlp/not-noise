@@ -28,6 +28,7 @@ export function SocialCardPreviewDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
+  const [dominantColor, setDominantColor] = useState<string>("#6851FB");
 
   // Fixed dimensions for the preview container
   const containerWidth = 700;
@@ -55,6 +56,37 @@ export function SocialCardPreviewDialog({
     };
   };
 
+  // Extract dominant color from artwork
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = smartLink.artwork_url;
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let r = 0, g = 0, b = 0;
+
+      // Sample pixels for average color
+      for (let i = 0; i < imageData.length; i += 4) {
+        r += imageData[i];
+        g += imageData[i + 1];
+        b += imageData[i + 2];
+      }
+
+      const pixelCount = imageData.length / 4;
+      const avgColor = `rgb(${Math.floor(r/pixelCount)}, ${Math.floor(g/pixelCount)}, ${Math.floor(b/pixelCount)})`;
+      setDominantColor(avgColor);
+    };
+  }, [smartLink.artwork_url]);
+
   useEffect(() => {
     const icons = [
       { id: 'spotify', icon: '/lovable-uploads/spotify.png' },
@@ -67,7 +99,9 @@ export function SocialCardPreviewDialog({
   }, []);
 
   const { width, height } = getPreviewDimensions();
-  const artworkSize = Math.floor(width * 0.55); // Reduced from 0.65 to 0.55 for better proportion
+  const artworkSize = format === "post" 
+    ? Math.floor(width * 0.65) 
+    : Math.floor(width * 0.55);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,7 +116,7 @@ export function SocialCardPreviewDialog({
         <div className="w-full h-[580px] bg-neutral-night rounded-lg overflow-hidden">
           <div className="relative w-full h-full flex items-center justify-center">
             <div 
-              className="bg-primary overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              className="overflow-hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               style={{ 
                 width: `${width}px`,
                 height: `${height}px`,
@@ -96,33 +130,54 @@ export function SocialCardPreviewDialog({
                     filter: 'blur(20px)',
                   }}
                 />
-                <div className="absolute inset-0 bg-black/40" />
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: `linear-gradient(180deg, 
+                      rgba(0,0,0,0.4) 0%, 
+                      rgba(0,0,0,0.3) 50%, 
+                      rgba(0,0,0,0.6) 100%
+                    )`
+                  }}
+                />
               </div>
 
-              <div className="relative h-full flex flex-col items-center justify-between py-8">
+              <div className={`relative h-full flex flex-col items-center justify-between ${
+                format === "story" ? "py-12" : "py-8"
+              }`}>
                 <div className="flex-1 flex flex-col items-center justify-center space-y-8">
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
-                    className="rounded-lg object-cover shadow-lg"
+                    className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                     style={{
                       width: `${artworkSize}px`,
                       height: `${artworkSize}px`,
                     }}
                   />
 
-                  <div className="text-center space-y-3">
-                    <h1 className={`font-heading font-bold text-white ${format === 'story' ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
+                  <div className="text-center space-y-3 px-4">
+                    <h1 className={`font-heading font-bold tracking-tight text-white ${
+                      format === "story" 
+                        ? "text-2xl md:text-3xl" 
+                        : "text-3xl md:text-4xl"
+                    }`}>
                       {smartLink.title}
                     </h1>
-                    <p className={`text-white/90 ${format === 'story' ? 'text-base md:text-lg' : 'text-lg md:text-xl'}`}>
+                    <p className={`text-white/90 font-medium ${
+                      format === "story" 
+                        ? "text-lg md:text-xl" 
+                        : "text-xl md:text-2xl"
+                    }`}>
                       {smartLink.artist_name}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-center mt-6">
-                  <p className="text-white/80 text-xs mb-4 tracking-wider font-medium">NOW AVAILABLE ON</p>
+                  <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
+                    NOW AVAILABLE ON
+                  </p>
                   <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
                     {platformIcons.map((platform) => (
                       <img
