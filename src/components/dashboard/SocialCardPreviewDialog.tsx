@@ -60,15 +60,14 @@ export function SocialCardPreviewDialog({
       ? Math.floor(width * 0.55) 
       : Math.floor(width * 0.60);
     
-    // Calculate text sizes and spacing based on artwork size
-    const titleSize = Math.floor(artworkSize * 0.22); // Reduced from 25% to 22%
-    const artistNameSize = Math.floor(titleSize * 0.65); // Reduced from 70% to 65%
+    // Significantly reduced text sizes for better proportions
+    const titleSize = Math.floor(artworkSize * 0.15); // Reduced from 22% to 15%
+    const artistNameSize = Math.floor(titleSize * 0.8); // Increased from 65% to 80% of title for better balance
     const platformIconSize = Math.floor(width * 0.08);
-    const platformIconGap = Math.floor(width * 0.04); // Reduced from 5% to 4%
+    const platformIconGap = Math.floor(width * 0.04);
     
-    // Calculate safe zones with adjusted percentages
-    const topSafeZone = Math.floor(height * 0.12); // Reduced from 14% to 12%
-    const bottomSafeZone = Math.floor(height * 0.15); // Reduced from 17% to 15%
+    const topSafeZone = Math.floor(height * 0.12);
+    const bottomSafeZone = Math.floor(height * 0.15);
     
     return {
       containerWidth,
@@ -164,7 +163,10 @@ export function SocialCardPreviewDialog({
                   </div>
                 </div>
                 <div className="text-center mt-auto">
-                  <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
+                  <p 
+                    className="text-white/70 uppercase tracking-widest font-medium mb-4"
+                    style={{ fontSize: `${Math.max(10, dimensions.width * 0.015)}px` }}
+                  >
                     NOW AVAILABLE ON
                   </p>
                   <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
@@ -173,7 +175,11 @@ export function SocialCardPreviewDialog({
                         key={platform.id}
                         src={platform.icon}
                         alt={platform.id}
-                        className="w-5 h-5 opacity-90 filter brightness-0 invert"
+                        className="opacity-90 filter brightness-0 invert"
+                        style={{ 
+                          width: `${dimensions.platformIconSize}px`,
+                          height: `${dimensions.platformIconSize}px`
+                        }}
                       />
                     ))}
                   </div>
