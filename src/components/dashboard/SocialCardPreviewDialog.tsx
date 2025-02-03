@@ -37,7 +37,6 @@ export function SocialCardPreviewDialog({
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    // For story format, we want to maintain aspect ratio within the container
     const containerWidth = maxWidth;
     const containerHeight = maxHeight;
     
@@ -48,29 +47,37 @@ export function SocialCardPreviewDialog({
       width = Math.floor(originalWidth * scale);
       height = Math.floor(originalHeight * scale);
     } else {
-      // For story, calculate dimensions to fit height while maintaining aspect ratio
       const scale = Math.min(
         maxHeight / originalHeight,
-        (maxWidth * 0.6) / originalWidth // Use 60% of container width max for story
+        (maxWidth * 0.6) / originalWidth
       );
       width = Math.floor(originalWidth * scale);
       height = Math.floor(originalHeight * scale);
     }
     
-    // Calculate safe zones based on the scaled height
-    const topSafeZone = Math.floor(height * 0.14); // 14% of height
-    const bottomSafeZone = Math.floor(height * 0.17); // 17% of height
+    // Calculate artwork size - 65% of width for story, 55% for post
+    const artworkSize = format === "post" 
+      ? Math.floor(width * 0.55) 
+      : Math.floor(width * 0.65);
+    
+    // Calculate safe zones and spacing
+    const topSafeZone = Math.floor(height * 0.14);
+    const bottomSafeZone = Math.floor(height * 0.17);
+    const titleSize = Math.floor(artworkSize * 0.25); // 25% of artwork size
+    const artistNameSize = Math.floor(titleSize * 0.7); // 70% of title size
+    const platformIconSize = Math.floor(width * 0.08); // 8% of container width
     
     return {
       containerWidth,
       containerHeight,
       width,
       height,
-      artworkSize: format === "post" 
-        ? Math.floor(width * 0.55) 
-        : Math.floor(width * 0.65),
+      artworkSize,
       topSafeZone,
-      bottomSafeZone
+      bottomSafeZone,
+      titleSize,
+      artistNameSize,
+      platformIconSize,
     };
   };
 
@@ -91,7 +98,6 @@ export function SocialCardPreviewDialog({
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let r = 0, g = 0, b = 0;
 
-      // Sample pixels for average color
       for (let i = 0; i < imageData.length; i += 4) {
         r += imageData[i];
         g += imageData[i + 1];
@@ -115,7 +121,7 @@ export function SocialCardPreviewDialog({
     setPlatformIcons(icons);
   }, []);
 
-  const { containerWidth, containerHeight, width, height, artworkSize, topSafeZone, bottomSafeZone } = getPreviewDimensions();
+  const dimensions = getPreviewDimensions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,15 +129,15 @@ export function SocialCardPreviewDialog({
         <div 
           className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
           style={{ 
-            width: `${containerWidth}px`, 
-            height: `${containerHeight}px`
+            width: `${dimensions.containerWidth}px`, 
+            height: `${dimensions.containerHeight}px`
           }}
         >
           <div 
             className="relative overflow-hidden"
             style={{ 
-              width: `${width}px`,
-              height: `${height}px`,
+              width: `${dimensions.width}px`,
+              height: `${dimensions.height}px`,
             }}
           >
             <div className="absolute inset-0 overflow-hidden">
@@ -162,8 +168,8 @@ export function SocialCardPreviewDialog({
                     alt={smartLink.title}
                     className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                     style={{
-                      width: `${artworkSize}px`,
-                      height: `${artworkSize}px`,
+                      width: `${dimensions.artworkSize}px`,
+                      height: `${dimensions.artworkSize}px`,
                     }}
                   />
                   <div className="text-center space-y-3 px-4">
@@ -195,24 +201,28 @@ export function SocialCardPreviewDialog({
               <div className="relative h-full">
                 <div 
                   className="absolute top-0 left-0 right-0 flex flex-col items-center"
-                  style={{ marginTop: `${topSafeZone}px` }}
+                  style={{ marginTop: `${dimensions.topSafeZone}px` }}
                 >
                   <img 
                     src={smartLink.artwork_url} 
                     alt={smartLink.title}
                     className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                     style={{
-                      width: `${artworkSize}px`,
-                      height: `${artworkSize}px`,
+                      width: `${dimensions.artworkSize}px`,
+                      height: `${dimensions.artworkSize}px`,
                     }}
                   />
                   <div className="text-center space-y-3 mt-8">
-                    <h1 className="font-heading font-bold tracking-tight text-white" 
-                        style={{ fontSize: `${Math.max(32, width * 0.08)}px` }}>
+                    <h1 
+                      className="font-heading font-bold tracking-tight text-white"
+                      style={{ fontSize: `${dimensions.titleSize}px` }}
+                    >
                       {smartLink.title}
                     </h1>
-                    <p className="text-white/90 font-medium"
-                       style={{ fontSize: `${Math.max(24, width * 0.06)}px` }}>
+                    <p 
+                      className="text-white/90 font-medium"
+                      style={{ fontSize: `${dimensions.artistNameSize}px` }}
+                    >
                       {smartLink.artist_name}
                     </p>
                   </div>
@@ -220,13 +230,15 @@ export function SocialCardPreviewDialog({
 
                 <div 
                   className="absolute bottom-0 left-0 right-0 text-center"
-                  style={{ marginBottom: `${bottomSafeZone}px` }}
+                  style={{ marginBottom: `${dimensions.bottomSafeZone}px` }}
                 >
-                  <p className="text-white/70 uppercase tracking-widest font-medium mb-6"
-                     style={{ fontSize: `${Math.max(12, width * 0.02)}px` }}>
+                  <p 
+                    className="text-white/70 uppercase tracking-widest font-medium mb-6"
+                    style={{ fontSize: `${Math.max(12, dimensions.width * 0.02)}px` }}
+                  >
                     NOW AVAILABLE ON
                   </p>
-                  <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
+                  <div className="grid grid-flow-col auto-cols-max gap-5 place-content-center">
                     {platformIcons.map((platform) => (
                       <img
                         key={platform.id}
@@ -234,8 +246,8 @@ export function SocialCardPreviewDialog({
                         alt={platform.id}
                         className="opacity-90 filter brightness-0 invert"
                         style={{ 
-                          width: `${Math.max(24, width * 0.035)}px`,
-                          height: `${Math.max(24, width * 0.035)}px`
+                          width: `${dimensions.platformIconSize}px`,
+                          height: `${dimensions.platformIconSize}px`
                         }}
                       />
                     ))}
