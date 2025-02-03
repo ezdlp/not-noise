@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppContent from "./AppContent";
 import Header from "@/components/layout/Header";
+import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -16,6 +17,7 @@ function AppLayout() {
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
       {!isAdminRoute && !isSmartLinkRoute && <Header />}
       <AppContent />
+      <CookieConsent />
     </div>
   );
 }
