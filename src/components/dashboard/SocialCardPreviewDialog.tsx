@@ -149,58 +149,81 @@ export function SocialCardPreviewDialog({
                 />
               </div>
 
-              <div className={`relative h-full flex flex-col items-center ${
-                format === "story" 
-                  ? "justify-center py-12 space-y-8" 
-                  : "justify-between py-8"
-              }`}>
-                <div className={`flex-1 flex flex-col items-center justify-center ${
-                  format === "story" ? "space-y-8" : "space-y-6"
-                }`}>
-                  <img 
-                    src={smartLink.artwork_url} 
-                    alt={smartLink.title}
-                    className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
-                    style={{
-                      width: `${artworkSize}px`,
-                      height: `${artworkSize}px`,
-                    }}
-                  />
-
-                  <div className="text-center space-y-3 px-4">
-                    <h1 className={`font-heading font-bold tracking-tight text-white ${
-                      format === "story" 
-                        ? "text-3xl md:text-4xl" 
-                        : "text-3xl md:text-4xl"
-                    }`}>
-                      {smartLink.title}
-                    </h1>
-                    <p className={`text-white/90 font-medium ${
-                      format === "story" 
-                        ? "text-2xl md:text-3xl" 
-                        : "text-xl md:text-2xl"
-                    }`}>
-                      {smartLink.artist_name}
+              {format === "post" ? (
+                <div className="relative h-full flex flex-col items-center justify-between py-8">
+                  <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+                    <img 
+                      src={smartLink.artwork_url} 
+                      alt={smartLink.title}
+                      className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
+                      style={{
+                        width: `${artworkSize}px`,
+                        height: `${artworkSize}px`,
+                      }}
+                    />
+                    <div className="text-center space-y-3 px-4">
+                      <h1 className="font-heading font-bold tracking-tight text-white text-3xl md:text-4xl">
+                        {smartLink.title}
+                      </h1>
+                      <p className="text-white/90 font-medium text-xl md:text-2xl">
+                        {smartLink.artist_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
+                      NOW AVAILABLE ON
                     </p>
+                    <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
+                      {platformIcons.map((platform) => (
+                        <img
+                          key={platform.id}
+                          src={platform.icon}
+                          alt={platform.id}
+                          className="w-5 h-5 opacity-90 filter brightness-0 invert"
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-
-                <div className="text-center mt-auto">
-                  <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mb-4">
-                    NOW AVAILABLE ON
-                  </p>
-                  <div className="grid grid-flow-col auto-cols-max gap-6 place-content-center">
-                    {platformIcons.map((platform) => (
-                      <img
-                        key={platform.id}
-                        src={platform.icon}
-                        alt={platform.id}
-                        className="w-5 h-5 opacity-90 filter brightness-0 invert"
-                      />
-                    ))}
+              ) : (
+                <div className="relative h-full flex flex-col items-center justify-between py-16">
+                  <div className="flex flex-col items-center justify-center space-y-12 flex-1">
+                    <img 
+                      src={smartLink.artwork_url} 
+                      alt={smartLink.title}
+                      className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
+                      style={{
+                        width: `${artworkSize}px`,
+                        height: `${artworkSize}px`,
+                      }}
+                    />
+                    <div className="text-center space-y-4 px-8">
+                      <h1 className="font-heading font-bold tracking-tight text-white text-4xl md:text-5xl">
+                        {smartLink.title}
+                      </h1>
+                      <p className="text-white/90 font-medium text-3xl md:text-4xl">
+                        {smartLink.artist_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-center mb-16">
+                    <p className="text-white/70 text-sm uppercase tracking-widest font-medium mb-6">
+                      NOW AVAILABLE ON
+                    </p>
+                    <div className="grid grid-flow-col auto-cols-max gap-8 place-content-center">
+                      {platformIcons.map((platform) => (
+                        <img
+                          key={platform.id}
+                          src={platform.icon}
+                          alt={platform.id}
+                          className="w-8 h-8 opacity-90 filter brightness-0 invert"
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
