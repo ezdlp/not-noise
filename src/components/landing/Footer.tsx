@@ -47,7 +47,7 @@ export const Footer = () => {
           <div className="md:col-span-3 space-y-8">
             <Link to="/">
               <img 
-                src="https://833e19c2-c9f0-449e-9333-5d1b15903c50.lovableproject.com/lovable-uploads/soundraiser-logo/Logo%20A%20low.png"
+                src="/lovable-uploads/7b845469-ae5d-4e0d-be6e-91b3cf1a808e.png"
                 alt="Soundraiser"
                 className="h-8 w-auto"
               />
@@ -107,10 +107,11 @@ export const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-white/10">
           <p className="text-center text-sm text-white/60">
-            © 2024 Soundraiser. All rights reserved.
+            © {new Date().getFullYear()} Soundraiser. All rights reserved.
           </p>
         </div>
       </div>
     </footer>
   );
 };
+
