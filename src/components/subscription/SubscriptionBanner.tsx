@@ -1,5 +1,5 @@
+
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,8 +59,8 @@ export function SubscriptionBanner() {
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <Crown className="w-5 h-5 text-primary" />
+            <div className="p-2 rounded-full bg-neutral-seasalt">
+              <Crown className="w-5 h-5 text-neutral-night/60" />
             </div>
             <div>
               <h3 className="font-semibold capitalize">
@@ -79,7 +79,10 @@ export function SubscriptionBanner() {
             </div>
           </div>
           {isFreeTier && (
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button 
+              variant="outline" 
+              className="border-primary hover:bg-primary/5 text-primary"
+            >
               Upgrade Now
             </Button>
           )}
