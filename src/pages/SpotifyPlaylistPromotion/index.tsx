@@ -1,4 +1,4 @@
-```typescript
+
 import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
 
@@ -30,4 +30,3 @@ const SpotifyPlaylistPromotion = () => {
 };
 
 export default SpotifyPlaylistPromotion;
-```
