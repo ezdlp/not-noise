@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,7 +232,11 @@ const PublicBlogPost = () => {
         )}
 
         <div 
-          className="prose prose-lg max-w-none mb-12 [&_img]:my-8 [&_p]:leading-relaxed [&_h2]:mt-12 [&_h3]:mt-8"
+          className={
+            isPage 
+              ? "prose prose-lg max-w-none [&_h1]:mb-8 [&_h2]:mt-12 [&_h2]:mb-6 [&_h3]:mt-8 [&_h3]:mb-4 [&_p]:mb-6 [&_ul]:mt-4 [&_ul]:mb-6 [&_li]:mb-2 [&_li_p]:mb-0 [&>div>p]:text-base [&_p]:leading-7 [&_h2+p]:mt-4 [&_p:empty]:hidden [&_hr]:my-8 [&_section]:mb-12"
+              : "prose prose-lg max-w-none mb-12 [&_img]:my-8 [&_p]:leading-relaxed [&_h2]:mt-12 [&_h3]:mt-8"
+          }
           dangerouslySetInnerHTML={{ __html: post.content }} 
         />
 
@@ -267,3 +272,4 @@ const PublicBlogPost = () => {
 };
 
 export default PublicBlogPost;
+
