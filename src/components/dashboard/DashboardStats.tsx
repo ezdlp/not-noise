@@ -80,28 +80,31 @@ export function DashboardStats({ data }: { data: any[] }) {
       trend: viewsTrend,
       period: `${format(sevenDaysAgo, 'MMM d')} - ${format(now, 'MMM d')}`,
       currentPeriod: currentPeriodViews,
+      previousPeriod: previousPeriodViews
     },
     {
       name: "Total Clicks",
       value: totalClicks,
       description: "Total number of platform clicks",
       icon: MousePointerClickIcon,
-      color: "bg-[#ECE9FF]",
-      iconColor: "text-[#7E69AB]",
+      color: "bg-[#E6F9F2]",
+      iconColor: "text-[#37D299]",
       trend: clicksTrend,
       period: `${format(sevenDaysAgo, 'MMM d')} - ${format(now, 'MMM d')}`,
       currentPeriod: currentPeriodClicks,
+      previousPeriod: previousPeriodClicks
     },
     {
       name: "CTR",
       value: `${ctr.toFixed(1)}%`,
       description: "Click-through rate",
       icon: TargetIcon,
-      color: "bg-[#ECE9FF]",
-      iconColor: "text-[#6E59A5]",
+      color: "bg-[#FFF5FA]",
+      iconColor: "text-[#FE28A2]",
       trend: ctrTrend,
       period: `${format(sevenDaysAgo, 'MMM d')} - ${format(now, 'MMM d')}`,
       currentPeriod: `${currentCTR.toFixed(1)}%`,
+      previousPeriod: `${previousCTR.toFixed(1)}%`
     },
   ];
 
@@ -137,9 +140,6 @@ export function DashboardStats({ data }: { data: any[] }) {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {stat.currentPeriod} in last 7 days
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -148,16 +148,16 @@ export function DashboardStats({ data }: { data: any[] }) {
                 <div className="space-y-2">
                   <p className="font-medium">{stat.description}</p>
                   <p className="text-sm text-muted-foreground">
-                    Last 7 days ({stat.period}):
+                    Last 7 days ({stat.period}): {stat.currentPeriod}
                     <br />
-                    {stat.currentPeriod}
+                    Previous 7 days: {stat.previousPeriod}
                   </p>
                   {stat.trend !== 0 && (
                     <p className="text-sm">
                       <span className={stat.trend > 0 ? 'text-emerald-600' : 'text-red-600'}>
                         {stat.trend > 0 ? '↑' : '↓'} {Math.abs(stat.trend).toFixed(1)}%
                       </span>
-                      {' '}vs previous 7 days
+                      {' '}vs previous period
                     </p>
                   )}
                 </div>
