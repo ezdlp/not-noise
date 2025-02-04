@@ -94,38 +94,31 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         </div>
         <div className="flex-grow space-y-3">
           <div className="flex items-start justify-between">
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               <h3 className="font-semibold text-lg text-[#0F0F0F]">{link.title}</h3>
+              <p className="text-xs text-muted-foreground">{link.artist_name}</p>
               
-              {/* Stats Section - Now more prominent */}
-              <div className="flex flex-wrap items-center gap-3 text-base font-medium">
+              {/* Stats Section */}
+              <div className="flex flex-wrap items-center gap-3 text-sm font-medium mt-3">
                 <div className="flex items-center gap-1.5 text-[#0F0F0F]">
                   <EyeIcon className="h-4 w-4" />
                   <span>{link.link_views?.length || 0} views</span>
                 </div>
                 <span className="text-neutral-border">•</span>
-                <div className="flex items-center gap-1.5 text-success">
+                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
                   <MousePointerIcon className="h-4 w-4" />
                   <span>{link.platform_clicks?.length || 0} clicks</span>
                 </div>
                 <span className="text-neutral-border">•</span>
-                <div className="flex items-center gap-1.5 text-primary">
+                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
                   <PercentIcon className="h-4 w-4" />
                   <span>
                     {link.link_views?.length
-                      ? (
-                          (link.platform_clicks?.length || 0) /
-                          link.link_views.length *
-                          100
-                        ).toFixed(1)
-                      : "0"}
-                    % CTR
+                      ? ((link.platform_clicks?.length || 0) / link.link_views.length * 100).toFixed(1)
+                      : "0"}% CTR
                   </span>
                 </div>
               </div>
-
-              {/* Artist name - Now de-emphasized */}
-              <p className="text-xs text-muted-foreground">{link.artist_name}</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
