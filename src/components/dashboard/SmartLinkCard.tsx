@@ -94,24 +94,24 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         </div>
         <div className="flex-grow space-y-3">
           <div className="flex items-start justify-between">
-            <div className="space-y-1.5">
-              <h3 className="font-semibold text-lg text-[#0F0F0F]">{link.title}</h3>
-              <p className="text-xs text-muted-foreground">{link.artist_name}</p>
+            <div className="space-y-1">
+              <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F]">{link.title}</h3>
+              <p className="text-xs font-heading text-muted-foreground">{link.artist_name}</p>
               
               {/* Stats Section */}
-              <div className="flex flex-wrap items-center gap-3 text-sm font-medium mt-3">
+              <div className="flex items-center gap-3 text-xs mt-3 font-dm-sans">
                 <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <EyeIcon className="h-4 w-4" />
+                  <EyeIcon className="h-3.5 w-3.5" />
                   <span>{link.link_views?.length || 0} views</span>
                 </div>
                 <span className="text-neutral-border">•</span>
                 <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <MousePointerIcon className="h-4 w-4" />
+                  <MousePointerIcon className="h-3.5 w-3.5" />
                   <span>{link.platform_clicks?.length || 0} clicks</span>
                 </div>
                 <span className="text-neutral-border">•</span>
                 <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <PercentIcon className="h-4 w-4" />
+                  <PercentIcon className="h-3.5 w-3.5" />
                   <span>
                     {link.link_views?.length
                       ? ((link.platform_clicks?.length || 0) / link.link_views.length * 100).toFixed(1)
