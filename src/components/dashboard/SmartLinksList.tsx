@@ -38,12 +38,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SmartLinkCard } from "./SmartLinkCard";
+import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -54,7 +61,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<string>("newest");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -106,12 +113,16 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
 
   if (links.length === 0) {
     return (
-      <div className="text-center py-6">
-        <p className="text-muted-foreground">No smart links found</p>
+      <div className="text-center py-12 space-y-4">
+        <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
+        <div>
+          <p className="text-xl font-semibold">No smart links yet</p>
+          <p className="text-muted-foreground">Create your first smart link to start sharing your music</p>
+        </div>
         <Button
-          variant="link"
+          variant="default"
           onClick={() => navigate("/create")}
-          className="mt-2"
+          className="mt-4"
         >
           Create your first smart link
         </Button>
@@ -121,45 +132,29 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-2">
             <Link2Icon className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold">Your Smart Links</h2>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={viewMode === "list" ? "secondary" : "ghost"}
-                    size="icon"
-                    onClick={() => setViewMode("list")}
-                    className="hover:bg-gray-100 bg-gray-50"
-                  >
-                    <ListIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>List View</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={viewMode === "grid" ? "secondary" : "ghost"}
-                    size="icon"
-                    onClick={() => setViewMode("grid")}
-                    className="hover:bg-gray-100 bg-gray-50"
-                  >
-                    <GridIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Grid View</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => value && setViewMode(value as "grid" | "list")}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <GridIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <ListIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            
+            <Separator orientation="vertical" className="h-8 hidden sm:block" />
+            
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by..." />

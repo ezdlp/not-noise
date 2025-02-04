@@ -81,7 +81,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
 
   return (
     <>
-      <Card className="flex flex-col md:flex-row gap-4 p-4">
+      <Card className="flex flex-col md:flex-row gap-4 p-4 h-full">
         <div className="flex-shrink-0">
           <img
             src={link.artwork_url || "/placeholder.svg"}
@@ -92,8 +92,24 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         <div className="flex-grow space-y-2">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-semibold">{link.title}</h3>
+              <h3 className="font-semibold text-lg">{link.title}</h3>
               <p className="text-sm text-muted-foreground">{link.artist_name}</p>
+              <div className="flex gap-2 mt-1 text-sm text-muted-foreground">
+                <span>{link.link_views?.length || 0} views</span>
+                <span>•</span>
+                <span>{link.platform_clicks?.length || 0} clicks</span>
+                <span>•</span>
+                <span>
+                  {link.link_views?.length
+                    ? (
+                        (link.platform_clicks?.length || 0) /
+                        link.link_views.length *
+                        100
+                      ).toFixed(1)
+                    : "0"}
+                  % CTR
+                </span>
+              </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -105,10 +121,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                 <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
                   <EditIcon className="mr-2 h-4 w-4" />
                   Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/analytics`)}>
-                  <BarChart2Icon className="mr-2 h-4 w-4" />
-                  Analytics
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive"
