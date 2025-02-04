@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { format, subDays } from "date-fns";
@@ -32,7 +33,7 @@ interface RPCResponse {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-border bg-white p-3 shadow-sm">
+      <div className="rounded-lg border border-neutral-border bg-white p-3 shadow-sm">
         <p className="mb-1 text-sm font-medium text-neutral-night">{label}</p>
         {payload.map((pld: any, index: number) => (
           <div key={index} className="text-sm">
@@ -100,6 +101,16 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
               bottom: 0,
             }}
           >
+            <defs>
+              <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6851FB" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6851FB" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#37D299" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#37D299" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="#E6E6E6"
@@ -117,23 +128,30 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              verticalAlign="top" 
+              height={36}
+              iconType="circle"
+            />
             <Area
               type="monotone"
               dataKey="views"
               stroke="#6851FB"
-              fill="#ECE9FF"
-              fillOpacity={0.2}
+              fill="url(#viewsGradient)"
               name="Views"
               strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: "#6851FB" }}
             />
             <Area
               type="monotone"
               dataKey="clicks"
               stroke="#37D299"
-              fill="#E6F9F2"
-              fillOpacity={0.2}
+              fill="url(#clicksGradient)"
               name="Clicks"
               strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: "#37D299" }}
             />
           </AreaChart>
         </ResponsiveContainer>

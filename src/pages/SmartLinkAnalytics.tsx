@@ -15,7 +15,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
+import { StatCard } from "@/components/analytics/StatCard";
+import { formatDistanceToNow } from "date-fns";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -106,33 +109,50 @@ export default function SmartLinkAnalytics() {
     clicks: pl.clicks?.length || 0,
   })) || [];
 
+  // Sort platform data by clicks in descending order
+  platformData.sort((a, b) => b.clicks - a.clicks);
+
+  // Add total bar
+  const totalClicks2 = platformData.reduce((sum, item) => sum + item.clicks, 0);
+  if (totalClicks2 > 0) {
+    platformData.push({ name: 'Total', clicks: totalClicks2 });
+  }
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate("/dashboard")}
-          className="hover:bg-neutral-seasalt"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold text-neutral-night">{smartLink.title} Analytics</h1>
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 border-b border-neutral-border">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/dashboard")}
+            className="hover:bg-neutral-seasalt"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-neutral-night">{smartLink.title} Analytics</h1>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Views</h3>
-          <p className="text-2xl font-semibold text-neutral-night">{totalViews}</p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Clicks</h3>
-          <p className="text-2xl font-semibold text-neutral-night">{totalClicks}</p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">CTR</h3>
-          <p className="text-2xl font-semibold text-neutral-night">{ctr.toFixed(1)}%</p>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Views"
+          value={totalViews}
+          type="views"
+          trend={5} // Example trend, should be calculated based on previous period
+        />
+        <StatCard
+          title="Total Clicks"
+          value={totalClicks}
+          type="clicks"
+          trend={8} // Example trend
+        />
+        <StatCard
+          title="CTR"
+          value={`${ctr.toFixed(1)}%`}
+          type="ctr"
+          trend={2} // Example trend
+        />
       </div>
 
       {id && <DailyStatsChart smartLinkId={id} />}
@@ -164,39 +184,31 @@ export default function SmartLinkAnalytics() {
                 fill="#6851FB"
                 fillOpacity={0.85}
                 radius={[2, 2, 0, 0]}
-                className="transition-all duration-200 ease-out"
-                onMouseOver={(data: any, index: number) => {
-                  document.querySelectorAll('.recharts-bar-rectangle').forEach((rect: Element) => {
-                    if (rect instanceof SVGElement) {
-                      rect.style.fill = '#4A47A5';
-                      rect.style.filter = 'drop-shadow(0 2px 4px rgba(104, 81, 251, 0.1))';
-                      rect.style.transform = 'scale(1.01)';
-                    }
-                  });
-                }}
-                onMouseOut={(data: any, index: number) => {
-                  document.querySelectorAll('.recharts-bar-rectangle').forEach((rect: Element) => {
-                    if (rect instanceof SVGElement) {
-                      rect.style.fill = '#6851FB';
-                      rect.style.filter = 'none';
-                      rect.style.transform = 'scale(1)';
-                    }
-                  });
-                }}
-              />
+              >
+                <LabelList 
+                  dataKey="clicks" 
+                  position="top" 
+                  fill="#666666"
+                  fontSize={11}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Recent Clicks</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-neutral-night">Recent Clicks</h2>
+          <Button variant="outline" size="sm">View all</Button>
+        </div>
         <div className="space-y-4">
           {smartLink.platform_links
             ?.flatMap((pl) =>
               (pl.clicks || []).map((click) => ({
                 ...click,
                 platform_name: pl.platform_name,
+                platform_id: pl.platform_id,
               }))
             )
             .sort(
@@ -208,12 +220,19 @@ export default function SmartLinkAnalytics() {
             .map((click) => (
               <div
                 key={click.id}
-                className="flex items-center justify-between border-b border-neutral-border pb-2"
+                className="flex items-center justify-between border-b border-neutral-border pb-2 hover:bg-neutral-seasalt/5 transition-colors duration-200 -mx-2 px-2"
               >
                 <div>
-                  <p className="text-sm font-medium text-neutral-night">{click.platform_name}</p>
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={`/lovable-uploads/${click.platform_id.toLowerCase()}.png`}
+                      alt={click.platform_name}
+                      className="w-4 h-4 object-contain"
+                    />
+                    <p className="text-sm font-medium text-neutral-night">{click.platform_name}</p>
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(click.clicked_at).toLocaleString()}
+                    {formatDistanceToNow(new Date(click.clicked_at), { addSuffix: true })}
                   </p>
                 </div>
                 <div className="text-sm text-neutral-night">
@@ -226,4 +245,3 @@ export default function SmartLinkAnalytics() {
     </div>
   );
 }
-
