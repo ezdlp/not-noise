@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -17,6 +18,8 @@ import {
   GridIcon,
   ListIcon,
   Link2Icon,
+  SlidersHorizontal,
+  Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -44,6 +47,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,17 +113,23 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center animate-pulse">
+          <div className="h-8 w-32 bg-neutral-seasalt rounded" />
+          <div className="h-8 w-48 bg-neutral-seasalt rounded" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-[200px] rounded-lg" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (links.length === 0) {
     return (
-      <div className="text-center py-12 space-y-4">
+      <div className="text-center py-12 space-y-4 bg-white rounded-lg border border-neutral-border p-8">
         <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
         <div>
           <p className="text-xl font-semibold">No smart links yet</p>
@@ -133,26 +149,47 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
           <div className="flex items-center gap-2">
             <Link2Icon className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold">Your Smart Links</h2>
           </div>
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={(value) => value && setViewMode(value as "grid" | "list")}
-              className="justify-start"
-            >
-              <ToggleGroupItem value="grid" aria-label="Grid view">
-                <GridIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="List view">
-                <ListIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-            
+            <div className="flex items-center gap-4">
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={(value) => value && setViewMode(value as "grid" | "list")}
+                className="justify-start bg-neutral-seasalt border border-neutral-border rounded-md"
+              >
+                <ToggleGroupItem value="grid" aria-label="Grid view" className="data-[state=on]:bg-white">
+                  <GridIcon className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="List view" className="data-[state=on]:bg-white">
+                  <ListIcon className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => toast.success("Coming soon!")}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Data
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => toast.success("Coming soon!")}>
+                    Select All
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
             <Separator orientation="vertical" className="h-8 hidden sm:block" />
             
             <Select value={sortBy} onValueChange={setSortBy}>
@@ -171,7 +208,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
         </div>
 
         {viewMode === "grid" ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {sortedLinks.map((link) => (
               <SmartLinkCard
                 key={link.id}
@@ -181,151 +218,156 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
             ))}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[300px]">Title</TableHead>
-                <TableHead>Views</TableHead>
-                <TableHead>Clicks</TableHead>
-                <TableHead>CTR</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedLinks.map((link) => {
-                const views = link.link_views?.length || 0;
-                const clicks = link.platform_clicks?.length || 0;
-                const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-                const smartLinkUrl = `${window.location.origin}/link/${link.slug || link.id}`;
+          <div className="bg-white rounded-lg border border-neutral-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[300px]">Title</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Clicks</TableHead>
+                  <TableHead>CTR</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedLinks.map((link) => {
+                  const views = link.link_views?.length || 0;
+                  const clicks = link.platform_clicks?.length || 0;
+                  const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
+                  const smartLinkUrl = `${window.location.origin}/link/${link.slug || link.id}`;
 
-                return (
-                  <TableRow key={link.id}>
-                    <TableCell>
-                      <div className="flex items-start gap-4">
-                        {link.artwork_url && (
-                          <img
-                            src={link.artwork_url}
-                            alt={link.title}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium truncate">{link.title}</h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {link.artist_name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <code className="text-xs bg-muted px-2 py-1 rounded">
-                              {smartLinkUrl}
-                            </code>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => copyToClipboard(smartLinkUrl)}
-                            >
-                              <CopyIcon className="h-4 w-4" />
-                            </Button>
+                  return (
+                    <TableRow key={link.id} className="group">
+                      <TableCell>
+                        <div className="flex items-start gap-4">
+                          {link.artwork_url && (
+                            <img
+                              src={link.artwork_url}
+                              alt={link.title}
+                              className="w-16 h-16 object-cover rounded-lg border border-neutral-border"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium truncate text-neutral-night">{link.title}</h3>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {link.artist_name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <code className="text-xs bg-neutral-seasalt px-2 py-1 rounded">
+                                {smartLinkUrl}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => copyToClipboard(smartLinkUrl)}
+                              >
+                                <CopyIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{views}</TableCell>
-                    <TableCell>{clicks}</TableCell>
-                    <TableCell>{ctr}%</TableCell>
-                    <TableCell>
-                      {formatDistanceToNow(new Date(link.created_at), {
-                        addSuffix: true,
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/link/${link.id}`)}
-                            >
-                              <ExternalLinkIcon className="w-4 h-4" />
-                              <span className="sr-only">View</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View Smart Link</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/links/${link.id}/analytics`)}
-                            >
-                              <BarChart2Icon className="w-4 h-4" />
-                              <span className="sr-only">Analytics</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View Analytics</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/links/${link.id}/edit`)}
-                            >
-                              <EditIcon className="w-4 h-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit Smart Link</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{link.title}"? This action
-                                cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteMutation.mutate(link.id)}
-                                className="bg-red-500 hover:bg-red-600"
+                      </TableCell>
+                      <TableCell>{views}</TableCell>
+                      <TableCell>{clicks}</TableCell>
+                      <TableCell>{ctr}%</TableCell>
+                      <TableCell>
+                        {formatDistanceToNow(new Date(link.created_at), {
+                          addSuffix: true,
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => navigate(`/link/${link.id}`)}
                               >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                                <ExternalLinkIcon className="w-4 h-4" />
+                                <span className="sr-only">View</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Smart Link</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => navigate(`/links/${link.id}/analytics`)}
+                              >
+                                <BarChart2Icon className="w-4 h-4" />
+                                <span className="sr-only">Analytics</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Analytics</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => navigate(`/links/${link.id}/edit`)}
+                              >
+                                <EditIcon className="w-4 h-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Smart Link</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-600 hover:text-rose-700"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{link.title}"? This action
+                                  cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(link.id)}
+                                  className="bg-rose-600 hover:bg-rose-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </TooltipProvider>
