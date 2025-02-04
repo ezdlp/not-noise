@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -38,28 +39,34 @@ export function SocialCardPreviewDialog({
   const exportRef = useRef<HTMLDivElement>(null);
 
   const getPreviewDimensions = () => {
-    const maxWidth = Math.min(800, window.innerWidth * 0.9);
-    const maxHeight = window.innerHeight * 0.8;
+    const maxDialogWidth = Math.min(800, window.innerWidth * 0.9);
+    const maxDialogHeight = window.innerHeight * 0.8;
     
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    const scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
-    const width = Math.floor(originalWidth * scale);
-    const height = Math.floor(originalHeight * scale);
+    const scale = Math.min(maxDialogWidth / originalWidth, maxDialogHeight / originalHeight);
     
+    return {
+      width: Math.floor(originalWidth * scale),
+      height: Math.floor(originalHeight * scale),
+      scale,
+      originalWidth,
+      originalHeight
+    };
+  };
+
+  const getElementSizes = (scale: number) => {
     const artworkSize = format === "post" 
-      ? Math.floor(width * 0.48) 
-      : Math.floor(width * 0.60);
+      ? Math.floor(1080 * 0.48 * scale)
+      : Math.floor(1080 * 0.60 * scale);
     
     const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15));
     const artistNameSize = Math.floor(titleSize * 0.8);
-    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08));
-    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04));
+    const platformIconSize = Math.floor(1080 * (format === "post" ? 0.06 : 0.08) * scale);
+    const platformIconGap = Math.floor(1080 * (format === "post" ? 0.035 : 0.04) * scale);
     
     return {
-      width,
-      height,
       artworkSize,
       titleSize,
       artistNameSize,
@@ -101,31 +108,15 @@ export function SocialCardPreviewDialog({
   }, [smartLink.artwork_url, open]);
 
   const renderCard = (isExport: boolean = false) => {
-    const dimensions = getPreviewDimensions();
-    const width = isExport ? 1080 : dimensions.width;
-    const height = isExport ? (format === "post" ? 1080 : 1920) : dimensions.height;
-    const artworkSize = isExport 
-      ? (format === "post" ? 518 : 648)
-      : dimensions.artworkSize;
-    const titleSize = isExport 
-      ? (format === "post" ? 62 : 97)
-      : dimensions.titleSize;
-    const artistNameSize = isExport 
-      ? (format === "post" ? 50 : 78)
-      : dimensions.artistNameSize;
-    const platformIconSize = isExport 
-      ? (format === "post" ? 65 : 86)
-      : dimensions.platformIconSize;
-    const platformIconGap = isExport 
-      ? (format === "post" ? 38 : 43)
-      : dimensions.platformIconGap;
+    const { scale, width, height } = getPreviewDimensions();
+    const sizes = getElementSizes(isExport ? 1 : scale);
 
     return (
       <div 
         className="relative overflow-hidden"
         style={{ 
-          width: `${width}px`,
-          height: `${height}px`,
+          width: isExport ? 1080 : width,
+          height: isExport ? (format === "post" ? 1080 : 1920) : height,
           backgroundColor: '#6851FB',
         }}
       >
@@ -153,20 +144,20 @@ export function SocialCardPreviewDialog({
                 alt={smartLink.title}
                 className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                 style={{
-                  width: `${artworkSize}px`,
-                  height: `${artworkSize}px`,
+                  width: `${sizes.artworkSize}px`,
+                  height: `${sizes.artworkSize}px`,
                 }}
               />
               <div className="text-center space-y-4 px-8">
                 <h1 
                   className="font-heading font-bold tracking-tight text-white"
-                  style={{ fontSize: `${titleSize}px`, lineHeight: 1.1 }}
+                  style={{ fontSize: `${sizes.titleSize}px`, lineHeight: 1.1 }}
                 >
                   {smartLink.title}
                 </h1>
                 <p 
                   className="text-white/90 font-medium"
-                  style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
+                  style={{ fontSize: `${sizes.artistNameSize}px`, lineHeight: 1.2 }}
                 >
                   {smartLink.artist_name}
                 </p>
@@ -181,7 +172,7 @@ export function SocialCardPreviewDialog({
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
-                style={{ gap: `${platformIconGap}px` }}
+                style={{ gap: `${sizes.platformIconGap}px` }}
               >
                 {platformIcons.map((platform) => (
                   <img
@@ -190,8 +181,8 @@ export function SocialCardPreviewDialog({
                     alt={platform.id}
                     className="opacity-90 filter brightness-0 invert"
                     style={{ 
-                      width: `${platformIconSize}px`,
-                      height: `${platformIconSize}px`
+                      width: `${sizes.platformIconSize}px`,
+                      height: `${sizes.platformIconSize}px`
                     }}
                   />
                 ))}
@@ -209,20 +200,20 @@ export function SocialCardPreviewDialog({
                 alt={smartLink.title}
                 className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                 style={{
-                  width: `${artworkSize}px`,
-                  height: `${artworkSize}px`,
+                  width: `${sizes.artworkSize}px`,
+                  height: `${sizes.artworkSize}px`,
                 }}
               />
               <div className="text-center space-y-3 mt-8">
                 <h1 
                   className="font-heading font-bold tracking-tight text-white"
-                  style={{ fontSize: `${titleSize}px`, lineHeight: 1.1 }}
+                  style={{ fontSize: `${sizes.titleSize}px`, lineHeight: 1.1 }}
                 >
                   {smartLink.title}
                 </h1>
                 <p 
                   className="text-white/90 font-medium"
-                  style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
+                  style={{ fontSize: `${sizes.artistNameSize}px`, lineHeight: 1.2 }}
                 >
                   {smartLink.artist_name}
                 </p>
@@ -241,7 +232,7 @@ export function SocialCardPreviewDialog({
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
-                style={{ gap: `${platformIconGap}px` }}
+                style={{ gap: `${sizes.platformIconGap}px` }}
               >
                 {platformIcons.map((platform) => (
                   <img
@@ -250,8 +241,8 @@ export function SocialCardPreviewDialog({
                     alt={platform.id}
                     className="opacity-90 filter brightness-0 invert"
                     style={{ 
-                      width: `${platformIconSize}px`,
-                      height: `${platformIconSize}px`
+                      width: `${sizes.platformIconSize}px`,
+                      height: `${sizes.platformIconSize}px`
                     }}
                   />
                 ))}
@@ -276,7 +267,7 @@ export function SocialCardPreviewDialog({
       exportContainer.style.position = 'absolute';
       exportContainer.style.top = '0';
       exportContainer.style.left = '0';
-      exportContainer.style.width = format === "post" ? '1080px' : '1080px';
+      exportContainer.style.width = '1080px';
       exportContainer.style.height = format === "post" ? '1080px' : '1920px';
       exportContainer.style.opacity = '1';
       exportContainer.style.pointerEvents = 'none';
@@ -338,24 +329,14 @@ export function SocialCardPreviewDialog({
     }
   };
 
-  const dimensions = getPreviewDimensions();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="relative p-0 bg-white rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
+      <DialogContent className="relative p-0 bg-white rounded-xl overflow-hidden flex flex-col h-[90vh]">
         <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
         
-        <div className="flex-grow min-h-0 flex items-center justify-center overflow-hidden p-4">
-          <div 
-            className="bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
-            style={{ 
-              maxWidth: `${dimensions.width}px`, 
-              maxHeight: `${dimensions.height}px`,
-              width: "100%",
-              aspectRatio: format === "post" ? "1" : "9/16"
-            }}
-          >
-            <div ref={previewRef} className="w-full h-full flex items-center justify-center">
+        <div className="flex-grow overflow-y-auto p-4 flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center">
+            <div ref={previewRef}>
               {renderCard(false)}
             </div>
           </div>
@@ -365,7 +346,7 @@ export function SocialCardPreviewDialog({
           ref={exportRef} 
           className="fixed left-0 top-0 -z-10 opacity-0 pointer-events-none"
           style={{ 
-            width: format === "post" ? '1080px' : '1080px',
+            width: '1080px',
             height: format === "post" ? '1080px' : '1920px',
           }}
         >
