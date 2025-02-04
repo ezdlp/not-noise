@@ -885,6 +885,12 @@ export type Database = {
           clicks: number
         }[]
       }
+      has_role: {
+        Args: {
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
