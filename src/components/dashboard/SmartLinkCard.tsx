@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -11,9 +10,6 @@ import {
   CopyIcon,
   CheckIcon,
   InstagramIcon,
-  EyeIcon,
-  MousePointerIcon,
-  PercentIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -85,62 +81,55 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   return (
     <>
       <Card className="flex flex-col md:flex-row gap-4 p-4 h-full bg-white border-[#E6E6E6] shadow-[0_2px_4px_rgba(15,15,15,0.05)]">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 self-stretch">
           <img
             src={link.artwork_url || "/placeholder.svg"}
             alt={link.title}
-            className="w-24 h-24 object-cover rounded-lg"
+            className="w-24 h-full object-cover rounded-lg"
           />
         </div>
-        <div className="flex-grow space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F]">{link.title}</h3>
-              <p className="text-xs font-heading text-muted-foreground">{link.artist_name}</p>
-              
-              {/* Stats Section */}
-              <div className="flex items-center gap-3 text-xs mt-3 font-dm-sans">
-                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <EyeIcon className="h-3.5 w-3.5" />
-                  <span>{link.link_views?.length || 0} views</span>
-                </div>
-                <span className="text-neutral-border">•</span>
-                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <MousePointerIcon className="h-3.5 w-3.5" />
-                  <span>{link.platform_clicks?.length || 0} clicks</span>
-                </div>
-                <span className="text-neutral-border">•</span>
-                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
-                  <PercentIcon className="h-3.5 w-3.5" />
-                  <span>
-                    {link.link_views?.length
-                      ? ((link.platform_clicks?.length || 0) / link.link_views.length * 100).toFixed(1)
-                      : "0"}% CTR
-                  </span>
-                </div>
+        <div className="flex-grow flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F]">{link.title}</h3>
+                <p className="text-xs font-poppins text-muted-foreground">{link.artist_name}</p>
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVerticalIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
+                    <EditIcon className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={handleDelete}
+                  >
+                    <TrashIcon className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVerticalIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
-                  <EditIcon className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={handleDelete}
-                >
-                  <TrashIcon className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            
+            <div className="flex items-center gap-3 text-xs font-dm-sans text-[#0F0F0F]">
+              <span>{link.link_views?.length || 0} views</span>
+              <span className="text-neutral-border">•</span>
+              <span>{link.platform_clicks?.length || 0} clicks</span>
+              <span className="text-neutral-border">•</span>
+              <span>
+                {link.link_views?.length
+                  ? ((link.platform_clicks?.length || 0) / link.link_views.length * 100).toFixed(1)
+                  : "0"}% CTR
+              </span>
+            </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <TooltipProvider>
               <Tooltip>
