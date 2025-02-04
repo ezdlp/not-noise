@@ -39,34 +39,28 @@ export function SocialCardPreviewDialog({
   const exportRef = useRef<HTMLDivElement>(null);
 
   const getPreviewDimensions = () => {
-    const maxDialogWidth = Math.min(800, window.innerWidth * 0.9);
-    const maxDialogHeight = window.innerHeight * 0.8;
+    const maxWidth = Math.min(800, window.innerWidth * 0.9);
+    const maxHeight = window.innerHeight * 0.8;
     
     const originalWidth = 1080;
     const originalHeight = format === "post" ? 1080 : 1920;
     
-    const scale = Math.min(maxDialogWidth / originalWidth, maxDialogHeight / originalHeight);
+    const scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+    const width = Math.floor(originalWidth * scale);
+    const height = Math.floor(originalHeight * scale);
     
-    return {
-      width: Math.floor(originalWidth * scale),
-      height: Math.floor(originalHeight * scale),
-      scale,
-      originalWidth,
-      originalHeight
-    };
-  };
-
-  const getElementSizes = (scale: number) => {
     const artworkSize = format === "post" 
-      ? Math.floor(1080 * 0.48 * scale)
-      : Math.floor(1080 * 0.60 * scale);
+      ? Math.floor(width * 0.48) 
+      : Math.floor(width * 0.60);
     
     const titleSize = Math.floor(artworkSize * (format === "post" ? 0.12 : 0.15));
     const artistNameSize = Math.floor(titleSize * 0.8);
-    const platformIconSize = Math.floor(1080 * (format === "post" ? 0.06 : 0.08) * scale);
-    const platformIconGap = Math.floor(1080 * (format === "post" ? 0.035 : 0.04) * scale);
+    const platformIconSize = Math.floor(width * (format === "post" ? 0.06 : 0.08));
+    const platformIconGap = Math.floor(width * (format === "post" ? 0.035 : 0.04));
     
     return {
+      width,
+      height,
       artworkSize,
       titleSize,
       artistNameSize,
@@ -107,16 +101,33 @@ export function SocialCardPreviewDialog({
     }
   }, [smartLink.artwork_url, open]);
 
+  const dimensions = getPreviewDimensions();
+
   const renderCard = (isExport: boolean = false) => {
-    const { scale, width, height } = getPreviewDimensions();
-    const sizes = getElementSizes(isExport ? 1 : scale);
+    const width = isExport ? 1080 : dimensions.width;
+    const height = isExport ? (format === "post" ? 1080 : 1920) : dimensions.height;
+    const artworkSize = isExport 
+      ? (format === "post" ? 518 : 648)
+      : dimensions.artworkSize;
+    const titleSize = isExport 
+      ? (format === "post" ? 62 : 97)
+      : dimensions.titleSize;
+    const artistNameSize = isExport 
+      ? (format === "post" ? 50 : 78)
+      : dimensions.artistNameSize;
+    const platformIconSize = isExport 
+      ? (format === "post" ? 65 : 86)
+      : dimensions.platformIconSize;
+    const platformIconGap = isExport 
+      ? (format === "post" ? 38 : 43)
+      : dimensions.platformIconGap;
 
     return (
       <div 
         className="relative overflow-hidden"
         style={{ 
-          width: isExport ? 1080 : width,
-          height: isExport ? (format === "post" ? 1080 : 1920) : height,
+          width: `${width}px`,
+          height: `${height}px`,
           backgroundColor: '#6851FB',
         }}
       >
@@ -144,20 +155,20 @@ export function SocialCardPreviewDialog({
                 alt={smartLink.title}
                 className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                 style={{
-                  width: `${sizes.artworkSize}px`,
-                  height: `${sizes.artworkSize}px`,
+                  width: `${artworkSize}px`,
+                  height: `${artworkSize}px`,
                 }}
               />
               <div className="text-center space-y-4 px-8">
                 <h1 
                   className="font-heading font-bold tracking-tight text-white"
-                  style={{ fontSize: `${sizes.titleSize}px`, lineHeight: 1.1 }}
+                  style={{ fontSize: `${titleSize}px`, lineHeight: 1.1 }}
                 >
                   {smartLink.title}
                 </h1>
                 <p 
                   className="text-white/90 font-medium"
-                  style={{ fontSize: `${sizes.artistNameSize}px`, lineHeight: 1.2 }}
+                  style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
                   {smartLink.artist_name}
                 </p>
@@ -172,7 +183,7 @@ export function SocialCardPreviewDialog({
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
-                style={{ gap: `${sizes.platformIconGap}px` }}
+                style={{ gap: `${platformIconGap}px` }}
               >
                 {platformIcons.map((platform) => (
                   <img
@@ -181,8 +192,8 @@ export function SocialCardPreviewDialog({
                     alt={platform.id}
                     className="opacity-90 filter brightness-0 invert"
                     style={{ 
-                      width: `${sizes.platformIconSize}px`,
-                      height: `${sizes.platformIconSize}px`
+                      width: `${platformIconSize}px`,
+                      height: `${platformIconSize}px`
                     }}
                   />
                 ))}
@@ -200,20 +211,20 @@ export function SocialCardPreviewDialog({
                 alt={smartLink.title}
                 className="rounded-lg object-cover shadow-xl ring-1 ring-white/10"
                 style={{
-                  width: `${sizes.artworkSize}px`,
-                  height: `${sizes.artworkSize}px`,
+                  width: `${artworkSize}px`,
+                  height: `${artworkSize}px`,
                 }}
               />
               <div className="text-center space-y-3 mt-8">
                 <h1 
                   className="font-heading font-bold tracking-tight text-white"
-                  style={{ fontSize: `${sizes.titleSize}px`, lineHeight: 1.1 }}
+                  style={{ fontSize: `${titleSize}px`, lineHeight: 1.1 }}
                 >
                   {smartLink.title}
                 </h1>
                 <p 
                   className="text-white/90 font-medium"
-                  style={{ fontSize: `${sizes.artistNameSize}px`, lineHeight: 1.2 }}
+                  style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
                   {smartLink.artist_name}
                 </p>
@@ -232,7 +243,7 @@ export function SocialCardPreviewDialog({
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
-                style={{ gap: `${sizes.platformIconGap}px` }}
+                style={{ gap: `${platformIconGap}px` }}
               >
                 {platformIcons.map((platform) => (
                   <img
@@ -241,8 +252,8 @@ export function SocialCardPreviewDialog({
                     alt={platform.id}
                     className="opacity-90 filter brightness-0 invert"
                     style={{ 
-                      width: `${sizes.platformIconSize}px`,
-                      height: `${sizes.platformIconSize}px`
+                      width: `${platformIconSize}px`,
+                      height: `${platformIconSize}px`
                     }}
                   />
                 ))}
@@ -261,18 +272,21 @@ export function SocialCardPreviewDialog({
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
+      // Create a clone of the export container for capture
       const exportContainer = exportRef.current.cloneNode(true) as HTMLElement;
       document.body.appendChild(exportContainer);
       
+      // Set explicit dimensions and ensure visibility
       exportContainer.style.position = 'absolute';
       exportContainer.style.top = '0';
       exportContainer.style.left = '0';
-      exportContainer.style.width = '1080px';
+      exportContainer.style.width = format === "post" ? '1080px' : '1080px';
       exportContainer.style.height = format === "post" ? '1080px' : '1920px';
       exportContainer.style.opacity = '1';
       exportContainer.style.pointerEvents = 'none';
       exportContainer.style.zIndex = '-1';
 
+      // Wait for a frame to ensure DOM updates
       await new Promise(resolve => requestAnimationFrame(resolve));
 
       const dataUrl = await toPng(exportContainer, {
@@ -284,6 +298,7 @@ export function SocialCardPreviewDialog({
         canvasHeight: format === "post" ? 1080 : 1920,
       });
 
+      // Clean up the temporary container
       document.body.removeChild(exportContainer);
 
       const res = await fetch(dataUrl);
@@ -331,70 +346,76 @@ export function SocialCardPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="relative p-0 bg-white rounded-xl overflow-hidden flex flex-col h-[90vh]">
+      <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
         <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
-        
-        <div className="flex-grow overflow-y-auto p-4 flex items-center justify-center">
-          <div className="w-full h-full flex items-center justify-center">
-            <div ref={previewRef}>
-              {renderCard(false)}
-            </div>
+        <div 
+          className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
+          style={{ 
+            width: `${dimensions.width}px`, 
+            height: `${dimensions.height}px`
+          }}
+        >
+          <div ref={previewRef}>
+            {renderCard(false)}
           </div>
         </div>
 
         <div 
           ref={exportRef} 
-          className="fixed left-0 top-0 -z-10 opacity-0 pointer-events-none"
+          className="fixed left-0 top-0"
           style={{ 
-            width: '1080px',
+            position: 'absolute',
+            width: format === "post" ? '1080px' : '1080px',
             height: format === "post" ? '1080px' : '1920px',
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -1
           }}
         >
           {renderCard(true)}
         </div>
 
-        <div className="flex-shrink-0 border-t border-neutral-border">
-          <div className="px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-sm font-medium text-neutral-night">Format:</span>
-              <div className="flex gap-2">
-                <Button
-                  variant={format === "post" ? "secondary" : "outline"}
-                  onClick={() => setFormat("post")}
-                  className={`flex items-center gap-2 transition-all duration-200 ${
-                    format === "post" 
-                      ? "bg-primary-light text-primary hover:bg-primary-light/80" 
-                      : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
-                  }`}
-                >
-                  <Square className="h-4 w-4" />
-                  Post
-                </Button>
-                <Button
-                  variant={format === "story" ? "secondary" : "outline"}
-                  onClick={() => setFormat("story")}
-                  className={`flex items-center gap-2 transition-all duration-200 ${
-                    format === "story" 
-                      ? "bg-primary-light text-primary hover:bg-primary-light/80" 
-                      : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
-                  }`}
-                >
-                  <RectangleVertical className="h-4 w-4" />
-                  Story
-                </Button>
-              </div>
+        <div className="px-6 py-4 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-neutral-night">Format:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={format === "post" ? "secondary" : "outline"}
+                onClick={() => setFormat("post")}
+                className={`flex items-center gap-2 transition-all duration-200 ${
+                  format === "post" 
+                    ? "bg-primary-light text-primary hover:bg-primary-light/80" 
+                    : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
+                }`}
+              >
+                <Square className="h-4 w-4" />
+                Post
+              </Button>
+              <Button
+                variant={format === "story" ? "secondary" : "outline"}
+                onClick={() => setFormat("story")}
+                className={`flex items-center gap-2 transition-all duration-200 ${
+                  format === "story" 
+                    ? "bg-primary-light text-primary hover:bg-primary-light/80" 
+                    : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
+                }`}
+              >
+                <RectangleVertical className="h-4 w-4" />
+                Story
+              </Button>
             </div>
-
-            <Button 
-              onClick={handleGenerate}
-              disabled={isLoading || !imagesLoaded}
-              className="bg-primary hover:bg-primary-hover text-white"
-            >
-              {isLoading ? "Generating..." : "Download Image"}
-            </Button>
           </div>
+
+          <Button 
+            onClick={handleGenerate}
+            disabled={isLoading || !imagesLoaded}
+            className="bg-primary hover:bg-primary-hover text-white"
+          >
+            {isLoading ? "Generating..." : "Generate Image"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
