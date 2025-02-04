@@ -20,7 +20,7 @@ import {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-border bg-white p-3 shadow-sm">
+      <div className="rounded-lg border border-neutral-border bg-white p-3 shadow-sm">
         <p className="mb-1 text-sm font-medium text-neutral-night">{label}</p>
         <div className="text-sm">
           <span className="font-medium text-primary">
@@ -145,7 +145,7 @@ export default function SmartLinkAnalytics() {
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#E6E6E6"
-                opacity={0.5}
+                opacity={0.4}
               />
               <XAxis 
                 dataKey="name" 
@@ -161,8 +161,28 @@ export default function SmartLinkAnalytics() {
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="clicks" 
-                fill="#A299FC"
+                fill="#6851FB"
+                fillOpacity={0.85}
                 radius={[2, 2, 0, 0]}
+                className="transition-all duration-200 ease-out"
+                onMouseOver={(data: any, index: number) => {
+                  document.querySelectorAll('.recharts-bar-rectangle').forEach((rect: Element) => {
+                    if (rect instanceof SVGElement) {
+                      rect.style.fill = '#4A47A5';
+                      rect.style.filter = 'drop-shadow(0 2px 4px rgba(104, 81, 251, 0.1))';
+                      rect.style.transform = 'scale(1.01)';
+                    }
+                  });
+                }}
+                onMouseOut={(data: any, index: number) => {
+                  document.querySelectorAll('.recharts-bar-rectangle').forEach((rect: Element) => {
+                    if (rect instanceof SVGElement) {
+                      rect.style.fill = '#6851FB';
+                      rect.style.filter = 'none';
+                      rect.style.transform = 'scale(1)';
+                    }
+                  });
+                }}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -206,3 +226,4 @@ export default function SmartLinkAnalytics() {
     </div>
   );
 }
+
