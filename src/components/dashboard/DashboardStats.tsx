@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import {
   Tooltip,
@@ -6,7 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ArrowUpIcon, ArrowDownIcon, EyeIcon, MousePointerClickIcon, TargetIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, EyeIcon, MousePointerClickIcon, TargetIcon, InfoIcon } from "lucide-react";
 import { format } from "date-fns";
 
 export function DashboardStats({ data }: { data: any[] }) {
@@ -73,7 +72,6 @@ export function DashboardStats({ data }: { data: any[] }) {
     {
       name: "Total Views",
       value: totalViews,
-      description: "Total number of smart link views",
       icon: EyeIcon,
       color: "bg-[#ECE9FF]",
       iconColor: "text-[#6851FB]",
@@ -85,7 +83,6 @@ export function DashboardStats({ data }: { data: any[] }) {
     {
       name: "Total Clicks",
       value: totalClicks,
-      description: "Total number of platform clicks",
       icon: MousePointerClickIcon,
       color: "bg-[#E6F9F2]",
       iconColor: "text-[#37D299]",
@@ -97,7 +94,6 @@ export function DashboardStats({ data }: { data: any[] }) {
     {
       name: "CTR",
       value: `${ctr.toFixed(1)}%`,
-      description: "Click-through rate",
       icon: TargetIcon,
       color: "bg-[#FFF5FA]",
       iconColor: "text-[#FE28A2]",
@@ -113,57 +109,50 @@ export function DashboardStats({ data }: { data: any[] }) {
       {stats.map((stat) => (
         <Card 
           key={stat.name} 
-          className="relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.02]"
+          className="relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.02] p-4"
         >
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="p-4 cursor-help">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-lg ${stat.color}`}>
-                      <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {stat.name}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-2xl font-bold">{stat.value}</h3>
-                        {stat.trend !== 0 && (
-                          <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {stat.trend > 0 ? (
-                              <ArrowUpIcon className="w-4 h-4" />
-                            ) : (
-                              <ArrowDownIcon className="w-4 h-4" />
-                            )}
-                            {Math.abs(stat.trend).toFixed(1)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="p-4 max-w-[300px]">
-                <div className="space-y-2">
-                  <p className="font-medium">{stat.description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Last 7 days ({stat.period}): {stat.currentPeriod}
-                    <br />
-                    Previous 7 days: {stat.previousPeriod}
-                  </p>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-lg ${stat.color}`}>
+              <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-muted-foreground">
+                {stat.name}
+              </p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-2xl font-bold">{stat.value}</h3>
+                <div className="flex items-center gap-1">
                   {stat.trend !== 0 && (
-                    <p className="text-sm">
-                      <span className={stat.trend > 0 ? 'text-emerald-600' : 'text-red-600'}>
-                        {stat.trend > 0 ? '↑' : '↓'} {Math.abs(stat.trend).toFixed(1)}%
-                      </span>
-                      {' '}vs previous period
-                    </p>
+                    <span className={`flex items-center text-sm ${stat.trend > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {stat.trend > 0 ? (
+                        <ArrowUpIcon className="w-4 h-4" />
+                      ) : (
+                        <ArrowDownIcon className="w-4 h-4" />
+                      )}
+                      {Math.abs(stat.trend).toFixed(1)}%
+                    </span>
                   )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoIcon className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="p-3">
+                        <div className="space-y-1 text-sm">
+                          <p className="font-medium">
+                            {stat.trend > 0 ? 'Increase' : 'Decrease'} compared to previous 7 days
+                          </p>
+                          <p className="text-muted-foreground">
+                            Current period: {stat.period}
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              </div>
+            </div>
+          </div>
         </Card>
       ))}
     </>
