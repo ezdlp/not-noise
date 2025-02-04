@@ -11,6 +11,9 @@ import {
   CopyIcon,
   CheckIcon,
   InstagramIcon,
+  EyeIcon,
+  MousePointerIcon,
+  PercentIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -81,7 +84,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
 
   return (
     <>
-      <Card className="flex flex-col md:flex-row gap-4 p-4 h-full">
+      <Card className="flex flex-col md:flex-row gap-4 p-4 h-full bg-white border-[#E6E6E6] shadow-[0_2px_4px_rgba(15,15,15,0.05)]">
         <div className="flex-shrink-0">
           <img
             src={link.artwork_url || "/placeholder.svg"}
@@ -89,27 +92,40 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
             className="w-24 h-24 object-cover rounded-lg"
           />
         </div>
-        <div className="flex-grow space-y-2">
+        <div className="flex-grow space-y-3">
           <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-semibold text-lg">{link.title}</h3>
-              <p className="text-sm text-muted-foreground">{link.artist_name}</p>
-              <div className="flex gap-2 mt-1 text-sm text-muted-foreground">
-                <span>{link.link_views?.length || 0} views</span>
-                <span>•</span>
-                <span>{link.platform_clicks?.length || 0} clicks</span>
-                <span>•</span>
-                <span>
-                  {link.link_views?.length
-                    ? (
-                        (link.platform_clicks?.length || 0) /
-                        link.link_views.length *
-                        100
-                      ).toFixed(1)
-                    : "0"}
-                  % CTR
-                </span>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg text-[#0F0F0F]">{link.title}</h3>
+              
+              {/* Stats Section - Now more prominent */}
+              <div className="flex flex-wrap items-center gap-3 text-base font-medium">
+                <div className="flex items-center gap-1.5 text-[#0F0F0F]">
+                  <EyeIcon className="h-4 w-4" />
+                  <span>{link.link_views?.length || 0} views</span>
+                </div>
+                <span className="text-neutral-border">•</span>
+                <div className="flex items-center gap-1.5 text-success">
+                  <MousePointerIcon className="h-4 w-4" />
+                  <span>{link.platform_clicks?.length || 0} clicks</span>
+                </div>
+                <span className="text-neutral-border">•</span>
+                <div className="flex items-center gap-1.5 text-primary">
+                  <PercentIcon className="h-4 w-4" />
+                  <span>
+                    {link.link_views?.length
+                      ? (
+                          (link.platform_clicks?.length || 0) /
+                          link.link_views.length *
+                          100
+                        ).toFixed(1)
+                      : "0"}
+                    % CTR
+                  </span>
+                </div>
               </div>
+
+              {/* Artist name - Now de-emphasized */}
+              <p className="text-xs text-muted-foreground">{link.artist_name}</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -139,7 +155,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
                     asChild
                   >
                     <Link to={`/link/${link.slug}`} target="_blank">
@@ -157,7 +173,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
                     onClick={copyToClipboard}
                   >
                     {isCopied ? (
@@ -177,7 +193,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
                     onClick={() => navigate(`/links/${link.id}/analytics`)}
                   >
                     <BarChart2Icon className="h-4 w-4" />
@@ -193,7 +209,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
                     onClick={generateSocialAsset}
                   >
                     <InstagramIcon className="h-4 w-4" />
