@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -28,6 +29,25 @@ interface RPCResponse {
   clicks: number;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-border bg-white p-3 shadow-sm">
+        <p className="mb-1 text-sm font-medium text-neutral-night">{label}</p>
+        {payload.map((pld: any, index: number) => (
+          <div key={index} className="text-sm">
+            <span className="font-medium" style={{ color: pld.color }}>
+              {pld.name}:
+            </span>{" "}
+            <span className="text-muted-foreground">{pld.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   const { data: stats, isLoading } = useQuery<RPCResponse[]>({
     queryKey: ["dailyStats", smartLinkId],
@@ -51,7 +71,7 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   if (isLoading) {
     return (
       <Card className="p-6">
-        <div className="h-[400px] animate-pulse bg-gray-100 rounded" />
+        <div className="h-[400px] animate-pulse bg-neutral-seasalt rounded" />
       </Card>
     );
   }
@@ -68,7 +88,7 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Daily Performance</h2>
+      <h2 className="text-lg font-semibold mb-4 text-neutral-night">Daily Performance</h2>
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
@@ -80,25 +100,40 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
               bottom: 0,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="#E6E6E6"
+              opacity={0.5}
+            />
+            <XAxis 
+              dataKey="day" 
+              stroke="#666666"
+              fontSize={12}
+              tickLine={false}
+            />
+            <YAxis 
+              stroke="#666666"
+              fontSize={12}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
               dataKey="views"
-              stackId="1"
-              stroke="#8884d8"
-              fill="#8884d8"
+              stroke="#6851FB"
+              fill="#ECE9FF"
+              fillOpacity={0.2}
               name="Views"
+              strokeWidth={2}
             />
             <Area
               type="monotone"
               dataKey="clicks"
-              stackId="2"
-              stroke="#82ca9d"
-              fill="#82ca9d"
+              stroke="#37D299"
+              fill="#E6F9F2"
+              fillOpacity={0.2}
               name="Clicks"
+              strokeWidth={2}
             />
           </AreaChart>
         </ResponsiveContainer>

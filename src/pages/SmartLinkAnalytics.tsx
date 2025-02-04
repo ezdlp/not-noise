@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,23 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-border bg-white p-3 shadow-sm">
+        <p className="mb-1 text-sm font-medium text-neutral-night">{label}</p>
+        <div className="text-sm">
+          <span className="font-medium text-primary">
+            Clicks:
+          </span>{" "}
+          <span className="text-muted-foreground">{payload[0].value}</span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function SmartLinkAnalytics() {
   const { id } = useParams();
@@ -62,12 +80,12 @@ export default function SmartLinkAnalytics() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 px-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-neutral-seasalt rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="h-32 bg-neutral-seasalt"></Card>
+            ))}
           </div>
         </div>
       </div>
@@ -89,56 +107,70 @@ export default function SmartLinkAnalytics() {
   })) || [];
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <div className="flex items-center gap-4">
         <Button
           variant="outline"
           size="icon"
           onClick={() => navigate("/dashboard")}
+          className="hover:bg-neutral-seasalt"
         >
           <ArrowLeftIcon className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">{smartLink.title} Analytics</h1>
+        <h1 className="text-2xl font-bold text-neutral-night">{smartLink.title} Analytics</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Total Views
-          </h3>
-          <p className="text-2xl font-bold">{totalViews}</p>
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Views</h3>
+          <p className="text-2xl font-semibold text-neutral-night">{totalViews}</p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Total Clicks
-          </h3>
-          <p className="text-2xl font-bold">{totalClicks}</p>
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Clicks</h3>
+          <p className="text-2xl font-semibold text-neutral-night">{totalClicks}</p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">CTR</h3>
-          <p className="text-2xl font-bold">{ctr.toFixed(1)}%</p>
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">CTR</h3>
+          <p className="text-2xl font-semibold text-neutral-night">{ctr.toFixed(1)}%</p>
         </Card>
       </div>
 
       {id && <DailyStatsChart smartLinkId={id} />}
 
-      <Card className="p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Platform Performance</h2>
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Platform Performance</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={platformData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="clicks" fill="#6851FB" />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="#E6E6E6"
+                opacity={0.5}
+              />
+              <XAxis 
+                dataKey="name" 
+                stroke="#666666"
+                fontSize={12}
+                tickLine={false}
+              />
+              <YAxis 
+                stroke="#666666"
+                fontSize={12}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar 
+                dataKey="clicks" 
+                fill="#A299FC"
+                radius={[2, 2, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Recent Clicks</h2>
+        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Recent Clicks</h2>
         <div className="space-y-4">
           {smartLink.platform_links
             ?.flatMap((pl) =>
@@ -156,15 +188,15 @@ export default function SmartLinkAnalytics() {
             .map((click) => (
               <div
                 key={click.id}
-                className="flex items-center justify-between border-b pb-2"
+                className="flex items-center justify-between border-b border-neutral-border pb-2"
               >
                 <div>
-                  <p className="text-sm font-medium">{click.platform_name}</p>
+                  <p className="text-sm font-medium text-neutral-night">{click.platform_name}</p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(click.clicked_at).toLocaleString()}
                   </p>
                 </div>
-                <div className="text-sm">
+                <div className="text-sm text-neutral-night">
                   {click.country || "Unknown location"}
                 </div>
               </div>
