@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import SmartLink from "@/pages/SmartLink";
@@ -22,6 +23,7 @@ import AdminContent from "@/pages/admin/Content";
 import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminImport from "@/pages/admin/Import";
+import { AdminRoute } from "@/components/admin/AdminRoute";
 
 const AppContent = () => {
   return (
@@ -45,8 +47,8 @@ const AppContent = () => {
       <Route path="/links/:id/analytics" element={<SmartLinkAnalytics />} />
       <Route path="/settings" element={<AccountSettings />} />
 
-      {/* Admin routes */}
-      <Route path="/admin" element={<AdminLayout />}>
+      {/* Admin routes - protected and with new path */}
+      <Route path="/control-room" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminOverview />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="smart-links" element={<AdminSmartLinks />} />

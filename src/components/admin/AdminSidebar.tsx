@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { 
   UsersIcon, 
@@ -24,42 +25,42 @@ const menuItems = [
   {
     title: "Overview",
     icon: LayoutDashboardIcon,
-    href: "/admin",
+    href: "/control-room",
   },
   {
     title: "Analytics",
     icon: BarChart2Icon,
-    href: "/admin/analytics",
+    href: "/control-room/analytics",
   },
   {
     title: "Users",
     icon: UsersIcon,
-    href: "/admin/users",
+    href: "/control-room/users",
   },
   {
     title: "Smart Links",
     icon: Link2Icon,
-    href: "/admin/smart-links",
+    href: "/control-room/smart-links",
   },
   {
     title: "Content",
     icon: FolderIcon,
-    href: "/admin/content",
+    href: "/control-room/content",
   },
   {
     title: "Media Library",
     icon: ImageIcon,
-    href: "/admin/media",
+    href: "/control-room/media",
   },
   {
     title: "Import",
     icon: DownloadIcon,
-    href: "/admin/import",
+    href: "/control-room/import",
   },
   {
     title: "Settings",
     icon: Settings,
-    href: "/admin/settings",
+    href: "/control-room/settings",
   },
 ];
 
