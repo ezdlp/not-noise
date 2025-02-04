@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -81,11 +82,11 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   return (
     <>
       <Card className="flex flex-col md:flex-row gap-4 p-4 h-full bg-white border-[#E6E6E6] shadow-[0_2px_4px_rgba(15,15,15,0.05)]">
-        <div className="flex-shrink-0 self-stretch">
+        <div className="flex-shrink-0 self-start">
           <img
             src={link.artwork_url || "/placeholder.svg"}
             alt={link.title}
-            className="w-24 h-full object-cover rounded-lg"
+            className="w-24 h-24 object-cover rounded-lg"
           />
         </div>
         <div className="flex-grow flex flex-col justify-between space-y-6">
