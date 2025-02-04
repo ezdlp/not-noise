@@ -343,8 +343,6 @@ export function SocialCardPreviewDialog({
     }
   };
 
-  const dimensions = getPreviewDimensions();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="relative p-0 max-w-[90vw] w-auto rounded-xl flex flex-col">
