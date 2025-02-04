@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import {
   Tooltip,
@@ -132,17 +133,17 @@ export function DashboardStats({ data }: { data: any[] }) {
                       {Math.abs(stat.trend).toFixed(1)}%
                     </span>
                   )}
-                  <TooltipProvider>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <InfoIcon className="w-4 h-4 text-muted-foreground cursor-help" />
+                        <InfoIcon className="w-4 h-4 text-muted-foreground cursor-pointer" />
                       </TooltipTrigger>
-                      <TooltipContent className="p-3">
+                      <TooltipContent side="top" className="p-3 max-w-[300px]">
                         <div className="space-y-1 text-sm">
                           <p className="font-medium">
                             {stat.trend > 0 ? 'Increase' : 'Decrease'} compared to previous 7 days
                           </p>
-                          <p className="text-muted-foreground">
+                          <p className="text-muted-foreground whitespace-nowrap">
                             Current period: {stat.period}
                           </p>
                         </div>
