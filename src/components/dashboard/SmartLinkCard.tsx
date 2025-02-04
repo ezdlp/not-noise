@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -9,7 +10,7 @@ import {
   TrashIcon,
   CopyIcon,
   CheckIcon,
-  ImageIcon,
+  InstagramIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -109,10 +110,6 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <BarChart2Icon className="mr-2 h-4 w-4" />
                   Analytics
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={generateSocialAsset}>
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Generate Test Asset
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={handleDelete}
@@ -178,6 +175,22 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                   <p>Analytics</p>
                 </TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={generateSocialAsset}
+                  >
+                    <InstagramIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create Social Media Assets</p>
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         </div>
@@ -192,4 +205,3 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     </>
   );
 }
-
