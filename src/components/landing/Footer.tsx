@@ -17,7 +17,7 @@ export const Footer = () => {
       title: "Product",
       links: [
         { text: "Smart Links", to: "/" },
-        { text: "Spotify Playlist Promotion", to: "/" },
+        { text: "Spotify Playlist Promotion", to: "/spotify-playlist-promotion" },
         { text: "News", to: "/" },
       ],
     },
@@ -113,5 +113,4 @@ export const Footer = () => {
       </div>
     </footer>
   );
-};
-
+}
