@@ -1,17 +1,21 @@
+
 import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { CTAButton } from "@/components/ui/cta-button";
-import { User, LogIn, Menu } from "lucide-react";
+import { User, LogIn, Menu, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -26,7 +30,7 @@ const Header = () => {
     navigate("/login");
   };
 
-  const NavLinks = () => (
+  const MarketingNavLinks = () => (
     <ul className="flex flex-col md:flex-row md:space-x-10 space-y-4 md:space-y-0">
       <li>
         <Link 
@@ -55,8 +59,26 @@ const Header = () => {
     </ul>
   );
 
+  const DashboardNavLinks = () => (
+    <ul className="flex flex-col md:flex-row md:space-x-10 space-y-4 md:space-y-0">
+      <li>
+        <Link 
+          to="/help" 
+          className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins inline-flex items-center gap-2"
+        >
+          <HelpCircle className="h-4 w-4" />
+          Help
+        </Link>
+      </li>
+    </ul>
+  );
+
+  const headerClasses = isDashboard 
+    ? "border-b border-neutral-border bg-white/90 backdrop-blur-sm shadow-sm sticky top-0 z-50" 
+    : "border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50";
+
   return (
-    <header className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <header className={headerClasses}>
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <img 
@@ -68,7 +90,7 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex flex-1 justify-center">
-          <NavLinks />
+          {isDashboard ? <DashboardNavLinks /> : <MarketingNavLinks />}
         </nav>
 
         <div className="flex items-center space-x-4">
@@ -91,12 +113,14 @@ const Header = () => {
             </>
           ) : (
             <>
-              <CTAButton 
-                onClick={() => navigate("/create")}
-                className="hidden md:flex !py-2 !px-4 !text-sm"
-              >
-                Create Smart Link
-              </CTAButton>
+              {!isDashboard && (
+                <CTAButton 
+                  onClick={() => navigate("/create")}
+                  className="hidden md:flex !py-2 !px-4 !text-sm"
+                >
+                  Create Smart Link
+                </CTAButton>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -140,7 +164,7 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <div className="flex flex-col gap-6 py-4">
-                <NavLinks />
+                {isDashboard ? <DashboardNavLinks /> : <MarketingNavLinks />}
                 {!isAuthenticated ? (
                   <div className="flex flex-col gap-4">
                     <CTAButton onClick={() => navigate("/register")}>
@@ -157,9 +181,11 @@ const Header = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    <CTAButton onClick={() => navigate("/create")}>
-                      Create Smart Link
-                    </CTAButton>
+                    {!isDashboard && (
+                      <CTAButton onClick={() => navigate("/create")}>
+                        Create Smart Link
+                      </CTAButton>
+                    )}
                     <div className="flex flex-col gap-2">
                       <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary">
                         Dashboard
@@ -189,3 +215,4 @@ const Header = () => {
 };
 
 export default Header;
+

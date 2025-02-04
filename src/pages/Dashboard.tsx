@@ -1,11 +1,17 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
 import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Link2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  
   const { data: links, isLoading } = useQuery({
     queryKey: ["smartLinks"],
     queryFn: async () => {
@@ -54,7 +60,16 @@ export default function Dashboard() {
         {/* Dashboard Overview Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-4">
-            <h2 className="text-2xl font-bold mb-4">Overview</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Overview</h2>
+              <Button
+                onClick={() => navigate("/create")}
+                className="gap-2"
+              >
+                <Link2 className="h-4 w-4" />
+                Create Smart Link
+              </Button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <DashboardStats data={links} />
             </div>
@@ -65,4 +80,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+};
