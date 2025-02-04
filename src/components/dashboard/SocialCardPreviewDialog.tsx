@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Square, RectangleVertical, X } from "lucide-react";
+import { Square, RectangleVertical } from "lucide-react";
 import { toPng } from 'html-to-image';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -100,9 +100,8 @@ export function SocialCardPreviewDialog({
     }
   }, [smartLink.artwork_url, open]);
 
-  const dimensions = getPreviewDimensions();
-
   const renderCard = (isExport: boolean = false) => {
+    const dimensions = getPreviewDimensions();
     const width = isExport ? 1080 : dimensions.width;
     const height = isExport ? (format === "post" ? 1080 : 1920) : dimensions.height;
     const artworkSize = isExport 
@@ -271,11 +270,9 @@ export function SocialCardPreviewDialog({
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      // Create a clone of the export container for capture
       const exportContainer = exportRef.current.cloneNode(true) as HTMLElement;
       document.body.appendChild(exportContainer);
       
-      // Set explicit dimensions and ensure visibility
       exportContainer.style.position = 'absolute';
       exportContainer.style.top = '0';
       exportContainer.style.left = '0';
@@ -285,7 +282,6 @@ export function SocialCardPreviewDialog({
       exportContainer.style.pointerEvents = 'none';
       exportContainer.style.zIndex = '-1';
 
-      // Wait for a frame to ensure DOM updates
       await new Promise(resolve => requestAnimationFrame(resolve));
 
       const dataUrl = await toPng(exportContainer, {
@@ -297,7 +293,6 @@ export function SocialCardPreviewDialog({
         canvasHeight: format === "post" ? 1080 : 1920,
       });
 
-      // Clean up the temporary container
       document.body.removeChild(exportContainer);
 
       const res = await fetch(dataUrl);
@@ -343,27 +338,24 @@ export function SocialCardPreviewDialog({
     }
   };
 
+  const dimensions = getPreviewDimensions();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="relative p-0 max-w-[90vw] w-auto rounded-xl flex flex-col">
-        <button 
-          onClick={() => onOpenChange(false)}
-          className="absolute right-[-12px] top-[-12px] z-50 rounded-full bg-white shadow-lg p-2 hover:bg-gray-100 transition-colors"
-        >
-          <X className="h-4 w-4 text-neutral-night" />
-        </button>
-        
+      <DialogContent className="relative p-0 bg-white rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
         <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
         
-        <div className="flex-grow min-h-0 flex items-center justify-center">
+        <div className="flex-grow min-h-0 flex items-center justify-center overflow-hidden p-4">
           <div 
-            className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
+            className="bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
             style={{ 
-              width: `${dimensions.width}px`, 
-              height: `${dimensions.height}px`
+              maxWidth: `${dimensions.width}px`, 
+              maxHeight: `${dimensions.height}px`,
+              width: "100%",
+              aspectRatio: format === "post" ? "1" : "9/16"
             }}
           >
-            <div ref={previewRef}>
+            <div ref={previewRef} className="w-full h-full flex items-center justify-center">
               {renderCard(false)}
             </div>
           </div>
@@ -371,22 +363,18 @@ export function SocialCardPreviewDialog({
 
         <div 
           ref={exportRef} 
-          className="fixed left-0 top-0"
+          className="fixed left-0 top-0 -z-10 opacity-0 pointer-events-none"
           style={{ 
-            position: 'absolute',
             width: format === "post" ? '1080px' : '1080px',
             height: format === "post" ? '1080px' : '1920px',
-            opacity: 0,
-            pointerEvents: 'none',
-            zIndex: -1
           }}
         >
           {renderCard(true)}
         </div>
 
-        <div className="flex-shrink-0 w-full min-w-[400px] px-6 py-4 bg-white border-t border-neutral-border">
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
+        <div className="flex-shrink-0 border-t border-neutral-border">
+          <div className="px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <span className="text-sm font-medium text-neutral-night">Format:</span>
               <div className="flex gap-2">
                 <Button
