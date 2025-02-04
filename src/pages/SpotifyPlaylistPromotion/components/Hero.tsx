@@ -7,6 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Track {
   title: string;
@@ -21,6 +28,7 @@ interface Track {
 const Hero: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [showPricingDialog, setShowPricingDialog] = useState(false);
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['spotify-search', searchQuery],
@@ -32,7 +40,6 @@ const Hero: React.FC = () => {
         });
         if (error) throw error;
         
-        // Transform the Spotify API response into our Track format
         if (data?.tracks?.items) {
           return data.tracks.items.map((track: any) => ({
             title: track.name,
@@ -143,6 +150,7 @@ const Hero: React.FC = () => {
                   </div>
                   <Button 
                     variant="default"
+                    onClick={() => setShowPricingDialog(true)}
                     className="bg-primary hover:bg-primary-hover text-white font-medium px-8"
                   >
                     Promote Track
@@ -206,8 +214,24 @@ const Hero: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Pricing Dialog */}
+      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Choose Your Promotion Plan</DialogTitle>
+            <DialogDescription>
+              Select the number of playlist submissions for {selectedTrack?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Features />
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
 
 export default Hero;
+
