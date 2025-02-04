@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BlogCard } from "@/components/blog/BlogCard";
@@ -7,13 +8,34 @@ export default function Blog() {
   const { data: posts, isLoading } = useQuery({
     queryKey: ["blog-posts"],
     queryFn: async () => {
+      const { data: blogCategory } = await supabase
+        .from("blog_categories")
+        .select("id")
+        .eq("name", "Blog Post")
+        .single();
+
+      if (!blogCategory) {
+        console.error("Blog Post category not found");
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("blog_posts")
-        .select("*")
+        .select(`
+          *,
+          blog_post_categories!inner (
+            category_id
+          )
+        `)
         .eq("status", "published")
+        .eq("blog_post_categories.category_id", blogCategory.id)
         .order("published_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching blog posts:", error);
+        throw error;
+      }
+
       return data;
     },
   });
