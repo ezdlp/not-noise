@@ -1,8 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Music, TrendingUp, Users } from "lucide-react";
+import React from "react";
 
-const Hero = () => {
+const Hero: React.FC = () => {
   return (
     <section className="relative bg-gradient-to-b from-[#0F0F0F] to-background overflow-hidden">
       {/* Purple glow effect */}
@@ -46,22 +47,22 @@ const Hero = () => {
                 <div className="flex justify-center mb-2">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">500K+</div>
-                <div className="text-sm text-white/60">Monthly Listeners</div>
+                <div className="text-2xl font-bold text-white mb-1">5,000+</div>
+                <div className="text-sm text-white/60">Artists Promoted</div>
               </div>
               <div className="text-center">
                 <div className="flex justify-center mb-2">
                   <Music className="h-6 w-6 text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">2,000+</div>
+                <div className="text-2xl font-bold text-white mb-1">750+</div>
                 <div className="text-sm text-white/60">Active Playlists</div>
               </div>
               <div className="text-center">
                 <div className="flex justify-center mb-2">
                   <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">10M+</div>
-                <div className="text-sm text-white/60">Total Streams</div>
+                <div className="text-2xl font-bold text-white mb-1">2.5M+</div>
+                <div className="text-sm text-white/60">Monthly Listeners</div>
               </div>
             </div>
           </div>
@@ -100,3 +101,4 @@ const Hero = () => {
 };
 
 export default Hero;
+
