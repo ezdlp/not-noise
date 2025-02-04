@@ -79,22 +79,27 @@ export function SocialCardPreviewDialog({
     ];
     setPlatformIcons(icons);
 
-    // Preload images
-    const preloadImages = async () => {
-      const imageUrls = [...icons.map(icon => icon.icon), smartLink.artwork_url];
-      const loadPromises = imageUrls.map(url => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
-          img.src = url;
-        });
+    const preloadImage = (src: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = src;
       });
+    };
+
+    const preloadImages = async () => {
+      setImagesLoaded(false);
+      const imageUrls = [...icons.map(icon => icon.icon), smartLink.artwork_url];
+      const loadPromises = imageUrls.map(url => preloadImage(url));
       await Promise.all(loadPromises);
       setImagesLoaded(true);
     };
-    preloadImages();
-  }, [smartLink.artwork_url]);
+    
+    if (open) {
+      preloadImages();
+    }
+  }, [smartLink.artwork_url, open]);
 
   const dimensions = getPreviewDimensions();
 
@@ -267,12 +272,34 @@ export function SocialCardPreviewDialog({
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
 
     try {
-      const dataUrl = await toPng(exportRef.current, {
+      // Create a clone of the export container for capture
+      const exportContainer = exportRef.current.cloneNode(true) as HTMLElement;
+      document.body.appendChild(exportContainer);
+      
+      // Set explicit dimensions and ensure visibility
+      exportContainer.style.position = 'absolute';
+      exportContainer.style.top = '0';
+      exportContainer.style.left = '0';
+      exportContainer.style.width = format === "post" ? '1080px' : '1080px';
+      exportContainer.style.height = format === "post" ? '1080px' : '1920px';
+      exportContainer.style.opacity = '1';
+      exportContainer.style.pointerEvents = 'none';
+      exportContainer.style.zIndex = '-1';
+
+      // Wait for a frame to ensure DOM updates
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      const dataUrl = await toPng(exportContainer, {
         quality: 1,
         width: 1080,
         height: format === "post" ? 1080 : 1920,
         backgroundColor: '#6851FB',
+        canvasWidth: 1080,
+        canvasHeight: format === "post" ? 1080 : 1920,
       });
+
+      // Clean up the temporary container
+      document.body.removeChild(exportContainer);
 
       const res = await fetch(dataUrl);
       const blob = await res.blob();
@@ -335,10 +362,14 @@ export function SocialCardPreviewDialog({
 
         <div 
           ref={exportRef} 
-          className="fixed left-0 top-0 -z-50 opacity-0 pointer-events-none"
+          className="fixed left-0 top-0"
           style={{ 
-            width: '1080px',
-            height: format === "post" ? '1080px' : '1920px'
+            position: 'absolute',
+            width: format === "post" ? '1080px' : '1080px',
+            height: format === "post" ? '1080px' : '1920px',
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -1
           }}
         >
           {renderCard(true)}
@@ -387,3 +418,4 @@ export function SocialCardPreviewDialog({
     </Dialog>
   );
 }
+
