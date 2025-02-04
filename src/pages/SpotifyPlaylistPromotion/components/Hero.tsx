@@ -5,28 +5,58 @@ import { Music, TrendingUp, Users } from "lucide-react";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+
+interface Track {
+  title: string;
+  artist: string;
+  album: string;
+  artworkUrl: string;
+  spotifyId: string;
+  spotifyUrl: string;
+  releaseDate: string;
+}
 
 const Hero: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
-
-  const handleSearch = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('spotify-search', {
-        body: { query: searchQuery }
-      });
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Search error:', error);
-      return null;
-    }
-  };
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['spotify-search', searchQuery],
-    queryFn: handleSearch,
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 3) return null;
+      try {
+        const { data, error } = await supabase.functions.invoke('spotify-search', {
+          body: { query: searchQuery }
+        });
+        if (error) throw error;
+        
+        // Transform the Spotify API response into our Track format
+        if (data?.tracks?.items) {
+          return data.tracks.items.map((track: any) => ({
+            title: track.name,
+            artist: track.artists.map((artist: any) => artist.name).join(', '),
+            album: track.album.name,
+            artworkUrl: track.album.images[0]?.url,
+            spotifyId: track.id,
+            spotifyUrl: track.external_urls.spotify,
+            releaseDate: track.album.release_date
+          }));
+        }
+        return [];
+      } catch (error) {
+        console.error('Search error:', error);
+        return [];
+      }
+    },
     enabled: searchQuery.length > 2
   });
+
+  const handleSelectTrack = (track: Track) => {
+    setSelectedTrack(track);
+    setSearchQuery(''); // Clear search after selection
+  };
 
   return (
     <section className="relative bg-gradient-to-b from-[#0F0F0F] to-background overflow-hidden">
@@ -50,22 +80,76 @@ const Hero: React.FC = () => {
             </p>
 
             {/* Search Input */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-              <Input
-                type="text"
-                placeholder="Search your track or paste Spotify URL..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              />
-              <Button 
-                onClick={handleSearch}
-                disabled={isLoading || searchQuery.length < 3}
-                className="bg-primary hover:bg-primary-hover text-white font-medium px-8"
-              >
-                {isLoading ? "Searching..." : "Search"}
-              </Button>
+            <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                <Input
+                  type="text"
+                  placeholder="Search your track or paste Spotify URL..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+              </div>
+
+              {/* Search Results */}
+              {searchQuery.length > 2 && (
+                <div className="absolute z-50 w-full mt-2">
+                  {isLoading ? (
+                    <Card className="p-4 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="ml-2 text-muted-foreground">Searching...</span>
+                    </Card>
+                  ) : searchResults && searchResults.length > 0 ? (
+                    <Card className="divide-y divide-border overflow-hidden max-h-[400px] overflow-y-auto">
+                      {searchResults.map((track: Track) => (
+                        <button
+                          key={track.spotifyId}
+                          onClick={() => handleSelectTrack(track)}
+                          className="w-full p-4 flex items-center gap-4 hover:bg-accent transition-colors"
+                        >
+                          <img
+                            src={track.artworkUrl || "/placeholder.svg"}
+                            alt={track.title}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                          <div className="flex-1 text-left">
+                            <p className="font-medium text-foreground">{track.title}</p>
+                            <p className="text-sm text-muted-foreground">{track.artist}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </Card>
+                  ) : searchQuery.length > 2 && (
+                    <Card className="p-4 text-center text-muted-foreground">
+                      No tracks found
+                    </Card>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Selected Track Display */}
+            {selectedTrack && (
+              <Card className="p-4 mb-8 bg-white/10 border-white/20">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={selectedTrack.artworkUrl || "/placeholder.svg"}
+                    alt={selectedTrack.title}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white">{selectedTrack.title}</h3>
+                    <p className="text-white/60">{selectedTrack.artist}</p>
+                  </div>
+                  <Button 
+                    variant="default"
+                    className="bg-primary hover:bg-primary-hover text-white font-medium px-8"
+                  >
+                    Promote Track
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             {/* Stats */}
             <div className="mt-12 grid grid-cols-3 gap-4 sm:gap-8">
