@@ -34,6 +34,7 @@ export function SocialCardPreviewDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +78,23 @@ export function SocialCardPreviewDialog({
       { id: 'deezer', icon: '/lovable-uploads/deezer.png' },
     ];
     setPlatformIcons(icons);
-  }, []);
+
+    // Preload images
+    const preloadImages = async () => {
+      const imageUrls = [...icons.map(icon => icon.icon), smartLink.artwork_url];
+      const loadPromises = imageUrls.map(url => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
+        });
+      });
+      await Promise.all(loadPromises);
+      setImagesLoaded(true);
+    };
+    preloadImages();
+  }, [smartLink.artwork_url]);
 
   const dimensions = getPreviewDimensions();
 
@@ -244,7 +261,7 @@ export function SocialCardPreviewDialog({
   };
 
   const handleGenerate = async () => {
-    if (!exportRef.current) return;
+    if (!exportRef.current || !imagesLoaded) return;
     
     setIsLoading(true);
     const loadingToast = toast.loading("✨ We're doing some magic! Your asset will be ready in seconds...");
@@ -252,7 +269,6 @@ export function SocialCardPreviewDialog({
     try {
       const dataUrl = await toPng(exportRef.current, {
         quality: 1,
-        pixelRatio: 3,
         width: 1080,
         height: format === "post" ? 1080 : 1920,
         backgroundColor: '#6851FB',
@@ -319,7 +335,7 @@ export function SocialCardPreviewDialog({
 
         <div 
           ref={exportRef} 
-          className="absolute left-[-9999px]"
+          className="fixed left-0 top-0 -z-50 opacity-0 pointer-events-none"
           style={{ 
             width: '1080px',
             height: format === "post" ? '1080px' : '1920px'
@@ -361,7 +377,7 @@ export function SocialCardPreviewDialog({
 
           <Button 
             onClick={handleGenerate}
-            disabled={isLoading}
+            disabled={isLoading || !imagesLoaded}
             className="bg-primary hover:bg-primary-hover text-white"
           >
             {isLoading ? "Generating..." : "Generate Image"}
