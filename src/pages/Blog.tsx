@@ -11,11 +11,11 @@ export default function Blog() {
       const { data: blogCategory } = await supabase
         .from("blog_categories")
         .select("id")
-        .eq("name", "Blog Post")
+        .eq("name", "Blog")
         .single();
 
       if (!blogCategory) {
-        console.error("Blog Post category not found");
+        console.error("Blog category not found");
         return [];
       }
 
