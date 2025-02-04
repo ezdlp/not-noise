@@ -13,7 +13,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
       if (!user) return false;
 
       const { data, error } = await supabase.rpc('has_role', {
-        role: 'admin'
+        _role: 'admin'
       });
 
       if (error) {
