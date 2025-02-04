@@ -1,9 +1,33 @@
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Hero: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('spotify-search', {
+        body: { query: searchQuery }
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Search error:', error);
+      return null;
+    }
+  };
+
+  const { data: searchResults, isLoading } = useQuery({
+    queryKey: ['spotify-search', searchQuery],
+    queryFn: handleSearch,
+    enabled: searchQuery.length > 2
+  });
+
   return (
     <section className="relative bg-gradient-to-b from-[#0F0F0F] to-background overflow-hidden">
       {/* Purple glow effect */}
@@ -25,19 +49,21 @@ const Hero: React.FC = () => {
               Get your music featured on curated playlists and reach new audiences worldwide. Start growing your streams today.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            {/* Search Input */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+              <Input
+                type="text"
+                placeholder="Search your track or paste Spotify URL..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              />
               <Button 
-                size="lg"
+                onClick={handleSearch}
+                disabled={isLoading || searchQuery.length < 3}
                 className="bg-primary hover:bg-primary-hover text-white font-medium px-8"
               >
-                Start Promoting Now
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="bg-transparent border-white/20 text-white hover:bg-white/10 px-8"
-              >
-                View Pricing
+                {isLoading ? "Searching..." : "Search"}
               </Button>
             </div>
 
@@ -101,4 +127,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-

@@ -683,6 +683,7 @@ export type Database = {
           end_date: string | null
           estimated_additions: number
           final_streams: number | null
+          genre: string
           id: string
           initial_streams: number | null
           spotify_artist_id: string
@@ -690,6 +691,7 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["promotion_status"]
           submission_count: number
+          success_rate: number
           total_cost: number
           track_artist: string
           track_name: string
@@ -701,6 +703,7 @@ export type Database = {
           end_date?: string | null
           estimated_additions: number
           final_streams?: number | null
+          genre?: string
           id?: string
           initial_streams?: number | null
           spotify_artist_id: string
@@ -708,6 +711,7 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["promotion_status"]
           submission_count: number
+          success_rate?: number
           total_cost: number
           track_artist: string
           track_name: string
@@ -719,6 +723,7 @@ export type Database = {
           end_date?: string | null
           estimated_additions?: number
           final_streams?: number | null
+          genre?: string
           id?: string
           initial_streams?: number | null
           spotify_artist_id?: string
@@ -726,6 +731,7 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["promotion_status"]
           submission_count?: number
+          success_rate?: number
           total_cost?: number
           track_artist?: string
           track_name?: string

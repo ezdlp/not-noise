@@ -1,0 +1,6 @@
+
+project_id = "your-project-id"
+
+[global.shared_storage]
+size = 20
+type = "kv"
