@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +18,7 @@ import {
 } from "recharts";
 import { StatCard } from "@/components/analytics/StatCard";
 import { formatDistanceToNow } from "date-fns";
+import { subDays } from "date-fns";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -77,6 +77,67 @@ export default function SmartLinkAnalytics() {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: weeklyStats } = useQuery({
+    queryKey: ["weeklyStats", id],
+    queryFn: async () => {
+      const twoWeeksAgo = subDays(new Date(), 14).toISOString();
+
+      const { data, error } = await supabase.rpc("get_daily_stats", {
+        p_smart_link_id: id,
+        p_start_date: twoWeeksAgo,
+      });
+
+      if (error) throw error;
+
+      // Calculate totals for current week and previous week
+      const currentWeek = data.slice(-7);
+      const previousWeek = data.slice(-14, -7);
+
+      const currentWeekTotals = currentWeek.reduce(
+        (acc, day) => ({
+          views: acc.views + day.views,
+          clicks: acc.clicks + day.clicks,
+        }),
+        { views: 0, clicks: 0 }
+      );
+
+      const previousWeekTotals = previousWeek.reduce(
+        (acc, day) => ({
+          views: acc.views + day.views,
+          clicks: acc.clicks + day.clicks,
+        }),
+        { views: 0, clicks: 0 }
+      );
+
+      // Calculate percentage changes
+      const viewsTrend = previousWeekTotals.views === 0 
+        ? 100 
+        : Math.round(((currentWeekTotals.views - previousWeekTotals.views) / previousWeekTotals.views) * 100);
+      
+      const clicksTrend = previousWeekTotals.clicks === 0 
+        ? 100 
+        : Math.round(((currentWeekTotals.clicks - previousWeekTotals.clicks) / previousWeekTotals.clicks) * 100);
+      
+      const currentCTR = currentWeekTotals.views === 0 
+        ? 0 
+        : (currentWeekTotals.clicks / currentWeekTotals.views) * 100;
+      
+      const previousCTR = previousWeekTotals.views === 0 
+        ? 0 
+        : (previousWeekTotals.clicks / previousWeekTotals.views) * 100;
+      
+      const ctrTrend = previousCTR === 0 
+        ? 100 
+        : Math.round(((currentCTR - previousCTR) / previousCTR) * 100);
+
+      return {
+        viewsTrend,
+        clicksTrend,
+        ctrTrend
+      };
     },
   });
 
@@ -139,19 +200,19 @@ export default function SmartLinkAnalytics() {
           title="Total Views"
           value={totalViews}
           type="views"
-          trend={5} // Example trend, should be calculated based on previous period
+          trend={weeklyStats?.viewsTrend}
         />
         <StatCard
           title="Total Clicks"
           value={totalClicks}
           type="clicks"
-          trend={8} // Example trend
+          trend={weeklyStats?.clicksTrend}
         />
         <StatCard
           title="CTR"
           value={`${ctr.toFixed(1)}%`}
           type="ctr"
-          trend={2} // Example trend
+          trend={weeklyStats?.ctrTrend}
         />
       </div>
 

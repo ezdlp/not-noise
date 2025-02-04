@@ -1,7 +1,13 @@
 
 import React from 'react';
-import { Eye, MousePointer, Target, TrendingUp, TrendingDown } from 'lucide-react';
+import { Eye, MousePointer, Target, TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StatCardProps {
   title: string;
@@ -27,15 +33,27 @@ export function StatCard({ title, value, type, trend }: StatCardProps) {
       </div>
       <p className="text-2xl font-semibold text-neutral-night">{value}</p>
       {trend !== undefined && (
-        <div className="flex items-center gap-1 mt-2">
-          {trend >= 0 ? (
-            <TrendingUp size={14} className="text-success" />
-          ) : (
-            <TrendingDown size={14} className="text-destructive" />
-          )}
-          <span className={`text-sm ${trend >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {Math.abs(trend)}%
-          </span>
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-1">
+            {trend >= 0 ? (
+              <TrendingUp size={14} className="text-success" />
+            ) : (
+              <TrendingDown size={14} className="text-destructive" />
+            )}
+            <span className={`text-sm ${trend >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {Math.abs(trend)}%
+            </span>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={14} className="text-muted-foreground opacity-70" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Compared to previous week (last 7 days vs 7-14 days ago)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
     </Card>
