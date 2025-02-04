@@ -59,20 +59,6 @@ const Header = () => {
     </ul>
   );
 
-  const DashboardNavLinks = () => (
-    <ul className="flex flex-col md:flex-row md:space-x-10 space-y-4 md:space-y-0">
-      <li>
-        <Link 
-          to="/help" 
-          className="text-sm font-medium text-gray-600 hover:text-primary transition-colors duration-200 font-poppins inline-flex items-center gap-2"
-        >
-          <HelpCircle className="h-4 w-4" />
-          Help
-        </Link>
-      </li>
-    </ul>
-  );
-
   const headerClasses = isDashboard 
     ? "border-b border-neutral-border bg-white/90 backdrop-blur-sm shadow-sm sticky top-0 z-50" 
     : "border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50";
@@ -90,7 +76,7 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex flex-1 justify-center">
-          {isDashboard ? <DashboardNavLinks /> : <MarketingNavLinks />}
+          {!isDashboard && <MarketingNavLinks />}
         </nav>
 
         <div className="flex items-center space-x-4">
@@ -120,6 +106,17 @@ const Header = () => {
                 >
                   Create Smart Link
                 </CTAButton>
+              )}
+
+              {isDashboard && (
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/help")}
+                  size="icon"
+                  className="text-gray-600 hover:bg-transparent"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </Button>
               )}
 
               <DropdownMenu>
@@ -164,7 +161,7 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <div className="flex flex-col gap-6 py-4">
-                {isDashboard ? <DashboardNavLinks /> : <MarketingNavLinks />}
+                {!isDashboard && <MarketingNavLinks />}
                 {!isAuthenticated ? (
                   <div className="flex flex-col gap-4">
                     <CTAButton onClick={() => navigate("/register")}>
@@ -196,6 +193,9 @@ const Header = () => {
                       <Link to="/settings" className="text-sm font-medium text-gray-600 hover:text-primary">
                         Account Settings
                       </Link>
+                      <Link to="/help" className="text-sm font-medium text-gray-600 hover:text-primary">
+                        Help
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="text-sm font-medium text-gray-600 hover:text-primary text-left"
@@ -215,4 +215,3 @@ const Header = () => {
 };
 
 export default Header;
-
