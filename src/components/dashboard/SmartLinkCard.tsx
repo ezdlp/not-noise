@@ -11,15 +11,11 @@ import {
   CopyIcon,
   CheckIcon,
   InstagramIcon,
-  EyeIcon,
-  MousePointerIcon,
-  TargetIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -30,9 +26,9 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
-import { cn } from "@/lib/utils";
 
 interface SmartLinkCardProps {
   link: any;
@@ -45,13 +41,26 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (onDelete) {
-      onDelete(link.id);
+    try {
+      const { error } = await supabase
+        .from("smart_links")
+        .delete()
+        .eq("id", link.id);
+
+      if (error) throw error;
+
+      if (onDelete) {
+        onDelete(link.id);
+      }
+      toast.success("Smart link deleted successfully");
+    } catch (error) {
+      console.error("Error deleting smart link:", error);
+      toast.error("Failed to delete smart link");
     }
   };
 
   const copyToClipboard = async () => {
-    const url = `${window.location.origin}/link/${link.slug || link.id}`;
+    const url = `${window.location.origin}/link/${link.slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
@@ -62,99 +71,60 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     }
   };
 
-  const views = link.link_views?.length || 0;
-  const clicks = link.platform_links?.reduce((sum: number, pl: any) => sum + (pl.platform_clicks?.length || 0), 0) || 0;
-  const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
+  const generateSocialAsset = async () => {
+    if (!link.artwork_url) {
+      toast.error("This smart link doesn't have artwork");
+      return;
+    }
+    setPreviewOpen(true);
+  };
 
   return (
     <>
-      <Card className="group overflow-hidden bg-white border-neutral-border transition-colors duration-200 hover:bg-neutral-seasalt/50">
-        <div className="relative">
+      <Card className="flex flex-col md:flex-row gap-4 p-4 h-full">
+        <div className="flex-shrink-0">
           <img
             src={link.artwork_url || "/placeholder.svg"}
             alt={link.title}
-            className="w-full aspect-square object-cover"
+            className="w-24 h-24 object-cover rounded-lg"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="absolute bottom-2 right-2 flex gap-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => navigate(`/link/${link.id}`)}
-                    >
-                      <ExternalLinkIcon className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View Smart Link</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => navigate(`/links/${link.id}/analytics`)}
-                    >
-                      <BarChart2Icon className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View Analytics</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => navigate(`/links/${link.id}/edit`)}
-                    >
-                      <EditIcon className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Edit Smart Link</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
         </div>
-
-        <div className="p-4 space-y-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-medium text-neutral-night truncate">{link.title}</h3>
-              <p className="text-sm text-muted-foreground truncate">{link.artist_name}</p>
+        <div className="flex-grow space-y-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold text-lg">{link.title}</h3>
+              <p className="text-sm text-muted-foreground">{link.artist_name}</p>
+              <div className="flex gap-2 mt-1 text-sm text-muted-foreground">
+                <span>{link.link_views?.length || 0} views</span>
+                <span>•</span>
+                <span>{link.platform_clicks?.length || 0} clicks</span>
+                <span>•</span>
+                <span>
+                  {link.link_views?.length
+                    ? (
+                        (link.platform_clicks?.length || 0) /
+                        link.link_views.length *
+                        100
+                      ).toFixed(1)
+                    : "0"}
+                  % CTR
+                </span>
+              </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
                   <MoreVerticalIcon className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={copyToClipboard}>
-                  {isCopied ? <CheckIcon className="mr-2 h-4 w-4" /> : <CopyIcon className="mr-2 h-4 w-4" />}
-                  Copy URL
+                <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
+                  <EditIcon className="mr-2 h-4 w-4" />
+                  Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPreviewOpen(true)}>
-                  <InstagramIcon className="mr-2 h-4 w-4" />
-                  Create Social Post
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="text-destructive"
                   onClick={handleDelete}
-                  className="text-rose-600 focus:text-rose-600"
                 >
                   <TrashIcon className="mr-2 h-4 w-4" />
                   Delete
@@ -162,29 +132,78 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    asChild
+                  >
+                    <Link to={`/link/${link.slug}`} target="_blank">
+                      <ExternalLinkIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View Link</p>
+                </TooltipContent>
+              </Tooltip>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-border">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <EyeIcon className="w-3 h-3" />
-                <span className="text-xs">Views</span>
-              </div>
-              <p className="font-medium">{views}</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <MousePointerIcon className="w-3 h-3" />
-                <span className="text-xs">Clicks</span>
-              </div>
-              <p className="font-medium">{clicks}</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <TargetIcon className="w-3 h-3" />
-                <span className="text-xs">CTR</span>
-              </div>
-              <p className="font-medium">{ctr}%</p>
-            </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={copyToClipboard}
+                  >
+                    {isCopied ? (
+                      <CheckIcon className="h-4 w-4" />
+                    ) : (
+                      <CopyIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy URL</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => navigate(`/links/${link.id}/analytics`)}
+                  >
+                    <BarChart2Icon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Analytics</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={generateSocialAsset}
+                  >
+                    <InstagramIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create Social Media Assets</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </Card>
@@ -193,6 +212,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         smartLink={link}
+        onGenerate={generateSocialAsset}
       />
     </>
   );
