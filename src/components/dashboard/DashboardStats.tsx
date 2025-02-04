@@ -110,7 +110,7 @@ export function DashboardStats({ data }: { data: any[] }) {
       {stats.map((stat) => (
         <Card 
           key={stat.name} 
-          className="relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.02] p-4"
+          className="relative overflow-visible transition-all hover:shadow-md hover:scale-[1.02] p-4"
         >
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${stat.color}`}>
@@ -138,12 +138,16 @@ export function DashboardStats({ data }: { data: any[] }) {
                       <TooltipTrigger asChild>
                         <InfoIcon className="w-4 h-4 text-muted-foreground cursor-pointer" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="p-3 max-w-[300px]">
-                        <div className="space-y-1 text-sm">
+                      <TooltipContent 
+                        sideOffset={8} 
+                        className="p-3 max-w-[300px] z-[100]"
+                        avoidCollisions
+                      >
+                        <div className="space-y-1 text-sm whitespace-nowrap">
                           <p className="font-medium">
                             {stat.trend > 0 ? 'Increase' : 'Decrease'} compared to previous 7 days
                           </p>
-                          <p className="text-muted-foreground whitespace-nowrap">
+                          <p className="text-muted-foreground">
                             Current period: {stat.period}
                           </p>
                         </div>
