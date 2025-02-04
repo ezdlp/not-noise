@@ -79,6 +79,9 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     setPreviewOpen(true);
   };
 
+  const totalClicks = link.platform_links?.reduce((sum: number, pl: any) => 
+    sum + (pl.platform_clicks?.length || 0), 0) || 0;
+
   return (
     <>
       <Card className="flex flex-col md:flex-row gap-5 p-4 h-full bg-white border-[#E6E6E6] shadow-[0_2px_4px_rgba(15,15,15,0.05)]">
@@ -121,11 +124,11 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
             <div className="flex items-center gap-3 text-xs font-dm-sans text-[#0F0F0F] mb-4">
               <span>{link.link_views?.length || 0} views</span>
               <span className="text-neutral-border">•</span>
-              <span>{link.platform_clicks?.length || 0} clicks</span>
+              <span>{totalClicks} clicks</span>
               <span className="text-neutral-border">•</span>
               <span>
                 {link.link_views?.length
-                  ? ((link.platform_clicks?.length || 0) / link.link_views.length * 100).toFixed(1)
+                  ? ((totalClicks / link.link_views.length) * 100).toFixed(1)
                   : "0"}% CTR
               </span>
             </div>
@@ -216,4 +219,3 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     </>
   );
 }
-
