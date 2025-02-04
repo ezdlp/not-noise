@@ -89,11 +89,11 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
             className="w-32 h-32 object-cover rounded-lg"
           />
         </div>
-        <div className="flex-grow flex flex-col justify-between space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F]">{link.title}</h3>
+        <div className="flex-grow flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F] truncate max-w-[200px]">{link.title}</h3>
                 <p className="text-xs font-poppins text-muted-foreground">{link.artist_name}</p>
               </div>
               <DropdownMenu>
@@ -118,7 +118,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
               </DropdownMenu>
             </div>
             
-            <div className="flex items-center gap-3 text-xs font-dm-sans text-[#0F0F0F]">
+            <div className="flex items-center gap-3 text-xs font-dm-sans text-[#0F0F0F] mb-4">
               <span>{link.link_views?.length || 0} views</span>
               <span className="text-neutral-border">•</span>
               <span>{link.platform_clicks?.length || 0} clicks</span>
@@ -216,3 +216,4 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     </>
   );
 }
+
