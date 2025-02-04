@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -6,7 +5,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Square, RectangleVertical } from "lucide-react";
+import { Square, RectangleVertical, X } from "lucide-react";
 import { toPng } from 'html-to-image';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -344,19 +343,31 @@ export function SocialCardPreviewDialog({
     }
   };
 
+  const dimensions = getPreviewDimensions();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
-        <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
-        <div 
-          className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
-          style={{ 
-            width: `${dimensions.width}px`, 
-            height: `${dimensions.height}px`
-          }}
+      <DialogContent className="relative p-0 max-w-[90vw] w-auto rounded-xl flex flex-col">
+        <button 
+          onClick={() => onOpenChange(false)}
+          className="absolute right-[-12px] top-[-12px] z-50 rounded-full bg-white shadow-lg p-2 hover:bg-gray-100 transition-colors"
         >
-          <div ref={previewRef}>
-            {renderCard(false)}
+          <X className="h-4 w-4 text-neutral-night" />
+        </button>
+        
+        <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
+        
+        <div className="flex-grow min-h-0 flex items-center justify-center">
+          <div 
+            className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
+            style={{ 
+              width: `${dimensions.width}px`, 
+              height: `${dimensions.height}px`
+            }}
+          >
+            <div ref={previewRef}>
+              {renderCard(false)}
+            </div>
           </div>
         </div>
 
@@ -375,47 +386,48 @@ export function SocialCardPreviewDialog({
           {renderCard(true)}
         </div>
 
-        <div className="px-6 py-4 flex justify-between items-center bg-white">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-neutral-night">Format:</span>
-            <div className="flex gap-2">
-              <Button
-                variant={format === "post" ? "secondary" : "outline"}
-                onClick={() => setFormat("post")}
-                className={`flex items-center gap-2 transition-all duration-200 ${
-                  format === "post" 
-                    ? "bg-primary-light text-primary hover:bg-primary-light/80" 
-                    : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
-                }`}
-              >
-                <Square className="h-4 w-4" />
-                Post
-              </Button>
-              <Button
-                variant={format === "story" ? "secondary" : "outline"}
-                onClick={() => setFormat("story")}
-                className={`flex items-center gap-2 transition-all duration-200 ${
-                  format === "story" 
-                    ? "bg-primary-light text-primary hover:bg-primary-light/80" 
-                    : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
-                }`}
-              >
-                <RectangleVertical className="h-4 w-4" />
-                Story
-              </Button>
+        <div className="flex-shrink-0 w-full min-w-[400px] px-6 py-4 bg-white border-t border-neutral-border">
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-neutral-night">Format:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={format === "post" ? "secondary" : "outline"}
+                  onClick={() => setFormat("post")}
+                  className={`flex items-center gap-2 transition-all duration-200 ${
+                    format === "post" 
+                      ? "bg-primary-light text-primary hover:bg-primary-light/80" 
+                      : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
+                  }`}
+                >
+                  <Square className="h-4 w-4" />
+                  Post
+                </Button>
+                <Button
+                  variant={format === "story" ? "secondary" : "outline"}
+                  onClick={() => setFormat("story")}
+                  className={`flex items-center gap-2 transition-all duration-200 ${
+                    format === "story" 
+                      ? "bg-primary-light text-primary hover:bg-primary-light/80" 
+                      : "bg-neutral-seasalt border-neutral-border text-neutral-night hover:bg-neutral-seasalt/80"
+                  }`}
+                >
+                  <RectangleVertical className="h-4 w-4" />
+                  Story
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <Button 
-            onClick={handleGenerate}
-            disabled={isLoading || !imagesLoaded}
-            className="bg-primary hover:bg-primary-hover text-white"
-          >
-            {isLoading ? "Generating..." : "Generate Image"}
-          </Button>
+            <Button 
+              onClick={handleGenerate}
+              disabled={isLoading || !imagesLoaded}
+              className="bg-primary hover:bg-primary-hover text-white"
+            >
+              {isLoading ? "Generating..." : "Download Image"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
