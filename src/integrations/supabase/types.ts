@@ -605,6 +605,45 @@ export type Database = {
           },
         ]
       }
+      playlists: {
+        Row: {
+          category: Database["public"]["Enums"]["playlist_category"]
+          created_at: string | null
+          followers: number
+          genres: string[]
+          id: string
+          monthly_listeners: number
+          name: string
+          spotify_id: string
+          total_tracks: number
+          updated_at: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["playlist_category"]
+          created_at?: string | null
+          followers?: number
+          genres?: string[]
+          id?: string
+          monthly_listeners?: number
+          name: string
+          spotify_id: string
+          total_tracks?: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["playlist_category"]
+          created_at?: string | null
+          followers?: number
+          genres?: string[]
+          id?: string
+          monthly_listeners?: number
+          name?: string
+          spotify_id?: string
+          total_tracks?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           artist_name: string
@@ -635,6 +674,63 @@ export type Database = {
           music_genre?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          estimated_additions: number
+          final_streams: number | null
+          id: string
+          initial_streams: number | null
+          spotify_artist_id: string
+          spotify_track_id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["promotion_status"]
+          submission_count: number
+          total_cost: number
+          track_artist: string
+          track_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          estimated_additions: number
+          final_streams?: number | null
+          id?: string
+          initial_streams?: number | null
+          spotify_artist_id: string
+          spotify_track_id: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          submission_count: number
+          total_cost: number
+          track_artist: string
+          track_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          estimated_additions?: number
+          final_streams?: number | null
+          id?: string
+          initial_streams?: number | null
+          spotify_artist_id?: string
+          spotify_track_id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          submission_count?: number
+          total_cost?: number
+          track_artist?: string
+          track_name?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -895,6 +991,8 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       billing_period: "monthly" | "annual"
+      playlist_category: "curated" | "algorithmic" | "editorial" | "independent"
+      promotion_status: "pending" | "active" | "completed" | "rejected"
       social_media_platform:
         | "instagram_square"
         | "instagram_story"

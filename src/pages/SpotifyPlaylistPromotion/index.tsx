@@ -1,6 +1,7 @@
 
 import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
+import Features from "./components/Features";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -15,19 +16,10 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 
       <main className="min-h-screen">
         <Hero />
-
-        {/* Placeholder sections - will be replaced with components */}
-        <section className="py-24 bg-background" id="features">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-              Coming Soon
-            </h2>
-          </div>
-        </section>
+        <Features />
       </main>
     </>
   );
 };
 
 export default SpotifyPlaylistPromotion;
-
