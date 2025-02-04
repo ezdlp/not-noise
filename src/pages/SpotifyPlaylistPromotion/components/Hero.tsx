@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Features from "@/components/landing/Features";
 
 interface Track {
   title: string;
