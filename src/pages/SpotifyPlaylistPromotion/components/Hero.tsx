@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Features from "@/components/landing/Features";
+import PricingPlan from "@/components/spotify-promotion/PricingPlan";
 
 interface Track {
   title: string;
@@ -64,6 +64,13 @@ const Hero: React.FC = () => {
   const handleSelectTrack = (track: Track) => {
     setSelectedTrack(track);
     setSearchQuery(''); // Clear search after selection
+  };
+
+  const handlePromotionSubmit = (submissions: number, totalCost: number) => {
+    // Handle the checkout process here
+    console.log('Proceeding to checkout:', { submissions, totalCost });
+    // For now just close the dialog
+    setShowPricingDialog(false);
   };
 
   return (
@@ -218,15 +225,18 @@ const Hero: React.FC = () => {
 
       {/* Pricing Dialog */}
       <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Choose Your Promotion Plan</DialogTitle>
             <DialogDescription>
-              Select the number of playlist submissions for {selectedTrack?.title}
+              Select the number of playlist submissions for your track
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
-            <Features />
+            <PricingPlan 
+              onSubmit={handlePromotionSubmit}
+              selectedTrack={selectedTrack ?? undefined}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -235,4 +245,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-
