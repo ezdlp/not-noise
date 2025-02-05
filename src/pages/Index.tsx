@@ -1,11 +1,9 @@
-
 import { Hero } from "@/components/landing/Hero";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import Features from "@/components/landing/Features";
 import { FAQ } from "@/components/landing/FAQ";
 import { CallToAction } from "@/components/landing/CallToAction";
 import { Footer } from "@/components/landing/Footer";
-import { SuccessStories } from "@/components/landing/SuccessStories";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -25,7 +23,6 @@ const Index = () => {
       <Hero />
       <TrustedLabels />
       <Features />
-      <SuccessStories />
       <FAQ />
       <CallToAction />
       <Footer />
