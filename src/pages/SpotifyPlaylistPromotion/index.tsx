@@ -1,7 +1,6 @@
 
 import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
-import Features from "./components/Features";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -22,4 +21,3 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
-
