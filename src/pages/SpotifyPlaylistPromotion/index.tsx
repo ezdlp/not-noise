@@ -4,6 +4,7 @@ import Hero from "./components/Hero";
 import { Route, Routes } from "react-router-dom";
 import PricingSection from "./components/PricingSection";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
+import SuccessStories from "./components/SuccessStories";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const SpotifyPlaylistPromotion: React.FC = () => {
             <>
               <Hero />
               <TrustedLabels isPricingPage={true} />
+              <SuccessStories />
             </>
           } />
           <Route path="pricing" element={<PricingSection />} />
@@ -32,4 +34,3 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
-
