@@ -1,6 +1,8 @@
 
 import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
+import { Route, Routes } from "react-router-dom";
+import PricingSection from "./components/PricingSection";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -14,10 +16,14 @@ const SpotifyPlaylistPromotion: React.FC = () => {
       </Helmet>
 
       <main className="min-h-screen">
-        <Hero />
+        <Routes>
+          <Route index element={<Hero />} />
+          <Route path="pricing" element={<PricingSection />} />
+        </Routes>
       </main>
     </>
   );
 };
 
 export default SpotifyPlaylistPromotion;
+

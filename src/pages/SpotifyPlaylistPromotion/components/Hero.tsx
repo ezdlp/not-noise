@@ -1,4 +1,4 @@
-
+```typescript
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users } from "lucide-react";
@@ -7,14 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import PricingPlan from "@/components/spotify-promotion/PricingPlan";
+import { useNavigate } from "react-router-dom";
 
 interface Track {
   title: string;
@@ -29,7 +22,7 @@ interface Track {
 const Hero: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-  const [showPricingDialog, setShowPricingDialog] = useState(false);
+  const navigate = useNavigate();
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['spotify-search', searchQuery],
@@ -66,11 +59,18 @@ const Hero: React.FC = () => {
     setSearchQuery(''); // Clear search after selection
   };
 
-  const handlePromotionSubmit = (submissions: number, totalCost: number) => {
-    // Handle the checkout process here
-    console.log('Proceeding to checkout:', { submissions, totalCost });
-    // For now just close the dialog
-    setShowPricingDialog(false);
+  const handlePromoteClick = () => {
+    if (selectedTrack) {
+      navigate('pricing', { 
+        state: { 
+          selectedTrack: {
+            title: selectedTrack.title,
+            artist: selectedTrack.artist,
+            artworkUrl: selectedTrack.artworkUrl
+          }
+        }
+      });
+    }
   };
 
   return (
@@ -83,7 +83,6 @@ const Hero: React.FC = () => {
       
       <div className="container relative mx-auto px-4 py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left column - Content */}
           <div className="text-center lg:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 font-heading">
               Boost Your Music with{" "}
@@ -158,7 +157,7 @@ const Hero: React.FC = () => {
                   </div>
                   <Button 
                     variant="default"
-                    onClick={() => setShowPricingDialog(true)}
+                    onClick={handlePromoteClick}
                     className="bg-primary hover:bg-primary-hover text-white font-medium px-8"
                   >
                     Promote Track
@@ -222,26 +221,9 @@ const Hero: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Pricing Dialog */}
-      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Choose Your Promotion Plan</DialogTitle>
-            <DialogDescription>
-              Select the number of playlist submissions for your track
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            <PricingPlan 
-              onSubmit={handlePromotionSubmit}
-              selectedTrack={selectedTrack ?? undefined}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 };
 
 export default Hero;
+```

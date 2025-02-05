@@ -36,7 +36,7 @@ const AppContent = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
-      <Route path="/spotify-playlist-promotion" element={<SpotifyPlaylistPromotion />} />
+      <Route path="/spotify-playlist-promotion/*" element={<SpotifyPlaylistPromotion />} />
       <Route path="/:slug" element={<PublicBlogPost />} />
       
       {/* Smart Link public view */}
@@ -66,3 +66,4 @@ const AppContent = () => {
 };
 
 export default AppContent;
+
