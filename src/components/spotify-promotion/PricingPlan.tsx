@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -41,10 +40,10 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       discount: 0,
       vinylImage: "/lovable-uploads/430f856f-d860-4675-9520-bd9e1742c166.png",
       features: [
-        "Basic A&R & Production Feedback",
-        "Support via Email",
-        "Basic Target Audience Analysis",
-        "Playlist Curator Feedback"
+        "Playlist Curator Feedback",
+        "Basic A&R Feedback",
+        "Basic Support (response in less than 48hs)",
+        "Final report delivered in 14 days"
       ]
     },
     {
@@ -57,12 +56,10 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       popular: true,
       vinylImage: "/lovable-uploads/61ec2009-eb22-49fe-a6b9-4097a874f871.png",
       features: [
-        "Detailed A&R & Production Consultation",
-        "Priority Support via Email",
-        "Comprehensive Target Audience Analysis",
         "Playlist Curator Feedback",
-        "Song Structure Analysis",
-        "Release Strategy Planning"
+        "Detailed A&R Feedback",
+        "Priority Support (response in less than 24hs)",
+        "Final report delivered in 10 days"
       ]
     },
     {
@@ -74,13 +71,12 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       discount: 10,
       vinylImage: "/lovable-uploads/1c6cea71-32b6-4dcc-a0da-490b91abb2aa.png",
       features: [
-        "Extensive A&R & Production Development Plan",
-        "24/7 Priority Support",
-        "In-depth Target Audience Analysis",
         "Playlist Curator Feedback",
+        "Extensive A&R & Production Development Plan",
+        "Concierge Support (response in less than 12hs)",
+        "Final report delivered in 7 days",
         "Song Structure Analysis",
-        "Release Strategy Planning",
-        "Sound Design Consultation",
+        "Next Release Strategy Planning",
         "Genre-specific Mix Recommendations"
       ]
     }
@@ -230,4 +226,3 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
 };
 
 export default PricingPlan;
-
