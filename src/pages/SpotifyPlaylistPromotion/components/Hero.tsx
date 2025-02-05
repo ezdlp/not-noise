@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users, Search, ArrowDown } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,8 +75,6 @@ const Hero: React.FC = () => {
     }
   };
 
-  const popularSearches = ["Drake", "Taylor Swift", "The Weeknd"];
-
   return (
     <section className="relative min-h-screen overflow-hidden">
       {/* Base color and SVG background */}
@@ -94,23 +91,15 @@ const Hero: React.FC = () => {
       {/* Content Container */}
       <div className="relative container mx-auto px-4 py-20 md:py-32">
         <div className="max-w-3xl mx-auto text-center">
-          <Badge 
-            variant="secondary" 
-            className="mb-6 animate-fade-in text-lg px-4 py-1.5 bg-secondary/90 text-white hover:bg-secondary/80"
-          >
-            NEW: 50% OFF First Campaign
-          </Badge>
-
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 font-heading animate-fade-in">
-            Boost Your Music with{" "}
+            Get Real Exposure on{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-yellow-50">
-              Spotify Playlist
-            </span>{" "}
-            Promotion
+              Verified Spotify Playlists
+            </span>
           </h1>
           
           <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto animate-fade-in [animation-delay:200ms]">
-            Get your music featured on curated playlists and reach new audiences worldwide. Start growing your streams today.
+            We carefully match your music with quality-verified playlist curators
           </p>
 
           <div className="flex justify-center mb-6 animate-fade-in [animation-delay:300ms]">
@@ -130,30 +119,15 @@ const Hero: React.FC = () => {
                 shadow-[0_0_25px_rgba(255,255,255,0.1)]
                 transition-all duration-300 
                 hover:bg-white/25 hover:shadow-[0_0_35px_rgba(255,255,255,0.2)]
-                focus:bg-white/30 focus:shadow-[0_0_40px_rgba(255,255,255,0.25)] focus:ring-2 focus:ring-white/30
-                animate-float"
+                focus:bg-white/30 focus:shadow-[0_0_40px_rgba(255,255,255,0.25)] focus:ring-2 focus:ring-white/30"
               />
               <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-white/80" />
-              <span className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/60 text-sm">
-                Paste Spotify URL
-              </span>
             </div>
 
-            {/* Popular Searches */}
-            {!searchQuery && (
-              <div className="mt-3 flex items-center justify-center gap-2 text-white/70 text-sm">
-                <span>Popular:</span>
-                {popularSearches.map((search, index) => (
-                  <button
-                    key={search}
-                    onClick={() => setSearchQuery(search)}
-                    className="hover:text-white transition-colors"
-                  >
-                    {search}{index < popularSearches.length - 1 ? "," : ""}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Trust Message */}
+            <p className="mt-4 text-white/80 text-sm">
+              Join thousands of artists who trust our proven service for genuine exposure. 100% money-back guarantee if you're not completely satisfied—no questions asked.
+            </p>
 
             {/* Search Results */}
             {searchQuery.length > 2 && (
@@ -251,3 +225,4 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
+
