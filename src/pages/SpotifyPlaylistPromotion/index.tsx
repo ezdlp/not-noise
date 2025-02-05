@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
 import { Route, Routes } from "react-router-dom";
 import PricingSection from "./components/PricingSection";
+import { TrustedLabels } from "@/components/landing/TrustedLabels";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -17,7 +18,12 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 
       <main className="min-h-screen">
         <Routes>
-          <Route path="/" element={<Hero />} />
+          <Route path="/" element={
+            <>
+              <Hero />
+              <TrustedLabels isPricingPage={true} />
+            </>
+          } />
           <Route path="pricing" element={<PricingSection />} />
         </Routes>
       </main>
@@ -26,3 +32,4 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
+
