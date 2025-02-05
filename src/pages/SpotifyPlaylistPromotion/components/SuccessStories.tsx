@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import {
@@ -100,25 +101,28 @@ const SuccessStories: React.FC = () => {
           And we have similar success stories across every genre, including Latin, Pop, Rock, R&B, Lo-fi, Ambient and many more!
         </p>
 
-          <div className="mt-12 flex justify-center">
-            <CTAScrollButton text="Join These Success Stories" />
-          </div>
+        <div className="mt-12 flex justify-center">
+          <CTAScrollButton text="Join These Success Stories" />
         </div>
-      </section>
+      </div>
 
-      <Dialog open={!!selectedStory} onOpenChange={() => setSelectedStory(null)}>
-        <DialogContent className="max-w-6xl w-full h-[90vh] overflow-y-auto">
-          <DialogHeader className="flex justify-between items-center">
-            <button
-              onClick={() => setSelectedStory(null)}
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </button>
-          </DialogHeader>
+      {selectedStory && (
+        <Dialog 
+          modal
+          open={!!selectedStory} 
+          onOpenChange={() => setSelectedStory(null)}
+        >
+          <DialogContent className="max-w-6xl w-full h-[90vh] overflow-y-auto">
+            <DialogHeader className="flex justify-between items-center">
+              <button
+                onClick={() => setSelectedStory(null)}
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
+            </DialogHeader>
 
-          {selectedStory && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-2 lg:p-6">
               <div className="relative h-[500px] lg:h-full">
                 <img
@@ -140,9 +144,9 @@ const SuccessStories: React.FC = () => {
                 </p>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </section>
   );
 };
