@@ -59,31 +59,40 @@ const PricingSection = () => {
           Back to Track Selection
         </Button>
 
-        {selectedTrack && (
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              {selectedTrack.artworkUrl && (
+        {/* Integrated Header Section */}
+        <div className="text-center mb-8">
+          <div className="flex flex-col items-center justify-center space-y-6">
+            {selectedTrack.artworkUrl && (
+              <div className="relative w-24 h-24 md:w-32 md:h-32">
                 <img
                   src={selectedTrack.artworkUrl}
                   alt={selectedTrack.title}
-                  className="w-16 h-16 object-cover rounded"
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
-              )}
-              <div>
-                <h2 className="text-2xl font-bold text-white">{selectedTrack.title}</h2>
-                <p className="text-white/60">{selectedTrack.artist}</p>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/20 to-transparent" />
               </div>
+            )}
+            <div className="space-y-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                Promotion Packages for
+              </h1>
+              <p className="text-2xl md:text-3xl font-bold text-white/90">
+                "{selectedTrack.title}"
+              </p>
+              <p className="text-xl text-white/80">
+                by {selectedTrack.artist}
+              </p>
             </div>
+            <p className="text-lg text-white/80 max-w-2xl mx-auto mt-4">
+              Custom-tailored promotion packages to get "{selectedTrack.title}" to the right audience 
+              and boost your music career.
+            </p>
           </div>
-        )}
+        </div>
 
-        <div className="mb-12 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Choose Your Promotion Package
-          </h1>
-          <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Select the package that best fits your promotion needs. Each tier offers different levels of playlist submissions and expert consultation.
-          </p>
+        {/* Visual connector element */}
+        <div className="flex justify-center mb-12">
+          <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
         </div>
 
         <PricingPlan
@@ -94,17 +103,17 @@ const PricingSection = () => {
         <div className="mt-16 text-center text-white/80">
           <h3 className="text-xl font-semibold text-white mb-4">What Happens Next?</h3>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div>
+            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
               <div className="text-2xl mb-2">1</div>
               <h4 className="font-semibold mb-2">Track Review</h4>
               <p className="text-sm">Our team analyzes your track and creates a custom promotion strategy</p>
             </div>
-            <div>
+            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
               <div className="text-2xl mb-2">2</div>
               <h4 className="font-semibold mb-2">Playlist Outreach</h4>
               <p className="text-sm">We submit your track to carefully selected playlist curators</p>
             </div>
-            <div>
+            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
               <div className="text-2xl mb-2">3</div>
               <h4 className="font-semibold mb-2">Results & Reports</h4>
               <p className="text-sm">Get detailed feedback and track your promotion progress</p>
@@ -113,7 +122,7 @@ const PricingSection = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-block border border-white/20 rounded-lg px-6 py-4 text-white/80">
+          <div className="inline-block backdrop-blur-sm bg-white/5 rounded-lg px-6 py-4 text-white/80">
             <p className="text-sm font-medium">🎯 Limited spots available this month</p>
           </div>
         </div>
@@ -123,4 +132,3 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
-
