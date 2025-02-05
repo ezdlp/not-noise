@@ -25,18 +25,34 @@ const GuaranteedBotFree: React.FC = () => {
         </div>
 
         <div className="relative max-w-4xl mx-auto">
-          <div className="relative rounded-xl overflow-hidden shadow-lg">
-            <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowBotted(!showBotted)}
-                  className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors"
-                >
-                  <ArrowLeftRight className="w-4 h-4" />
-                  <span>Switch View</span>
-                </button>
-              </div>
+          {/* Updated control panel with better visibility */}
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
+            <div className="bg-white/95 backdrop-blur-xl shadow-lg rounded-full px-6 py-3 flex items-center space-x-4 border border-white/20">
+              <button
+                onClick={() => setShowBotted(false)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                  !showBotted ? 'bg-primary text-white shadow-md scale-[1.02]' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BadgeCheck className="w-4 h-4" />
+                <span className="font-medium">Authentic</span>
+              </button>
+              <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+              <button
+                onClick={() => setShowBotted(true)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                  showBotted ? 'bg-red-500 text-white shadow-md scale-[1.02]' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Bot className="w-4 h-4" />
+                <span className="font-medium">Bot-Infested</span>
+              </button>
             </div>
+          </div>
+
+          <div className="relative rounded-xl overflow-hidden shadow-lg">
+            {/* Dark overlay for better contrast */}
+            <div className="absolute inset-0 bg-black/10 pointer-events-none z-10"></div>
 
             <motion.div
               initial={false}
@@ -51,9 +67,9 @@ const GuaranteedBotFree: React.FC = () => {
                   alt="Bot-infested playlist statistics"
                   className="w-full"
                 />
-                <div className="absolute top-4 left-4 bg-red-500/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm shadow-lg flex items-center space-x-2">
-                  <Bot className="w-4 h-4" />
-                  <span className="text-sm font-medium">Bot-Infested Playlist</span>
+                <div className="absolute top-24 left-4 bg-red-500/90 text-white px-6 py-3 rounded-lg backdrop-blur-sm shadow-lg flex items-center space-x-2">
+                  <Bot className="w-5 h-5" />
+                  <span className="text-sm font-medium">Bot-Infested Playlist Example</span>
                 </div>
               </div>
             </motion.div>
@@ -71,9 +87,9 @@ const GuaranteedBotFree: React.FC = () => {
                   alt="Authentic playlist statistics"
                   className="w-full"
                 />
-                <div className="absolute top-4 left-4 bg-emerald-500/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm shadow-lg flex items-center space-x-2">
-                  <BadgeCheck className="w-4 h-4" />
-                  <span className="text-sm font-medium">Authentic Playlist</span>
+                <div className="absolute top-24 left-4 bg-emerald-500/90 text-white px-6 py-3 rounded-lg backdrop-blur-sm shadow-lg flex items-center space-x-2">
+                  <BadgeCheck className="w-5 h-5" />
+                  <span className="text-sm font-medium">Authentic Playlist Example</span>
                 </div>
               </div>
             </motion.div>
@@ -112,3 +128,4 @@ const GuaranteedBotFree: React.FC = () => {
 };
 
 export default GuaranteedBotFree;
+
