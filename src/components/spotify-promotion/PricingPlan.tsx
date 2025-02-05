@@ -12,45 +12,6 @@ interface PricingPlanProps {
   };
 }
 
-const VinylIcon = ({ color, glowColor }: { color: string; glowColor: string }) => (
-  <div className="relative w-32 h-32 mx-auto mb-6">
-    {/* Glow effect */}
-    <div 
-      className="absolute inset-0 rounded-full blur-lg opacity-50 transition-opacity duration-300 group-hover:opacity-75"
-      style={{ backgroundColor: glowColor }}
-    />
-    {/* Vinyl SVG with layered structure */}
-    <svg 
-      viewBox="0 0 128 128" 
-      className="relative w-full h-full transition-transform duration-300 group-hover:scale-105"
-    >
-      {/* Frame */}
-      <circle cx="64" cy="64" r="64" fill="#0F0F0F"/>
-      {/* Background */}
-      <circle cx="64" cy="64" r="60" fill="#BBBBBB"/>
-      {/* Outer Ring */}
-      <circle cx="64" cy="64" r="58" fill="#FFFFFF"/>
-      {/* Vinyl Color */}
-      <circle cx="64" cy="64" r="56" fill={color}/>
-      {/* Center Hole */}
-      <circle cx="64" cy="64" r="4" fill="#0F0F0F"/>
-      {/* Grooves */}
-      {[48, 40, 32, 24, 16].map((radius, index) => (
-        <circle 
-          key={index}
-          cx="64" 
-          cy="64" 
-          r={radius} 
-          fill="none" 
-          stroke="#0F0F0F" 
-          strokeWidth="0.5" 
-          strokeOpacity="0.2"
-        />
-      ))}
-    </svg>
-  </div>
-);
-
 interface PricingTier {
   name: string;
   submissions: number;
@@ -60,8 +21,7 @@ interface PricingTier {
   discount: number;
   popular?: boolean;
   features: string[];
-  vinylColor: string;
-  glowColor: string;
+  vinylImage: string;
 }
 
 const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
@@ -73,8 +33,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       maxAdds: 5,
       price: 220,
       discount: 0,
-      vinylColor: "#7D7D7D",
-      glowColor: "#9F9EA1",
+      vinylImage: "/lovable-uploads/430f856f-d860-4675-9520-bd9e1742c166.png",
       features: [
         "Basic A&R & Production Feedback",
         "Support via Email",
@@ -90,8 +49,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       price: 385,
       discount: 5,
       popular: true,
-      vinylColor: "#FFD700",
-      glowColor: "#FEC6A1",
+      vinylImage: "/lovable-uploads/61ec2009-eb22-49fe-a6b9-4097a874f871.png",
       features: [
         "Detailed A&R & Production Consultation",
         "Priority Support via Email",
@@ -108,8 +66,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       maxAdds: 12,
       price: 500,
       discount: 10,
-      vinylColor: "#3636D1",
-      glowColor: "#F1F1F1",
+      vinylImage: "/lovable-uploads/1c6cea71-32b6-4dcc-a0da-490b91abb2aa.png",
       features: [
         "Extensive A&R & Production Development Plan",
         "24/7 Priority Support",
@@ -150,7 +107,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
             <Card 
               key={tier.name}
               className={cn(
-                "relative flex flex-col justify-between group backdrop-blur-sm bg-white/10 border-white/20 shadow-xl transition-all duration-300",
+                "relative flex flex-col justify-between group bg-[#FAFAFA] backdrop-blur-sm border-white/20 shadow-xl transition-all duration-300",
                 tier.popular && "md:scale-105 border-primary shadow-2xl"
               )}
             >
@@ -162,10 +119,16 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
               
               <div>
                 <CardHeader className="text-center pb-4">
-                  <VinylIcon color={tier.vinylColor} glowColor={tier.glowColor} />
-                  <h3 className="text-2xl font-bold text-white">{tier.name} Package</h3>
+                  <div className="relative w-32 h-32 mx-auto mb-6 group-hover:scale-105 transition-transform duration-300">
+                    <img 
+                      src={tier.vinylImage}
+                      alt={`${tier.name} vinyl`}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#0F0F0F]">{tier.name} Package</h3>
                   <div className="mt-2">
-                    <p className="text-3xl font-bold text-white">${tier.price}</p>
+                    <p className="text-3xl font-bold text-[#0F0F0F]">${tier.price}</p>
                     {tier.discount > 0 && (
                       <p className="text-sm text-emerald-400">Save ${metrics.savings}</p>
                     )}
@@ -174,15 +137,15 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
 
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-white/80">
+                    <div className="flex justify-between text-sm text-[#0F0F0F]/80">
                       <span>Playlist Submissions</span>
                       <span className="font-semibold">{tier.submissions}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-white/80">
+                    <div className="flex justify-between text-sm text-[#0F0F0F]/80">
                       <span>Expected Playlist Adds</span>
                       <span className="font-semibold">{tier.minAdds}-{tier.maxAdds}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-white/80">
+                    <div className="flex justify-between text-sm text-[#0F0F0F]/80">
                       <span>Expected Streams</span>
                       <span className="font-semibold">{metrics.streams}</span>
                     </div>
@@ -190,7 +153,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
 
                   <div className="space-y-2">
                     {tier.features.map((feature) => (
-                      <div key={feature} className="flex items-center gap-2 text-sm text-white/80">
+                      <div key={feature} className="flex items-center gap-2 text-sm text-[#0F0F0F]/80">
                         <svg className="h-4 w-4 text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
@@ -218,7 +181,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       </div>
 
       <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 mt-8">
-        <div className="flex items-center justify-center gap-2 text-white/80">
+        <div className="flex items-center justify-center gap-2 text-[#0F0F0F]/80">
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
@@ -226,7 +189,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
         </div>
       </div>
 
-      <p className="text-sm text-white/60 text-center">
+      <p className="text-sm text-[#0F0F0F]/60 text-center">
         * Expected playlist adds and streams are estimates based on historical data
       </p>
     </div>
@@ -234,4 +197,3 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
 };
 
 export default PricingPlan;
-
