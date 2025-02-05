@@ -19,34 +19,19 @@ const VinylIcon = ({ color, glowColor }: { color: string; glowColor: string }) =
       className="absolute inset-0 rounded-full blur-lg opacity-50 transition-opacity duration-300 group-hover:opacity-75"
       style={{ backgroundColor: glowColor }}
     />
-    {/* Vinyl SVG with layered structure */}
+    {/* Original SVG with preserved structure */}
     <svg 
-      viewBox="0 0 128 128" 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 252.1 315.125" 
       className="relative w-full h-full transition-transform duration-300 group-hover:scale-105"
+      enableBackground="new 0 0 252.1 252.1"
     >
-      {/* Frame */}
-      <circle cx="64" cy="64" r="64" fill="#0F0F0F"/>
-      {/* Background */}
-      <circle cx="64" cy="64" r="60" fill="#BBBBBB"/>
-      {/* Outer Ring */}
-      <circle cx="64" cy="64" r="58" fill="#FFFFFF"/>
-      {/* Vinyl Color */}
-      <circle cx="64" cy="64" r="56" fill={color}/>
-      {/* Center Hole */}
-      <circle cx="64" cy="64" r="4" fill="#0F0F0F"/>
-      {/* Grooves */}
-      {[48, 40, 32, 24, 16].map((radius, index) => (
-        <circle 
-          key={index}
-          cx="64" 
-          cy="64" 
-          r={radius} 
-          fill="none" 
-          stroke="#0F0F0F" 
-          strokeWidth="0.5" 
-          strokeOpacity="0.2"
+      <g>
+        <path
+          fill={color}
+          d="M252.1,252.1H0V0h252.1V252.1z M3,249.1h246.1V3H3V249.1z M236.5,236.5h-221v-221h221V236.5z M18.6,233.5h215v-215h-215V233.5z M125.4,219.9c-52,0-94.3-42.3-94.3-94.3c0-52.1,42.3-94.5,94.3-94.5c52.1,0,94.5,42.4,94.5,94.5C219.9,177.6,177.5,219.9,125.4,219.9z M125.4,34.1c-50.3,0-91.3,41-91.3,91.5c0,50.3,41,91.3,91.3,91.3c50.4,0,91.5-41,91.5-91.3C216.9,75.2,175.9,34.1,125.4,34.1z M125.4,158.2c-17.9,0-32.5-14.6-32.5-32.6S107.5,93,125.4,93c18,0,32.6,14.6,32.6,32.6S143.4,158.2,125.4,158.2z M125.4,96C109.2,96,96,109.3,96,125.6c0,16.3,13.2,29.6,29.5,29.6c16.3,0,29.6-13.3,29.6-29.6C155.1,109.3,141.8,96,125.4,96z M125.4,142.7c-9.4,0-17.1-7.7-17.1-17.1s7.7-17.1,17.1-17.1c9.5,0,17.2,7.7,17.2,17.1S134.9,142.7,125.4,142.7z M125.4,111.5c-7.8,0-14.1,6.3-14.1,14.1c0,7.8,6.3,14.1,14.1,14.1c7.8,0,14.2-6.3,14.2-14.1C139.7,117.8,133.3,111.5,125.4,111.5z"
         />
-      ))}
+      </g>
     </svg>
   </div>
 );
@@ -234,4 +219,3 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
 };
 
 export default PricingPlan;
-
