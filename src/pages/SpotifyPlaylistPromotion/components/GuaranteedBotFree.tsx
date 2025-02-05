@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeftRight, ShieldCheck, BadgeCheck, Bot } from "lucide-react";
+import CTAScrollButton from './CTAScrollButton';
 
 const GuaranteedBotFree: React.FC = () => {
   const [showBotted, setShowBotted] = useState(false);
@@ -121,6 +121,10 @@ const GuaranteedBotFree: React.FC = () => {
               </ul>
             </div>
           </div>
+
+          <div className="mt-12 flex justify-center">
+            <CTAScrollButton text="Get Real Playlist Exposure" />
+          </div>
         </div>
       </div>
     </section>
@@ -128,4 +132,3 @@ const GuaranteedBotFree: React.FC = () => {
 };
 
 export default GuaranteedBotFree;
-

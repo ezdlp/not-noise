@@ -36,7 +36,9 @@ const SpotifyPlaylistPromotion: React.FC = () => {
         <Routes>
           <Route path="/" element={
             <div id="content">
-              <Hero />
+              <div id="hero-search">
+                <Hero />
+              </div>
               <TrustedLabels isPricingPage={true} />
               <SuccessStories />
               <HowItWorks />
@@ -62,4 +64,3 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
-

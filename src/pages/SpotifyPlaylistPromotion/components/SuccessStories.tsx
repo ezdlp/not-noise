@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import {
@@ -8,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
+import CTAScrollButton from './CTAScrollButton';
 
 type SuccessStory = {
   image: string;
@@ -99,7 +99,12 @@ const SuccessStories: React.FC = () => {
         <p className="text-center text-lg text-gray-600 max-w-3xl mx-auto animate-fade-in">
           And we have similar success stories across every genre, including Latin, Pop, Rock, R&B, Lo-fi, Ambient and many more!
         </p>
-      </div>
+
+          <div className="mt-12 flex justify-center">
+            <CTAScrollButton text="Join These Success Stories" />
+          </div>
+        </div>
+      </section>
 
       <Dialog open={!!selectedStory} onOpenChange={() => setSelectedStory(null)}>
         <DialogContent className="max-w-6xl w-full h-[90vh] overflow-y-auto">
@@ -143,4 +148,3 @@ const SuccessStories: React.FC = () => {
 };
 
 export default SuccessStories;
-

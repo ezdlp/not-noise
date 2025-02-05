@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { BarChart2, FileText, Music, Users } from "lucide-react";
+import CTAScrollButton from './CTAScrollButton';
 
 const steps = [
   {
@@ -78,6 +78,10 @@ const HowItWorks: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-16 flex justify-center">
+          <CTAScrollButton text="Start Your Promotion Journey" />
         </div>
       </div>
     </section>
