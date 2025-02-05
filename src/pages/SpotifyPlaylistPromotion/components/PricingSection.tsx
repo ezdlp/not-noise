@@ -19,7 +19,6 @@ const PricingSection = () => {
   const { selectedTrack } = (location.state as LocationState) || {};
 
   useEffect(() => {
-    // If no track is selected, redirect back to track selection
     if (!selectedTrack) {
       console.log('No track selected, redirecting back');
       navigate('..');
@@ -27,16 +26,15 @@ const PricingSection = () => {
   }, [selectedTrack, navigate]);
 
   const handlePromotionSubmit = (submissions: number, totalCost: number) => {
-    // Handle the checkout process here
     console.log('Proceeding to checkout:', { submissions, totalCost });
   };
 
   if (!selectedTrack) {
-    return null; // Prevent flash of content while redirecting
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0F0F0F] to-background pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-[#0F0F0F] via-[#271153] to-[#6851FB] pb-20">
       <div className="container mx-auto px-4 py-12">
         <Button
           variant="ghost"
@@ -70,7 +68,7 @@ const PricingSection = () => {
             Choose Your Promotion Package
           </h1>
           <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Select the package that best fits your promotion needs. Each tier offers different levels of playlist submissions and expected performance.
+            Select the package that best fits your promotion needs. Each tier offers different levels of playlist submissions and expert consultation.
           </p>
         </div>
 
@@ -78,10 +76,36 @@ const PricingSection = () => {
           onSubmit={handlePromotionSubmit}
           selectedTrack={selectedTrack}
         />
+
+        <div className="mt-16 text-center text-white/80">
+          <h3 className="text-xl font-semibold text-white mb-4">What Happens Next?</h3>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div>
+              <div className="text-2xl mb-2">1</div>
+              <h4 className="font-semibold mb-2">Track Review</h4>
+              <p className="text-sm">Our team analyzes your track and creates a custom promotion strategy</p>
+            </div>
+            <div>
+              <div className="text-2xl mb-2">2</div>
+              <h4 className="font-semibold mb-2">Playlist Outreach</h4>
+              <p className="text-sm">We submit your track to carefully selected playlist curators</p>
+            </div>
+            <div>
+              <div className="text-2xl mb-2">3</div>
+              <h4 className="font-semibold mb-2">Results & Reports</h4>
+              <p className="text-sm">Get detailed feedback and track your promotion progress</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <div className="inline-block border border-white/20 rounded-lg px-6 py-4 text-white/80">
+            <p className="text-sm font-medium">🎯 Limited spots available this month</p>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default PricingSection;
-
