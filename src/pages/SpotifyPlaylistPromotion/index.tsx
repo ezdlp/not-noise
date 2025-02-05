@@ -5,6 +5,7 @@ import { Route, Routes } from "react-router-dom";
 import PricingSection from "./components/PricingSection";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import SuccessStories from "./components/SuccessStories";
+import HowItWorks from "./components/HowItWorks";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const SpotifyPlaylistPromotion: React.FC = () => {
               <Hero />
               <TrustedLabels isPricingPage={true} />
               <SuccessStories />
+              <HowItWorks />
             </>
           } />
           <Route path="pricing" element={<PricingSection />} />
