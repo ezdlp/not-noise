@@ -17,8 +17,8 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 
       <main className="min-h-screen">
         <Routes>
-          <Route path="/" element={<Hero />} />
-          <Route path="/pricing" element={<PricingSection />} />
+          <Route path="" element={<Hero />} />
+          <Route path="pricing" element={<PricingSection />} />
         </Routes>
       </main>
     </>
@@ -26,3 +26,4 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
+
