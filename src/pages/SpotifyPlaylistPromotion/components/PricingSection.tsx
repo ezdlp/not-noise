@@ -34,8 +34,22 @@ const PricingSection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0F0F0F] via-[#271153] to-[#6851FB] pb-20">
-      <div className="container mx-auto px-4 py-12">
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Base background color */}
+      <div className="absolute inset-0 bg-[#6851fb]" />
+      
+      {/* Gradient overlay with texture */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center'
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative container mx-auto px-4 py-12">
         <Button
           variant="ghost"
           className="text-white mb-8 hover:text-white/80"
@@ -109,3 +123,4 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
+
