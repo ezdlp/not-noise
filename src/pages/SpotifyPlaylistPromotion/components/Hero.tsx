@@ -78,11 +78,10 @@ const Hero: React.FC = () => {
       {/* Base color and SVG background */}
       <div className="absolute inset-0 bg-[#6851fb]" />
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transform translate-y-[-10%]"
         style={{
           backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat'
+          backgroundSize: '120% 120%',
         }}
       />
       
