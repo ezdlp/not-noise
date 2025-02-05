@@ -8,12 +8,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PricingPlanProps {
   onSubmit?: (submissions: number, totalCost: number) => void;
   selectedTrack?: {
     title: string;
     artist: string;
+    id: string;
+    artistId: string;
+    genre?: string;
   };
 }
 
@@ -27,9 +32,10 @@ interface PricingTier {
   popular?: boolean;
   features: string[];
   vinylImage: string;
+  priceId: string;
 }
 
-const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
+const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) => {
   const tiers: PricingTier[] = [
     {
       name: "Silver",
@@ -39,6 +45,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       price: 220,
       discount: 0,
       vinylImage: "/lovable-uploads/430f856f-d860-4675-9520-bd9e1742c166.png",
+      priceId: "price_1QpCdhFx6uwYcH3SqX5B02x3",
       features: [
         "Playlist Curator Feedback",
         "Basic A&R Feedback",
@@ -55,6 +62,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       discount: 5,
       popular: true,
       vinylImage: "/lovable-uploads/61ec2009-eb22-49fe-a6b9-4097a874f871.png",
+      priceId: "price_1QpCecFx6uwYcH3S7TqiqXmo",
       features: [
         "Playlist Curator Feedback",
         "Detailed A&R Feedback",
@@ -70,6 +78,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
       price: 500,
       discount: 10,
       vinylImage: "/lovable-uploads/1c6cea71-32b6-4dcc-a0da-490b91abb2aa.png",
+      priceId: "price_1QpCf7Fx6uwYcH3SClLj92Pf",
       features: [
         "Playlist Curator Feedback",
         "Extensive A&R & Production Development Plan",
@@ -95,7 +104,45 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit }) => {
     };
   };
 
-  const handleSelect = (tier: PricingTier) => {
+  const handleSelect = async (tier: PricingTier) => {
+    if (!selectedTrack) {
+      toast({
+        title: "No track selected",
+        description: "Please select a track first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: { session_url }, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          priceId: tier.priceId,
+          promotionData: {
+            trackName: selectedTrack.title,
+            trackArtist: selectedTrack.artist,
+            spotifyTrackId: selectedTrack.id,
+            spotifyArtistId: selectedTrack.artistId,
+            submissionCount: tier.submissions,
+            estimatedAdditions: tier.maxAdds,
+            genre: selectedTrack.genre || 'other'
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      // Redirect to Stripe Checkout
+      window.location.href = session_url;
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Error",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive"
+      });
+    }
+
     if (onSubmit) {
       onSubmit(tier.submissions, tier.price);
     }
