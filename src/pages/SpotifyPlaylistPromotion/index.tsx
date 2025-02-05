@@ -26,4 +26,3 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 };
 
 export default SpotifyPlaylistPromotion;
-

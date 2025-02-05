@@ -1,4 +1,4 @@
-```typescript
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users } from "lucide-react";
@@ -226,4 +226,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-```
