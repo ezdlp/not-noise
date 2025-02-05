@@ -40,7 +40,7 @@ const PricingSection = () => {
       
       {/* Gradient overlay with texture */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat mix-blend-soft-light"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
           backgroundSize: '100% 100%',
@@ -123,3 +123,4 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
+
