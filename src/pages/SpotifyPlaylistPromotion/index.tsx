@@ -6,6 +6,7 @@ import PricingSection from "./components/PricingSection";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import SuccessStories from "./components/SuccessStories";
 import HowItWorks from "./components/HowItWorks";
+import FAQ from "./components/FAQ";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const SpotifyPlaylistPromotion: React.FC = () => {
               <TrustedLabels isPricingPage={true} />
               <SuccessStories />
               <HowItWorks />
+              <FAQ />
             </>
           } />
           <Route path="pricing" element={<PricingSection />} />
