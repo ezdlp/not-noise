@@ -16,10 +16,10 @@ const SpotifyPlaylistPromotion: React.FC = () => {
 
       <main className="min-h-screen">
         <Hero />
-        <Features />
       </main>
     </>
   );
 };
 
 export default SpotifyPlaylistPromotion;
+
