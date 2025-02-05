@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PricingPlan from "@/components/spotify-promotion/PricingPlan";
 import { ChevronLeft } from "lucide-react";
@@ -18,10 +18,22 @@ const PricingSection = () => {
   const navigate = useNavigate();
   const { selectedTrack } = (location.state as LocationState) || {};
 
+  useEffect(() => {
+    // If no track is selected, redirect back to track selection
+    if (!selectedTrack) {
+      console.log('No track selected, redirecting back');
+      navigate('..');
+    }
+  }, [selectedTrack, navigate]);
+
   const handlePromotionSubmit = (submissions: number, totalCost: number) => {
     // Handle the checkout process here
     console.log('Proceeding to checkout:', { submissions, totalCost });
   };
+
+  if (!selectedTrack) {
+    return null; // Prevent flash of content while redirecting
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F0F0F] to-background pb-20">
@@ -29,7 +41,7 @@ const PricingSection = () => {
         <Button
           variant="ghost"
           className="text-white mb-8 hover:text-white/80"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('..')}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back to Track Selection
@@ -72,3 +84,4 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
+
