@@ -56,7 +56,7 @@ const Hero: React.FC = () => {
 
   const handleSelectTrack = (track: Track) => {
     setSelectedTrack(track);
-    setSearchQuery(''); // Clear search after selection
+    setSearchQuery('');
   };
 
   const handlePromoteClick = () => {
@@ -75,15 +75,20 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative min-h-screen overflow-hidden">
-      {/* Gradient background with grain effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 opacity-90" />
+      {/* Background gradient layers */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-violet-800 to-indigo-900" />
+      
+      {/* Grain effect overlay */}
       <div 
-        className="absolute inset-0 opacity-50"
+        className="absolute inset-0 opacity-30"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          mixBlendMode: 'overlay'
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          mixBlendMode: 'soft-light'
         }}
       />
+      
+      {/* Radial gradient overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-radial from-purple-500/30 via-transparent to-transparent" />
 
       <div className="relative container mx-auto px-4 py-32">
         <div className="max-w-3xl mx-auto text-center">
@@ -201,4 +206,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-
