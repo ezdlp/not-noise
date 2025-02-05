@@ -78,10 +78,11 @@ const Hero: React.FC = () => {
       {/* Base color and SVG background */}
       <div className="absolute inset-0 bg-[#6851fb]" />
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transform translate-y-[-10%]"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
-          backgroundSize: '120% 120%',
+          backgroundSize: '150% 150%',
+          backgroundPosition: 'center 40%'
         }}
       />
       
@@ -107,24 +108,28 @@ const Hero: React.FC = () => {
               placeholder="Search your track or paste Spotify URL..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-16 px-6 bg-white/10 backdrop-blur-xl border-white/20 text-white placeholder:text-white/50 text-lg rounded-2xl shadow-lg transition-all duration-300 hover:bg-white/15 focus:bg-white/20 focus:ring-2 focus:ring-white/30"
+              className="h-16 px-6 text-white placeholder:text-white/70 text-lg rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.1)] 
+                bg-white/15 backdrop-blur-xl border-white/20 
+                transition-all duration-300 
+                hover:bg-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)]
+                focus:bg-white/25 focus:shadow-[0_0_25px_rgba(255,255,255,0.2)] focus:ring-2 focus:ring-white/30"
             />
 
             {/* Search Results */}
             {searchQuery.length > 2 && (
               <div className="absolute z-50 w-full mt-2">
                 {isLoading ? (
-                  <Card className="p-4 flex items-center justify-center bg-white/10 backdrop-blur-xl border-white/20">
+                  <Card className="p-4 flex items-center justify-center bg-white/15 backdrop-blur-xl border-white/20">
                     <Loader2 className="h-6 w-6 animate-spin text-white" />
-                    <span className="ml-2 text-white/80">Searching...</span>
+                    <span className="ml-2 text-white">Searching...</span>
                   </Card>
                 ) : searchResults && searchResults.length > 0 ? (
-                  <Card className="divide-y divide-white/10 overflow-hidden max-h-[400px] overflow-y-auto bg-white/10 backdrop-blur-xl border-white/20">
+                  <Card className="divide-y divide-white/10 overflow-hidden max-h-[400px] overflow-y-auto bg-white/15 backdrop-blur-xl border-white/20">
                     {searchResults.map((track: Track) => (
                       <button
                         key={track.spotifyId}
                         onClick={() => handleSelectTrack(track)}
-                        className="w-full p-4 flex items-center gap-4 hover:bg-white/5 transition-colors text-white"
+                        className="w-full p-4 flex items-center gap-4 hover:bg-white/10 transition-colors text-white"
                       >
                         <img
                           src={track.artworkUrl || "/placeholder.svg"}
@@ -133,13 +138,13 @@ const Hero: React.FC = () => {
                         />
                         <div className="flex-1 text-left">
                           <p className="font-medium">{track.title}</p>
-                          <p className="text-sm text-white/60">{track.artist}</p>
+                          <p className="text-sm text-white/70">{track.artist}</p>
                         </div>
                       </button>
                     ))}
                   </Card>
                 ) : searchQuery.length > 2 && (
-                  <Card className="p-4 text-center text-white/60 bg-white/10 backdrop-blur-xl border-white/20">
+                  <Card className="p-4 text-center text-white/70 bg-white/15 backdrop-blur-xl border-white/20">
                     No tracks found
                   </Card>
                 )}
@@ -149,7 +154,7 @@ const Hero: React.FC = () => {
 
           {/* Selected Track Display */}
           {selectedTrack && (
-            <Card className="p-6 mb-12 bg-white/10 backdrop-blur-xl border-white/20 max-w-2xl mx-auto rounded-2xl animate-fade-in">
+            <Card className="p-6 mb-12 bg-white/15 backdrop-blur-xl border-white/20 max-w-2xl mx-auto rounded-2xl animate-fade-in">
               <div className="flex items-center gap-6">
                 <img
                   src={selectedTrack.artworkUrl || "/placeholder.svg"}
@@ -158,7 +163,7 @@ const Hero: React.FC = () => {
                 />
                 <div className="flex-1 text-left">
                   <h3 className="text-xl font-semibold text-white">{selectedTrack.title}</h3>
-                  <p className="text-white/60 text-lg">{selectedTrack.artist}</p>
+                  <p className="text-white/70 text-lg">{selectedTrack.artist}</p>
                 </div>
                 <Button 
                   variant="default"
