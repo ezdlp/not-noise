@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users } from "lucide-react";
@@ -81,8 +80,8 @@ const Hero: React.FC = () => {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
-          backgroundSize: '150% 150%',
-          backgroundPosition: 'center 40%'
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center'
         }}
       />
       
@@ -108,11 +107,12 @@ const Hero: React.FC = () => {
               placeholder="Search your track or paste Spotify URL..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-16 px-6 text-white placeholder:text-white/70 text-lg rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.1)] 
-                bg-white/15 backdrop-blur-xl border-white/20 
-                transition-all duration-300 
-                hover:bg-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)]
-                focus:bg-white/25 focus:shadow-[0_0_25px_rgba(255,255,255,0.2)] focus:ring-2 focus:ring-white/30"
+              className="h-16 px-6 text-white placeholder:text-white/80 text-lg rounded-2xl 
+              bg-white/15 backdrop-blur-xl border-white/20 
+              shadow-[0_0_25px_rgba(255,255,255,0.1)]
+              transition-all duration-300 
+              hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]
+              focus:bg-white/25 focus:shadow-[0_0_35px_rgba(255,255,255,0.2)] focus:ring-2 focus:ring-white/30"
             />
 
             {/* Search Results */}
