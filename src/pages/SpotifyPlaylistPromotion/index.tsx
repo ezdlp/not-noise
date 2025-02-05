@@ -6,6 +6,7 @@ import PricingSection from "./components/PricingSection";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import SuccessStories from "./components/SuccessStories";
 import HowItWorks from "./components/HowItWorks";
+import GuaranteedBotFree from "./components/GuaranteedBotFree";
 import FAQ from "./components/FAQ";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
@@ -27,6 +28,7 @@ const SpotifyPlaylistPromotion: React.FC = () => {
               <TrustedLabels isPricingPage={true} />
               <SuccessStories />
               <HowItWorks />
+              <GuaranteedBotFree />
               <FAQ />
             </>
           } />
