@@ -29,7 +29,7 @@ const PricingSection = () => {
         <Button
           variant="ghost"
           className="text-white mb-8 hover:text-white/80"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back to Track Selection
@@ -72,4 +72,3 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
-

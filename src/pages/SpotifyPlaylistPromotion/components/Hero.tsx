@@ -61,7 +61,7 @@ const Hero: React.FC = () => {
 
   const handlePromoteClick = () => {
     if (selectedTrack) {
-      navigate('pricing', { 
+      navigate('/pricing', { 
         state: { 
           selectedTrack: {
             title: selectedTrack.title,
