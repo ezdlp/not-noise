@@ -72,9 +72,13 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: 'payment',
-      success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion`,
+      mode: isPromotion ? 'payment' : 'subscription',  // Use subscription mode for subscriptions
+      success_url: isPromotion 
+        ? `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`
+        : `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: isPromotion 
+        ? `${req.headers.get('origin')}/spotify-playlist-promotion`
+        : `${req.headers.get('origin')}/pricing`,
     };
 
     // If this is a promotion purchase, add metadata
@@ -116,3 +120,4 @@ serve(async (req) => {
     );
   }
 });
+
