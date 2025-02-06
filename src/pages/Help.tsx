@@ -13,8 +13,15 @@ import { HelpArticle } from "@/components/help/HelpArticle";
 import { HelpSidebar } from "@/components/help/HelpSidebar";
 import { Button } from "@/components/ui/button";
 
+export type HelpCategory = "getting-started" | "smart-links" | "promotion" | "faq";
+
 export default function Help() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<HelpCategory>("getting-started");
+
+  const handleCategoryChange = (category: HelpCategory) => {
+    setActiveCategory(category);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-seasalt">
@@ -38,10 +45,10 @@ export default function Help() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
-          <HelpSidebar />
+          <HelpSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
 
           <div className="space-y-8">
-            <Tabs defaultValue="getting-started" className="w-full">
+            <Tabs value={activeCategory} onValueChange={(value) => handleCategoryChange(value as HelpCategory)} className="w-full">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
                 <TabsTrigger value="smart-links">Smart Links</TabsTrigger>
@@ -174,4 +181,3 @@ export default function Help() {
     </div>
   );
 }
-
