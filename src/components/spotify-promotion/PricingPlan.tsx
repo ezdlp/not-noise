@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PromotionSignupModal } from "./PromotionSignupModal";
+import { useEffect } from "react";
 
 interface PricingPlanProps {
   onSubmit?: (submissions: number, totalCost: number) => void;
@@ -39,6 +41,28 @@ interface PricingTier {
 const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) => {
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check initial auth state
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const tiers: PricingTier[] = [
     {
@@ -118,25 +142,32 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       return;
     }
 
-    // Store the selected tier and show signup modal
     setSelectedTier(tier);
-    setShowSignupModal(true);
+
+    if (isAuthenticated) {
+      // If user is authenticated, proceed directly to checkout
+      handleCheckout(tier);
+    } else {
+      // If user is not authenticated, show signup modal
+      setShowSignupModal(true);
+    }
   };
 
-  const handleCheckout = async () => {
-    if (!selectedTier || !selectedTrack) return;
+  const handleCheckout = async (tier: PricingTier = selectedTier!) => {
+    if (!tier || !selectedTrack) return;
 
     try {
+      setIsLoading(true);
       const { data: { session_url }, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
-          priceId: selectedTier.priceId,
+          priceId: tier.priceId,
           promotionData: {
             trackName: selectedTrack.title,
             trackArtist: selectedTrack.artist,
             spotifyTrackId: selectedTrack.id,
             spotifyArtistId: selectedTrack.artistId,
-            submissionCount: selectedTier.submissions,
-            estimatedAdditions: selectedTier.maxAdds,
+            submissionCount: tier.submissions,
+            estimatedAdditions: tier.maxAdds,
             genre: selectedTrack.genre || 'other'
           }
         }
@@ -153,12 +184,22 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         description: "There was an error processing your request. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
 
     if (onSubmit) {
-      onSubmit(selectedTier.submissions, selectedTier.price);
+      onSubmit(tier.submissions, tier.price);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -254,6 +295,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                 <CardFooter className="mt-6">
                   <Button 
                     onClick={() => handleSelect(tier)}
+                    disabled={isLoading}
                     className={cn(
                       "w-full transition-all duration-300 hover:scale-105",
                       tier.popular ? 
@@ -261,7 +303,14 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                         "bg-[#0F0F0F] hover:bg-[#0F0F0F]/90 text-white"
                     )}
                   >
-                    Get Started with {tier.name}
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      `Get Started with ${tier.name}`
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -283,11 +332,11 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         </p>
       </div>
 
-      {selectedTier && (
+      {selectedTier && !isAuthenticated && (
         <PromotionSignupModal
           isOpen={showSignupModal}
           onClose={() => setShowSignupModal(false)}
-          onSuccess={handleCheckout}
+          onSuccess={() => handleCheckout()}
           selectedPackage={{
             name: selectedTier.name,
             submissions: selectedTier.submissions,
