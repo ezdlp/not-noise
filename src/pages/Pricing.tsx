@@ -10,10 +10,29 @@ import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
+
+  // Query the user's current subscription
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: subscriptionData, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      return subscriptionData;
+    },
+  });
 
   const handleSubscribe = async (priceId: string) => {
     try {
@@ -35,6 +54,40 @@ export default function Pricing() {
       console.error('Error:', error);
       toast.error("Failed to start checkout process");
     }
+  };
+
+  // Function to render the appropriate button or label based on subscription status
+  const renderActionButton = (tier: 'free' | 'pro') => {
+    const isCurrentPlan = subscription?.tier === tier;
+    
+    if (tier === 'free') {
+      if (isCurrentPlan) {
+        return (
+          <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+            Current Plan
+          </div>
+        );
+      }
+      return (
+        <Button 
+          variant="outline"
+          onClick={() => navigate("/register")}
+          className="w-full"
+        >
+          Get Started Free
+        </Button>
+      );
+    }
+
+    // For Pro plan
+    return (
+      <Button 
+        className="w-full bg-primary hover:bg-primary/90"
+        onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+      >
+        Upgrade Now
+      </Button>
+    );
   };
 
   return (
@@ -130,13 +183,7 @@ export default function Pricing() {
             </div>
 
             <div className="mt-8">
-              <Button 
-                variant="outline"
-                onClick={() => navigate("/register")}
-                className="w-full"
-              >
-                Get Started Free
-              </Button>
+              {renderActionButton('free')}
             </div>
           </Card>
 
@@ -243,12 +290,7 @@ export default function Pricing() {
             </div>
 
             <div className="mt-8">
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90"
-                onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-              >
-                Upgrade Now
-              </Button>
+              {renderActionButton('pro')}
             </div>
           </Card>
         </div>
