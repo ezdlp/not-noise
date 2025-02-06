@@ -118,7 +118,7 @@ export const PromotionSignupModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => !isLoading && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl">
             {isSignIn ? "Welcome back!" : "One last step before your promotion"}
@@ -159,11 +159,11 @@ export const PromotionSignupModal = ({
             </div>
           </div>
 
-          <div className="order-1 md:order-2">
-            <div className="flex justify-end mb-4">
+          <div className="order-1 md:order-2 space-y-6">
+            <div className="flex justify-end">
               <Button
                 variant="ghost"
-                className="text-sm"
+                className="text-sm hover:bg-transparent hover:text-primary"
                 onClick={() => setIsSignIn(!isSignIn)}
               >
                 {isSignIn ? "Need an account? Sign up" : "Already have an account? Sign in"}
@@ -257,7 +257,7 @@ export const PromotionSignupModal = ({
 
               <Button
                 type="submit"
-                className="w-full px-6 py-3"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading 
@@ -271,4 +271,3 @@ export const PromotionSignupModal = ({
     </Dialog>
   );
 };
-
