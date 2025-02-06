@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Query the user's current subscription
   const { data: subscription } = useQuery({
@@ -37,6 +38,8 @@ export default function Pricing() {
 
   const handleSubscribe = async (priceId: string) => {
     try {
+      setIsLoading(true);
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please login to upgrade your plan");
@@ -44,35 +47,31 @@ export default function Pricing() {
         return;
       }
 
-      toast.loading("Preparing checkout...");
-      
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: { 
           priceId,
-          isSubscription: true // Add this flag to differentiate from promotion products
+          isSubscription: true
         },
       });
 
       if (error) {
         console.error('Checkout error:', error);
-        toast.dismiss();
         toast.error("Failed to start checkout process. Please try again.");
         return;
       }
 
       if (!data?.url) {
         console.error('No checkout URL received:', data);
-        toast.dismiss();
         toast.error("Unable to create checkout session. Please try again.");
         return;
       }
 
-      toast.dismiss();
       window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
-      toast.dismiss();
       toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,8 +111,9 @@ export default function Pricing() {
       <Button 
         className="w-full bg-primary hover:bg-primary/90"
         onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+        disabled={isLoading}
       >
-        Upgrade Now
+        {isLoading ? "Preparing..." : "Upgrade Now"}
       </Button>
     );
   };
