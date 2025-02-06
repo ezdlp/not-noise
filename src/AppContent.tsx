@@ -16,6 +16,7 @@ import PublicBlogPost from "@/pages/PublicBlogPost";
 import SpotifyPlaylistPromotion from "@/pages/SpotifyPlaylistPromotion";
 import SuccessPage from "@/pages/SpotifyPlaylistPromotion/components/SuccessPage";
 import Help from "@/pages/Help";
+import StreamingCalculator from "@/pages/StreamingCalculator";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminOverview from "@/pages/admin/Overview";
 import AdminAnalytics from "@/pages/admin/Analytics";
@@ -39,6 +40,7 @@ const AppContent = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/help" element={<Help />} />
+      <Route path="/streaming-calculator" element={<StreamingCalculator />} />
       <Route path="/spotify-playlist-promotion" element={<SpotifyPlaylistPromotion />}>
         <Route path="success" element={<SuccessPage />} />
       </Route>
