@@ -1,11 +1,9 @@
-
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PricingPlan from "@/components/spotify-promotion/PricingPlan";
 import { ChevronLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface LocationState {
   selectedTrack?: {
@@ -23,30 +21,6 @@ const PricingSection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { selectedTrack } = (location.state as LocationState) || {};
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to continue with promotion purchase",
-          variant: "destructive",
-        });
-        // Store the current location to redirect back after login
-        navigate('/login', { 
-          state: { 
-            redirectTo: location.pathname,
-            locationState: location.state 
-          } 
-        });
-        return;
-      }
-    };
-
-    checkAuth();
-  }, [navigate, location, toast]);
 
   useEffect(() => {
     if (!selectedTrack) {
@@ -162,4 +136,3 @@ const PricingSection = () => {
 };
 
 export default PricingSection;
-
