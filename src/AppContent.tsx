@@ -14,6 +14,7 @@ import Pricing from "@/pages/Pricing";
 import Blog from "@/pages/Blog";
 import PublicBlogPost from "@/pages/PublicBlogPost";
 import SpotifyPlaylistPromotion from "@/pages/SpotifyPlaylistPromotion";
+import Help from "@/pages/Help";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminOverview from "@/pages/admin/Overview";
 import AdminAnalytics from "@/pages/admin/Analytics";
@@ -36,6 +37,7 @@ const AppContent = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
+      <Route path="/help" element={<Help />} />
       <Route path="/spotify-playlist-promotion/*" element={<SpotifyPlaylistPromotion />} />
       <Route path="/:slug" element={<PublicBlogPost />} />
       
@@ -66,4 +68,3 @@ const AppContent = () => {
 };
 
 export default AppContent;
-
