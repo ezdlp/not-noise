@@ -406,7 +406,10 @@ export default function AccountSettings() {
                   </p>
                 </div>
               </div>
-              <Button className="w-full md:w-auto">
+              <Button 
+                className="w-full md:w-auto"
+                onClick={() => navigate("/pricing")}
+              >
                 Upgrade to Pro
               </Button>
             </CardContent>
