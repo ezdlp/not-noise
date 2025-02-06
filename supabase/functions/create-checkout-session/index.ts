@@ -72,7 +72,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: 'subscription', // Changed to always use subscription mode since these are subscription prices
+      mode: 'payment', // Changed to payment mode since these are one-time payments
       success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion`,
     };
