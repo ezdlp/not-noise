@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Collapsible } from "@/components/ui/collapsible";
 import { useState, useEffect } from "react";
 import { FeatureLimits } from "./FeatureLimits";
+import { useNavigate } from "react-router-dom";
 
 export function SubscriptionBanner() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Load initial state from localStorage
   useEffect(() => {
@@ -54,6 +56,10 @@ export function SubscriptionBanner() {
   const isFreeTier = subscription.tier === "free";
   const isEarlyAdopter = subscription.is_early_adopter;
 
+  const handleUpgradeClick = () => {
+    navigate("/pricing");
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="p-6">
@@ -82,6 +88,7 @@ export function SubscriptionBanner() {
             <Button 
               variant="outline" 
               className="border-primary hover:bg-primary/5 text-primary"
+              onClick={handleUpgradeClick}
             >
               Upgrade Now
             </Button>
