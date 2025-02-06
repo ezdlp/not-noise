@@ -18,7 +18,7 @@ const StreamingCalculator = () => {
     try {
       await navigator.share({
         title: 'Music Streaming Royalty Calculator Results',
-        text: `Check out my streaming revenue calculation for ${count.toLocaleString()} ${calculationType}!`,
+        text: `Check out my streaming calculation for ${count.toLocaleString()} ${calculationType}!`,
         url: window.location.href
       });
     } catch (err) {
@@ -73,6 +73,10 @@ const StreamingCalculator = () => {
               </div>
             )}
           </Card>
+          
+          <p className="text-white/80 text-center text-sm md:text-base max-w-2xl mx-auto">
+            These calculations are estimates based on average rates. Actual earnings may vary as streaming platforms use complex formulas that consider factors like subscription type, geographic location, and total platform revenue rather than a fixed per-stream rate.
+          </p>
         </div>
       </div>
     </div>
