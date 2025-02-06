@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { genres } from "@/lib/genres";
+import { Info, CheckCircle2 } from "lucide-react";
 
 interface PromotionSignupModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const PromotionSignupModal = ({
   selectedPackage,
 }: PromotionSignupModalProps) => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isSignIn, setIsSignIn] = React.useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = React.useState({
     email: "",
@@ -41,7 +43,6 @@ export const PromotionSignupModal = ({
     artistName: "",
     genre: "",
     acceptTerms: false,
-    acceptMarketing: false,
   });
 
   const handleInputChange = (
@@ -51,7 +52,36 @@ export const PromotionSignupModal = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Welcome back!",
+        description: "Proceeding to checkout...",
+      });
+
+      onSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -63,7 +93,6 @@ export const PromotionSignupModal = ({
           data: {
             artist_name: formData.artistName,
             music_genre: formData.genre,
-            marketing_consent: formData.acceptMarketing,
           }
         }
       });
@@ -91,7 +120,9 @@ export const PromotionSignupModal = ({
     <Dialog open={isOpen} onOpenChange={() => !isLoading && onClose()}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">One last step before your promotion</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {isSignIn ? "Welcome back!" : "One last step before your promotion"}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -100,17 +131,15 @@ export const PromotionSignupModal = ({
               <h3 className="font-semibold text-lg">Why create an account?</h3>
               <ul className="space-y-2">
                 {[
-                  "Track your promotion progress in real-time",
-                  "Get notified when playlists add your music",
-                  "Access detailed performance analytics",
+                  "Track your promotion progress",
+                  "Access your campaign report",
                   "Direct support channel",
-                  "Exclusive music industry insights"
+                  "Exclusive music industry insights",
+                  "Store and access historical campaign data and results"
                 ].map((benefit, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <svg className="h-3 w-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                     </div>
                     <span className="text-sm text-gray-600">{benefit}</span>
                   </li>
@@ -130,113 +159,116 @@ export const PromotionSignupModal = ({
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 order-1 md:order-2">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                minLength={8}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="artistName">Artist Name</Label>
-              <Input
-                id="artistName"
-                name="artistName"
-                type="text"
-                placeholder="Your artist name"
-                value={formData.artistName}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="genre">Primary Genre</Label>
-              <Select
-                value={formData.genre}
-                onValueChange={(value) =>
-                  handleInputChange({ target: { name: "genre", value } })
-                }
+          <div className="order-1 md:order-2">
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="ghost"
+                className="text-sm"
+                onClick={() => setIsSignIn(!isSignIn)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a genre" />
-                </SelectTrigger>
-                <SelectContent>
-                  {genres.map((genre) => (
-                    <SelectItem key={genre} value={genre}>
-                      {genre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {isSignIn ? "Need an account? Sign up" : "Already have an account? Sign in"}
+              </Button>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="terms"
-                  checked={formData.acceptTerms}
-                  onCheckedChange={(checked) =>
-                    setFormData(prev => ({ ...prev, acceptTerms: checked as boolean }))
-                  }
+            <form onSubmit={isSignIn ? handleSignIn : handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
                   required
                 />
-                <label
-                  htmlFor="terms"
-                  className="text-sm text-gray-600"
-                >
-                  I accept the terms and conditions
-                </label>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="marketing"
-                  checked={formData.acceptMarketing}
-                  onCheckedChange={(checked) =>
-                    setFormData(prev => ({ ...prev, acceptMarketing: checked as boolean }))
-                  }
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  minLength={8}
                 />
-                <label
-                  htmlFor="marketing"
-                  className="text-sm text-gray-600"
-                >
-                  Send me music promotion tips and updates
-                </label>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? "Creating Account..." : "Create Account & Continue to Payment"}
-            </Button>
-          </form>
+              {!isSignIn && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="artistName">Artist Name</Label>
+                    <Input
+                      id="artistName"
+                      name="artistName"
+                      type="text"
+                      placeholder="Your artist name"
+                      value={formData.artistName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="genre">Primary Genre</Label>
+                    <Select
+                      value={formData.genre}
+                      onValueChange={(value) =>
+                        handleInputChange({ target: { name: "genre", value } })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a genre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {genres.map((genre) => (
+                          <SelectItem key={genre} value={genre}>
+                            {genre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {!isSignIn && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="terms"
+                    checked={formData.acceptTerms}
+                    onCheckedChange={(checked) =>
+                      setFormData(prev => ({ ...prev, acceptTerms: checked as boolean }))
+                    }
+                    required
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm text-gray-600"
+                  >
+                    I accept the terms and conditions
+                  </label>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full px-6 py-3"
+                disabled={isLoading}
+              >
+                {isLoading 
+                  ? (isSignIn ? "Signing in..." : "Creating Account...") 
+                  : (isSignIn ? "Sign in & Continue to Payment" : "Create Account & Continue to Payment")}
+              </Button>
+            </form>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+
