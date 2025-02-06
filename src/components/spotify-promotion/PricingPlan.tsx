@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -74,7 +73,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       price: 220,
       discount: 0,
       vinylImage: "/lovable-uploads/430f856f-d860-4675-9520-bd9e1742c166.png",
-      priceId: "price_1QpY93Fx6uwYcH3S2KKJ75G9",
+      priceId: "price_1QpCdhFx6uwYcH3SqX5B02x3",
       features: [
         "Playlist Curator Feedback",
         "Basic A&R Feedback",
@@ -91,7 +90,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       discount: 5,
       popular: true,
       vinylImage: "/lovable-uploads/61ec2009-eb22-49fe-a6b9-4097a874f871.png",
-      priceId: "price_1QpY9aFx6uwYcH3SpmI0sUNJ",
+      priceId: "price_1QpCecFx6uwYcH3S7TqiqXmo",
       features: [
         "Playlist Curator Feedback",
         "Detailed A&R Feedback",
@@ -107,7 +106,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       price: 500,
       discount: 10,
       vinylImage: "/lovable-uploads/1c6cea71-32b6-4dcc-a0da-490b91abb2aa.png",
-      priceId: "price_1QpYA6Fx6uwYcH3SZsgaVN2q",
+      priceId: "price_1QpCf7Fx6uwYcH3SClLj92Pf",
       features: [
         "Playlist Curator Feedback",
         "Extensive A&R & Production Development Plan",
@@ -355,4 +354,3 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 };
 
 export default PricingPlan;
-
