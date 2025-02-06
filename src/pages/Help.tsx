@@ -5,7 +5,7 @@ import {
   BookOpen,
   Search,
   List,
-  QuestionMark,
+  HelpCircle,
   Info,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,7 +85,7 @@ export default function Help() {
               <TabsContent value="smart-links" className="space-y-6">
                 <HelpArticle
                   title="What are Smart Links?"
-                  icon={QuestionMark}
+                  icon={HelpCircle}
                   content={`
                     Smart Links are powerful music marketing tools that:
                     - Share your music across all streaming platforms
@@ -138,7 +138,7 @@ export default function Help() {
               <TabsContent value="faq" className="space-y-6">
                 <HelpArticle
                   title="Smart Links FAQ"
-                  icon={QuestionMark}
+                  icon={HelpCircle}
                   content={`
                     Common questions about Smart Links:
                     - How many links can I create?
@@ -149,7 +149,7 @@ export default function Help() {
                 />
                 <HelpArticle
                   title="Promotion FAQ"
-                  icon={QuestionMark}
+                  icon={HelpCircle}
                   content={`
                     Common questions about promotion:
                     - How long does promotion take?
@@ -174,3 +174,4 @@ export default function Help() {
     </div>
   );
 }
+
