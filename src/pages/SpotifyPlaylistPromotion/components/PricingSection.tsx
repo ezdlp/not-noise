@@ -9,6 +9,9 @@ interface LocationState {
   selectedTrack?: {
     title: string;
     artist: string;
+    id: string;
+    artistId: string;
+    genre?: string;
     artworkUrl?: string;
   };
 }
