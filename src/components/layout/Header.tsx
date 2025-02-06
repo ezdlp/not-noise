@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -135,11 +134,6 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="w-full cursor-pointer hover:bg-gray-50">
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link to="/settings" className="w-full cursor-pointer hover:bg-gray-50">
                       Account Settings
                     </Link>
@@ -186,9 +180,6 @@ const Header = () => {
                     <div className="flex flex-col gap-2">
                       <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary">
                         Dashboard
-                      </Link>
-                      <Link to="/profile" className="text-sm font-medium text-gray-600 hover:text-primary">
-                        Profile
                       </Link>
                       <Link to="/settings" className="text-sm font-medium text-gray-600 hover:text-primary">
                         Account Settings
