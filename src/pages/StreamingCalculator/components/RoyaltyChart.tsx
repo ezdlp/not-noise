@@ -12,8 +12,8 @@ import {
 } from "recharts";
 
 interface RoyaltyChartProps {
-  streamCount: number;
-  timeframe: "monthly" | "yearly";
+  count: number;
+  calculationType: "streams" | "monthlyListeners";
 }
 
 const PLATFORM_RATES = {
@@ -25,17 +25,26 @@ const PLATFORM_RATES = {
   Deezer: 0.00400
 };
 
-export const RoyaltyChart = ({ streamCount, timeframe }: RoyaltyChartProps) => {
-  const multiplier = timeframe === "yearly" ? 12 : 1;
+const AVERAGE_STREAMS_PER_LISTENER = 3;
+
+export const RoyaltyChart = ({ count, calculationType }: RoyaltyChartProps) => {
+  const calculateEarnings = (rate: number, count: number) => {
+    if (calculationType === "monthlyListeners") {
+      return rate * count * AVERAGE_STREAMS_PER_LISTENER;
+    }
+    return rate * count;
+  };
   
   const data = Object.entries(PLATFORM_RATES).map(([platform, rate]) => ({
     platform,
-    earnings: rate * streamCount * multiplier
+    earnings: calculateEarnings(rate, count)
   }));
 
   return (
-    <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-6">Earnings Comparison</h3>
+    <Card className="p-6 backdrop-blur-sm bg-white/80">
+      <h3 className="text-xl font-semibold mb-6">
+        {calculationType === "streams" ? "Earnings Comparison" : "Monthly Earnings Comparison"}
+      </h3>
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
@@ -57,7 +66,10 @@ export const RoyaltyChart = ({ streamCount, timeframe }: RoyaltyChartProps) => {
                 borderRadius: '8px',
                 padding: '12px'
               }}
-              formatter={(value: number) => [`$${value.toFixed(2)}`, 'Earnings']}
+              formatter={(value: number) => [
+                `$${value.toFixed(2)}${calculationType === "monthlyListeners" ? "/month" : ""}`,
+                'Earnings'
+              ]}
             />
             <Bar 
               dataKey="earnings" 
