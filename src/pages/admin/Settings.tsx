@@ -56,10 +56,10 @@ export default function Settings() {
 
     const formData = new FormData(event.currentTarget);
     const updates = {
-      full_name: formData.get('full_name'),
-      artist_name: formData.get('artist_name'),
-      music_genre: formData.get('music_genre'),
-      country: formData.get('country'),
+      name: String(formData.get('name')),
+      artist_name: String(formData.get('artist_name')),
+      music_genre: String(formData.get('music_genre')),
+      country: String(formData.get('country')),
     };
 
     try {
@@ -110,7 +110,7 @@ export default function Settings() {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: { 
-          priceId: subscription?.plan_id,
+          priceId: subscription?.price_id,
           isSubscription: true
         },
       });
@@ -154,11 +154,11 @@ export default function Settings() {
           <Card className="p-6">
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
+                <Label htmlFor="name">Full Name</Label>
                 <Input 
-                  id="full_name" 
-                  name="full_name"
-                  defaultValue={profile?.full_name || ''}
+                  id="name" 
+                  name="name"
+                  defaultValue={profile?.name || ''}
                   placeholder="Your full name" 
                 />
               </div>
