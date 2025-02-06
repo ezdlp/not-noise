@@ -43,6 +43,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     // Check initial auth state
@@ -157,8 +158,8 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     if (!tier || !selectedTrack) return;
 
     try {
-      setIsLoading(true);
-      const { data: { session_url }, error } = await supabase.functions.invoke('create-checkout-session', {
+      setIsProcessing(true);
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId: tier.priceId,
           promotionData: {
@@ -175,8 +176,12 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
       if (error) throw error;
       
+      if (!data?.session_url) {
+        throw new Error('No checkout URL received');
+      }
+
       // Redirect to Stripe Checkout
-      window.location.href = session_url;
+      window.location.href = data.session_url;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
@@ -184,8 +189,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         description: "There was an error processing your request. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
 
     if (onSubmit) {
@@ -295,7 +299,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                 <CardFooter className="mt-6">
                   <Button 
                     onClick={() => handleSelect(tier)}
-                    disabled={isLoading}
+                    disabled={isProcessing}
                     className={cn(
                       "w-full transition-all duration-300 hover:scale-105",
                       tier.popular ? 
@@ -303,7 +307,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                         "bg-[#0F0F0F] hover:bg-[#0F0F0F]/90 text-white"
                     )}
                   >
-                    {isLoading ? (
+                    {isProcessing ? (
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         <span>Processing...</span>
@@ -349,3 +353,4 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 };
 
 export default PricingPlan;
+

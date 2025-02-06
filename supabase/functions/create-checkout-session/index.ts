@@ -73,8 +73,8 @@ serve(async (req) => {
         },
       ],
       mode: isPromotion ? 'payment' : 'subscription',
-      success_url: `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/dashboard`,
+      success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion`,
     };
 
     // If this is a promotion purchase, add metadata
@@ -99,7 +99,7 @@ serve(async (req) => {
 
     console.log('Payment session created:', session.id);
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ session_url: session.url }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
