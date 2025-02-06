@@ -105,9 +105,9 @@ const SuccessPage = () => {
             <div className="bg-blue-50 p-4 rounded-lg text-left">
               <h3 className="font-semibold text-blue-900 mb-2">Next Steps</h3>
               <ul className="list-disc list-inside text-blue-800 space-y-2 text-sm">
-                <li>Our team will review your track within 24 hours</li>
-                <li>You'll receive an email with your promotion strategy</li>
-                <li>Track your promotion progress in your dashboard</li>
+                <li>Our team will review your track and begin crafting your campaign</li>
+                <li>We will reach out to curators who are most likely to resonate with your music</li>
+                <li>At the end of the campaign, you'll receive a detailed report summarizing curator feedback, key insights, and actionable recommendations</li>
               </ul>
             </div>
             
@@ -129,3 +129,4 @@ const SuccessPage = () => {
 };
 
 export default SuccessPage;
+
