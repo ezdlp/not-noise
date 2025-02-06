@@ -55,11 +55,11 @@ serve(async (req) => {
 
     console.log('Creating payment session...');
 
-    // Check if this is a promotion purchase by checking priceId against known promotion price IDs
+    // Check if this is a promotion by checking priceId against known promotion price IDs
     const isPromotion = [
-      'price_1OyrAkFx6uwYcH3SvTN3cxLH',  // Silver
-      'price_1OyrAkFx6uwYcH3SZkGXVLwO',  // Gold
-      'price_1OyrAkFx6uwYcH3SbMm9VrHe'   // Platinum
+      'price_1QpY93Fx6uwYcH3S2KKJ75G9',  // Silver
+      'price_1QpY9aFx6uwYcH3SpmI0sUNJ',  // Gold
+      'price_1QpYA6Fx6uwYcH3SZsgaVN2q'   // Platinum
     ].includes(priceId);
 
     // Set up session parameters based on payment type
@@ -72,7 +72,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: isPromotion ? 'payment' : 'subscription',
+      mode: 'subscription', // Changed to always use subscription mode since these are subscription prices
       success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion`,
     };
