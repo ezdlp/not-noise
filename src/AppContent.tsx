@@ -14,6 +14,7 @@ import Pricing from "@/pages/Pricing";
 import Blog from "@/pages/Blog";
 import PublicBlogPost from "@/pages/PublicBlogPost";
 import SpotifyPlaylistPromotion from "@/pages/SpotifyPlaylistPromotion";
+import SuccessPage from "@/pages/SpotifyPlaylistPromotion/components/SuccessPage";
 import Help from "@/pages/Help";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import AdminOverview from "@/pages/admin/Overview";
@@ -38,7 +39,9 @@ const AppContent = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/help" element={<Help />} />
-      <Route path="/spotify-playlist-promotion/*" element={<SpotifyPlaylistPromotion />} />
+      <Route path="/spotify-playlist-promotion" element={<SpotifyPlaylistPromotion />}>
+        <Route path="success" element={<SuccessPage />} />
+      </Route>
       <Route path="/:slug" element={<PublicBlogPost />} />
       
       {/* Smart Link public view */}

@@ -8,6 +8,7 @@ import SuccessStories from "./components/SuccessStories";
 import HowItWorks from "./components/HowItWorks";
 import GuaranteedBotFree from "./components/GuaranteedBotFree";
 import FAQ from "./components/FAQ";
+import SuccessPage from "./components/SuccessPage";
 import { useEffect } from "react";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
@@ -57,6 +58,7 @@ const SpotifyPlaylistPromotion: React.FC = () => {
             </div>
           } />
           <Route path="pricing" element={<PricingSection />} />
+          <Route path="success" element={<SuccessPage />} />
         </Routes>
       </main>
     </>
