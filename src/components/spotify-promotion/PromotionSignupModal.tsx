@@ -125,7 +125,7 @@ export const PromotionSignupModal = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-[35%_65%] gap-6 mt-4">
           <div className="space-y-4 order-2 md:order-1">
             <div className="space-y-2">
               <h3 className="font-semibold text-lg">Why create an account?</h3>
