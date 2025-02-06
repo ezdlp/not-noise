@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import SmartLink from "@/pages/SmartLink";
@@ -13,6 +14,7 @@ import Pricing from "@/pages/Pricing";
 import Blog from "@/pages/Blog";
 import PublicBlogPost from "@/pages/PublicBlogPost";
 import SpotifyPlaylistPromotion from "@/pages/SpotifyPlaylistPromotion";
+import PricingSection from "@/pages/SpotifyPlaylistPromotion/components/PricingSection";
 import SuccessPage from "@/pages/SpotifyPlaylistPromotion/components/SuccessPage";
 import Help from "@/pages/Help";
 import StreamingCalculator from "@/pages/StreamingCalculator";
@@ -41,9 +43,14 @@ const AppContent = () => {
       <Route path="/help" element={<Help />} />
       <Route path="/spotify-royalty-calculator" element={<StreamingCalculator />} />
       <Route path="/streaming-royalty-calculator" element={<Navigate to="/spotify-royalty-calculator" replace />} />
-      <Route path="/spotify-playlist-promotion" element={<SpotifyPlaylistPromotion />}>
+      
+      {/* Spotify Playlist Promotion routes */}
+      <Route path="/spotify-playlist-promotion">
+        <Route index element={<SpotifyPlaylistPromotion />} />
+        <Route path="pricing" element={<PricingSection />} />
         <Route path="success" element={<SuccessPage />} />
       </Route>
+      
       <Route path="/:slug" element={<PublicBlogPost />} />
       
       {/* Smart Link public view */}
