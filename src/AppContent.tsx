@@ -1,5 +1,4 @@
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import SmartLink from "@/pages/SmartLink";
 import SmartLinkAnalytics from "@/pages/SmartLinkAnalytics";
@@ -40,7 +39,8 @@ const AppContent = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/help" element={<Help />} />
-      <Route path="/streaming-calculator" element={<StreamingCalculator />} />
+      <Route path="/spotify-royalty-calculator" element={<StreamingCalculator />} />
+      <Route path="/streaming-royalty-calculator" element={<Navigate to="/spotify-royalty-calculator" replace />} />
       <Route path="/spotify-playlist-promotion" element={<SpotifyPlaylistPromotion />}>
         <Route path="success" element={<SuccessPage />} />
       </Route>

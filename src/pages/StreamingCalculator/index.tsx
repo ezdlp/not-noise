@@ -38,45 +38,47 @@ const StreamingCalculator = () => {
       <div className="relative">
         <CalculatorHero />
         
-        <div className="container mx-auto px-4 py-12 space-y-8">
-          <Card className="backdrop-blur-xl bg-white/90 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] p-8">
-            <CalculatorForm 
-              count={count}
-              setCount={setCount}
-              calculationType={calculationType}
-              setCalculationType={setCalculationType}
-            />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-3xl mx-auto space-y-8">
+            <Card className="backdrop-blur-xl bg-white/90 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] p-8">
+              <CalculatorForm 
+                count={count}
+                setCount={setCount}
+                calculationType={calculationType}
+                setCalculationType={setCalculationType}
+              />
 
-            {count > 0 && (
-              <div className="space-y-8 animate-fade-in mt-8">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Your Estimated Earnings</h2>
-                  <Button
-                    variant="outline"
-                    onClick={handleShare}
-                    className="gap-2"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share Results
-                  </Button>
+              {count > 0 && (
+                <div className="space-y-8 animate-fade-in mt-8">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Your Estimated Earnings</h2>
+                    <Button
+                      variant="outline"
+                      onClick={handleShare}
+                      className="gap-2"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share Results
+                    </Button>
+                  </div>
+                  
+                  <PlatformResults 
+                    count={count}
+                    calculationType={calculationType}
+                  />
+                  
+                  <RoyaltyChart 
+                    count={count}
+                    calculationType={calculationType}
+                  />
                 </div>
-                
-                <PlatformResults 
-                  count={count}
-                  calculationType={calculationType}
-                />
-                
-                <RoyaltyChart 
-                  count={count}
-                  calculationType={calculationType}
-                />
-              </div>
-            )}
-          </Card>
-          
-          <p className="text-white/80 text-center text-sm md:text-base max-w-2xl mx-auto">
-            These calculations are estimates based on average rates. Actual earnings may vary as streaming platforms use complex formulas that consider factors like subscription type, geographic location, and total platform revenue rather than a fixed per-stream rate.
-          </p>
+              )}
+            </Card>
+            
+            <p className="text-white/80 text-center text-sm md:text-base max-w-2xl mx-auto">
+              These calculations are estimates based on average rates. Actual earnings may vary as streaming platforms use complex formulas that consider factors like subscription type, geographic location, and total platform revenue rather than a fixed per-stream rate.
+            </p>
+          </div>
         </div>
       </div>
     </div>
