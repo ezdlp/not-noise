@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PricingPlan from "@/components/spotify-promotion/PricingPlan";
@@ -23,18 +24,30 @@ const PricingSection = () => {
   const { selectedTrack } = (location.state as LocationState) || {};
 
   useEffect(() => {
-    if (!selectedTrack) {
-      console.log('No track selected, redirecting back');
-      navigate('..');
+    if (!selectedTrack?.title || !selectedTrack?.artist) {
+      toast({
+        title: "No track selected",
+        description: "Please select a track first",
+        variant: "destructive",
+      });
+      navigate('..', { replace: true });
     }
-  }, [selectedTrack, navigate]);
+  }, [selectedTrack, navigate, toast]);
 
   const handlePromotionSubmit = (submissions: number, totalCost: number) => {
     console.log('Proceeding to checkout:', { submissions, totalCost });
   };
 
-  if (!selectedTrack) {
-    return null;
+  // Show loading state while checking track data
+  if (!selectedTrack?.title || !selectedTrack?.artist) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-500">Redirecting to track selection...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

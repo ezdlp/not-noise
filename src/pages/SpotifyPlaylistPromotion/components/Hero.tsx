@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users, Search, ArrowDown } from "lucide-react";
@@ -68,7 +67,10 @@ const Hero: React.FC = () => {
           selectedTrack: {
             title: selectedTrack.title,
             artist: selectedTrack.artist,
-            artworkUrl: selectedTrack.artworkUrl
+            id: selectedTrack.spotifyId,        // Added required field
+            artistId: selectedTrack.spotifyId,   // Added required field
+            artworkUrl: selectedTrack.artworkUrl,
+            genre: undefined  // Optional field
           }
         }
       });
@@ -225,4 +227,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-
