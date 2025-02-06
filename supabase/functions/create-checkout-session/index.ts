@@ -57,9 +57,9 @@ serve(async (req) => {
 
     // Check if this is a promotion purchase by checking priceId against known promotion price IDs
     const isPromotion = [
-      'price_1QpCdhFx6uwYcH3SqX5B02x3',  // Silver
-      'price_1QpCecFx6uwYcH3S7TqiqXmo',  // Gold
-      'price_1QpCf7Fx6uwYcH3SClLj92Pf'   // Platinum
+      'price_1OyrAkFx6uwYcH3SvTN3cxLH',  // Silver
+      'price_1OyrAkFx6uwYcH3SZkGXVLwO',  // Gold
+      'price_1OyrAkFx6uwYcH3SbMm9VrHe'   // Platinum
     ].includes(priceId);
 
     // Set up session parameters based on payment type
