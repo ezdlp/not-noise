@@ -47,20 +47,22 @@ serve(async (req) => {
     }
 
     // Get the request body
-    const { priceId, promotionData } = await req.json();
+    const { priceId, promotionData, isSubscription } = await req.json();
     
     if (!priceId) {
       throw new Error('No price ID provided');
     }
 
-    console.log('Creating payment session...');
+    console.log('Creating payment session...', { priceId, isSubscription });
 
     // Check if this is a promotion by checking priceId against known promotion price IDs
-    const isPromotion = [
+    const promotionPriceIds = [
       'price_1QpCdhFx6uwYcH3SqX5B02x3',  // Silver
       'price_1QpCecFx6uwYcH3S7TqiqXmo',  // Gold
       'price_1QpCf7Fx6uwYcH3SClLj92Pf'   // Platinum
-    ].includes(priceId);
+    ];
+
+    const isPromotion = promotionPriceIds.includes(priceId);
 
     // Set up session parameters based on payment type
     const sessionParams = {
@@ -72,7 +74,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: isPromotion ? 'payment' : 'subscription',  // Use subscription mode for subscriptions
+      mode: isSubscription ? 'subscription' : 'payment',
       success_url: isPromotion 
         ? `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`
         : `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
@@ -103,7 +105,7 @@ serve(async (req) => {
 
     console.log('Payment session created:', session.id);
     return new Response(
-      JSON.stringify({ session_url: session.url }),
+      JSON.stringify({ url: session.url }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -120,4 +122,3 @@ serve(async (req) => {
     );
   }
 });
-

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,21 +39,40 @@ export default function Pricing() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        toast.error("Please login to upgrade your plan");
         navigate("/login");
         return;
       }
 
+      toast.loading("Preparing checkout...");
+      
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId },
+        body: { 
+          priceId,
+          isSubscription: true // Add this flag to differentiate from promotion products
+        },
       });
 
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
+      if (error) {
+        console.error('Checkout error:', error);
+        toast.dismiss();
+        toast.error("Failed to start checkout process. Please try again.");
+        return;
       }
+
+      if (!data?.url) {
+        console.error('No checkout URL received:', data);
+        toast.dismiss();
+        toast.error("Unable to create checkout session. Please try again.");
+        return;
+      }
+
+      toast.dismiss();
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Failed to start checkout process");
+      toast.dismiss();
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -80,6 +100,14 @@ export default function Pricing() {
     }
 
     // For Pro plan
+    if (isCurrentPlan) {
+      return (
+        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+          Current Plan
+        </div>
+      );
+    }
+
     return (
       <Button 
         className="w-full bg-primary hover:bg-primary/90"
