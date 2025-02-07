@@ -61,7 +61,7 @@ export default function SmartLinks() {
         .from("smart_links")
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             name,
             email
           ),
