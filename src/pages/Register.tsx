@@ -81,6 +81,24 @@ export default function Register() {
     }
   };
 
+  const createProfile = async (userId: string, profileData: {
+    id: string;
+    name: string;
+    artist_name: string;
+    music_genre: string;
+    country: string;
+    email: string;
+  }) => {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert([profileData]);
+
+    if (profileError) {
+      console.error("Error creating profile:", profileError);
+      throw profileError;
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -96,13 +114,6 @@ export default function Register() {
     setError(null);
 
     try {
-      console.log("Signing up with metadata:", {
-        name: formData.name,
-        artist_name: formData.artist_name,
-        music_genre: formData.music_genre,
-        country: formData.country,
-      });
-      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -139,11 +150,30 @@ export default function Register() {
       }
 
       if (authData.user) {
-        console.log("Registration successful:", authData.user);
-        toast({
-          title: "Registration successful!",
-          description: "Your account has been created. You can now start using the app.",
-        });
+        try {
+          await createProfile(authData.user.id, {
+            id: authData.user.id,
+            name: formData.name,
+            artist_name: formData.artist_name,
+            music_genre: formData.music_genre,
+            country: formData.country,
+            email: formData.email
+          });
+          
+          console.log("Registration successful:", authData.user);
+          toast({
+            title: "Registration successful!",
+            description: "Your account has been created. You can now start using the app.",
+          });
+        } catch (profileError) {
+          console.error("Profile creation error:", profileError);
+          // Even if profile creation fails, the user is already created
+          toast({
+            title: "Partial registration complete",
+            description: "Your account was created but there was an issue setting up your profile. Please contact support.",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -373,4 +403,3 @@ export default function Register() {
     </div>
   );
 }
-
