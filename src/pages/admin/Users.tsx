@@ -23,10 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface UserRole {
-  role: 'admin' | 'user';
-}
-
 interface Profile {
   id: string;
   name: string;
@@ -36,11 +32,6 @@ interface Profile {
   email?: string;
   user_roles: UserRole[];
   smart_links: SmartLink[];
-}
-
-interface SmartLink {
-  id: string;
-  title: string;
 }
 
 export default function Users() {
@@ -78,7 +69,7 @@ export default function Users() {
             user_roles (
               role
             ),
-            user_smart_links:smart_links (
+            smart_links (
               id,
               title
             )
