@@ -201,17 +201,13 @@ export default function AccountSettings() {
   const handleManageSubscription = async () => {
     setLoading(true);
     try {
-      // const { data, error } = await supabase.functions.invoke('create-portal-link', {
-      //   body: { return_url: `${window.location.origin}/account` },
-      // });
-
-      // if (error) throw error;
-      // window.location.assign(data.url);
-      toast({
-        title: "Not implemented",
-        description: "This feature is not implemented yet.",
+      const { data, error } = await supabase.functions.invoke('create-portal-link', {
+        body: { return_url: `${window.location.origin}/account` },
       });
-    } catch (error) {
+
+      if (error) throw error;
+      window.location.assign(data.url);
+    } catch (error: any) {
       toast({
         title: "Something went wrong",
         description: error.message,
