@@ -38,10 +38,23 @@ serve(async (req) => {
       throw new Error('No subscription found')
     }
 
-    // Create Stripe portal session
+    // Create Stripe portal session with configuration
     const { url } = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
       return_url: `${req.headers.get('origin')}/account`,
+      configuration: {
+        features: {
+          subscription_cancel: { enabled: true },
+          subscription_pause: { enabled: true },
+          payment_method_update: { enabled: true },
+          billing_address_update: { enabled: true },
+          subscription_update: { enabled: true },
+          invoice_history: { enabled: true }
+        },
+        business_info: {
+          headline: "Manage your subscription"
+        }
+      }
     })
 
     return new Response(
