@@ -41,18 +41,7 @@ serve(async (req) => {
     // Create Stripe portal session with configuration matching enabled features
     const { url } = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${req.headers.get('origin')}/account`,
-      configuration: {
-        features: {
-          subscription_cancel: { enabled: true },
-          payment_method_update: { enabled: true },
-          billing_address_update: { enabled: true },
-          invoice_history: { enabled: true }
-        },
-        business_info: {
-          headline: "Manage your subscription"
-        }
-      }
+      return_url: `${req.headers.get('origin')}/account`
     })
 
     return new Response(
