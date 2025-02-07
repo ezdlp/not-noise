@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,11 +45,37 @@ export default function Register() {
     hasNumber: false,
   });
 
+  const SUBSCRIPTION_PRICE_IDS = {
+    pro: {
+      yearly: 'price_1QpCdhFx6uwYcH3SqX5B02x3'
+    }
+  };
+
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
         if (selectedPlan === 'pro') {
-          handleSubscribe('price_1QmuqgFx6uwYcH3SlOR5WTXM'); // yearly plan ID
+          try {
+            const { data, error: subscribeError } = await supabase.functions.invoke('create-checkout-session', {
+              body: { 
+                priceId: SUBSCRIPTION_PRICE_IDS.pro.yearly,
+                isSubscription: true
+              }
+            });
+            
+            if (subscribeError) throw subscribeError;
+            if (data?.url) {
+              window.location.href = data.url;
+            }
+          } catch (error) {
+            console.error('Subscription error:', error);
+            toast({
+              title: "Subscription Setup Failed",
+              description: "You've been registered but there was an issue setting up your subscription. Please try upgrading from your dashboard.",
+              variant: "destructive",
+            });
+            navigate("/dashboard");
+          }
         } else {
           navigate("/dashboard");
         }
@@ -60,7 +85,7 @@ export default function Register() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, selectedPlan]);
+  }, [navigate, selectedPlan, toast]);
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -85,26 +110,6 @@ export default function Register() {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (name === "password") {
       checkPasswordRequirements(value);
-    }
-  };
-
-  const handleSubscribe = async (priceId: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start checkout process",
-        variant: "destructive",
-      });
     }
   };
 
@@ -142,18 +147,20 @@ export default function Register() {
           switch (authError.status) {
             case 400:
               setError("Invalid email format or password requirements not met");
-              return;
+              break;
             case 422:
               setError("Invalid email format. Please enter a valid email address.");
-              return;
+              break;
             case 500:
               setError("There was an issue creating your account. Please try again later.");
-              return;
+              break;
             default:
               setError(authError.message);
           }
+        } else {
+          throw authError;
         }
-        throw authError;
+        return;
       }
 
       if (authData.user) {
