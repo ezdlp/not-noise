@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -67,9 +68,9 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/soundraiser-logo/Logo A low.png" 
+            src="/lovable-uploads/56b25c3e-b9f6-40fe-a8db-39be68cb0cdb.png" 
             alt="Soundraiser" 
-            className="h-6 md:h-8"
+            className="h-7 md:h-9"
           />
         </Link>
 
