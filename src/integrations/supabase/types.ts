@@ -884,6 +884,7 @@ export type Database = {
           payment_status: string | null
           price_id: string | null
           status: string | null
+          stripe_checkout_id: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
@@ -903,6 +904,7 @@ export type Database = {
           payment_status?: string | null
           price_id?: string | null
           status?: string | null
+          stripe_checkout_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -922,6 +924,7 @@ export type Database = {
           payment_status?: string | null
           price_id?: string | null
           status?: string | null
+          stripe_checkout_id?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
