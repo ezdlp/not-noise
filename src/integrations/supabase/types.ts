@@ -281,15 +281,7 @@ export type Database = {
           updated_at?: string | null
           visibility?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "blog_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       blog_posts_tags: {
         Row: {
@@ -792,15 +784,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "smart_links_profile_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       social_media_assets: {
         Row: {
@@ -952,15 +936,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_profile_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
