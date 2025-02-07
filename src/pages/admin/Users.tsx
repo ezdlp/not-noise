@@ -77,6 +77,7 @@ export default function Users() {
           .select(`
             *,
             user_roles (
+              id,
               role
             ),
             smart_links (
