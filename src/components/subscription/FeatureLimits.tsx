@@ -27,16 +27,17 @@ export function FeatureLimits() {
 
       if (featuresError) throw featuresError;
 
-      const { data: usage, error: usageError } = await supabase
-        .from("feature_usage")
-        .select("*")
+      // Get actual smart links count
+      const { count: smartLinksCount, error: countError } = await supabase
+        .from("smart_links")
+        .select("*", { count: 'exact', head: true })
         .eq("user_id", user.id);
 
-      if (usageError) throw usageError;
+      if (countError) throw countError;
 
       return {
         features,
-        usage: usage || [],
+        smartLinksCount: smartLinksCount || 0,
         tier: subscription.tier
       };
     },
@@ -48,10 +49,7 @@ export function FeatureLimits() {
     (f) => f.feature_name === "smart_links"
   )?.feature_limit || 0;
 
-  const smartLinksUsed = featureUsage.usage.find(
-    (u) => u.feature_name === "smart_links"
-  )?.usage_count || 0;
-
+  const smartLinksUsed = featureUsage.smartLinksCount;
   const isPro = featureUsage.tier === 'pro';
   const isUnlimited = smartLinksLimit === -1;
 
