@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
@@ -61,24 +62,24 @@ export default function SmartLinks() {
         .from("smart_links")
         .select(`
           *,
-          profiles (
+          profiles!user_id(
             name,
             email
           ),
-          platform_links (
+          platform_links(
             id,
             platform_id,
             url,
-            platform_clicks (
+            platform_clicks(
               id,
               clicked_at
             )
           ),
-          link_views (
+          link_views(
             id,
             viewed_at
           ),
-          email_subscribers (
+          email_subscribers(
             id
           )
         `)
