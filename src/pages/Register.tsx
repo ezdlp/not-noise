@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,17 @@ import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
 
+declare global {
+  interface Window {
+    grecaptcha: {
+      ready: (callback: () => void) => void;
+      render: (container: string | HTMLElement, options: any) => number;
+      reset: (widgetId: number) => void;
+      execute: (widgetId: number) => Promise<string>;
+    };
+  }
+}
+
 export default function Register() {
   const [formData, setFormData] = useState({
     email: "",
@@ -37,12 +49,38 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
     hasLowercase: false,
     hasNumber: false,
   });
+
+  useEffect(() => {
+    // Load reCAPTCHA script
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=explicit`;
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      window.grecaptcha.ready(() => {
+        const widgetId = window.grecaptcha.render('recaptcha-container', {
+          sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+          size: 'normal',
+          callback: (token: string) => {
+            console.log('reCAPTCHA verified');
+          }
+        });
+        setRecaptchaWidgetId(widgetId);
+      });
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     if (!registrationComplete) {
@@ -84,6 +122,26 @@ export default function Register() {
     }
   };
 
+  const verifyRecaptcha = async () => {
+    try {
+      if (!recaptchaWidgetId) {
+        throw new Error('reCAPTCHA not initialized');
+      }
+
+      const token = await window.grecaptcha.execute(recaptchaWidgetId);
+      
+      const { error } = await supabase.functions.invoke('verify-recaptcha', {
+        body: { token }
+      });
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('reCAPTCHA verification failed:', error);
+      return false;
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -99,6 +157,12 @@ export default function Register() {
     setError(null);
 
     try {
+      // Verify reCAPTCHA first
+      const isHuman = await verifyRecaptcha();
+      if (!isHuman) {
+        throw new Error('Please complete the reCAPTCHA verification');
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -153,6 +217,9 @@ export default function Register() {
       }
     } finally {
       setLoading(false);
+      if (recaptchaWidgetId) {
+        window.grecaptcha.reset(recaptchaWidgetId);
+      }
     }
   };
 
@@ -430,6 +497,8 @@ export default function Register() {
               </button>
             </div>
           </div>
+
+          <div id="recaptcha-container" className="flex justify-center"></div>
 
           <Button
             type="submit"
