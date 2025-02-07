@@ -63,8 +63,7 @@ const DEFAULT_FIELD_MAPPING = {
   links: "custom_links_count",
 };
 
-// Optimized batch settings for disabled email confirmation
-const BATCH_SIZE = 10; // Increased batch size since email confirmation is disabled
+const BATCH_SIZE = 10;
 const MAX_RETRIES = 3;
 const INITIAL_RATE_LIMIT_DELAY = 2000;
 
@@ -102,7 +101,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    // Only validate email as it's the only truly required field for auth
     const email = user[fieldMapping.email];
     if (!email) {
       errors.push(`Row ${rowIndex}: Email is required (column: ${fieldMapping.email})`);
@@ -110,7 +108,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       errors.push(`Row ${rowIndex}: Invalid email format (${email})`);
     }
 
-    // Add warnings for empty fields
     if (!user[fieldMapping.name]?.trim()) {
       warnings.push(`Row ${rowIndex}: Name is empty (column: ${fieldMapping.name}), will use "-"`);
     }
@@ -174,8 +171,8 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             options: {
               data: {
                 name: user[fieldMapping.name]?.trim() || "-",
-                artistName: user[fieldMapping.artistName]?.trim() || "-",
-                musicGenre: user[fieldMapping.genre]?.trim() || "Unknown",
+                artist_name: user[fieldMapping.artistName]?.trim() || "-",
+                music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
                 country: user[fieldMapping.country]?.trim() || "-",
                 email_confirm: true,
               },
@@ -195,7 +192,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               continue;
             }
 
-            // Handle user already exists error
             if (authError.message.includes('user_already_exists')) {
               stats.warnings.push({
                 row: index + 1,
@@ -218,7 +214,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
             if (roleError) throw roleError;
 
-            // Update React Query cache with the new user
             queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
 
             const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
@@ -232,7 +227,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
         if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
           console.error(`Error importing user ${email}:`, error);
           
-          // Check if error is due to user already existing
           if (error instanceof Error && error.message.includes('user_already_exists')) {
             stats.warnings.push({
               row: index + 1,
@@ -292,12 +286,10 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
 
     const processedEmails = new Set<string>();
 
-    // Process users in batches
     for (let i = 0; i < users.length; i += BATCH_SIZE) {
       const batch = users.slice(i, i + BATCH_SIZE);
       await processBatch(batch, i, stats, processedEmails);
       
-      // Update React Query cache after each batch
       if (!isDryRun) {
         queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
       }
@@ -319,7 +311,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           const headers = results.meta.fields || [];
           setCsvHeaders(headers);
           
-          // Auto-map fields based on default mapping
           const mapping: Partial<FieldMapping> = {};
           headers.forEach(header => {
             const headerLower = header.toLowerCase();
@@ -367,7 +358,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               );
             }
 
-            // Log summary
             console.log("\nImport Summary:");
             console.log(`Total rows processed: ${stats.total}`);
             console.log(`Successfully imported: ${stats.success}`);
