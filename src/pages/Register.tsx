@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,18 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Check, Crown, Eye, EyeOff, X } from "lucide-react";
+import { Mail, Lock, User, Music, Check, Eye, EyeOff, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type BillingPeriod = 'monthly' | 'yearly';
-type Plan = 'free' | 'pro';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -36,8 +32,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState<Plan>('free');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('yearly');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -49,48 +43,17 @@ export default function Register() {
     hasNumber: false,
   });
 
-  const SUBSCRIPTION_PRICE_IDS = {
-    pro: {
-      monthly: 'price_1QmuqgFx6uwYcH3S7OiAn1Y7',
-      yearly: 'price_1QmuqgFx6uwYcH3SlOR5WTXM'
-    }
-  };
-
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        if (selectedPlan === 'pro') {
-          try {
-            const { data, error: subscribeError } = await supabase.functions.invoke('create-checkout-session', {
-              body: { 
-                priceId: SUBSCRIPTION_PRICE_IDS.pro[billingPeriod],
-                isSubscription: true
-              }
-            });
-            
-            if (subscribeError) throw subscribeError;
-            if (data?.url) {
-              window.location.href = data.url;
-            }
-          } catch (error) {
-            console.error('Subscription error:', error);
-            toast({
-              title: "Subscription Setup Failed",
-              description: "You've been registered but there was an issue setting up your subscription. Please try upgrading from your dashboard.",
-              variant: "destructive",
-            });
-            navigate("/dashboard");
-          }
-        } else {
-          navigate("/dashboard");
-        }
+        navigate("/dashboard");
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, selectedPlan, billingPeriod, toast]);
+  }, [navigate]);
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -179,9 +142,7 @@ export default function Register() {
         console.log("Registration successful:", authData.user);
         toast({
           title: "Registration successful!",
-          description: selectedPlan === 'pro' 
-            ? "Your account has been created. Redirecting to payment..."
-            : "Your account has been created. You can now start using the app.",
+          description: "Your account has been created. You can now start using the app.",
         });
       }
     } catch (error) {
@@ -389,91 +350,12 @@ export default function Register() {
             </div>
           </div>
 
-          <Card className="p-4 bg-muted/50">
-            <div className="space-y-3">
-              <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as Plan)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="free" className="text-sm">
-                    Free Plan
-                  </TabsTrigger>
-                  <TabsTrigger value="pro" className="text-sm">
-                    Pro Plan
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <div className="space-y-2">
-                {selectedPlan === 'free' ? (
-                  <>
-                    <h3 className="text-sm font-medium text-muted-foreground">Free Plan Features</h3>
-                    {[
-                      "Create up to 10 smart links",
-                      "Basic analytics (Views, Clicks, CTR)",
-                      "Basic streaming platforms",
-                      "Custom URL slugs",
-                      "Meta Pixel integration",
-                    ].map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 text-primary" />
-                      <h3 className="text-sm font-medium text-primary">Pro Plan Features</h3>
-                    </div>
-                    <div className="flex justify-center space-x-4 mb-4">
-                      <Button
-                        type="button"
-                        variant={billingPeriod === 'monthly' ? "default" : "outline"}
-                        onClick={() => setBillingPeriod('monthly')}
-                        className="w-full"
-                      >
-                        Monthly
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={billingPeriod === 'yearly' ? "default" : "outline"}
-                        onClick={() => setBillingPeriod('yearly')}
-                        className="w-full"
-                      >
-                        Yearly (Save 17%)
-                      </Button>
-                    </div>
-                    {[
-                      "Unlimited smart links",
-                      "Advanced analytics with platform-specific data",
-                      "All streaming platforms + reordering",
-                      "Fan email collection",
-                      "Remove Soundraiser branding",
-                      "Priority support",
-                      "Bulk analytics export",
-                      "Smart link social media cards",
-                      "Early access to new features",
-                    ].map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                    <p className="text-xs text-primary mt-2">
-                      {billingPeriod === 'monthly' ? '$5/month' : '$4.16/mo billed annually'}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </Card>
-
           <Button
             type="submit"
             className="w-full"
             disabled={loading}
           >
-            {loading ? "Creating account..." : selectedPlan === 'pro' ? "Create account & Continue to payment" : "Create account"}
+            {loading ? "Creating account..." : "Create account"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
@@ -491,3 +373,4 @@ export default function Register() {
     </div>
   );
 }
+
