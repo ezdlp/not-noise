@@ -16,7 +16,8 @@ import {
   EditIcon, 
   TrashIcon,
   DownloadIcon,
-  SearchIcon
+  SearchIcon,
+  Link2 as Link2Icon
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -30,52 +31,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-interface LinkView {
-  id: string;
-  viewed_at: string | null;
-}
-
-interface PlatformClick {
-  id: string;
-  clicked_at: string | null;
-}
-
-interface PlatformLink {
-  id: string;
-  platform_id: string;
-  url: string;
-  platform_clicks: PlatformClick[];
-}
-
-interface Profile {
-  name: string | null;
-  email: string | null;
-}
-
-interface SmartLink {
-  id: string;
-  title: string;
-  artist_name: string;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    name: string;
-    email: string | null;
-  } | null;
-  link_views?: LinkView[];
-  platform_links?: PlatformLink[];
-  email_subscribers?: { id: string }[];
-}
+import type { SmartLink } from "@/types/database";
+import { SmartLinkCard } from "@/components/dashboard/SmartLinkCard";
 
 export default function SmartLinks() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<string>("newest");
   const queryClient = useQueryClient();
 
   const { data: smartLinks, isLoading } = useQuery({
@@ -137,23 +112,29 @@ export default function SmartLinks() {
     },
   });
 
-  const sortedLinks = [...smartLinks].sort((a, b) => {
+  const sortedLinks = smartLinks ? [...smartLinks].sort((a, b) => {
     switch (sortBy) {
       case "most-views":
         return (b.link_views?.length || 0) - (a.link_views?.length || 0);
-      case "most-clicks":
-        return (b.platform_clicks?.length || 0) - (a.platform_clicks?.length || 0);
+      case "most-clicks": {
+        const getClickCount = (link: SmartLink) => 
+          link.platform_links?.reduce((sum, pl) => sum + (pl.platform_clicks?.length || 0), 0) || 0;
+        return getClickCount(b) - getClickCount(a);
+      }
       case "highest-ctr": {
-        const ctrA = a.link_views?.length ? (a.platform_clicks?.length || 0) / a.link_views.length : 0;
-        const ctrB = b.link_views?.length ? (b.platform_clicks?.length || 0) / b.link_views.length : 0;
-        return ctrB - ctrA;
+        const getCTR = (link: SmartLink) => {
+          const views = link.link_views?.length || 0;
+          const clicks = link.platform_links?.reduce((sum, pl) => sum + (pl.platform_clicks?.length || 0), 0) || 0;
+          return views ? clicks / views : 0;
+        };
+        return getCTR(b) - getCTR(a);
       }
       case "oldest":
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       default: // "newest"
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
-  });
+  }) : [];
 
   if (isLoading) {
     return (
@@ -165,7 +146,7 @@ export default function SmartLinks() {
     );
   }
 
-  if (smartLinks.length === 0) {
+  if (!smartLinks?.length) {
     return (
       <div className="text-center py-12 space-y-4">
         <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -212,7 +193,7 @@ export default function SmartLinks() {
           <SmartLinkCard
             key={link.id}
             link={link}
-            onDelete={(id) => deleteMutation.mutate(id)}
+            onDelete={(id) => deleteMutation.mutate([id])}
           />
         ))}
       </div>

@@ -34,6 +34,16 @@ interface Profile {
   smart_links: SmartLink[];
 }
 
+interface UserRole {
+  id: string;
+  role: 'admin' | 'user';
+}
+
+interface SmartLink {
+  id: string;
+  title: string;
+}
+
 export default function Users() {
   const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);

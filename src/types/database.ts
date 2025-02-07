@@ -17,6 +17,45 @@ export interface UserRole {
 export interface SmartLink {
   id: string;
   title: string;
+  artist_name: string;
+  artwork_url?: string;
+  created_at: string;
+  user_id: string;
+  profiles?: {
+    name: string;
+    email: string | null;
+  } | null;
+  link_views?: LinkView[];
+  platform_links?: PlatformLink[];
+  email_subscribers?: EmailSubscriber[];
+  meta_pixel_id?: string;
+  meta_view_event?: string;
+  meta_click_event?: string;
+  email_capture_enabled?: boolean;
+  email_capture_title?: string;
+  email_capture_description?: string;
+  slug?: string;
+}
+
+export interface LinkView {
+  id: string;
+  viewed_at: string | null;
+}
+
+export interface PlatformLink {
+  id: string;
+  platform_id: string;
+  url: string;
+  platform_clicks: PlatformClick[];
+}
+
+export interface PlatformClick {
+  id: string;
+  clicked_at: string | null;
+}
+
+export interface EmailSubscriber {
+  id: string;
 }
 
 export interface BlogPost {
