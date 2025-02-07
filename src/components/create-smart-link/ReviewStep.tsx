@@ -1,8 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { PostgrestError } from "@supabase/supabase-js";
 
 interface ReviewStepProps {
   data: any;
@@ -44,7 +46,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           })
           .eq('id', data.id);
 
-        if (smartLinkError) throw smartLinkError;
+        if (smartLinkError) {
+          handleError(smartLinkError);
+          return;
+        }
 
         // Delete existing platform links
         const { error: deleteError } = await supabase
@@ -52,7 +57,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           .delete()
           .eq('smart_link_id', data.id);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          handleError(deleteError);
+          return;
+        }
 
         // Insert new platform links
         const platformLinksToInsert = data.platforms
@@ -68,7 +76,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           .from("platform_links")
           .insert(platformLinksToInsert);
 
-        if (platformLinksError) throw platformLinksError;
+        if (platformLinksError) {
+          handleError(platformLinksError);
+          return;
+        }
 
         toast.success("Smart link updated successfully!");
       } else {
@@ -92,7 +103,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           .select()
           .single();
 
-        if (smartLinkError) throw smartLinkError;
+        if (smartLinkError) {
+          handleError(smartLinkError);
+          return;
+        }
 
         // Insert platform links
         const platformLinksToInsert = data.platforms
@@ -108,7 +122,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           .from("platform_links")
           .insert(platformLinksToInsert);
 
-        if (platformLinksError) throw platformLinksError;
+        if (platformLinksError) {
+          handleError(platformLinksError);
+          return;
+        }
 
         toast.success("Smart link created successfully!");
       }
@@ -116,6 +133,19 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
       navigate("/dashboard");
     } catch (error) {
       console.error("Error saving smart link:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const handleError = (error: PostgrestError) => {
+    console.error("Database error:", error);
+    
+    // Handle specific error cases
+    if (error.code === '42501') { // Policy violation
+      toast.error("You've reached your smart links limit. Please upgrade your plan to create more links.");
+    } else if (error.code === '23505') { // Unique constraint violation
+      toast.error("A smart link with this slug already exists. Please choose a different one.");
+    } else {
       toast.error("Failed to save smart link. Please try again.");
     }
   };
@@ -200,3 +230,4 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
 };
 
 export default ReviewStep;
+

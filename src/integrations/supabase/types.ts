@@ -1147,6 +1147,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_smart_link_limit: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       get_analytics_stats: {
         Args: {
           p_start_date: string
