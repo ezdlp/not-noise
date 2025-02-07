@@ -20,6 +20,9 @@ import { genres } from "@/lib/genres";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+type BillingPeriod = 'monthly' | 'yearly';
+type Plan = 'free' | 'pro';
+
 export default function Register() {
   const [formData, setFormData] = useState({
     email: "",
@@ -33,7 +36,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
+  const [selectedPlan, setSelectedPlan] = useState<Plan>('free');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('yearly');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +51,8 @@ export default function Register() {
 
   const SUBSCRIPTION_PRICE_IDS = {
     pro: {
-      yearly: 'price_1QpCdhFx6uwYcH3SqX5B02x3'
+      monthly: 'price_1QmuqgFx6uwYcH3S7OiAn1Y7',
+      yearly: 'price_1QmuqgFx6uwYcH3SlOR5WTXM'
     }
   };
 
@@ -58,7 +63,7 @@ export default function Register() {
           try {
             const { data, error: subscribeError } = await supabase.functions.invoke('create-checkout-session', {
               body: { 
-                priceId: SUBSCRIPTION_PRICE_IDS.pro.yearly,
+                priceId: SUBSCRIPTION_PRICE_IDS.pro[billingPeriod],
                 isSubscription: true
               }
             });
@@ -85,7 +90,7 @@ export default function Register() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, selectedPlan, toast]);
+  }, [navigate, selectedPlan, billingPeriod, toast]);
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -378,7 +383,7 @@ export default function Register() {
 
           <Card className="p-4 bg-muted/50">
             <div className="space-y-3">
-              <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as 'free' | 'pro')} className="w-full">
+              <Tabs defaultValue="free" onValueChange={(value) => setSelectedPlan(value as Plan)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="free" className="text-sm">
                     Free Plan
@@ -412,6 +417,24 @@ export default function Register() {
                       <Crown className="h-4 w-4 text-primary" />
                       <h3 className="text-sm font-medium text-primary">Pro Plan Features</h3>
                     </div>
+                    <div className="flex justify-center space-x-4 mb-4">
+                      <Button
+                        type="button"
+                        variant={billingPeriod === 'monthly' ? "default" : "outline"}
+                        onClick={() => setBillingPeriod('monthly')}
+                        className="w-full"
+                      >
+                        Monthly
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={billingPeriod === 'yearly' ? "default" : "outline"}
+                        onClick={() => setBillingPeriod('yearly')}
+                        className="w-full"
+                      >
+                        Yearly (Save 17%)
+                      </Button>
+                    </div>
                     {[
                       "Unlimited smart links",
                       "Advanced analytics with platform-specific data",
@@ -429,7 +452,7 @@ export default function Register() {
                       </div>
                     ))}
                     <p className="text-xs text-primary mt-2">
-                      $4.16/mo billed annually (Save 17%)
+                      {billingPeriod === 'monthly' ? '$5/month' : '$4.16/mo billed annually'}
                     </p>
                   </>
                 )}
