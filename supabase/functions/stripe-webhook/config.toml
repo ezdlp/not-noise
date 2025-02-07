@@ -3,3 +3,4 @@ project_id = "owtufhdsuuyrgmxytclj"
 
 [functions.stripe-webhook]
 verify_jwt = false
+
