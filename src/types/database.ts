@@ -14,7 +14,7 @@ export interface Profile {
 }
 
 export interface UserRole {
-  id: string;
+  id?: string; // Made optional to match the actual data structure
   role: 'admin' | 'user';
 }
 
