@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, User, CreditCard } from "lucide-react";
@@ -15,6 +14,7 @@ import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
@@ -179,6 +179,47 @@ export default function AccountSettings() {
       navigate("/");
     }
     setLoading(false);
+  };
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+    try {
+      // const { data, error } = await supabase.functions.invoke('create-portal-link', {
+      //   body: { return_url: `${window.location.origin}/account` },
+      // });
+
+      // if (error) throw error;
+      // window.location.assign(data.url);
+      toast({
+        title: "Not implemented",
+        description: "This feature is not implemented yet.",
+      });
+    } catch (error) {
+      toast({
+        title: "Something went wrong",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -391,7 +432,7 @@ export default function AccountSettings() {
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-6">
-          <Card>
+          <Card className="p-6">
             <CardHeader>
               <CardTitle>Subscription & Billing</CardTitle>
               <CardDescription>Manage your subscription and payment details</CardDescription>
@@ -400,18 +441,43 @@ export default function AccountSettings() {
               <div className="rounded-lg border p-4">
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Current Plan</h4>
-                  <p className="text-2xl font-bold">Free Plan</p>
-                  <p className="text-sm text-muted-foreground">
-                    Upgrade to Pro to unlock all features and create unlimited smart links
+                  <p className="text-2xl font-bold">
+                    {subscription?.tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
                   </p>
+                  {subscription?.tier === 'pro' ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        {subscription.billing_period === 'monthly' ? 'Monthly' : 'Annual'} billing
+                      </p>
+                      {subscription.current_period_end && (
+                        <p className="text-sm text-muted-foreground">
+                          Next billing date: {new Date(subscription.current_period_end).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Upgrade to Pro to unlock all features and create unlimited smart links
+                    </p>
+                  )}
                 </div>
               </div>
-              <Button 
-                className="w-full md:w-auto"
-                onClick={() => navigate("/pricing")}
-              >
-                Upgrade to Pro
-              </Button>
+              {subscription?.tier === 'pro' ? (
+                <Button 
+                  className="w-full md:w-auto"
+                  onClick={handleManageSubscription}
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Manage Subscription"}
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full md:w-auto"
+                  onClick={() => navigate("/pricing")}
+                >
+                  Upgrade to Pro
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
