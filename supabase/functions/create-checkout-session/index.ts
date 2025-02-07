@@ -53,7 +53,12 @@ serve(async (req) => {
       throw new Error('No price ID provided');
     }
 
-    console.log('Creating payment session...', { priceId, isSubscription });
+    console.log('Creating payment session...', { 
+      priceId, 
+      isSubscription,
+      userId: user.id,
+      email 
+    });
 
     // Check if this is a promotion by checking priceId against known promotion price IDs
     const promotionPriceIds = [
@@ -64,7 +69,7 @@ serve(async (req) => {
 
     const isPromotion = promotionPriceIds.includes(priceId);
 
-    // Set up session parameters based on payment type
+    // Set up base session parameters
     const sessionParams = {
       customer: customer_id,
       customer_email: customer_id ? undefined : email,
@@ -81,29 +86,39 @@ serve(async (req) => {
       cancel_url: isPromotion 
         ? `${req.headers.get('origin')}/spotify-playlist-promotion`
         : `${req.headers.get('origin')}/pricing`,
+      metadata: {
+        userId: user.id,
+        type: isSubscription ? 'subscription' : 'promotion'
+      },
+      expand: ['subscription']
     };
 
-    // If this is a promotion purchase, add metadata
+    // If this is a promotion purchase, add promotion metadata
     if (isPromotion && promotionData) {
       const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre } = promotionData;
       
-      // Add metadata to the session
+      // Add promotion specific metadata
       sessionParams.metadata = {
-        type: 'promotion',
+        ...sessionParams.metadata,
         trackName,
         trackArtist,
         spotifyTrackId,
         spotifyArtistId,
         submissionCount: submissionCount.toString(),
         estimatedAdditions: estimatedAdditions.toString(),
-        genre,
-        userId: user.id
+        genre
       };
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log('Payment session created:', session.id);
+    console.log('Payment session created:', {
+      sessionId: session.id,
+      customerId: session.customer,
+      subscriptionId: session.subscription?.id,
+      metadata: session.metadata
+    });
+
     return new Response(
       JSON.stringify({ url: session.url }),
       { 

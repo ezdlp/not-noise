@@ -26,23 +26,37 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function updateSubscription(event: any) {
   const session = event.data.object;
-  const userId = session.metadata?.userId;
-  const subscriptionId = session.subscription;
-  const customerId = session.customer;
+  console.log('Processing checkout session:', {
+    id: session.id,
+    metadata: session.metadata,
+    customerEmail: session.customer_email,
+    customerId: session.customer
+  });
 
+  const userId = session.metadata?.userId;
   if (!userId) {
-    console.error('No user ID in session metadata');
+    console.error('No user ID in session metadata:', {
+      sessionId: session.id,
+      metadata: session.metadata
+    });
     return;
   }
 
+  const subscriptionId = session.subscription;
+  const customerId = session.customer;
+  
   console.log(`Processing subscription update for user ${userId}`);
-  console.log('Session data:', JSON.stringify(session, null, 2));
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
   const currentPeriodStart = new Date(subscription.current_period_start * 1000);
   
-  console.log('Subscription data:', JSON.stringify(subscription, null, 2));
+  console.log('Subscription data:', {
+    id: subscription.id,
+    status: subscription.status,
+    currentPeriodStart: currentPeriodStart.toISOString(),
+    currentPeriodEnd: currentPeriodEnd.toISOString()
+  });
 
   const { error } = await supabase
     .from('subscriptions')
@@ -50,6 +64,7 @@ async function updateSubscription(event: any) {
       user_id: userId,
       stripe_subscription_id: subscriptionId,
       stripe_customer_id: customerId,
+      stripe_checkout_id: session.id,
       tier: 'pro',
       status: subscription.status,
       payment_status: 'paid',
@@ -72,7 +87,10 @@ async function updateSubscription(event: any) {
 
 async function handleSubscriptionDeleted(event: any) {
   const subscription = event.data.object;
-  console.log('Processing subscription deletion:', JSON.stringify(subscription, null, 2));
+  console.log('Processing subscription deletion:', {
+    id: subscription.id,
+    status: subscription.status
+  });
 
   const { error } = await supabase
     .from('subscriptions')
@@ -175,7 +193,6 @@ serve(async (req) => {
         webhookSecretLength: webhookSecret.length
       });
 
-      // Use constructEventAsync instead of constructEvent
       event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
