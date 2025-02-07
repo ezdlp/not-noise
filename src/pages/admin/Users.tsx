@@ -78,7 +78,7 @@ export default function Users() {
             user_roles (
               role
             ),
-            smart_links (
+            user_smart_links:smart_links (
               id,
               title
             )
@@ -96,11 +96,6 @@ export default function Users() {
           throw profilesError;
         }
 
-        if (!profiles) {
-          return [];
-        }
-
-        console.log("Fetched profiles:", profiles.length);
         return profiles as Profile[];
       } catch (error) {
         console.error("Error in query function:", error);

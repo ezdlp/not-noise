@@ -62,7 +62,7 @@ interface SmartLink {
   title: string;
   artist_name: string;
   created_at: string;
-  profiles?: Profile;
+  user?: Profile;
   link_views?: LinkView[];
   platform_links?: PlatformLink[];
   email_subscribers?: { id: string }[];
@@ -82,7 +82,7 @@ export default function SmartLinks() {
         .from("smart_links")
         .select(`
           *,
-          profiles (
+          user:user_id (
             name,
             email
           ),
@@ -142,7 +142,7 @@ export default function SmartLinks() {
     (link) =>
       link.title.toLowerCase().includes(search.toLowerCase()) ||
       link.artist_name.toLowerCase().includes(search.toLowerCase()) ||
-      link.profiles?.name?.toLowerCase().includes(search.toLowerCase())
+      link.user?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSelectAll = () => {
@@ -217,7 +217,7 @@ export default function SmartLinks() {
       return [
         link.title,
         link.artist_name,
-        link.profiles?.name || "Unknown",
+        link.user?.name || "Unknown",
         new Date(link.created_at).toLocaleDateString(),
         views,
         clicks,
@@ -361,9 +361,9 @@ export default function SmartLinks() {
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div>{link.profiles?.name || "Unknown"}</div>
+                    <div>{link.user?.name || "Unknown"}</div>
                     <div className="text-sm text-muted-foreground">
-                      {link.profiles?.email}
+                      {link.user?.email}
                     </div>
                   </div>
                 </TableCell>
