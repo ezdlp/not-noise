@@ -6,6 +6,7 @@ export interface Profile {
   country: string;
   email?: string;
   user_roles: { 
+    id: string;
     role: 'admin' | 'user';
   }[];
   smart_links?: SmartLink[];
