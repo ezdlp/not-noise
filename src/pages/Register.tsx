@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Lock, User, Music, Check, Eye, EyeOff, X } from "lucide-react";
+import { Mail, Lock, User, Music, Check, Eye, EyeOff, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +36,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -45,7 +45,6 @@ export default function Register() {
   });
 
   useEffect(() => {
-    // Only set up the auth listener if registration is not complete
     if (!registrationComplete) {
       const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user && event === 'SIGNED_IN') {
@@ -157,6 +156,36 @@ export default function Register() {
     }
   };
 
+  const handleResendEmail = async () => {
+    setResendingEmail(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+      });
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email sent!",
+        description: "A new confirmation email has been sent to your inbox.",
+        duration: 4000,
+      });
+    } catch (error) {
+      console.error("Error resending email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to resend confirmation email. Please try again.",
+        variant: "destructive",
+        duration: 4000,
+      });
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   if (registrationComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
@@ -170,15 +199,32 @@ export default function Register() {
               We've sent you an email with a confirmation link. Please check your inbox and click the link to activate your account.
             </p>
             <p className="text-sm text-gray-500 mb-4">
-              Don't see the email? Check your spam folder or try again in a few minutes.
+              Don't see the email? Check your spam folder or click below to resend it.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => navigate("/login")}
-            >
-              Go to Login
-            </Button>
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleResendEmail}
+                disabled={resendingEmail}
+              >
+                {resendingEmail ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Resend confirmation email'
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/login")}
+              >
+                Go to Login
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -409,4 +455,3 @@ export default function Register() {
     </div>
   );
 }
-
