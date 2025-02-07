@@ -8,6 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Initialize Stripe with debug logging
+console.log('Initializing Stripe webhook handler');
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
 });
@@ -16,6 +18,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
   throw new Error('Missing Supabase environment variables');
 }
 
@@ -89,22 +92,34 @@ async function handleSubscriptionDeleted(event: any) {
 }
 
 serve(async (req) => {
+  // Debug log the request method and headers
+  console.log('Webhook request received:', {
+    method: req.method,
+    headers: Object.fromEntries(req.headers.entries()),
+  });
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Received webhook request');
+    console.log('Processing webhook request');
     
-    // Get the stripe signature from headers
+    // Get and validate stripe signature
     const signature = req.headers.get('stripe-signature');
+    console.log('Stripe signature header:', signature);
+
     if (!signature) {
       console.error('Missing stripe-signature header');
       return new Response(
         JSON.stringify({ 
           error: 'Missing stripe signature', 
-          code: 'missing_signature' 
+          code: 'missing_signature',
+          debug: {
+            headers: Object.fromEntries(req.headers.entries())
+          }
         }), 
         { 
           status: 400,
@@ -113,16 +128,22 @@ serve(async (req) => {
       );
     }
 
-    console.log('Received stripe-signature:', signature);
-
-    // Get the webhook secret
+    // Get and validate webhook secret
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    console.log('Webhook secret available:', !!webhookSecret);
+
     if (!webhookSecret) {
       console.error('Missing Stripe webhook secret in environment');
       return new Response(
         JSON.stringify({ 
           error: 'Configuration error', 
-          code: 'missing_webhook_secret'
+          code: 'missing_webhook_secret',
+          debug: {
+            envVars: {
+              webhookSecret: !!webhookSecret,
+              stripeKey: !!Deno.env.get('STRIPE_SECRET_KEY'),
+            }
+          }
         }), 
         { 
           status: 500,
@@ -131,29 +152,56 @@ serve(async (req) => {
       );
     }
 
-    // Get the raw body
+    // Get raw body and log partial content for debugging
     const body = await req.text();
-    console.log('Received webhook body (first 100 chars):', body.substring(0, 100));
+    console.log('Raw webhook body preview:', {
+      length: body.length,
+      preview: body.substring(0, 100),
+      isValidJson: (() => {
+        try {
+          JSON.parse(body);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })()
+    });
 
     let event;
     try {
+      console.log('Attempting to construct Stripe event with:', {
+        bodyLength: body.length,
+        signatureLength: signature.length,
+        webhookSecretLength: webhookSecret.length
+      });
+
       event = stripe.webhooks.constructEvent(
         body,
         signature,
         webhookSecret
       );
-      console.log('Successfully constructed event:', event.type);
+      
+      console.log('Successfully constructed event:', {
+        type: event.type,
+        id: event.id
+      });
     } catch (err) {
       console.error('Webhook signature verification failed:', {
         error: err.message,
         signature,
-        bodyPreview: body.substring(0, 100)
+        bodyPreview: body.substring(0, 100),
+        stack: err.stack
       });
       return new Response(
         JSON.stringify({ 
           error: 'Invalid signature', 
           code: 'invalid_signature',
-          details: err.message
+          details: err.message,
+          debug: {
+            signatureHeader: signature,
+            errorMessage: err.message,
+            stack: err.stack
+          }
         }), 
         { 
           status: 400,
@@ -162,7 +210,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing webhook event: ${event.type}`);
+    console.log('Processing webhook event:', {
+      type: event.type,
+      id: event.id
+    });
 
     try {
       switch (event.type) {
@@ -175,17 +226,37 @@ serve(async (req) => {
         default:
           console.log(`Unhandled event type: ${event.type}`);
       }
+
+      return new Response(
+        JSON.stringify({ 
+          received: true,
+          event: {
+            type: event.type,
+            id: event.id
+          }
+        }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
     } catch (err) {
       console.error('Error processing webhook event:', {
         eventType: event.type,
         error: err.message,
-        stack: err.stack
+        stack: err.stack,
+        event: JSON.stringify(event, null, 2)
       });
       return new Response(
         JSON.stringify({ 
           error: 'Event processing failed', 
           code: 'processing_error',
-          details: err.message
+          details: err.message,
+          debug: {
+            eventType: event.type,
+            error: err.message,
+            stack: err.stack
+          }
         }), 
         { 
           status: 500,
@@ -193,24 +264,22 @@ serve(async (req) => {
         }
       );
     }
-
-    return new Response(
-      JSON.stringify({ received: true }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
   } catch (error) {
     console.error('Unexpected error processing webhook:', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      type: error.constructor.name
     });
     return new Response(
       JSON.stringify({ 
         error: 'Unexpected error', 
         code: 'internal_error',
-        details: error.message 
+        details: error.message,
+        debug: {
+          error: error.message,
+          stack: error.stack,
+          type: error.constructor.name
+        }
       }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
