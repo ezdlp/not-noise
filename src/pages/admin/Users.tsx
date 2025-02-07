@@ -22,27 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Profile {
-  id: string;
-  name: string;
-  artist_name: string;
-  music_genre: string;
-  country: string;
-  email?: string;
-  user_roles: UserRole[];
-  smart_links: SmartLink[];
-}
-
-interface UserRole {
-  id: string;
-  role: 'admin' | 'user';
-}
-
-interface SmartLink {
-  id: string;
-  title: string;
-}
+import { Profile } from "@/types/database";
 
 export default function Users() {
   const navigate = useNavigate();
@@ -98,7 +78,13 @@ export default function Users() {
           throw profilesError;
         }
 
-        return profiles as Profile[];
+        // Transform the data to ensure smart_links is always an array
+        const transformedProfiles = profiles?.map(profile => ({
+          ...profile,
+          smart_links: Array.isArray(profile.smart_links) ? profile.smart_links : []
+        })) as Profile[];
+
+        return transformedProfiles;
       } catch (error) {
         console.error("Error in query function:", error);
         toast.error("Failed to load users");
