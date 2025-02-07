@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
+
+interface Profile {
+  name: string | null;
+  email: string | null;
+}
+
+interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  profiles?: Profile;
+  // ... other fields
+}
 
 const PublicBlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -272,4 +285,3 @@ const PublicBlogPost = () => {
 };
 
 export default PublicBlogPost;
-

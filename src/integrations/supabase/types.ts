@@ -281,6 +281,98 @@ export type Database = {
           updated_at?: string | null
           visibility?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_posts_backup: {
+        Row: {
+          allow_comments: boolean | null
+          author_id: string | null
+          author_name: string | null
+          content: string | null
+          cover_image: string | null
+          created_at: string | null
+          excerpt: string | null
+          featured_image: string | null
+          focus_keyword: string | null
+          format: string | null
+          id: string | null
+          is_featured: boolean | null
+          is_sticky: boolean | null
+          meta_description: string | null
+          meta_keywords: string | null
+          password: string | null
+          published_at: string | null
+          reading_time: number | null
+          scheduled_for: string | null
+          seo_title: string | null
+          slug: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          allow_comments?: boolean | null
+          author_id?: string | null
+          author_name?: string | null
+          content?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          focus_keyword?: string | null
+          format?: string | null
+          id?: string | null
+          is_featured?: boolean | null
+          is_sticky?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          password?: string | null
+          published_at?: string | null
+          reading_time?: number | null
+          scheduled_for?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          allow_comments?: boolean | null
+          author_id?: string | null
+          author_name?: string | null
+          content?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          focus_keyword?: string | null
+          format?: string | null
+          id?: string | null
+          is_featured?: boolean | null
+          is_sticky?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          password?: string | null
+          published_at?: string | null
+          reading_time?: number | null
+          scheduled_for?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
         Relationships: []
       }
       blog_posts_tags: {
@@ -786,6 +878,60 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_links_backup: {
+        Row: {
+          artist_name: string | null
+          artwork_url: string | null
+          created_at: string | null
+          email_capture_description: string | null
+          email_capture_enabled: boolean | null
+          email_capture_title: string | null
+          id: string | null
+          meta_click_event: string | null
+          meta_pixel_id: string | null
+          meta_view_event: string | null
+          release_date: string | null
+          slug: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          artist_name?: string | null
+          artwork_url?: string | null
+          created_at?: string | null
+          email_capture_description?: string | null
+          email_capture_enabled?: boolean | null
+          email_capture_title?: string | null
+          id?: string | null
+          meta_click_event?: string | null
+          meta_pixel_id?: string | null
+          meta_view_event?: string | null
+          release_date?: string | null
+          slug?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          artist_name?: string | null
+          artwork_url?: string | null
+          created_at?: string | null
+          email_capture_description?: string | null
+          email_capture_enabled?: boolean | null
+          email_capture_title?: string | null
+          id?: string | null
+          meta_click_event?: string | null
+          meta_pixel_id?: string | null
+          meta_view_event?: string | null
+          release_date?: string | null
+          slug?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       social_media_assets: {
         Row: {
           created_at: string | null
@@ -933,6 +1079,35 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles_backup: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           user_id?: string | null
         }

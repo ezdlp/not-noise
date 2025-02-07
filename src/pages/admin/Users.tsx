@@ -33,12 +33,14 @@ interface Profile {
   artist_name: string;
   music_genre: string;
   country: string;
-  user_roles: UserRole[];
-  smart_links: {
-    id: string;
-    title: string;
-  }[];
   email?: string;
+  user_roles: UserRole[];
+  smart_links: SmartLink[];
+}
+
+interface SmartLink {
+  id: string;
+  title: string;
 }
 
 export default function Users() {

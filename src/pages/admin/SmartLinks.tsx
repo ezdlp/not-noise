@@ -52,15 +52,17 @@ interface PlatformLink {
   platform_clicks: PlatformClick[];
 }
 
+interface Profile {
+  name: string | null;
+  email: string | null;
+}
+
 interface SmartLink {
   id: string;
   title: string;
   artist_name: string;
   created_at: string;
-  profiles?: {
-    name: string | null;
-    email: string | null;
-  };
+  profiles?: Profile;
   link_views?: LinkView[];
   platform_links?: PlatformLink[];
   email_subscribers?: { id: string }[];
