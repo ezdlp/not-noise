@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   name: string;
@@ -6,7 +7,7 @@ export interface Profile {
   country: string;
   email?: string;
   user_roles: { 
-    id: string;
+    id?: string;  // Made optional since it's not always returned
     role: 'admin' | 'user';
   }[];
   smart_links?: SmartLink[];
@@ -25,8 +26,8 @@ export interface SmartLink {
   created_at: string;
   user_id: string;
   profiles?: {
-    name: string;
-    email: string | null;
+    name?: string;  // Made optional
+    email?: string; // Made optional
   } | null;
   link_views?: LinkView[];
   platform_links?: PlatformLink[];
