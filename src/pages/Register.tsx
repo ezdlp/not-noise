@@ -36,6 +36,7 @@ export default function Register() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -44,16 +45,19 @@ export default function Register() {
   });
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        navigate("/dashboard");
-      }
-    });
+    // Only set up the auth listener if registration is not complete
+    if (!registrationComplete) {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user && event === 'SIGNED_IN') {
+          navigate("/dashboard");
+        }
+      });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate]);
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    }
+  }, [navigate, registrationComplete]);
 
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
@@ -78,24 +82,6 @@ export default function Register() {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (name === "password") {
       checkPasswordRequirements(value);
-    }
-  };
-
-  const createProfile = async (userId: string, profileData: {
-    id: string;
-    name: string;
-    artist_name: string;
-    music_genre: string;
-    country: string;
-    email: string;
-  }) => {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([profileData]);
-
-    if (profileError) {
-      console.error("Error creating profile:", profileError);
-      throw profileError;
     }
   };
 
@@ -150,30 +136,12 @@ export default function Register() {
       }
 
       if (authData.user) {
-        try {
-          await createProfile(authData.user.id, {
-            id: authData.user.id,
-            name: formData.name,
-            artist_name: formData.artist_name,
-            music_genre: formData.music_genre,
-            country: formData.country,
-            email: formData.email
-          });
-          
-          console.log("Registration successful:", authData.user);
-          toast({
-            title: "Registration successful!",
-            description: "Your account has been created. You can now start using the app.",
-          });
-        } catch (profileError) {
-          console.error("Profile creation error:", profileError);
-          // Even if profile creation fails, the user is already created
-          toast({
-            title: "Partial registration complete",
-            description: "Your account was created but there was an issue setting up your profile. Please contact support.",
-            variant: "destructive"
-          });
-        }
+        setRegistrationComplete(true);
+        toast({
+          title: "Registration successful!",
+          description: "Please check your email to confirm your account.",
+          duration: 6000,
+        });
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -188,6 +156,34 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="bg-green-50 p-8 rounded-lg">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <Check className="h-6 w-6 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Check your email</h2>
+            <p className="text-gray-600 mb-4">
+              We've sent you an email with a confirmation link. Please check your inbox and click the link to activate your account.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Don't see the email? Check your spam folder or try again in a few minutes.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => navigate("/login")}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
@@ -228,6 +224,7 @@ export default function Register() {
                 onChange={handleInputChange}
                 className="pl-10"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -241,6 +238,7 @@ export default function Register() {
                 onChange={handleInputChange}
                 className="pl-10"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -251,6 +249,7 @@ export default function Register() {
                 handleInputChange({ target: { name: "music_genre", value } })
               }
               required
+              disabled={loading}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Music Genre" />
@@ -271,6 +270,7 @@ export default function Register() {
                 handleInputChange({ target: { name: "country", value } })
               }
               required
+              disabled={loading}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Country" />
@@ -294,6 +294,7 @@ export default function Register() {
                 onChange={handleInputChange}
                 className="pl-10"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -308,11 +309,13 @@ export default function Register() {
                   onChange={handleInputChange}
                   className="pl-10 pr-10"
                   required
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                  disabled={loading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -365,11 +368,13 @@ export default function Register() {
                 onChange={handleInputChange}
                 className="pl-10 pr-10"
                 required
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                disabled={loading}
               >
                 {showConfirmPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -394,6 +399,7 @@ export default function Register() {
               variant="link"
               className="p-0 h-auto font-normal"
               onClick={() => navigate("/login")}
+              disabled={loading}
             >
               Sign in here
             </Button>
@@ -403,3 +409,4 @@ export default function Register() {
     </div>
   );
 }
+
