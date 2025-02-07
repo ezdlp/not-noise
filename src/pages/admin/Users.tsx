@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,10 @@ export default function Users() {
             ),
             smart_links (
               id,
-              title
+              title,
+              artist_name,
+              created_at,
+              user_id
             )
           `)
           .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
