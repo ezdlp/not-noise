@@ -5,7 +5,9 @@ export interface Profile {
   music_genre: string;
   country: string;
   email?: string;
-  user_roles: { role: 'admin' | 'user' }[];
+  user_roles: { 
+    role: 'admin' | 'user';
+  }[];
   smart_links?: SmartLink[];
 }
 
