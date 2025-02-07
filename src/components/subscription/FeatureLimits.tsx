@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
-import { Link2, CheckCircle2, Music2, ChevronDown } from "lucide-react";
+import { Link2, CheckCircle2, Music2, ChevronDown, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
