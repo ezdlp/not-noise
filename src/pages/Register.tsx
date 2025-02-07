@@ -133,6 +133,13 @@ export default function Register() {
     setError(null);
 
     try {
+      console.log("Signing up with metadata:", {
+        name: formData.name,
+        artist_name: formData.artist_name,
+        music_genre: formData.music_genre,
+        country: formData.country,
+      });
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -142,12 +149,12 @@ export default function Register() {
             artist_name: formData.artist_name,
             music_genre: formData.music_genre,
             country: formData.country,
-            email_confirm: true
           }
         }
       });
 
       if (authError) {
+        console.error("Auth error:", authError);
         if (authError instanceof AuthApiError) {
           switch (authError.status) {
             case 400:
@@ -169,6 +176,7 @@ export default function Register() {
       }
 
       if (authData.user) {
+        console.log("Registration successful:", authData.user);
         toast({
           title: "Registration successful!",
           description: selectedPlan === 'pro' 
