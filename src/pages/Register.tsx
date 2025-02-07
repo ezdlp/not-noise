@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -128,8 +129,8 @@ export default function Register() {
         options: {
           data: {
             name: formData.name,
-            artistName: formData.artist_name,
-            musicGenre: formData.music_genre,
+            artist_name: formData.artist_name,
+            music_genre: formData.music_genre,
             country: formData.country,
             email_confirm: true
           }
