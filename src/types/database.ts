@@ -6,7 +6,7 @@ export interface Profile {
   country: string;
   email?: string;
   user_roles: UserRole[];
-  user_smart_links?: SmartLink[];
+  smart_links?: SmartLink[];
 }
 
 export interface UserRole {

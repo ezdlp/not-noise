@@ -86,7 +86,7 @@ export default function SmartLinks() {
         .from("smart_links")
         .select(`
           *,
-          profiles!smart_links_user_id_fkey (
+          profiles:user_id (
             name,
             email
           ),
@@ -129,328 +129,93 @@ export default function SmartLinks() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSmartLinks"] });
-      toast.success(
-        selectedLinks.size > 1 
-          ? "Smart links deleted successfully" 
-          : "Smart link deleted successfully"
-      );
-      setSelectedLinks(new Set());
+      toast.success("Smart link deleted successfully");
     },
     onError: (error) => {
-      console.error("Error deleting smart links:", error);
-      toast.error("Failed to delete smart links");
+      console.error("Error deleting smart link:", error);
+      toast.error("Failed to delete smart link");
     },
   });
 
-  const filteredLinks = smartLinks?.filter(
-    (link) =>
-      link.title.toLowerCase().includes(search.toLowerCase()) ||
-      link.artist_name.toLowerCase().includes(search.toLowerCase()) ||
-      link.profiles?.name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleSelectAll = () => {
-    if (selectedLinks.size === filteredLinks?.length) {
-      setSelectedLinks(new Set());
-    } else {
-      setSelectedLinks(new Set(filteredLinks?.map(link => link.id)));
+  const sortedLinks = [...smartLinks].sort((a, b) => {
+    switch (sortBy) {
+      case "most-views":
+        return (b.link_views?.length || 0) - (a.link_views?.length || 0);
+      case "most-clicks":
+        return (b.platform_clicks?.length || 0) - (a.platform_clicks?.length || 0);
+      case "highest-ctr": {
+        const ctrA = a.link_views?.length ? (a.platform_clicks?.length || 0) / a.link_views.length : 0;
+        const ctrB = b.link_views?.length ? (b.platform_clicks?.length || 0) / b.link_views.length : 0;
+        return ctrB - ctrA;
+      }
+      case "oldest":
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      default: // "newest"
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
-  };
-
-  const handleSelectLink = (id: string) => {
-    const newSelected = new Set(selectedLinks);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedLinks(newSelected);
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedLinks.size === 0) return;
-    deleteMutation.mutate(Array.from(selectedLinks));
-  };
-
-  const exportToCSV = () => {
-    if (!smartLinks) return;
-
-    const headers = [
-      "Title",
-      "Artist",
-      "Creator",
-      "Created Date",
-      "Views",
-      "Clicks",
-      "CTR",
-      "Subscribers",
-      "Last Activity",
-      "Platform Links"
-    ];
-
-    const csvData = filteredLinks.map((link) => {
-      const views = link.link_views?.length || 0;
-      const clicks = link.platform_links?.reduce(
-        (total, pl) => total + (pl.platform_clicks?.length || 0),
-        0
-      ) || 0;
-      const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-      
-      const allActivities = [
-        ...(link.link_views || []).map((view) => ({ 
-          date: view.viewed_at,
-          type: 'view' 
-        })),
-        ...(link.platform_links || []).flatMap(pl => 
-          (pl.platform_clicks || []).map(click => ({ 
-            date: click.clicked_at,
-            type: 'click' 
-          }))
-        )
-      ].filter(activity => activity.date !== null);
-      
-      const lastActivity = allActivities.length > 0 
-        ? new Date(allActivities.reduce((latest, current) => {
-            const currentDate = new Date(current.date || '');
-            return currentDate > latest ? currentDate : latest;
-          }, new Date(0)))
-        : null;
-
-      const platformLinks = link.platform_links?.map(pl => pl.platform_id).join(", ") || "None";
-
-      return [
-        link.title,
-        link.artist_name,
-        link.profiles?.name || "Unknown",
-        new Date(link.created_at).toLocaleDateString(),
-        views,
-        clicks,
-        `${ctr}%`,
-        link.email_subscribers?.length || 0,
-        lastActivity ? formatDistanceToNow(lastActivity, { addSuffix: true }) : "Never",
-        platformLinks
-      ];
-    });
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers, ...csvData].map((row) => row.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "smart-links.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  });
 
   if (isLoading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+
+  if (smartLinks.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
+        <div>
+          <p className="text-xl font-semibold">No smart links yet</p>
+          <p className="text-muted-foreground">Create your first smart link to start sharing your music</p>
+        </div>
+        <Button
+          variant="default"
+          onClick={() => navigate("/create")}
+          className="mt-4"
+        >
+          Create your first smart link
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Smart Links</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by title, artist or creator..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 w-[300px]"
-            />
-          </div>
-          {selectedLinks.size > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  Delete Selected ({selectedLinks.size})
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Smart Links</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete {selectedLinks.size} smart link{selectedLinks.size > 1 ? 's' : ''}? 
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleBulkDelete}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <Button onClick={exportToCSV} variant="outline">
-            <DownloadIcon className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Link2Icon className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-semibold">Your Smart Links</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="most-views">Most Views</SelectItem>
+              <SelectItem value="most-clicks">Most Clicks</SelectItem>
+              <SelectItem value="highest-ctr">Highest CTR</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[30px]">
-              <Checkbox 
-                checked={selectedLinks.size === filteredLinks?.length && filteredLinks.length > 0}
-                onCheckedChange={handleSelectAll}
-              />
-            </TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Creator</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Views</TableHead>
-            <TableHead>Clicks</TableHead>
-            <TableHead>CTR</TableHead>
-            <TableHead>Subscribers</TableHead>
-            <TableHead>Platforms</TableHead>
-            <TableHead>Last Activity</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredLinks?.map((link) => {
-            const views = link.link_views?.length || 0;
-            const clicks = link.platform_links?.reduce(
-              (total, pl) => total + (pl.platform_clicks?.length || 0),
-              0
-            ) || 0;
-            const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
-            
-            const allActivities = [
-              ...(link.link_views || []).map((view) => ({ 
-                date: view.viewed_at,
-                type: 'view' 
-              })),
-              ...(link.platform_links || []).flatMap(pl => 
-                (pl.platform_clicks || []).map(click => ({ 
-                  date: click.clicked_at,
-                  type: 'click' 
-                }))
-              )
-            ].filter(activity => activity.date !== null);
-            
-            const lastActivity = allActivities.length > 0 
-              ? new Date(allActivities.reduce((latest, current) => {
-                  const currentDate = new Date(current.date || '');
-                  return currentDate > latest ? currentDate : latest;
-                }, new Date(0)))
-              : null;
-
-            return (
-              <TableRow key={link.id}>
-                <TableCell>
-                  <Checkbox 
-                    checked={selectedLinks.has(link.id)}
-                    onCheckedChange={() => handleSelectLink(link.id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{link.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {link.artist_name}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div>{link.profiles?.name || "Unknown"}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {link.profiles?.email}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {formatDistanceToNow(new Date(link.created_at), {
-                    addSuffix: true,
-                  })}
-                </TableCell>
-                <TableCell>{views}</TableCell>
-                <TableCell>{clicks}</TableCell>
-                <TableCell>{ctr}%</TableCell>
-                <TableCell>{link.email_subscribers?.length || 0}</TableCell>
-                <TableCell>
-                  <div className="text-sm">
-                    {link.platform_links && link.platform_links.length > 0 
-                      ? link.platform_links.map(pl => pl.platform_id).join(", ")
-                      : "None"}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {lastActivity
-                    ? formatDistanceToNow(lastActivity, { addSuffix: true })
-                    : "Never"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(`/link/${link.id}`, "_blank")}
-                    >
-                      <ExternalLinkIcon className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/admin/smart-links/${link.id}/analytics`)}
-                    >
-                      <BarChart2Icon className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/links/${link.id}/edit`)}
-                    >
-                      <EditIcon className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-600"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Smart Link</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{link.title}"? This action
-                            cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate([link.id])}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sortedLinks.map((link) => (
+          <SmartLinkCard
+            key={link.id}
+            link={link}
+            onDelete={(id) => deleteMutation.mutate(id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
