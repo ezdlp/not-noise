@@ -24,7 +24,7 @@ export interface SmartLink {
   profiles?: {
     name: string;
     email: string | null;
-  };
+  } | null;
   link_views?: LinkView[];
   platform_links?: PlatformLink[];
   email_subscribers?: EmailSubscriber[];
