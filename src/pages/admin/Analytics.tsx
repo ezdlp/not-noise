@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -73,16 +74,16 @@ function Analytics() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Analytics</h1>
+        <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="p-4">
-              <div className="h-20 animate-pulse bg-gray-100 rounded" />
+              <div className="h-20 animate-pulse bg-neutral-seasalt rounded" />
             </Card>
           ))}
         </div>
         <Card className="p-4">
-          <div className="h-[400px] animate-pulse bg-gray-100 rounded" />
+          <div className="h-[400px] animate-pulse bg-neutral-seasalt rounded" />
         </Card>
       </div>
     );
@@ -97,65 +98,92 @@ function Analytics() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Analytics</h1>
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
+        <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4">
+        <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Page Views</h3>
-          <p className="text-2xl font-bold">{latestStats.page_views}</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.page_views}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Unique Visitors</h3>
-          <p className="text-2xl font-bold">{latestStats.unique_visitors}</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.unique_visitors}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Registered Users</h3>
-          <p className="text-2xl font-bold">{latestStats.registered_users}</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.registered_users}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Active Users</h3>
-          <p className="text-2xl font-bold">{latestStats.active_users}</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.active_users}</p>
         </Card>
       </div>
 
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">30 Day Trends</h2>
+      <Card className="p-6 border-none bg-card/50 shadow-none">
+        <h2 className="text-lg font-semibold mb-4 text-neutral-night">30 Day Trends</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={stats}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="#E6E6E6"
+                opacity={0.4}
+              />
+              <XAxis 
+                dataKey="day" 
+                stroke="#666666"
+                fontSize={12}
+                tickLine={false}
+              />
+              <YAxis 
+                stroke="#666666"
+                fontSize={12}
+                tickLine={false}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #E6E6E6',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.05)'
+                }}
+              />
               <Area
                 type="monotone"
                 dataKey="page_views"
                 stackId="1"
-                stroke="#8884d8"
-                fill="#8884d8"
+                stroke="#6851FB"
+                fill="#6851FB"
+                fillOpacity={0.3}
                 name="Page Views"
               />
               <Area
                 type="monotone"
                 dataKey="unique_visitors"
                 stackId="2"
-                stroke="#82ca9d"
-                fill="#82ca9d"
+                stroke="#37D299"
+                fill="#37D299"
+                fillOpacity={0.3}
                 name="Unique Visitors"
               />
               <Area
                 type="monotone"
                 dataKey="registered_users"
                 stackId="3"
-                stroke="#ffc658"
-                fill="#ffc658"
+                stroke="#FE28A2"
+                fill="#FE28A2"
+                fillOpacity={0.3}
                 name="Registered Users"
               />
               <Area
                 type="monotone"
                 dataKey="active_users"
                 stackId="4"
-                stroke="#ff8042"
-                fill="#ff8042"
+                stroke="#F97316"
+                fill="#F97316"
+                fillOpacity={0.3}
                 name="Active Users"
               />
             </AreaChart>
