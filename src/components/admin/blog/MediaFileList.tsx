@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -248,13 +249,13 @@ export function MediaFileList({
                   <>
                     {showInsertButton && (
                       <Button
-                        variant="default"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelect(publicUrl);
                         }}
-                        className="flex items-center gap-1.5 whitespace-nowrap bg-primary hover:bg-primary/90"
+                        className="h-9 w-9 bg-[#6851FB] hover:bg-[#4A47A5] text-white rounded-lg"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -263,8 +264,8 @@ export function MediaFileList({
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
-                          variant="secondary"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingMetadata({
@@ -274,7 +275,7 @@ export function MediaFileList({
                               filename: file.filename,
                             });
                           }}
-                          className="flex items-center gap-1.5 whitespace-nowrap"
+                          className="h-9 w-9 bg-[#FE28A2] hover:bg-[#E31B8D] text-white rounded-lg"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -314,25 +315,25 @@ export function MediaFileList({
                     </Dialog>
 
                     <Button
-                      variant="secondary"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         copyToClipboard(publicUrl);
                       }}
-                      className="flex items-center gap-1.5 whitespace-nowrap"
+                      className="h-9 w-9 bg-[#FE28A2] hover:bg-[#E31B8D] text-white rounded-lg"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
 
                     <Button
-                      variant="destructive"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(file.id, file.file_path);
                       }}
-                      className="flex items-center gap-1.5"
+                      className="h-9 w-9 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-lg"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
