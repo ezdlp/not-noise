@@ -9,7 +9,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { AdminSidebar } from "./AdminSidebar";
 
 export function AdminLayout() {
-  const [defaultSize, setDefaultSize] = useLocalStorage("admin-sidebar-size", 15);
+  const [defaultSize, setDefaultSize] = useLocalStorage("admin-sidebar-size", 12);
 
   return (
     <div className="min-h-screen flex w-full">
@@ -33,4 +33,3 @@ export function AdminLayout() {
     </div>
   );
 }
-
