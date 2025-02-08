@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,18 +57,20 @@ export function MediaLibraryHeader({
         
         <div className="flex items-center gap-2">
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
             size="icon"
             onClick={() => onViewModeChange('grid')}
+            className="h-9 w-9"
           >
-            <Grid className="h-4 w-4" />
+            <Grid className="h-4 w-4 text-muted-foreground" />
           </Button>
           <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
             size="icon"
             onClick={() => onViewModeChange('list')}
+            className="h-9 w-9"
           >
-            <List className="h-4 w-4" />
+            <List className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
 
@@ -83,8 +86,9 @@ export function MediaLibraryHeader({
           <Button
             variant="outline"
             onClick={() => document.getElementById('file-upload')?.click()}
+            className="gap-2"
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4" />
             Upload
           </Button>
 
@@ -94,8 +98,9 @@ export function MediaLibraryHeader({
                 variant="destructive"
                 onClick={onBulkDelete}
                 disabled={selectedFiles.size === 0}
+                className="gap-2"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-4 w-4" />
                 Delete Selected
               </Button>
               <Button variant="outline" onClick={toggleSelectionMode}>

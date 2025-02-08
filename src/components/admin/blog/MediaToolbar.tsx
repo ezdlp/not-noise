@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Upload } from "lucide-react";
@@ -47,8 +48,9 @@ export function MediaToolbar({
       <Button
         onClick={onUpload}
         disabled={!selectedFile || uploading}
+        className="gap-2"
       >
-        <Upload className="h-4 w-4 mr-2" />
+        <Upload className="h-4 w-4" />
         Upload
       </Button>
       <Button
