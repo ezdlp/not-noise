@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,15 +52,15 @@ export default function UsersPage() {
           throw new Error("Not authorized");
         }
 
-        const { count, error } = await supabase
+        const { data, error } = await supabase
           .from("profiles")
-          .count();
+          .select('count', { count: 'exact', head: true });
 
         if (error) {
           throw error;
         }
 
-        return count;
+        return data;
       } catch (error) {
         console.error("Error fetching total users:", error);
         throw error;
