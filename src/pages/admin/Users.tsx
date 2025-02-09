@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Pencil, Trash2, Search } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Profile } from "@/types/database";
+import { Card } from "@/components/ui/card";
 
 export default function Users() {
   const navigate = useNavigate();
@@ -31,6 +32,41 @@ export default function Users() {
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const { data: totalCount } = useQuery({
+    queryKey: ["adminTotalUsers"],
+    queryFn: async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Not authenticated");
+        }
+
+        const { data: userRoles, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin');
+
+        if (roleError || !userRoles?.length) {
+          throw new Error("Not authorized");
+        }
+
+        const { count, error } = await supabase
+          .from("profiles")
+          .count();
+
+        if (error) {
+          throw error;
+        }
+
+        return count;
+      } catch (error) {
+        console.error("Error fetching total users:", error);
+        throw error;
+      }
+    },
+  });
 
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["adminUsers", pageSize, currentPage, searchQuery],
@@ -138,6 +174,14 @@ export default function Users() {
           Add New User
         </Button>
       </div>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-2 text-2xl font-semibold">
+          <Users className="h-5 w-5 text-primary" />
+          <span>{totalCount || 0}</span>
+          <span className="text-muted-foreground text-base font-normal">total users</span>
+        </div>
+      </Card>
 
       <div className="flex justify-between items-center mb-4">
         <div className="relative w-72">
