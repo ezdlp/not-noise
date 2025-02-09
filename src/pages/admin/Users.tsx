@@ -52,15 +52,15 @@ export default function UsersPage() {
           throw new Error("Not authorized");
         }
 
-        const { data, error } = await supabase
+        const { count, error } = await supabase
           .from("profiles")
-          .select('count', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true });
 
         if (error) {
           throw error;
         }
 
-        return data;
+        return count;
       } catch (error) {
         console.error("Error fetching total users:", error);
         throw error;
@@ -178,7 +178,7 @@ export default function UsersPage() {
       <Card className="p-6">
         <div className="flex items-center gap-2 text-2xl font-semibold">
           <Users className="h-5 w-5 text-primary" />
-          <span>{totalCount || 0}</span>
+          <span>{totalCount ?? 0}</span>
           <span className="text-muted-foreground text-base font-normal">total users</span>
         </div>
       </Card>
