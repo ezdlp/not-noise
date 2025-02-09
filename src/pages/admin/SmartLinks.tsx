@@ -10,80 +10,71 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  ExternalLinkIcon, 
   BarChart2Icon, 
   EditIcon, 
-  TrashIcon,
-  DownloadIcon,
+  TrashIcon, 
   SearchIcon,
-  Link2 as Link2Icon
+  Link2Icon,
+  ExternalLinkIcon
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import type { SmartLink } from "@/types/database";
-import { SmartLinkCard } from "@/components/dashboard/SmartLinkCard";
+import { Card } from "@/components/ui/card";
 
 export default function SmartLinks() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<string>("newest");
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
 
   const { data: smartLinks, isLoading } = useQuery({
     queryKey: ["adminSmartLinks"],
     queryFn: async () => {
-      console.log("Fetching smart links with platform links...");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("Not authenticated");
+        throw new Error("Not authenticated");
+      }
+
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin');
+
+      if (roleError || !userRoles?.length) {
+        console.error("Not authorized");
+        throw new Error("Not authorized");
+      }
+
       const { data, error } = await supabase
         .from("smart_links")
         .select(`
           *,
-          profiles!user_id(
+          profiles!user_id (
             name,
-            email
+            email,
+            artist_name
           ),
-          platform_links(
+          platform_links (
             id,
-            platform_id,
+            platform_name,
             url,
-            platform_clicks(
-              id,
-              clicked_at
+            platform_clicks (
+              id
             )
           ),
-          link_views(
-            id,
-            viewed_at
+          link_views (
+            id
           ),
-          email_subscribers(
+          email_subscribers (
             id
           )
         `)
-        .order("created_at", { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching smart links:", error);
@@ -96,11 +87,11 @@ export default function SmartLinks() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("smart_links")
         .delete()
-        .in("id", ids);
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -113,90 +104,128 @@ export default function SmartLinks() {
     },
   });
 
-  const sortedLinks = smartLinks ? [...smartLinks].sort((a, b) => {
-    switch (sortBy) {
-      case "most-views":
-        return (b.link_views?.length || 0) - (a.link_views?.length || 0);
-      case "most-clicks": {
-        const getClickCount = (link: SmartLink) => 
-          link.platform_links?.reduce((sum, pl) => sum + (pl.platform_clicks?.length || 0), 0) || 0;
-        return getClickCount(b) - getClickCount(a);
-      }
-      case "highest-ctr": {
-        const getCTR = (link: SmartLink) => {
-          const views = link.link_views?.length || 0;
-          const clicks = link.platform_links?.reduce((sum, pl) => sum + (pl.platform_clicks?.length || 0), 0) || 0;
-          return views ? clicks / views : 0;
-        };
-        return getCTR(b) - getCTR(a);
-      }
-      case "oldest":
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      default: // "newest"
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-  }) : [];
+  const filteredLinks = smartLinks?.filter(link => 
+    link.title.toLowerCase().includes(search.toLowerCase()) ||
+    link.artist_name.toLowerCase().includes(search.toLowerCase()) ||
+    link.profiles?.email?.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    );
-  }
-
-  if (!smartLinks?.length) {
-    return (
-      <div className="text-center py-12 space-y-4">
-        <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
-        <div>
-          <p className="text-xl font-semibold">No smart links yet</p>
-          <p className="text-muted-foreground">Create your first smart link to start sharing your music</p>
-        </div>
-        <Button
-          variant="default"
-          onClick={() => navigate("/create")}
-          className="mt-4"
-        >
-          Create your first smart link
-        </Button>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Link2Icon className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-semibold">Your Smart Links</h2>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="most-views">Most Views</SelectItem>
-              <SelectItem value="most-clicks">Most Clicks</SelectItem>
-              <SelectItem value="highest-ctr">Highest CTR</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-heading font-bold tracking-tight">
+            All Smart Links
+          </h1>
+          <p className="text-muted-foreground">
+            Overview of all smart links created on the platform
+          </p>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sortedLinks.map((link) => (
-          <SmartLinkCard
-            key={link.id}
-            link={link}
-            onDelete={(id) => deleteMutation.mutate([id])}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 text-2xl font-semibold">
+          <Link2Icon className="h-5 w-5 text-primary" />
+          <span>{smartLinks?.length ?? 0}</span>
+          <span className="text-muted-foreground text-base font-normal">total smart links</span>
+        </div>
+      </Card>
+
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative w-72">
+          <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title, artist or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
           />
-        ))}
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Artist</TableHead>
+              <TableHead>Created By</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Views</TableHead>
+              <TableHead>Clicks</TableHead>
+              <TableHead>CTR</TableHead>
+              <TableHead>Platforms</TableHead>
+              <TableHead>Subscribers</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredLinks?.map((link) => {
+              const views = link.link_views?.length || 0;
+              const clicks = link.platform_links?.reduce((sum, pl) => 
+                sum + (pl.platform_clicks?.length || 0), 0) || 0;
+              const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0";
+
+              return (
+                <TableRow key={link.id}>
+                  <TableCell className="font-medium">{link.title}</TableCell>
+                  <TableCell>{link.artist_name}</TableCell>
+                  <TableCell>
+                    <div>
+                      <div>{link.profiles?.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {link.profiles?.email}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
+                  </TableCell>
+                  <TableCell>{views}</TableCell>
+                  <TableCell>{clicks}</TableCell>
+                  <TableCell>{ctr}%</TableCell>
+                  <TableCell>{link.platform_links?.length || 0}</TableCell>
+                  <TableCell>{link.email_subscribers?.length || 0}</TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open(`/link/${link.slug}`, '_blank')}
+                    >
+                      <ExternalLinkIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate(`/links/${link.id}/analytics`)}
+                    >
+                      <BarChart2Icon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate(`/links/${link.id}/edit`)}
+                    >
+                      <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => deleteMutation.mutate(link.id)}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
