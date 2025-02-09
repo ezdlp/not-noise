@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +25,7 @@ import {
 import { Profile } from "@/types/database";
 import { Card } from "@/components/ui/card";
 
-export default function Users() {
+export default function UsersPage() {
   const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [pageSize, setPageSize] = useState<number>(20);
