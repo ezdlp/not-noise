@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from 'react';
 import {
@@ -64,11 +65,13 @@ export default function SmartLinks() {
             platform_name,
             url,
             platform_clicks (
-              id
+              id,
+              clicked_at
             )
           ),
           link_views (
-            id
+            id,
+            viewed_at
           ),
           email_subscribers (
             id
