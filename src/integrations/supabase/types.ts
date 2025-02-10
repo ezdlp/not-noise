@@ -1090,7 +1090,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_subscription_tier"
+            columns: ["tier"]
+            isOneToOne: false
+            referencedRelation: "subscription_features"
+            referencedColumns: ["tier"]
+          },
+        ]
       }
       user_roles: {
         Row: {
