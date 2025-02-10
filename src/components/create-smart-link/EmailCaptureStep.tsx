@@ -1,9 +1,12 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeModal } from "../subscription/UpgradeModal";
+import { Lock } from "lucide-react";
 
 interface EmailCaptureStepProps {
   initialData: any;
@@ -16,6 +19,10 @@ const EmailCaptureStep = ({
   onNext,
   onBack,
 }: EmailCaptureStepProps) => {
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { isFeatureEnabled } = useFeatureAccess();
+  const canUseEmailCapture = isFeatureEnabled('email_capture');
+  
   const [enabled, setEnabled] = useState(false);
   const [title, setTitle] = useState("Subscribe to my newsletter");
   const [description, setDescription] = useState(
@@ -27,13 +34,20 @@ const EmailCaptureStep = ({
     onNext({
       ...initialData,
       emailCapture: {
-        enabled,
+        enabled: canUseEmailCapture && enabled,
         title,
         description,
         buttonText,
       },
     });
-    toast.success("Email capture settings saved!");
+  };
+
+  const handleToggle = () => {
+    if (!canUseEmailCapture) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setEnabled(!enabled);
   };
 
   return (
@@ -48,11 +62,17 @@ const EmailCaptureStep = ({
         <Switch
           id="email-capture"
           checked={enabled}
-          onCheckedChange={setEnabled}
+          onCheckedChange={handleToggle}
+          disabled={!canUseEmailCapture}
         />
-        <Label htmlFor="email-capture">Enable email capture form</Label>
+        <Label htmlFor="email-capture" className="flex items-center gap-2">
+          Enable email capture form
+          {!canUseEmailCapture && (
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          )}
+        </Label>
       </div>
-      {enabled && (
+      {enabled && canUseEmailCapture && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Form Title</Label>
@@ -80,12 +100,31 @@ const EmailCaptureStep = ({
           </div>
         </div>
       )}
+      {!canUseEmailCapture && (
+        <div className="rounded-lg border border-dashed p-6 text-center">
+          <Lock className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
+          <h3 className="font-semibold mb-1">Premium Feature</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Upgrade to collect emails from your fans
+          </p>
+          <Button variant="outline" onClick={() => setShowUpgradeModal(true)}>
+            Upgrade to Pro
+          </Button>
+        </div>
+      )}
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
         <Button onClick={handleNext}>Next</Button>
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="collect emails from your fans"
+        description="Grow your fanbase by collecting emails through your smart links"
+      />
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { arrayMove } from '@dnd-kit/sortable';
@@ -6,6 +7,8 @@ import PlatformsSection from "./PlatformsSection";
 import { usePlatformState } from "./hooks/usePlatformState";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeModal } from "../subscription/UpgradeModal";
 
 interface PlatformsStepProps {
   initialData: {
@@ -19,6 +22,9 @@ interface PlatformsStepProps {
 const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { isFeatureEnabled } = useFeatureAccess();
+  const canReorderPlatforms = isFeatureEnabled('platform_reordering');
 
   const {
     platforms,
@@ -33,7 +39,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     
     const fetchLinks = async () => {
       try {
-        // Start progress animation
         progressInterval = setInterval(() => {
           setProgress(prev => Math.min(prev + 10, 90));
         }, 500);
@@ -50,7 +55,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
 
         console.log("Received platform links:", odesliData.linksByPlatform);
 
-        // Update platform URLs based on Odesli response
         setPlatforms(prevPlatforms => 
           prevPlatforms.map(platform => {
             const url = odesliData.linksByPlatform[platform.id]?.url || "";
@@ -63,7 +67,6 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           })
         );
 
-        // Complete progress
         setProgress(100);
         toast.success("Streaming links fetched successfully!");
       } catch (error) {
@@ -83,6 +86,11 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   }, [initialData.spotifyUrl, setPlatforms]);
 
   const handleDragEnd = (event: any) => {
+    if (!canReorderPlatforms) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     const { active, over } = event;
     if (active.id !== over.id) {
       setPlatforms((items) => {
@@ -111,7 +119,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Manage Platforms</h2>
         <p className="text-sm text-muted-foreground">
-          Drag to reorder platforms and enable the ones you want to include.
+          {canReorderPlatforms 
+            ? "Drag to reorder platforms and enable the ones you want to include."
+            : "Enable the platforms you want to include in your smart link."}
         </p>
       </div>
 
@@ -125,14 +135,15 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             onToggle={togglePlatform}
             onUrlChange={updateUrl}
             onDragEnd={handleDragEnd}
-            isDraggable={true}
+            isDraggable={canReorderPlatforms}
           />
 
           <PlatformsSection
-            title="Additional Services"
+            title="Additional Services (Pro)"
             platforms={additionalPlatforms}
-            onToggle={togglePlatform}
+            onToggle={() => setShowUpgradeModal(true)}
             onUrlChange={updateUrl}
+            isDraggable={false}
           />
         </>
       )}
@@ -148,6 +159,13 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           Next
         </Button>
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="access all music platforms"
+        description="Upgrade to Pro to add more music platforms and customize their order!"
+      />
     </div>
   );
 };

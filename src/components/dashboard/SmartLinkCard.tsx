@@ -11,6 +11,7 @@ import {
   CopyIcon,
   CheckIcon,
   InstagramIcon,
+  LockIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -29,6 +30,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeModal } from "../subscription/UpgradeModal";
 
 interface SmartLinkCardProps {
   link: any;
@@ -40,6 +43,9 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { isFeatureEnabled } = useFeatureAccess();
+  const canUseSocialAssets = isFeatureEnabled('social_assets');
 
   const handleDelete = async () => {
     try {
@@ -73,6 +79,11 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
   };
 
   const generateSocialAsset = async () => {
+    if (!canUseSocialAssets) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     if (!link.artwork_url) {
       toast.error("This smart link doesn't have artwork");
       return;
@@ -199,11 +210,15 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
                     className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
                     onClick={generateSocialAsset}
                   >
-                    <InstagramIcon className="h-4 w-4" />
+                    {canUseSocialAssets ? (
+                      <InstagramIcon className="h-4 w-4" />
+                    ) : (
+                      <LockIcon className="h-4 w-4" />
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Create Social Media Assets</p>
+                  <p>{canUseSocialAssets ? "Create Social Media Assets" : "Premium Feature"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -217,7 +232,13 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
         smartLink={link}
         onGenerate={generateSocialAsset}
       />
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="create social media assets"
+        description="Upgrade to Pro to create beautiful social media assets for Instagram, Twitter, and Facebook!"
+      />
     </>
   );
 }
-
