@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useQuery } from "@tanstack/react-query"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export function UserMenuContent() {
   const navigate = useNavigate()
@@ -51,18 +52,36 @@ export function UserMenuContent() {
     navigate("/login")
   }
 
+  const getInitials = (name: string) => {
+    return name
+      ?.split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U'
+  }
+
   return (
     <DropdownMenuContent className="w-56" align="end">
       <DropdownMenuLabel className="font-normal">
-        <div className="flex flex-col space-y-1">
-          <p className="text-sm font-medium leading-none">{profile?.name || "Your Account"}</p>
-          <p className="text-xs leading-none text-muted-foreground">
+        <div className="flex flex-row items-center space-x-3">
+          <Avatar className={`h-8 w-8 ${subscription?.tier === "pro" ? "ring-2 ring-primary ring-offset-2" : ""}`}>
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {getInitials(profile?.name || "User")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{profile?.name || "Your Account"}</p>
             {subscription?.tier === "pro" ? (
-              <span className="text-primary">Pro Plan</span>
+              <div className="flex items-center">
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Pro Plan
+                </span>
+              </div>
             ) : (
-              "Free Plan"
+              <p className="text-xs text-muted-foreground">Free Plan</p>
             )}
-          </p>
+          </div>
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />

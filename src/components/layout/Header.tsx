@@ -39,39 +39,40 @@ const Header = () => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+      <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-white/95 backdrop-blur-md">
         <nav className="flex flex-col gap-4">
           {!isDashboard && (
             <div className="flex flex-col gap-4 py-4">
               {!isAuthenticated ? (
                 <>
-                  <CTAButton onClick={() => navigate("/register")}>
+                  <CTAButton onClick={() => navigate("/register")} className="w-full">
                     Get Started
                   </CTAButton>
                   <Button
                     variant="outline"
                     onClick={() => navigate("/login")}
-                    className="w-full"
+                    className="w-full gap-2 font-medium text-sm"
                   >
-                    <LogIn className="h-5 w-5 mr-2" />
-                    Login
+                    <LogIn className="h-4 w-4" />
+                    Log in
                   </Button>
                 </>
               ) : (
                 <>
-                  <CTAButton onClick={() => navigate("/create")}>
+                  <CTAButton onClick={() => navigate("/create")} className="w-full gap-2">
+                    <Plus className="h-4 w-4" />
                     Create Smart Link
                   </CTAButton>
                   <div className="flex flex-col gap-2">
-                    <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary">
+                    <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
                       Dashboard
                     </Link>
-                    <Link to="/settings" className="text-sm font-medium text-gray-600 hover:text-primary">
+                    <Link to="/settings" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
                       Settings
                     </Link>
                     <button
                       onClick={() => supabase.auth.signOut()}
-                      className="text-sm font-medium text-gray-600 hover:text-primary text-left"
+                      className="text-sm font-medium text-gray-600 hover:text-primary transition-colors text-left"
                     >
                       Logout
                     </button>
@@ -87,8 +88,8 @@ const Header = () => {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 w-full border-b backdrop-blur-sm transition-all",
-      isDashboard ? "border-neutral-border bg-white/90" : "border-gray-100 bg-white/80"
+      "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-200",
+      isDashboard ? "border-neutral-border bg-white/95" : "border-gray-100 bg-white/90"
     )}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
@@ -110,14 +111,14 @@ const Header = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate("/login")}
-                className="hidden md:flex"
+                className="hidden md:flex gap-2 font-medium text-sm hover:bg-gray-100 transition-colors"
               >
-                <LogIn className="h-5 w-5 mr-2" />
-                Login
+                <LogIn className="h-4 w-4" />
+                Log in
               </Button>
               <CTAButton 
                 onClick={() => navigate("/register")}
-                className="hidden md:flex !py-2 !px-4 !text-sm"
+                className="hidden md:flex py-2 px-4 text-sm font-medium transition-all hover:opacity-90"
               >
                 Get Started
               </CTAButton>
@@ -127,7 +128,7 @@ const Header = () => {
               {!isDashboard && (
                 <Button
                   onClick={() => navigate("/create")}
-                  className="hidden md:flex gap-2"
+                  className="hidden md:flex gap-2 bg-primary text-white hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Create Smart Link
@@ -138,7 +139,8 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="relative h-9 w-9 rounded-full"
+                    className="relative h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
+                    aria-label="User menu"
                   >
                     <User className="h-5 w-5" />
                   </Button>
