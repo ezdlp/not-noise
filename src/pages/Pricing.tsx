@@ -54,20 +54,7 @@ export default function Pricing() {
     retry: 2,
   });
 
-  // Separate query for subscription features
-  const { data: features, isLoading: isFeaturesLoading } = useQuery({
-    queryKey: ["subscription_features"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_features")
-        .select("*")
-        .in("tier", ["free", "pro"]);
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
+  // Handle subscription operations
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading(true);
@@ -105,25 +92,39 @@ export default function Pricing() {
     }
   };
 
-  const handleFreePlanAction = () => {
-    if (!session) {
-      navigate("/login");
-      return;
-    }
-    
-    // If user is already on free plan, do nothing
-    if (subscription?.tier === 'free') {
-      return;
-    }
+  const handleCustomerPortal = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('create-portal-link', {
+        body: {},
+      });
 
-    // Navigate to dashboard if they're already logged in
-    navigate("/dashboard");
+      if (error) {
+        console.error('Portal error:', error);
+        toast.error("Failed to access customer portal. Please try again.");
+        return;
+      }
+
+      if (!data?.url) {
+        console.error('No portal URL received:', data);
+        toast.error("Unable to access customer portal. Please try again.");
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
     // Show loading state while data is being fetched
-    if (isSessionLoading || isSubscriptionLoading || isFeaturesLoading) {
+    if (isSessionLoading || isSubscriptionLoading) {
       return (
         <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
           Loading...
@@ -144,43 +145,82 @@ export default function Pricing() {
       );
     }
 
-    // For free tier
-    if (tier === 'free') {
-      // Show "Current Plan" if we have confirmed the user is on free plan
-      if (subscription?.tier === 'free') {
+    // User is not logged in
+    if (!session) {
+      if (tier === 'free') {
+        return (
+          <Button 
+            variant="outline"
+            onClick={() => navigate("/login")}
+            className="w-full"
+          >
+            Get Started with Free
+          </Button>
+        );
+      } else {
+        return (
+          <Button 
+            className="w-full bg-primary hover:bg-primary/90"
+            onClick={() => navigate("/login")}
+          >
+            Get Started with Pro
+          </Button>
+        );
+      }
+    }
+
+    // User is on Free plan
+    if (subscription?.tier === 'free') {
+      if (tier === 'free') {
+        return (
+          <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+            Current Plan
+          </div>
+        );
+      } else {
+        return (
+          <Button 
+            className="w-full bg-primary hover:bg-primary/90"
+            onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+            disabled={isLoading}
+          >
+            {isLoading ? "Preparing..." : "Upgrade to Pro"}
+          </Button>
+        );
+      }
+    }
+
+    // User is on Pro plan
+    if (subscription?.tier === 'pro') {
+      if (tier === 'free') {
+        return (
+          <Button 
+            variant="outline"
+            onClick={handleCustomerPortal}
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Preparing..." : "Downgrade to Free"}
+          </Button>
+        );
+      } else {
         return (
           <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
             Current Plan
           </div>
         );
       }
-      return (
-        <Button 
-          variant="outline"
-          onClick={handleFreePlanAction}
-          className="w-full"
-        >
-          {!session ? "Get Started Free" : "Get Started"}
-        </Button>
-      );
     }
 
-    // For Pro plan
-    if (subscription?.tier === 'pro') {
-      return (
-        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
-          Current Plan
-        </div>
-      );
-    }
-
+    // Fallback for any other cases
     return (
       <Button 
-        className="w-full bg-primary hover:bg-primary/90"
-        onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+        variant={tier === 'free' ? "outline" : "default"}
+        className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"}
+        onClick={() => tier === 'free' ? navigate("/login") : handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
         disabled={isLoading}
       >
-        {isLoading ? "Preparing..." : "Upgrade Now"}
+        {isLoading ? "Preparing..." : (tier === 'free' ? "Get Started with Free" : "Get Started with Pro")}
       </Button>
     );
   };
