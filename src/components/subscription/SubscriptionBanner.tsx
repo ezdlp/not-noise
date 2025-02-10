@@ -23,7 +23,7 @@ export function SubscriptionBanner() {
     localStorage.setItem("featureLimitsOpen", isOpen.toString());
   }, [isOpen]);
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, isLoading } = useQuery({
     queryKey: ["subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -35,23 +35,33 @@ export function SubscriptionBanner() {
         .eq("user_id", user.id)
         .single();
 
-      if (subscriptionError) throw subscriptionError;
+      if (subscriptionError && subscriptionError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+        throw subscriptionError;
+      }
       
+      // If no subscription record exists, or if it's explicitly free tier
+      const tier = subscriptionData?.tier || 'free';
+      if (tier === 'pro') {
+        return null; // Return null for pro users to hide the banner
+      }
+
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
         .select("*")
-        .eq("tier", subscriptionData.tier);
+        .eq("tier", tier);
 
       if (featuresError) throw featuresError;
 
       return {
-        ...subscriptionData,
+        tier,
+        is_early_adopter: subscriptionData?.is_early_adopter || false,
         features
       };
     },
   });
 
-  if (!subscription) return null;
+  // Hide banner for pro users or while loading
+  if (!subscription || isLoading) return null;
 
   const isFreeTier = subscription.tier === "free";
   const isEarlyAdopter = subscription.is_early_adopter;
