@@ -35,14 +35,13 @@ export function SubscriptionBanner() {
         .eq("user_id", user.id)
         .single();
 
-      if (subscriptionError && subscriptionError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+      if (subscriptionError && subscriptionError.code !== 'PGRST116') {
         throw subscriptionError;
       }
       
-      // If no subscription record exists, or if it's explicitly free tier
       const tier = subscriptionData?.tier || 'free';
       if (tier === 'pro') {
-        return null; // Return null for pro users to hide the banner
+        return null;
       }
 
       const { data: features, error: featuresError } = await supabase
