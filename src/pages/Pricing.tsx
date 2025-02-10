@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,16 +17,20 @@ export default function Pricing() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Query the user's current session
+  // Query the user's current session with proper error handling
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Session fetch error:", error);
+        throw error;
+      }
       return session;
     },
   });
 
-  // Query the user's subscription with proper error handling
+  // First query subscription data
   const { data: subscription, isLoading: isSubscriptionLoading, error: subscriptionError } = useQuery({
     queryKey: ["subscription", session?.user?.id],
     queryFn: async () => {
@@ -36,24 +39,33 @@ export default function Pricing() {
       try {
         const { data, error } = await supabase
           .from("subscriptions")
-          .select("*, subscription_features(*)")
+          .select("*, tier")
           .eq("user_id", session.user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error("Subscription fetch error:", error);
-          throw error;
-        }
-
+        if (error) throw error;
         return data;
       } catch (error) {
-        console.error("Subscription query error:", error);
-        toast.error("Failed to load subscription data. Please try again.");
-        return null;
+        console.error("Subscription fetch error:", error);
+        throw error;
       }
     },
     enabled: !!session?.user,
     retry: 2,
+  });
+
+  // Separate query for subscription features
+  const { data: features, isLoading: isFeaturesLoading } = useQuery({
+    queryKey: ["subscription_features"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscription_features")
+        .select("*")
+        .in("tier", ["free", "pro"]);
+
+      if (error) throw error;
+      return data;
+    },
   });
 
   const handleSubscribe = async (priceId: string) => {
@@ -111,7 +123,7 @@ export default function Pricing() {
   // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
     // Show loading state while data is being fetched
-    if (isSessionLoading || isSubscriptionLoading) {
+    if (isSessionLoading || isSubscriptionLoading || isFeaturesLoading) {
       return (
         <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
           Loading...
