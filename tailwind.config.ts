@@ -1,3 +1,4 @@
+
 import { type Config } from "tailwindcss";
 import { fontFamily } from "tailwindcss/defaultTheme";
 
@@ -71,6 +72,7 @@ export default {
       fontFamily: {
         sans: ["DM Sans", ...fontFamily.sans],
         heading: ["Poppins", ...fontFamily.sans],
+        poppins: ["Poppins", ...fontFamily.sans],
       },
       borderRadius: {
         lg: "0.75rem",
