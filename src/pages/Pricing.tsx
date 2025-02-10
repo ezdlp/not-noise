@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,7 +114,7 @@ export default function Pricing() {
           onClick={handleFreePlanAction}
           className="w-full"
         >
-          {session ? "Switch to Free" : "Get Started Free"}
+          {!session ? "Get Started Free" : "Switch to Free"}
         </Button>
       );
     }
@@ -224,7 +223,6 @@ export default function Pricing() {
                       Custom URL Slugs
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
                       Meta Pixel Integration
                     </div>
                   </div>
