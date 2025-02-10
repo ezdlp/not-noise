@@ -18,31 +18,37 @@ export default function Pricing() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Query the user's current subscription
+  // Query the user's current subscription and auth status
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
+
   const { data: subscription } = useQuery({
     queryKey: ["subscription"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!session?.user) return null;
 
       const { data: subscriptionData, error } = await supabase
         .from("subscriptions")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .single();
 
       if (error) throw error;
       return subscriptionData;
     },
+    enabled: !!session?.user,
   });
 
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading(true);
       
-      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please login to upgrade your plan");
         navigate("/login");
         return;
       }
@@ -75,6 +81,22 @@ export default function Pricing() {
     }
   };
 
+  // Function to handle free plan action
+  const handleFreePlanAction = () => {
+    if (!session) {
+      navigate("/login");
+      return;
+    }
+    
+    // If user is already on free plan, do nothing
+    if (subscription?.tier === 'free') {
+      return;
+    }
+
+    // Navigate to dashboard if they're already logged in
+    navigate("/dashboard");
+  };
+
   // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
     const isCurrentPlan = subscription?.tier === tier;
@@ -90,10 +112,10 @@ export default function Pricing() {
       return (
         <Button 
           variant="outline"
-          onClick={() => navigate("/register")}
+          onClick={handleFreePlanAction}
           className="w-full"
         >
-          Get Started Free
+          {session ? "Switch to Free" : "Get Started Free"}
         </Button>
       );
     }
