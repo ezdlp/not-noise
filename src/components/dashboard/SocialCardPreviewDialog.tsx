@@ -6,10 +6,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Square, RectangleVertical } from "lucide-react";
+import { Square, RectangleVertical, Crown } from "lucide-react";
 import { toPng } from 'html-to-image';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface SocialCardPreviewDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface SocialCardPreviewDialogProps {
     id: string;
   };
   onGenerate: () => void;
+  canUseSocialAssets: boolean;
 }
 
 type Format = "post" | "story";
@@ -30,7 +32,9 @@ export function SocialCardPreviewDialog({
   onOpenChange,
   smartLink,
   onGenerate,
+  canUseSocialAssets
 }: SocialCardPreviewDialogProps) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [format, setFormat] = useState<Format>("post");
   const [platformIcons, setPlatformIcons] = useState<{ id: string; icon: string }[]>([]);
@@ -266,6 +270,11 @@ export function SocialCardPreviewDialog({
   };
 
   const handleGenerate = async () => {
+    if (!canUseSocialAssets) {
+      navigate("/pricing");
+      return;
+    }
+
     if (!exportRef.current || !imagesLoaded) return;
     
     setIsLoading(true);
@@ -348,31 +357,46 @@ export function SocialCardPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-[90vw] w-auto rounded-xl">
         <DialogTitle className="sr-only">Social Card Preview</DialogTitle>
-        <div 
-          className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
-          style={{ 
-            width: `${dimensions.width}px`, 
-            height: `${dimensions.height}px`
-          }}
-        >
-          <div ref={previewRef}>
-            {renderCard(false)}
+        <div className="relative">
+          <div 
+            className="w-full bg-neutral-seasalt rounded-lg overflow-hidden flex items-center justify-center"
+            style={{ 
+              width: `${dimensions.width}px`, 
+              height: `${dimensions.height}px`
+            }}
+          >
+            <div ref={previewRef} className="relative">
+              {renderCard(false)}
+              {!canUseSocialAssets && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center text-white p-8">
+                  <div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
+                    <Crown className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Unlock Social Media Assets</h3>
+                  <p className="text-center text-sm mb-6 max-w-md">
+                    Create stunning social media assets for Instagram posts and stories. Share your music professionally with your audience.
+                  </p>
+                  <Button 
+                    onClick={() => navigate("/pricing")}
+                    className="bg-primary hover:bg-primary-hover text-white"
+                  >
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div 
-          ref={exportRef} 
-          className="fixed left-0 top-0"
-          style={{ 
+          <div ref={exportRef} className="fixed left-0 top-0" style={{ 
             position: 'absolute',
             width: format === "post" ? '1080px' : '1080px',
             height: format === "post" ? '1080px' : '1920px',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: -1
-          }}
-        >
-          {renderCard(true)}
+          }}>
+            {renderCard(true)}
+          </div>
         </div>
 
         <div className="px-6 py-4 flex justify-between items-center bg-white">
@@ -411,11 +435,10 @@ export function SocialCardPreviewDialog({
             disabled={isLoading || !imagesLoaded}
             className="bg-primary hover:bg-primary-hover text-white"
           >
-            {isLoading ? "Generating..." : "Generate Image"}
+            {!canUseSocialAssets ? "Upgrade to Pro" : (isLoading ? "Generating..." : "Generate Image")}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
