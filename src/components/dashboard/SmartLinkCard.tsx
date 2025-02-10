@@ -11,7 +11,6 @@ import {
   CopyIcon,
   CheckIcon,
   InstagramIcon,
-  LockIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -198,21 +197,14 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
-                      onClick={generateSocialAsset}
-                    >
-                      <InstagramIcon className="h-4 w-4" />
-                    </Button>
-                    {!canUseSocialAssets && (
-                      <div className="absolute -top-1 -right-1">
-                        <LockIcon className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
+                    onClick={generateSocialAsset}
+                  >
+                    <InstagramIcon className={`h-4 w-4 ${!canUseSocialAssets ? 'text-[#999999]' : ''}`} />
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Create Instagram Posts (Pro Feature)</p>
@@ -233,4 +225,3 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
     </>
   );
 }
-
