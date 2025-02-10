@@ -44,7 +44,7 @@ export default function Pricing() {
           .maybeSingle();
 
         if (error) throw error;
-        return data;
+        return data || { tier: 'free' }; // Default to free tier if no subscription found
       } catch (error) {
         console.error("Subscription fetch error:", error);
         throw error;
@@ -147,82 +147,56 @@ export default function Pricing() {
 
     // User is not logged in
     if (!session) {
-      if (tier === 'free') {
-        return (
-          <Button 
-            variant="outline"
-            onClick={() => navigate("/login")}
-            className="w-full"
-          >
-            Get Started with Free
-          </Button>
-        );
-      } else {
-        return (
-          <Button 
-            className="w-full bg-primary hover:bg-primary/90"
-            onClick={() => navigate("/login")}
-          >
-            Get Started with Pro
-          </Button>
-        );
-      }
+      return (
+        <Button 
+          variant={tier === 'free' ? "outline" : "default"}
+          className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"}
+          onClick={() => navigate("/login")}
+        >
+          {tier === 'free' ? "Get Started with Free" : "Get Started with Pro"}
+        </Button>
+      );
     }
 
-    // User is on Free plan
-    if (subscription?.tier === 'free') {
-      if (tier === 'free') {
-        return (
-          <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
-            Current Plan
-          </div>
-        );
-      } else {
-        return (
-          <Button 
-            className="w-full bg-primary hover:bg-primary/90"
-            onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-            disabled={isLoading}
-          >
-            {isLoading ? "Preparing..." : "Upgrade to Pro"}
-          </Button>
-        );
-      }
+    const userTier = subscription?.tier || 'free';
+
+    // User is on current tier
+    if (userTier === tier) {
+      return (
+        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+          Current Plan
+        </div>
+      );
     }
 
-    // User is on Pro plan
-    if (subscription?.tier === 'pro') {
-      if (tier === 'free') {
-        return (
-          <Button 
-            variant="outline"
-            onClick={handleCustomerPortal}
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Preparing..." : "Downgrade to Free"}
-          </Button>
-        );
-      } else {
-        return (
-          <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
-            Current Plan
-          </div>
-        );
-      }
+    // User can upgrade from free to pro
+    if (userTier === 'free' && tier === 'pro') {
+      return (
+        <Button 
+          className="w-full bg-primary hover:bg-primary/90"
+          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+          disabled={isLoading}
+        >
+          {isLoading ? "Preparing..." : "Upgrade to Pro"}
+        </Button>
+      );
     }
 
-    // Fallback for any other cases
-    return (
-      <Button 
-        variant={tier === 'free' ? "outline" : "default"}
-        className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"}
-        onClick={() => tier === 'free' ? navigate("/login") : handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
-        disabled={isLoading}
-      >
-        {isLoading ? "Preparing..." : (tier === 'free' ? "Get Started with Free" : "Get Started with Pro")}
-      </Button>
-    );
+    // User can downgrade from pro to free
+    if (userTier === 'pro' && tier === 'free') {
+      return (
+        <Button 
+          variant="outline"
+          onClick={handleCustomerPortal}
+          className="w-full"
+          disabled={isLoading}
+        >
+          {isLoading ? "Preparing..." : "Downgrade to Free"}
+        </Button>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -305,7 +279,6 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
                       Custom URL Slugs
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -403,19 +376,15 @@ export default function Pricing() {
                       Remove Soundraiser Branding
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
                       Priority Support (24/7 response within 12 hours)
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
                       Bulk Analytics Export
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
                       Smart Link Social Media Cards
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
                       Early Access to New Features
                     </div>
                   </div>
