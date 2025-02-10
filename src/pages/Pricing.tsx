@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,8 +18,8 @@ export default function Pricing() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Query the user's current subscription and auth status
-  const { data: session } = useQuery({
+  // Query the user's current session
+  const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -26,21 +27,33 @@ export default function Pricing() {
     },
   });
 
-  const { data: subscription, isLoading: isSubscriptionLoading } = useQuery({
-    queryKey: ["subscription"],
+  // Query the user's subscription with proper error handling
+  const { data: subscription, isLoading: isSubscriptionLoading, error: subscriptionError } = useQuery({
+    queryKey: ["subscription", session?.user?.id],
     queryFn: async () => {
       if (!session?.user) return null;
 
-      const { data: subscriptionData, error } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("*, subscription_features(*)")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return subscriptionData;
+        if (error) {
+          console.error("Subscription fetch error:", error);
+          throw error;
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Subscription query error:", error);
+        toast.error("Failed to load subscription data. Please try again.");
+        return null;
+      }
     },
     enabled: !!session?.user,
+    retry: 2,
   });
 
   const handleSubscribe = async (priceId: string) => {
@@ -80,7 +93,6 @@ export default function Pricing() {
     }
   };
 
-  // Function to handle free plan action
   const handleFreePlanAction = () => {
     if (!session) {
       navigate("/login");
@@ -98,18 +110,31 @@ export default function Pricing() {
 
   // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
-    // Show loading state while subscription data is being fetched
-    if (isSubscriptionLoading) {
+    // Show loading state while data is being fetched
+    if (isSessionLoading || isSubscriptionLoading) {
       return (
-        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
           Loading...
         </div>
       );
     }
 
+    // Handle subscription error state
+    if (subscriptionError) {
+      return (
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      );
+    }
+
     // For free tier
     if (tier === 'free') {
-      // Only show "Current Plan" if we have confirmed the user is on free plan
+      // Show "Current Plan" if we have confirmed the user is on free plan
       if (subscription?.tier === 'free') {
         return (
           <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
