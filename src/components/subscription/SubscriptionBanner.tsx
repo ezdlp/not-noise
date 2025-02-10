@@ -33,16 +33,11 @@ export function SubscriptionBanner() {
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-        throw subscriptionError;
-      }
+      if (subscriptionError) throw subscriptionError;
       
       const tier = subscriptionData?.tier || 'free';
-      if (tier === 'pro') {
-        return null;
-      }
 
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
@@ -59,18 +54,24 @@ export function SubscriptionBanner() {
     },
   });
 
-  // Hide banner for pro users or while loading
-  if (!subscription || isLoading) return null;
+  // Hide banner while loading or if no subscription data
+  if (isLoading) return null;
+  
+  // Hide banner for pro users
+  if (subscription?.tier === 'pro') return null;
 
-  const isFreeTier = subscription.tier === "free";
-  const isEarlyAdopter = subscription.is_early_adopter;
+  const isFreeTier = subscription?.tier === "free";
+  const isEarlyAdopter = subscription?.is_early_adopter;
 
   const handleUpgradeClick = () => {
     navigate("/pricing");
   };
 
+  // Only show banner for free tier users
+  if (!isFreeTier) return null;
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <div>
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -79,7 +80,7 @@ export function SubscriptionBanner() {
             </div>
             <div>
               <h3 className="font-semibold capitalize">
-                {subscription.tier} Plan
+                {subscription?.tier} Plan
                 {isEarlyAdopter && (
                   <span className="ml-2 text-xs bg-secondary px-2 py-1 rounded-full">
                     Early Adopter
@@ -104,7 +105,9 @@ export function SubscriptionBanner() {
           )}
         </div>
       </div>
-      <FeatureLimits />
-    </Collapsible>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <FeatureLimits />
+      </Collapsible>
+    </div>
   );
 }
