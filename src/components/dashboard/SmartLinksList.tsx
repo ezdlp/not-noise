@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UpgradeModal } from "../subscription/UpgradeModal";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -20,6 +21,7 @@ interface SmartLinksListProps {
 export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const [sortBy, setSortBy] = useState<string>("newest");
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const { subscription } = useFeatureAccess();
 
   const sortedLinks = [...links].sort((a, b) => {
     switch (sortBy) {
@@ -65,9 +67,11 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Your Smart Links</h2>
-          <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-            {links.length} / 10 Free Links
-          </div>
+          {subscription?.tier === 'free' && (
+            <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+              {links.length} / 10 Free Links
+            </div>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
           <Select value={sortBy} onValueChange={setSortBy}>
