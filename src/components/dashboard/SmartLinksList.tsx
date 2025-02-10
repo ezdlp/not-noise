@@ -1,8 +1,8 @@
 
 import { Button } from "@/components/ui/button";
+import { SmartLinkCard } from "./SmartLinkCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link2Icon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -10,12 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { SmartLinkCard } from "./SmartLinkCard";
-import { Separator } from "@/components/ui/separator";
+import { UpgradeModal } from "../subscription/UpgradeModal";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -23,24 +18,8 @@ interface SmartLinksListProps {
 }
 
 export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<string>("newest");
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("smart_links").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["smartLinks"] });
-      toast.success("Smart link deleted successfully");
-    },
-    onError: (error) => {
-      console.error("Error deleting smart link:", error);
-      toast.error("Failed to delete smart link");
-    },
-  });
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
   const sortedLinks = [...links].sort((a, b) => {
     switch (sortBy) {
@@ -73,18 +52,10 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   if (links.length === 0) {
     return (
       <div className="text-center py-12 space-y-4">
-        <Link2Icon className="mx-auto h-12 w-12 text-muted-foreground" />
         <div>
           <p className="text-xl font-semibold">No smart links yet</p>
           <p className="text-muted-foreground">Create your first smart link to start sharing your music</p>
         </div>
-        <Button
-          variant="default"
-          onClick={() => navigate("/create")}
-          className="mt-4"
-        >
-          Create your first smart link
-        </Button>
       </div>
     );
   }
@@ -93,8 +64,10 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
-          <Link2Icon className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-semibold">Your Smart Links</h2>
+          <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {links.length} / 10 Free Links
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
           <Select value={sortBy} onValueChange={setSortBy}>
@@ -117,10 +90,17 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
           <SmartLinkCard
             key={link.id}
             link={link}
-            onDelete={(id) => deleteMutation.mutate(id)}
+            onAnalyticsClick={() => setShowAnalyticsModal(true)}
           />
         ))}
       </div>
+
+      <UpgradeModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        feature="access advanced analytics"
+        description="Upgrade to Pro to unlock detailed analytics including platform-specific clicks, daily performance, and fan locations!"
+      />
     </div>
   );
 }

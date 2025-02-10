@@ -6,12 +6,32 @@ import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link2 } from "lucide-react";
+import { Link2, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*, subscription_features!inner(*)")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: links, isLoading } = useQuery({
     queryKey: ["smartLinks"],
     queryFn: async () => {
@@ -49,6 +69,28 @@ export default function Dashboard() {
     },
   });
 
+  const handleCreateClick = async () => {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return;
+
+    try {
+      const { data: canCreate, error } = await supabase
+        .rpc('check_smart_link_limit', { user_id: user.user.id });
+
+      if (error) throw error;
+
+      if (!canCreate) {
+        setShowUpgradeModal(true);
+        return;
+      }
+
+      navigate("/create");
+    } catch (error) {
+      console.error("Error checking smart link limit:", error);
+      toast.error("Failed to check link limit");
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       <div className="grid grid-cols-1 gap-4">
@@ -63,7 +105,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Overview</h2>
               <Button
-                onClick={() => navigate("/create")}
+                onClick={handleCreateClick}
                 className="gap-2"
               >
                 <Link2 className="h-4 w-4" />
@@ -78,6 +120,13 @@ export default function Dashboard() {
 
         <SmartLinksList links={links} isLoading={isLoading} />
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="create more smart links"
+        description="You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"
+      />
     </div>
   );
 };
