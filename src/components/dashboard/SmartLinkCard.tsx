@@ -33,9 +33,10 @@ import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
 interface SmartLinkCardProps {
   link: any;
   onDelete?: (id: string) => void;
+  onAnalyticsClick?: () => void;
 }
 
-export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
+export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCardProps) {
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -180,7 +181,7 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 hover:bg-[#E6E6E6] transition-colors duration-150"
-                    onClick={() => navigate(`/links/${link.id}/analytics`)}
+                    onClick={onAnalyticsClick}
                   >
                     <BarChart2Icon className="h-4 w-4" />
                   </Button>
@@ -219,3 +220,4 @@ export function SmartLinkCard({ link, onDelete }: SmartLinkCardProps) {
     </>
   );
 }
+
