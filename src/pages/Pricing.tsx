@@ -26,7 +26,7 @@ export default function Pricing() {
     },
   });
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, isLoading: isSubscriptionLoading } = useQuery({
     queryKey: ["subscription"],
     queryFn: async () => {
       if (!session?.user) return null;
@@ -98,10 +98,19 @@ export default function Pricing() {
 
   // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
-    const isCurrentPlan = subscription?.tier === tier;
-    
+    // Show loading state while subscription data is being fetched
+    if (isSubscriptionLoading) {
+      return (
+        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+          Loading...
+        </div>
+      );
+    }
+
+    // For free tier
     if (tier === 'free') {
-      if (isCurrentPlan) {
+      // Only show "Current Plan" if we have confirmed the user is on free plan
+      if (subscription?.tier === 'free') {
         return (
           <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
             Current Plan
@@ -114,13 +123,13 @@ export default function Pricing() {
           onClick={handleFreePlanAction}
           className="w-full"
         >
-          {!session ? "Get Started Free" : "Switch to Free"}
+          {!session ? "Get Started Free" : "Get Started"}
         </Button>
       );
     }
 
     // For Pro plan
-    if (isCurrentPlan) {
+    if (subscription?.tier === 'pro') {
       return (
         <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
           Current Plan
