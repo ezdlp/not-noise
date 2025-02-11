@@ -1,13 +1,14 @@
-
 import React, { useState } from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Users, Percent, DollarSign, Laptop, Phone, MonitorSmartphone } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInstagram, faTiktok, faXTwitter, faSnapchat, faFacebookF } from "@fortawesome/free-brands-svg-icons";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
 
 const generateMockData = () => {
   const baseViews = 80;
@@ -206,6 +207,260 @@ const SocialAssetsShowcase: React.FC = () => {
   );
 };
 
+const generateMetaPixelData = () => {
+  const data = [];
+  const baseClicks = 860;
+  const baseConversions = 208;
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+    const clicks = Math.floor(baseClicks + Math.random() * 100);
+    const conversions = Math.floor(baseConversions + Math.random() * 30);
+    
+    data.push({
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      clicks,
+      conversions,
+      conversionRate: ((conversions / clicks) * 100).toFixed(1),
+      costPerConversion: ((clicks * 0.5) / conversions).toFixed(2)
+    });
+  }
+  return data;
+};
+
+const deviceData = [
+  { name: 'Desktop', value: 45 },
+  { name: 'Mobile', value: 40 },
+  { name: 'Tablet', value: 15 }
+];
+
+const MetaPixelTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 border border-neutral-200 rounded-lg shadow-sm">
+        <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+        {payload.map((pld: any, index: number) => (
+          <div key={index} className="flex items-center gap-2 mb-1">
+            <div className={`w-2 h-2 rounded-full ${pld.name === 'clicks' ? 'bg-[#6851FB]' : 'bg-[#37D299]'}`} />
+            <span className="text-sm font-medium">{pld.name === 'clicks' ? 'Clicks' : 'Conversions'}</span>
+            <span className="text-sm font-medium">{pld.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const MetaPixelSection = () => {
+  const [timeRange, setTimeRange] = useState("7D");
+  const metaData = generateMetaPixelData();
+  const COLORS = ['#6851FB', '#37D299', '#271153'];
+  
+  return (
+    <div className="flex-1 w-full">
+      <Card className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-4">
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
+              alt="Meta logo" 
+              className="w-24 h-auto"
+            />
+            <div>
+              <CardTitle className="text-xl font-bold">Target Your True Fans</CardTitle>
+              <p className="text-sm text-gray-600">Real-time conversion tracking</p>
+            </div>
+          </div>
+          <ToggleGroup type="single" value={timeRange} onValueChange={(value) => value && setTimeRange(value)}>
+            <ToggleGroupItem value="7D" aria-label="7 Days">7D</ToggleGroupItem>
+            <ToggleGroupItem value="30D" aria-label="30 Days">30D</ToggleGroupItem>
+            <ToggleGroupItem value="3M" aria-label="3 Months">3M</ToggleGroupItem>
+          </ToggleGroup>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Ad Clicks</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
+                </div>
+                <p className="text-2xl font-bold">860</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Percent className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Conversion Rate</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
+                </div>
+                <p className="text-2xl font-bold">24.2%</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Cost per Conversion</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">-5.2%</Badge>
+                </div>
+                <p className="text-2xl font-bold">$2.15</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="bg-white/90 backdrop-blur-sm mb-8">
+            <CardContent className="pt-6">
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metaData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#666666', fontSize: 12 }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#666666', fontSize: 12 }}
+                    />
+                    <Tooltip content={<MetaPixelTooltip />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="clicks" 
+                      stroke="#6851FB"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#6851FB" }}
+                      activeDot={{ r: 6, fill: "#6851FB" }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="conversions" 
+                      stroke="#37D299"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#37D299" }}
+                      activeDot={{ r: 6, fill: "#37D299" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Platform Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Spotify', value: 45 },
+                    { name: 'Apple Music', value: 35 },
+                    { name: 'Others', value: 20 }
+                  ].map((platform) => (
+                    <div key={platform.name} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">{platform.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${platform.value}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{platform.value}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Geographic Data</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {[
+                    { country: 'United States', value: 45 },
+                    { country: 'United Kingdom', value: 25 },
+                    { country: 'Germany', value: 15 },
+                    { country: 'Others', value: 15 }
+                  ].map((geo) => (
+                    <div key={geo.country} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">{geo.country}</span>
+                      <span className="text-sm font-medium">{geo.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Device Types</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[150px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={deviceData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {deviceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  {deviceData.map((device, index) => (
+                    <div key={device.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COLORS[index] }}
+                      />
+                      <span className="text-sm text-gray-600">{device.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const Features: React.FC = () => {
   return (
     <section className="py-24 bg-white">
@@ -248,37 +503,7 @@ const Features: React.FC = () => {
               Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
             </p>
           </div>
-          <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-8 max-w-md mx-auto">
-              <div className="flex items-center mb-8">
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" 
-                  alt="Meta logo" 
-                  className="w-24 h-auto"
-                />
-              </div>
-              <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-medium text-lg">Ad Clicks</span>
-                    <span className="text-[#6851FB] text-lg font-semibold">860</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-2.5 rounded-full">
-                    <div className="bg-[#6851FB] h-2.5 rounded-full" style={{ width: '80%' }}></div>
-                  </div>
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-medium text-lg">Conversions</span>
-                    <span className="text-emerald-500 text-lg font-semibold">208</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-2.5 rounded-full">
-                    <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '24%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MetaPixelSection />
         </div>
 
         <div className="mt-32">
@@ -417,10 +642,7 @@ const Features: React.FC = () => {
                       <span className="text-[#6851FB] text-lg font-semibold whitespace-nowrap">{region.percentage}%</span>
                     </div>
                     <div className="w-full bg-gray-100 h-2.5 rounded-full">
-                      <div 
-                        className="h-2.5 rounded-full transition-all duration-500 bg-[#6851FB]"
-                        style={{ width: `${region.percentage}%` }}
-                      />
+                      <div className="h-2.5 rounded-full transition-all duration-500 bg-[#6851FB]" style={{ width: `${region.percentage}%` }}></div>
                     </div>
                   </div>
                 ))}
