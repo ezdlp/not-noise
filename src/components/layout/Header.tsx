@@ -2,7 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/ui/cta-button"
-import { LogIn, Menu, Plus } from "lucide-react"
+import { Menu, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -96,19 +96,19 @@ const Header = () => {
             <div className="flex flex-col gap-3 py-4">
               {!isAuthenticated ? (
                 <>
-                  <CTAButton 
-                    onClick={() => navigate("/register")} 
-                    className="w-full h-8 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
-                  >
-                    Get Started
-                  </CTAButton>
                   <Button
-                    variant="outline"
-                    onClick={() => navigate("/login")}
-                    className="w-full h-8 gap-2 text-sm hover:bg-neutral-50 transition-colors border-neutral-200"
+                    variant="default"
+                    onClick={() => navigate("/register")}
+                    className="w-full h-8 text-sm bg-black hover:bg-black/90 transition-colors"
                   >
-                    <LogIn className="h-4 w-4" />
-                    Log in
+                    Sign Up
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate("/login")}
+                    className="w-full h-8 text-sm hover:bg-neutral-50 transition-colors font-medium"
+                  >
+                    Log In
                   </Button>
                 </>
               ) : (
@@ -152,7 +152,7 @@ const Header = () => {
   return (
     <header 
       className={cn(
-        "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-200 h-14",
+        "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-200 h-16",
         isDashboard 
           ? "border-neutral-border bg-white/95" 
           : "border-neutral-200 bg-white/90"
@@ -164,7 +164,7 @@ const Header = () => {
             <img 
               src="/lovable-uploads/56b25c3e-b9f6-40fe-a8db-39be68cb0cdb.png" 
               alt="Soundraiser" 
-              className="h-5 md:h-6"
+              className="h-6 md:h-7"
             />
           </Link>
         </div>
@@ -177,17 +177,16 @@ const Header = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate("/login")}
-                className="hidden md:flex gap-2 h-8 text-sm hover:bg-neutral-50 transition-colors"
+                className="hidden md:flex h-8 text-sm hover:bg-neutral-50 transition-colors font-medium"
               >
-                <LogIn className="h-4 w-4" />
-                Log in
+                Log In
               </Button>
-              <CTAButton 
+              <Button 
                 onClick={() => navigate("/register")}
-                className="hidden md:flex h-8 px-3 text-sm font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+                className="hidden md:flex h-8 px-3 text-sm font-medium bg-black hover:bg-black/90 transition-colors"
               >
-                Get Started
-              </CTAButton>
+                Sign Up
+              </Button>
             </>
           ) : (
             <>
