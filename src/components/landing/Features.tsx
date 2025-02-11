@@ -454,73 +454,20 @@ const Features: React.FC = () => {
           <SocialAssetsShowcase />
         </div>
 
-        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-3 rounded-lg bg-primary-light">
-                <Activity className="w-6 h-6 text-primary" />
+        <div className="mt-32">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-primary-light">
+                <Activity className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-primary">Retargeting</span>
+              <span className="text-sm font-medium text-gray-500">Meta Pixel Integration</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold">Target Your True Fans</h3>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">Target Your True Fans</h3>
             <p className="text-lg text-gray-600">
               Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
             </p>
           </div>
           <MetaPixelSection />
-        </div>
-
-        <div className="mt-32">
-          <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-            <div className="p-8 md:p-10">
-              <div className="mb-8">
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="font-medium">Real-Time Analytics</span>
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-2">Track Your Music's Performance</h3>
-                <p className="text-gray-600 text-lg">
-                  Make data-driven decisions with comprehensive analytics across platforms.
-                </p>
-              </div>
-              
-              <div className="h-[400px] -mx-2 sm:mx-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={mockData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#666666', fontSize: 12 }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#666666', fontSize: 12 }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="views" 
-                      stroke="#9b87f5"
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: "#9b87f5" }}
-                      activeDot={{ r: 6, fill: "#9b87f5" }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="clicks" 
-                      stroke="#37D299"
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: "#37D299" }}
-                      activeDot={{ r: 6, fill: "#37D299" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
