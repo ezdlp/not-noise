@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -186,7 +187,7 @@ const SocialAssetsShowcase: React.FC = () => {
               </Toggle>
             </div>
 
-            <div className="h-[480px] flex items-center justify-center bg-neutral-50">
+            <div className="h-[480px] flex items-center justify-center bg-neutral-50 p-6">
               <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[270px]'}`}>
                 <img 
                   src={activeFormat === 'post' 
@@ -194,7 +195,7 @@ const SocialAssetsShowcase: React.FC = () => {
                     : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
                   }
                   alt="Social media preview"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
             </div>
