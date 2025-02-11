@@ -1,3 +1,4 @@
+
 import {
   Accordion,
   AccordionContent,
@@ -7,24 +8,40 @@ import {
 
 const faqs = [
   {
-    question: "What makes notnoise's Smart Links different?",
-    answer: "Our Smart Links are built for modern music marketing, featuring Meta Pixel integration for retargeting, email capture capabilities, and comprehensive analytics - all in one streamlined solution that takes less than 3 minutes to set up."
+    question: "What makes Soundraiser's Smart Links special?",
+    answer: "Our Smart Links combine powerful marketing tools with beautiful, customizable designs. They feature Meta Pixel integration for retargeting, email capture, detailed analytics, and automatic social media card generation - all while maintaining a sleek, professional look that matches your brand."
   },
   {
-    question: "Can I track my Smart Link's performance?",
-    answer: "Yes! You get detailed analytics including views, clicks, geographic data, and platform preferences. Plus, with Meta Pixel integration, you can create custom audiences and retarget your fans effectively."
+    question: "How can I promote my music effectively using Smart Links?",
+    answer: "Our Smart Links offer multiple promotion tools: automatically generated social media cards for platforms like Instagram and TikTok, built-in Meta Pixel for retargeting campaigns, email capture for building your fan base, and detailed analytics to understand your audience's behavior across all streaming platforms."
   },
   {
-    question: "How does the email capture feature work?",
-    answer: "You can enable email capture on any Smart Link to collect fan emails directly. Customize your message and description to encourage sign-ups, helping you build your mailing list while promoting your music."
+    question: "What analytics and insights do I get?",
+    answer: "You get comprehensive analytics including real-time views, clicks, geographic data, device types, platform preferences, and conversion rates. Our dashboard shows you detailed performance metrics, helping you understand where your fans are coming from and how they interact with your music."
   },
   {
-    question: "Which streaming platforms are supported?",
-    answer: "We support all major music platforms including Spotify, Apple Music, Amazon Music, YouTube Music, Deezer, Tidal, and many more. Your fans will automatically be directed to their preferred platform."
+    question: "How do the social media features work?",
+    answer: "Our platform automatically generates eye-catching social cards for your music, optimized for Instagram, X (Twitter), TikTok, Facebook, and Snapchat. These visually appealing cards help your links stand out in social media feeds, increasing engagement and click-through rates."
   },
   {
-    question: "Is it really free to use?",
-    answer: "Yes! You can create unlimited Smart Links with all core features including Meta Pixel integration and email capture at no cost. No credit card required to get started."
+    question: "Which music platforms are supported?",
+    answer: "We support all major music streaming services including Spotify, Apple Music, Amazon Music, YouTube Music, Deezer, Tidal, SoundCloud, and many more. Your fans are automatically directed to their preferred platform, ensuring a seamless listening experience."
+  },
+  {
+    question: "How does fan retargeting work?",
+    answer: "Through our Meta Pixel integration, you can track conversions and create custom audiences for retargeting on Facebook and Instagram. This allows you to reach fans who've interacted with your Smart Links, making your advertising more effective and targeted."
+  },
+  {
+    question: "What's included in the free plan?",
+    answer: "Our free plan includes unlimited Smart Link creation, basic analytics, Meta Pixel integration, and email capture capabilities. You can start promoting your music professionally without any upfront cost or credit card required."
+  },
+  {
+    question: "How do I get started with my first Smart Link?",
+    answer: "Getting started is simple - just paste your Spotify track URL and we'll automatically fetch all the streaming links for other platforms. You can then enable Meta Pixel tracking, set up email capture, and your Smart Link is ready to share in minutes."
+  },
+  {
+    question: "Do you offer any additional promotion services?",
+    answer: "Yes! Besides Smart Links, we offer Spotify Playlist Promotion services to help get your music in front of genuine listeners. Our promotion service connects you with verified playlist curators, provides detailed curator feedback, and ensures your music reaches authentic, engaged audiences."
   }
 ];
 
