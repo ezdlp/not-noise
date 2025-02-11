@@ -227,23 +227,7 @@ const Features: React.FC = () => {
         </div>
 
         <div className="mt-32">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-start justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-3 rounded-lg bg-primary-light">
-                    <ImageIcon className="w-6 h-6 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-primary">Social Promotion</span>
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold">Create Professional Social Assets Instantly</h3>
-                <p className="text-lg text-gray-600 max-w-2xl">
-                  Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
-                </p>
-              </div>
-            </div>
-            <SocialAssetsShowcase />
-          </div>
+          <SocialAssetsShowcase />
         </div>
 
         <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
