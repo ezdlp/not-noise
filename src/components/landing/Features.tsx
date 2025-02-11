@@ -333,9 +333,11 @@ const MetaPixelSection = () => {
                 <CardContent>
                   <div className="space-y-2">
                     {[
-                      { name: 'Spotify', value: 45 },
-                      { name: 'Apple Music', value: 35 },
-                      { name: 'Others', value: 20 }
+                      { name: 'Spotify', value: 35 },
+                      { name: 'Apple Music', value: 25 },
+                      { name: 'YouTube Music', value: 20 },
+                      { name: 'Amazon Music', value: 12 },
+                      { name: 'Others', value: 8 }
                     ].map((platform) => (
                       <div key={platform.name} className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{platform.name}</span>
@@ -361,10 +363,13 @@ const MetaPixelSection = () => {
                 <CardContent>
                   <div className="space-y-2">
                     {[
-                      { country: 'United States', value: 45 },
-                      { country: 'United Kingdom', value: 25 },
+                      { country: 'United States', value: 35 },
+                      { country: 'United Kingdom', value: 20 },
                       { country: 'Germany', value: 15 },
-                      { country: 'Others', value: 15 }
+                      { country: 'Brazil', value: 12 },
+                      { country: 'Spain', value: 8 },
+                      { country: 'Argentina', value: 6 },
+                      { country: 'Others', value: 4 }
                     ].map((geo) => (
                       <div key={geo.country} className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{geo.country}</span>
