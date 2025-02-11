@@ -70,7 +70,7 @@ const Header = () => {
   }
 
   const MarketingNavLinks = () => (
-    <div className="hidden md:flex md:space-x-4">
+    <div className="hidden md:flex md:space-x-2">
       <NavigationItems />
     </div>
   )
@@ -84,28 +84,28 @@ const Header = () => {
           className="md:hidden hover:bg-neutral-50 transition-colors"
           aria-label="Open mobile menu"
         >
-          <Menu className="h-6 w-6" />
+          <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
       <SheetContent 
         side="right" 
-        className="w-[300px] sm:w-[400px] bg-white/95 backdrop-blur-md border-neutral-200"
+        className="w-[300px] sm:w-[380px] bg-white/95 backdrop-blur-md border-neutral-200"
       >
-        <nav className="flex flex-col gap-4">
+        <nav className="flex flex-col gap-3">
           {!isDashboard && (
-            <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-3 py-4">
               {!isAuthenticated ? (
                 <>
                   <CTAButton 
                     onClick={() => navigate("/register")} 
-                    className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+                    className="w-full h-8 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
                   >
                     Get Started
                   </CTAButton>
                   <Button
                     variant="outline"
                     onClick={() => navigate("/login")}
-                    className="w-full gap-2 font-medium text-sm hover:bg-neutral-50 transition-colors border-neutral-200"
+                    className="w-full h-8 gap-2 text-sm hover:bg-neutral-50 transition-colors border-neutral-200"
                   >
                     <LogIn className="h-4 w-4" />
                     Log in
@@ -115,12 +115,12 @@ const Header = () => {
                 <>
                   <CTAButton 
                     onClick={() => navigate("/create")} 
-                    className="w-full gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+                    className="w-full h-8 gap-2 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
                   >
                     <Plus className="h-4 w-4" />
                     Create Smart Link
                   </CTAButton>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     <Link 
                       to="/dashboard" 
                       className="text-sm font-medium text-gray-600 hover:text-primary transition-colors px-2 py-1.5 rounded-md hover:bg-neutral-50"
@@ -152,39 +152,39 @@ const Header = () => {
   return (
     <header 
       className={cn(
-        "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-200",
+        "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-200 h-14",
         isDashboard 
           ? "border-neutral-border bg-white/95" 
           : "border-neutral-200 bg-white/90"
       )}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4">
         <div className="flex items-center">
           <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/56b25c3e-b9f6-40fe-a8db-39be68cb0cdb.png" 
               alt="Soundraiser" 
-              className="h-7 md:h-9"
+              className="h-5 md:h-6"
             />
           </Link>
         </div>
 
         {!isDashboard && <MarketingNavLinks />}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {!isAuthenticated ? (
             <>
               <Button
                 variant="ghost"
                 onClick={() => navigate("/login")}
-                className="hidden md:flex gap-2 font-medium text-sm hover:bg-neutral-50 transition-colors"
+                className="hidden md:flex gap-2 h-8 text-sm hover:bg-neutral-50 transition-colors"
               >
                 <LogIn className="h-4 w-4" />
                 Log in
               </Button>
               <CTAButton 
                 onClick={() => navigate("/register")}
-                className="hidden md:flex py-2 px-4 text-sm font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+                className="hidden md:flex h-8 px-3 text-sm font-medium bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
               >
                 Get Started
               </CTAButton>
@@ -194,7 +194,7 @@ const Header = () => {
               {!isDashboard && (
                 <Button
                   onClick={() => navigate("/create")}
-                  className="hidden md:flex gap-2 bg-primary text-white hover:bg-primary/90 transition-colors"
+                  className="hidden md:flex gap-2 h-8 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Create Smart Link
@@ -205,15 +205,15 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="relative h-9 w-9 rounded-full hover:bg-neutral-50 transition-colors p-0"
+                    className="relative h-8 w-8 rounded-full hover:bg-neutral-50 transition-colors p-0"
                     aria-label="User menu"
                   >
                     <Avatar 
-                      className={`h-8 w-8 transition-all duration-200 ring-offset-background
+                      className={`h-7 w-7 transition-all duration-200 ring-offset-background
                         ${subscription?.tier === "pro" ? "ring-2 ring-primary hover:ring-primary/90" : "hover:ring-2 hover:ring-neutral-200"}`}
                     >
                       <AvatarFallback 
-                        className="bg-primary/5 text-primary font-medium"
+                        className="bg-primary/5 text-primary text-xs font-medium"
                         aria-label={`User avatar for ${profile?.name || "User"}`}
                       >
                         {getInitials(profile?.name || "User")}

@@ -42,11 +42,11 @@ export function UserMenuContent({ profile, subscription }: UserMenuContentProps)
       <DropdownMenuLabel className="font-normal">
         <div className="flex flex-row items-center space-x-3">
           <Avatar 
-            className={`h-8 w-8 transition-all duration-200 ring-offset-background
+            className={`h-7 w-7 transition-all duration-200 ring-offset-background
               ${subscription?.tier === "pro" ? "ring-2 ring-primary hover:ring-primary/90" : "hover:ring-2 hover:ring-neutral-200"}`}
           >
             <AvatarFallback 
-              className="bg-primary/5 text-primary font-medium"
+              className="bg-primary/5 text-primary text-xs font-medium"
               aria-label={`User avatar for ${profile?.name || "User"}`}
             >
               {getInitials(profile?.name || "User")}
@@ -70,14 +70,14 @@ export function UserMenuContent({ profile, subscription }: UserMenuContentProps)
       <DropdownMenuGroup>
         <DropdownMenuItem 
           onClick={() => navigate("/dashboard")}
-          className="focus:bg-neutral-50 cursor-pointer transition-colors"
+          className="focus:bg-neutral-50 cursor-pointer transition-colors text-sm"
         >
           <User className="mr-2 h-4 w-4" />
           <span>Dashboard</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => navigate("/settings")}
-          className="focus:bg-neutral-50 cursor-pointer transition-colors"
+          className="focus:bg-neutral-50 cursor-pointer transition-colors text-sm"
         >
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
@@ -86,7 +86,7 @@ export function UserMenuContent({ profile, subscription }: UserMenuContentProps)
       <DropdownMenuSeparator />
       <DropdownMenuItem 
         onClick={handleLogout}
-        className="focus:bg-neutral-50 cursor-pointer transition-colors text-red-600 focus:text-red-600"
+        className="focus:bg-neutral-50 cursor-pointer transition-colors text-sm text-red-600 focus:text-red-600"
       >
         <LogOut className="mr-2 h-4 w-4" />
         <span>Log out</span>
@@ -94,3 +94,4 @@ export function UserMenuContent({ profile, subscription }: UserMenuContentProps)
     </DropdownMenuContent>
   )
 }
+

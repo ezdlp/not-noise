@@ -68,13 +68,13 @@ export function NavigationItems() {
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger
-            className="h-9 px-4 py-2 hover:bg-neutral-50 transition-colors"
+            className="h-8 px-3 text-sm hover:bg-neutral-50 transition-colors"
           >
             Features
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid gap-3 p-6 w-[500px] animate-scale-in">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-3 p-4 w-[440px] animate-scale-in">
+              <div className="grid grid-cols-2 gap-3">
                 {features.map((feature) => (
                   <NavigationMenuLink
                     key={feature.title}
@@ -95,7 +95,7 @@ export function NavigationItems() {
                   </NavigationMenuLink>
                 ))}
               </div>
-              <div className="mt-4 border-t pt-4">
+              <div className="mt-3 border-t pt-3">
                 <NavigationMenuLink
                   href="/features"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -108,12 +108,12 @@ export function NavigationItems() {
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuTrigger
-            className="h-9 px-4 py-2 hover:bg-neutral-50 transition-colors"
+            className="h-8 px-3 text-sm hover:bg-neutral-50 transition-colors"
           >
             Resources
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid gap-3 p-6 w-[400px] animate-scale-in">
+            <div className="grid gap-3 p-4 w-[360px] animate-scale-in">
               {resources.map((resource) => (
                 <NavigationMenuLink
                   key={resource.title}
@@ -140,7 +140,7 @@ export function NavigationItems() {
           <NavigationMenuLink
             href="/pricing"
             className={cn(
-              "group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              "group inline-flex h-8 w-max items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
               "hover:bg-neutral-50 hover:text-primary focus:bg-neutral-50 focus:text-primary focus:outline-none",
               "disabled:pointer-events-none disabled:opacity-50",
               location.pathname === "/pricing" && "bg-neutral-50 text-primary"
@@ -153,3 +153,4 @@ export function NavigationItems() {
     </NavigationMenu>
   )
 }
+
