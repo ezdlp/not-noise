@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -169,76 +168,76 @@ const MetaPixelSection = () => {
   ];
   
   return (
-    <div className="mt-16">
-      <div className="text-center max-w-2xl mx-auto mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-primary/5">
-            <Activity className="w-4 h-4 text-primary" />
+    <div className="mt-12 md:mt-16">
+      <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8 px-4">
+        <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+          <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+            <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
           </div>
-          <span className="text-sm font-medium text-neutral-500">Meta Pixel Integration</span>
+          <span className="text-sm md:text-base font-medium text-neutral-500">Meta Pixel Integration</span>
         </div>
-        <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Target Your True Fans</h3>
-        <p className="text-lg text-neutral-600/90">
+        <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Target Your True Fans</h3>
+        <p className="text-base md:text-lg text-neutral-600/90">
           Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
         </p>
       </div>
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
         <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
-          <div className="p-8 md:p-10">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="p-4 md:p-8 lg:p-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Users className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Ad Clicks</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">+12.5%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">860</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">860</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Percent className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <Percent className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Conversion Rate</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">+8.3%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">24.2%</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">24.2%</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <DollarSign className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Cost per Conversion</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">-5.2%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">-5.2%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">$2.15</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">$2.15</p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
+                <CardHeader className="p-4 md:p-6">
                   <CardTitle className="text-sm font-medium text-neutral-900">Platform Distribution</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
                   <div className="space-y-2">
                     {[
                       { name: 'Spotify', value: 30 },
@@ -250,15 +249,15 @@ const MetaPixelSection = () => {
                       { name: 'Others', value: 6 }
                     ].map((platform) => (
                       <div key={platform.name} className="flex items-center justify-between">
-                        <span className="text-sm text-neutral-600">{platform.name}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
+                        <span className="text-xs md:text-sm text-neutral-600">{platform.name}</span>
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <div className="w-16 md:w-24 h-1.5 md:h-2 bg-neutral-100 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary rounded-full"
                               style={{ width: `${platform.value}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium text-neutral-900">{platform.value}%</span>
+                          <span className="text-xs md:text-sm font-medium text-neutral-900 min-w-[24px] md:min-w-[32px] text-right">{platform.value}%</span>
                         </div>
                       </div>
                     ))}
@@ -267,10 +266,10 @@ const MetaPixelSection = () => {
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
+                <CardHeader className="p-4 md:p-6">
                   <CardTitle className="text-sm font-medium text-neutral-900">Geographic Data</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
                   <div className="space-y-2">
                     {[
                       { country: 'United States', value: 35 },
@@ -282,8 +281,8 @@ const MetaPixelSection = () => {
                       { country: 'Others', value: 4 }
                     ].map((geo) => (
                       <div key={geo.country} className="flex items-center justify-between">
-                        <span className="text-sm text-neutral-600">{geo.country}</span>
-                        <span className="text-sm font-medium text-neutral-900">{geo.value}%</span>
+                        <span className="text-xs md:text-sm text-neutral-600">{geo.country}</span>
+                        <span className="text-xs md:text-sm font-medium text-neutral-900">{geo.value}%</span>
                       </div>
                     ))}
                   </div>
@@ -291,19 +290,19 @@ const MetaPixelSection = () => {
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
+                <CardHeader className="p-4 md:p-6">
                   <CardTitle className="text-sm font-medium text-neutral-900">Device Types</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-[150px]">
+                <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
+                  <div className="h-[120px] md:h-[150px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={deviceData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={60}
+                          innerRadius={35}
+                          outerRadius={50}
                           paddingAngle={5}
                           dataKey="value"
                         >
@@ -314,14 +313,14 @@ const MetaPixelSection = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex justify-center gap-4 mt-4">
+                  <div className="flex justify-center gap-3 md:gap-4 mt-3 md:mt-4">
                     {deviceData.map((device, index) => (
-                      <div key={device.name} className="flex items-center gap-2">
+                      <div key={device.name} className="flex items-center gap-1.5 md:gap-2">
                         <div 
-                          className="w-3 h-3 rounded-full"
+                          className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full"
                           style={{ backgroundColor: COLORS[index] }}
                         />
-                        <span className="text-sm text-neutral-600">{device.name}</span>
+                        <span className="text-xs md:text-sm text-neutral-600">{device.name}</span>
                       </div>
                     ))}
                   </div>
@@ -339,85 +338,94 @@ const AnalyticsSection = () => {
   const [timeframe, setTimeframe] = useState('7d');
   
   return (
-    <div className="mt-16">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="p-2 rounded-lg bg-primary/5">
-              <BarChart3 className="w-4 h-4 text-primary" />
+    <div className="mt-12 md:mt-16">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
+          <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+            <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+              <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
             </div>
-            <span className="text-sm font-medium text-neutral-500">Analytics Dashboard</span>
+            <span className="text-sm md:text-base font-medium text-neutral-500">Analytics Dashboard</span>
           </div>
-          <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Track Your Performance</h3>
-          <p className="text-lg text-neutral-600/90">
+          <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Track Your Performance</h3>
+          <p className="text-base md:text-lg text-neutral-600/90">
             Get detailed insights into your smart link performance. Monitor views, clicks, and conversion rates in real-time.
           </p>
         </div>
 
         <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
-          <div className="p-8 md:p-10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <h4 className="text-xl font-semibold text-neutral-900">Performance Overview</h4>
-              <ToggleGroup type="single" value={timeframe} onValueChange={(value) => value && setTimeframe(value)}>
-                <ToggleGroupItem value="24h" aria-label="Toggle 24 hours view">24h</ToggleGroupItem>
-                <ToggleGroupItem value="7d" aria-label="Toggle 7 days view">7d</ToggleGroupItem>
-                <ToggleGroupItem value="30d" aria-label="Toggle 30 days view">30d</ToggleGroupItem>
+          <div className="p-4 md:p-8 lg:p-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+              <h4 className="text-lg md:text-xl font-semibold text-neutral-900">Performance Overview</h4>
+              <ToggleGroup type="single" value={timeframe} onValueChange={(value) => value && setTimeframe(value)} className="gap-1 md:gap-2">
+                <ToggleGroupItem value="24h" size="sm" className="text-xs md:text-sm px-2.5 md:px-3.5">24h</ToggleGroupItem>
+                <ToggleGroupItem value="7d" size="sm" className="text-xs md:text-sm px-2.5 md:px-3.5">7d</ToggleGroupItem>
+                <ToggleGroupItem value="30d" size="sm" className="text-xs md:text-sm px-2.5 md:px-3.5">30d</ToggleGroupItem>
               </ToggleGroup>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Users className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Total Views</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">+12.5%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">2,847</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">2,847</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Activity className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Total Clicks</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">+8.3%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">1,249</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">1,249</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Percent className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                        <Percent className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                       </div>
                       <span className="font-medium text-sm text-neutral-600">Click Rate</span>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+5.2%</Badge>
+                    <Badge variant="secondary" className="text-xs md:text-sm bg-emerald-100 text-emerald-700">+5.2%</Badge>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">43.9%</p>
+                  <p className="text-xl md:text-2xl font-bold text-neutral-900">43.9%</p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="h-[300px]">
+            <div className="h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={mockData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200/40" />
-                  <XAxis dataKey="date" className="text-sm text-neutral-600" />
-                  <YAxis className="text-sm text-neutral-600" />
+                  <XAxis 
+                    dataKey="date" 
+                    className="text-xs md:text-sm text-neutral-600"
+                    tick={{ fontSize: 12 }}
+                    tickMargin={8}
+                  />
+                  <YAxis 
+                    className="text-xs md:text-sm text-neutral-600"
+                    tick={{ fontSize: 12 }}
+                    tickMargin={8}
+                  />
                   <Tooltip content={<CustomTooltip />} />
                   <Line 
                     type="monotone" 
@@ -447,22 +455,22 @@ const AnalyticsSection = () => {
 
 const Features: React.FC = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-16 md:py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
-        <h2 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
           Break Through The Noise With Smart Links
         </h2>
 
-        <div className="mt-16" data-scroll="parallax">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary/5">
-                <Link2 className="w-4 h-4 text-primary" />
+        <div className="mt-12 md:mt-16" data-scroll="parallax">
+          <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
+            <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+              <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                <Link2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-neutral-500">Smart Links</span>
+              <span className="text-sm md:text-base font-medium text-neutral-500">Smart Links</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">One Link for All Platforms</h3>
-            <p className="text-lg text-neutral-600/90">
+            <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">One Link for All Platforms</h3>
+            <p className="text-base md:text-lg text-neutral-600/90">
               Connect your fans to their preferred streaming service instantly. No more juggling multiple links or losing potential listeners.
             </p>
           </div>
@@ -470,28 +478,30 @@ const Features: React.FC = () => {
           <SmartLinkShowcase />
         </div>
 
-        <div className="w-full h-px bg-neutral-100/50 my-16" />
+        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
 
-        <div className="mt-16">
-          <AnalyticsSection />
-        </div>
+        <AnalyticsSection />
 
-        <div className="w-full h-px bg-neutral-100/50 my-16" />
+        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
 
-        <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
+        <MetaPixelSection />
+
+        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
+
+        <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-8 md:gap-12">
           <div className="flex-1 lg:max-w-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary/5">
-                <ImageIcon className="w-4 h-4 text-primary" />
+            <div className="flex items-center gap-2 mb-3 md:mb-4">
+              <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-neutral-500">Social Media Tools</span>
+              <span className="text-sm md:text-base font-medium text-neutral-500">Social Media Tools</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Stand Out on Social Media</h3>
-            <p className="text-lg text-neutral-600/90">
+            <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Stand Out on Social Media</h3>
+            <p className="text-base md:text-lg text-neutral-600/90">
               Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
             </p>
 
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-6 mt-8">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 md:gap-6 mt-6 md:mt-8">
               {[
                 { icon: faInstagram, label: "Instagram" },
                 { icon: faTiktok, label: "TikTok" },
@@ -500,75 +510,16 @@ const Features: React.FC = () => {
                 { icon: faFacebookF, label: "Facebook" }
               ].map((platform) => (
                 <div key={platform.label} className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-                    <FontAwesomeIcon icon={platform.icon} className="w-5 h-5 text-neutral-500" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+                    <FontAwesomeIcon icon={platform.icon} className="w-4 h-4 md:w-5 md:h-5 text-neutral-500" />
                   </div>
-                  <span className="text-xs font-medium text-neutral-600">{platform.label}</span>
+                  <span className="text-xs md:text-sm font-medium text-neutral-600">{platform.label}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <SocialAssetsShowcase />
-        </div>
-
-        <div className="w-full h-px bg-neutral-100/50 my-16" />
-
-        <MetaPixelSection />
-
-        <div className="w-full h-px bg-neutral-100/50 my-16" />
-
-        <div className="mt-16 flex flex-col lg:flex-row items-center gap-12">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary/5">
-                <Mail className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-neutral-500">Fan Email Collection</span>
-            </div>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">Own Your Fan Relationships</h3>
-            <p className="text-lg text-neutral-600/90">
-              Build your mailing list right from your smart link page. Export your fan contacts directly from your dashboard and use them with your favorite email marketing platform - MailChimp, ConvertKit, or any other provider.
-            </p>
-          </div>
-          <div className="flex-1 w-full">
-            <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.03)] border border-neutral-100/60 p-8 h-[400px] overflow-hidden transition-all duration-200">
-              <div className="flex justify-between items-center mb-6">
-                <h4 className="text-lg font-semibold text-neutral-900">Recent Subscribers</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-sm hover:bg-neutral-50 transition-colors font-medium border border-neutral-100/60"
-                >
-                  Export CSV
-                </Button>
-              </div>
-              <div className="overflow-x-auto">
-                <div className="min-w-[500px] md:min-w-0">
-                  <div className="bg-white/50 rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-neutral-50/50">
-                          <TableHead>Email</TableHead>
-                          <TableHead>Platform</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockSubscribers.map((subscriber) => (
-                          <TableRow key={subscriber.id} className="hover:bg-neutral-50/50">
-                            <TableCell className="font-medium">{subscriber.email}</TableCell>
-                            <TableCell>{subscriber.platform}</TableCell>
-                            <TableCell>{subscriber.date}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
