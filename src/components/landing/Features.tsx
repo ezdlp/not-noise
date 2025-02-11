@@ -1,9 +1,10 @@
-import React from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
+import React, { useState } from "react";
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import { Toggle } from "@/components/ui/toggle";
 
 // Generate mock data for analytics
 const generateMockData = () => {
@@ -106,6 +107,84 @@ const SmartLinkShowcase: React.FC = () => {
   );
 };
 
+const SocialAssetsShowcase: React.FC = () => {
+  const [activeFormat, setActiveFormat] = useState<'post' | 'story'>('post');
+  
+  return (
+    <div className="mt-8 relative">
+      <div className="relative bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23202020' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        />
+        
+        <div className="flex justify-center gap-4 mb-8">
+          <Toggle
+            pressed={activeFormat === 'post'}
+            onPressedChange={() => setActiveFormat('post')}
+            className={`px-6 py-2 text-sm font-medium transition-all ${
+              activeFormat === 'post' 
+                ? 'bg-white text-primary shadow-md' 
+                : 'text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            Post
+          </Toggle>
+          <Toggle
+            pressed={activeFormat === 'story'}
+            onPressedChange={() => setActiveFormat('story')}
+            className={`px-6 py-2 text-sm font-medium transition-all ${
+              activeFormat === 'story' 
+                ? 'bg-white text-primary shadow-md' 
+                : 'text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            Story
+          </Toggle>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6 max-w-3xl mx-auto">
+          <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg mb-6 overflow-hidden`}>
+            <img 
+              src="/lovable-uploads/soundraiser-logo/Iso A.svg"
+              alt="Preview"
+              className="absolute inset-0 w-full h-full object-contain p-12"
+            />
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-[#E4405F]/10 flex items-center justify-center">
+                <Instagram className="w-6 h-6 text-[#E4405F]" />
+              </div>
+              <span className="text-xs font-medium text-gray-600">Instagram</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 flex items-center justify-center">
+                <Twitter className="w-6 h-6 text-[#1DA1F2]" />
+              </div>
+              <span className="text-xs font-medium text-gray-600">Twitter</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-[#4267B2]/10 flex items-center justify-center">
+                <Facebook className="w-6 h-6 text-[#4267B2]" />
+              </div>
+              <span className="text-xs font-medium text-gray-600">Facebook</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-[#0A66C2]/10 flex items-center justify-center">
+                <Linkedin className="w-6 h-6 text-[#0A66C2]" />
+              </div>
+              <span className="text-xs font-medium text-gray-600">LinkedIn</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Features: React.FC = () => {
   return (
     <section className="py-24 bg-white">
@@ -114,7 +193,6 @@ const Features: React.FC = () => {
           From One Link to Endless Plays
         </h2>
 
-        {/* One Link Feature */}
         <div className="mt-12" data-scroll="parallax">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -132,7 +210,6 @@ const Features: React.FC = () => {
           <SmartLinkShowcase />
         </div>
 
-        {/* Social Media Assets - Full Width */}
         <div className="mt-32">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-start justify-between mb-8">
@@ -149,34 +226,10 @@ const Features: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card className="p-6 hover:shadow-lg transition-all duration-300">
-                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary rounded-lg flex items-center justify-center mb-4">
-                  <img 
-                    src="/lovable-uploads/soundraiser-logo/Iso A.svg"
-                    alt="Instagram post preview"
-                    className="w-32 h-32"
-                  />
-                </div>
-                <h4 className="text-lg font-semibold mb-2">Instagram Post</h4>
-                <p className="text-gray-600">Perfect square format for Instagram feed posts</p>
-              </Card>
-              <Card className="p-6 hover:shadow-lg transition-all duration-300">
-                <div className="aspect-video bg-gradient-to-br from-emerald-500/20 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
-                  <img 
-                    src="/lovable-uploads/soundraiser-logo/Iso A.svg"
-                    alt="Story preview"
-                    className="w-32 h-32"
-                  />
-                </div>
-                <h4 className="text-lg font-semibold mb-2">Instagram Story</h4>
-                <p className="text-gray-600">Vertical format optimized for stories</p>
-              </Card>
-            </div>
+            <SocialAssetsShowcase />
           </div>
         </div>
 
-        {/* Meta Pixel Integration - Two Column */}
         <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -223,7 +276,6 @@ const Features: React.FC = () => {
           </div>
         </div>
 
-        {/* Analytics Feature - Full Width */}
         <div className="mt-32">
           <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
             <div className="p-8 md:p-10">
@@ -277,7 +329,6 @@ const Features: React.FC = () => {
           </div>
         </div>
 
-        {/* Email List Building - Two Column */}
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -327,7 +378,6 @@ const Features: React.FC = () => {
           </div>
         </div>
 
-        {/* Global Reach Feature - Full Width */}
         <div className="mt-32">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-start justify-between mb-8">
