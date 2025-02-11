@@ -63,6 +63,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const SmartLinkShowcase = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const smartLinks = [
     { image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png" },
     { image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png" },
@@ -76,17 +77,51 @@ const SmartLinkShowcase = () => {
     return rotations[index];
   };
 
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % smartLinks.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + smartLinks.length) % smartLinks.length);
+  };
+
   return (
     <div className="mt-8 md:mt-12 relative">
-      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none md:hidden z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden z-10" />
-      
-      <div className="overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-2 md:gap-0 min-w-max md:min-w-0 md:justify-center relative py-6 md:py-8">
+      {/* Mobile Layout */}
+      <div className="md:hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+        
+        <div className="overflow-hidden px-4">
+          <div className="relative py-6">
+            <img
+              src={smartLinks[currentIndex].image}
+              alt={`Smart Link Example ${currentIndex + 1}`}
+              className="w-full shadow-[0_2px_4px_rgba(0,0,0,0.02)] rounded-xl mx-auto max-w-[280px]"
+            />
+          </div>
+          
+          <div className="flex justify-center gap-2 mt-4">
+            {smartLinks.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-primary' : 'bg-neutral-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden md:block">
+        <div className="flex justify-center relative py-6 md:py-8">
           {smartLinks.map((link, index) => (
             <div
               key={index}
-              className="flex-none w-[220px] md:w-[280px] group relative"
+              className="flex-none w-[220px] group relative"
               style={{
                 transform: `rotate(${getRotation(index)}deg)`,
                 marginLeft: index === 0 ? '0' : '-60px',
