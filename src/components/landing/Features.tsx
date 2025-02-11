@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Tiktok, Snapchat } from "lucide-react";
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Share2, MessageSquare } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -131,7 +131,7 @@ const SocialAssetsShowcase: React.FC = () => {
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Tiktok className="w-6 h-6 text-[#8E9196]" />
+              <Share2 className="w-6 h-6 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">TikTok</span>
           </div>
@@ -143,7 +143,7 @@ const SocialAssetsShowcase: React.FC = () => {
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Snapchat className="w-6 h-6 text-[#8E9196]" />
+              <MessageSquare className="w-6 h-6 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">Snapchat</span>
           </div>
@@ -189,8 +189,8 @@ const SocialAssetsShowcase: React.FC = () => {
                 <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-white rounded-lg overflow-hidden shadow-sm`}>
                   <img 
                     src={activeFormat === 'post' 
-                      ? '/lovable-uploads/6655a595-a342-4600-a02d-d9187b360621.png'
-                      : '/lovable-uploads/4fc2e818-cfaf-4123-9138-2557be621ea3.png'
+                      ? '/lovable-uploads/54cde551-5073-4972-8394-5fb47bd525af.png'
+                      : '/lovable-uploads/9974419b-8233-4418-bcf0-ed6707b27d9a.png'
                     }
                     alt="Social media preview"
                     className="absolute inset-0 w-full h-full object-cover"
