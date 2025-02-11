@@ -1,5 +1,8 @@
+
 import React, { useState } from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Share2, MessageSquare } from "lucide-react";
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faInstagram, faTiktok, faXTwitter, faSnapchat, faFacebookF } from "@fortawesome/free-brands-svg-icons";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -125,31 +128,31 @@ const SocialAssetsShowcase: React.FC = () => {
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-6">
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Instagram className="w-6 h-6 text-[#8E9196]" />
+              <FontAwesomeIcon icon={faInstagram} className="w-5 h-5 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">Instagram</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Share2 className="w-6 h-6 text-[#8E9196]" />
+              <FontAwesomeIcon icon={faTiktok} className="w-5 h-5 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">TikTok</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Twitter className="w-6 h-6 text-[#8E9196]" />
+              <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">X</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <MessageSquare className="w-6 h-6 text-[#8E9196]" />
+              <FontAwesomeIcon icon={faSnapchat} className="w-5 h-5 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">Snapchat</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <Facebook className="w-6 h-6 text-[#8E9196]" />
+              <FontAwesomeIcon icon={faFacebookF} className="w-5 h-5 text-[#8E9196]" />
             </div>
             <span className="text-xs font-medium text-gray-600">Facebook</span>
           </div>
