@@ -1,9 +1,11 @@
-import { Link2, BarChart3, Globe2, Mail, Activity } from "lucide-react";
+
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
-// Generate more realistic looking data with percentage changes
+// Generate mock data for analytics
 const generateMockData = () => {
   const baseViews = 80;
   const baseClicks = 20;
@@ -27,7 +29,7 @@ const generateMockData = () => {
 
 const mockData = generateMockData();
 
-// Mock data for email subscribers (unchanged)
+// Mock data for email subscribers
 const mockSubscribers = [
   { id: 1, email: "john.smith@example.com", date: "2024-03-25", platform: "Spotify" },
   { id: 2, email: "emma.wilson@example.com", date: "2024-03-24", platform: "Apple Music" },
@@ -59,80 +61,123 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const Features = () => {
   return (
-    <section className="py-24 bg-white relative">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-night font-heading">
           From One Link to Endless Plays
         </h2>
 
-        {/* Connecting Lines */}
-        <div className="absolute left-1/2 top-[25%] bottom-[75%] w-px border-l-2 border-dashed border-primary/20" />
-        <div className="absolute left-1/2 top-[50%] bottom-[50%] w-px border-l-2 border-dashed border-primary/20" />
-        <div className="absolute left-1/2 top-[75%] bottom-[25%] w-px border-l-2 border-dashed border-primary/20" />
-        
-        {/* One Link Feature */}
-        <div className="mt-24 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
+        {/* One Link Feature - Two Column */}
+        <div className="mt-24 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-3 rounded-lg bg-primary-light">
                 <Link2 className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold">One Link for All Platforms</h3>
+              <span className="text-sm font-medium text-primary">Smart Links</span>
             </div>
+            <h3 className="text-2xl md:text-3xl font-bold">One Link for All Platforms</h3>
             <p className="text-lg text-gray-600">
               Create a single, powerful smart link that connects your fans to your music across all major streaming platforms.
             </p>
           </div>
           <div className="flex-1 w-full md:w-auto">
-            <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg overflow-hidden">
-              <div className="aspect-square bg-[#271153] rounded-t-3xl overflow-hidden">
-                <img 
-                  src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
-                  alt="Inside Out by Spoon"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="text-center">
-                  <h4 className="text-xl font-bold text-gray-900">Inside Out</h4>
-                  <p className="text-gray-600">Spoon</p>
+            <div className="max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
+              <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+                <div className="aspect-square bg-[#271153] rounded-t-3xl overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
+                    alt="Inside Out by Spoon"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
-                    { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
-                    { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" }
-                  ].map((platform) => (
-                    <div 
-                      key={platform.name}
-                      className="flex items-center justify-between py-3 border-b last:border-b-0"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
-                        <span className="font-medium text-gray-900">{platform.name}</span>
+                <div className="p-6 space-y-4">
+                  <div className="text-center">
+                    <h4 className="text-xl font-bold text-gray-900">Inside Out</h4>
+                    <p className="text-gray-600">Spoon</p>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
+                      { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
+                      { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" }
+                    ].map((platform) => (
+                      <div 
+                        key={platform.name}
+                        className="flex items-center justify-between py-3 border-b last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
+                          <span className="font-medium text-gray-900">{platform.name}</span>
+                        </div>
+                        <Button variant="default" size="sm" className="bg-black hover:bg-black/90 min-w-[80px]">
+                          Play
+                        </Button>
                       </div>
-                      <Button variant="default" size="sm" className="bg-black hover:bg-black/90 min-w-[80px]">
-                        Play
-                      </Button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Meta Pixel Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12 px-4 md:px-0" data-scroll="parallax">
+        {/* Social Media Assets - Full Width */}
+        <div className="mt-32">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-3 rounded-lg bg-primary-light">
+                    <ImageIcon className="w-6 h-6 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-primary">Social Promotion</span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
+                <p className="text-lg text-gray-600 max-w-2xl">
+                  Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
+                </p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="p-6 hover:shadow-lg transition-all duration-300">
+                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary rounded-lg flex items-center justify-center mb-4">
+                  <img 
+                    src="/lovable-uploads/soundraiser-logo/Iso A.svg"
+                    alt="Instagram post preview"
+                    className="w-32 h-32"
+                  />
+                </div>
+                <h4 className="text-lg font-semibold mb-2">Instagram Post</h4>
+                <p className="text-gray-600">Perfect square format for Instagram feed posts</p>
+              </Card>
+              <Card className="p-6 hover:shadow-lg transition-all duration-300">
+                <div className="aspect-video bg-gradient-to-br from-emerald-500/20 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
+                  <img 
+                    src="/lovable-uploads/soundraiser-logo/Iso A.svg"
+                    alt="Story preview"
+                    className="w-32 h-32"
+                  />
+                </div>
+                <h4 className="text-lg font-semibold mb-2">Instagram Story</h4>
+                <p className="text-gray-600">Vertical format optimized for stories</p>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Meta Pixel Integration - Two Column */}
+        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-3 rounded-lg bg-primary-light">
                 <Activity className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold">Meta Pixel Integration</h3>
+              <span className="text-sm font-medium text-primary">Retargeting</span>
             </div>
+            <h3 className="text-2xl md:text-3xl font-bold">Target Your True Fans</h3>
             <p className="text-lg text-gray-600">
-              Track conversions and retarget your audience with built-in Meta Pixel support.
+              Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
             </p>
           </div>
           <div className="flex-1 w-full">
@@ -168,8 +213,8 @@ const Features = () => {
           </div>
         </div>
 
-        {/* Analytics Feature - Redesigned */}
-        <div className="mt-24">
+        {/* Analytics Feature - Full Width */}
+        <div className="mt-32">
           <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
             <div className="p-8 md:p-10">
               <div className="mb-8">
@@ -221,62 +266,19 @@ const Features = () => {
             </div>
           </div>
         </div>
-        
-        {/* Global Reach Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row-reverse items-center gap-12 px-4 md:px-0" data-scroll="parallax">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-3 rounded-lg bg-primary-light">
-                <Globe2 className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-2xl font-semibold">Global Reach</h3>
-            </div>
-            <p className="text-lg text-gray-600">
-              Track and analyze your worldwide audience with real-time geographic insights.
-            </p>
-          </div>
-          <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-xl shadow-lg p-6 max-w-md mx-auto h-[480px]">
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
-                <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "United States", percentage: 45 },
-                  { name: "United Kingdom", percentage: 25 },
-                  { name: "Brazil", percentage: 20 },
-                  { name: "Mexico", percentage: 10 }
-                ].map((region) => (
-                  <div key={region.name} className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-lg text-[#271153] truncate pr-4">{region.name}</span>
-                      <span className="text-[#6851FB] text-lg font-semibold whitespace-nowrap">{region.percentage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 h-2.5 rounded-full">
-                      <div 
-                        className="h-2.5 rounded-full transition-all duration-500 bg-[#6851FB]"
-                        style={{ width: `${region.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Email List Building */}
-        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
+
+        {/* Email List Building - Two Column */}
+        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-3 rounded-lg bg-primary-light">
                 <Mail className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold">Email List Building</h3>
+              <span className="text-sm font-medium text-primary">Fan Engagement</span>
             </div>
+            <h3 className="text-2xl md:text-3xl font-bold">Build Your Email List</h3>
             <p className="text-lg text-gray-600">
-              Turn passive listeners into engaged fans with powerful email collection tools.
+              Turn passive listeners into engaged fans with powerful email collection tools. Build a direct connection with your audience.
             </p>
           </div>
           <div className="flex-1 w-full">
@@ -314,9 +316,57 @@ const Features = () => {
             </div>
           </div>
         </div>
+
+        {/* Global Reach Feature - Full Width */}
+        <div className="mt-32">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-3 rounded-lg bg-primary-light">
+                    <Globe2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-primary">Global Impact</span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">Reach Fans Worldwide</h3>
+                <p className="text-lg text-gray-600 max-w-2xl">
+                  Track and analyze your worldwide audience with real-time geographic insights.
+                </p>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-xl shadow-lg p-6 max-w-full mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
+                <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: "United States", percentage: 45 },
+                  { name: "United Kingdom", percentage: 25 },
+                  { name: "Brazil", percentage: 20 },
+                  { name: "Mexico", percentage: 10 }
+                ].map((region) => (
+                  <div key={region.name} className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-lg text-[#271153] truncate pr-4">{region.name}</span>
+                      <span className="text-[#6851FB] text-lg font-semibold whitespace-nowrap">{region.percentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 h-2.5 rounded-full">
+                      <div 
+                        className="h-2.5 rounded-full transition-all duration-500 bg-[#6851FB]"
+                        style={{ width: `${region.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
 };
 
 export default Features;
+
