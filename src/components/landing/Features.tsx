@@ -1,16 +1,33 @@
 import { Link2, BarChart3, Globe2, Mail, Activity } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-// Mock data for the analytics chart
-const mockData = Array.from({ length: 7 }, (_, i) => ({
-  date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  views: Math.floor(Math.random() * 100) + 80,
-  clicks: Math.floor(Math.random() * 40) + 20
-}));
+// Generate more realistic looking data with percentage changes
+const generateMockData = () => {
+  const baseViews = 80;
+  const baseClicks = 20;
+  const data = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+    const views = Math.floor(baseViews + Math.random() * 40 + (i * 5));
+    const clicks = Math.floor(baseClicks + Math.random() * 15 + (i * 2));
+    
+    data.push({
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      views,
+      clicks,
+      viewsChange: i > 0 ? ((views - data[i-1]?.views) / data[i-1]?.views * 100).toFixed(1) : "0.0",
+      clicksChange: i > 0 ? ((clicks - data[i-1]?.clicks) / data[i-1]?.clicks * 100).toFixed(1) : "0.0"
+    });
+  }
+  return data;
+};
 
-// Mock data for email subscribers
+const mockData = generateMockData();
+
+// Mock data for email subscribers (unchanged)
 const mockSubscribers = [
   { id: 1, email: "john.smith@example.com", date: "2024-03-25", platform: "Spotify" },
   { id: 2, email: "emma.wilson@example.com", date: "2024-03-24", platform: "Apple Music" },
@@ -19,14 +36,35 @@ const mockSubscribers = [
   { id: 5, email: "william.jones@example.com", date: "2024-03-23", platform: "Amazon Music" },
 ];
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 border border-neutral-200 rounded-lg shadow-sm">
+        <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+        {payload.map((pld: any, index: number) => (
+          <div key={index} className="flex items-center gap-2 mb-1">
+            <div className={`w-2 h-2 rounded-full ${pld.name === 'views' ? 'bg-[#007CF0]' : 'bg-emerald-500'}`} />
+            <span className="text-sm font-medium">{pld.name === 'views' ? 'Views' : 'Clicks'}</span>
+            <span className="text-sm font-medium">{pld.value}</span>
+            <span className={`text-xs ${Number(pld.payload[`${pld.name}Change`]) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {Number(pld.payload[`${pld.name}Change`]) > 0 ? '+' : ''}{pld.payload[`${pld.name}Change`]}%
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const Features = () => {
   return (
-    <section className="py-32 bg-white relative">
+    <section className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-night font-heading">
           From One Link to Endless Plays
         </h2>
-        
+
         {/* Connecting Lines */}
         <div className="absolute left-1/2 top-[25%] bottom-[75%] w-px border-l-2 border-dashed border-primary/20" />
         <div className="absolute left-1/2 top-[50%] bottom-[50%] w-px border-l-2 border-dashed border-primary/20" />
@@ -130,47 +168,54 @@ const Features = () => {
           </div>
         </div>
 
-        {/* Analytics Feature */}
-        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12 px-4 md:px-0" data-scroll="parallax">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-3 rounded-lg bg-primary-light">
-                <BarChart3 className="w-6 h-6 text-primary" />
+        {/* Analytics Feature - Redesigned */}
+        <div className="mt-24">
+          <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+            <div className="p-8 md:p-10">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="font-medium">Real-Time Analytics</span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold mb-2">Track Your Music's Performance</h3>
+                <p className="text-gray-600 text-lg">
+                  Make data-driven decisions with comprehensive analytics across platforms.
+                </p>
               </div>
-              <h3 className="text-2xl font-semibold">Real-Time Analytics</h3>
-            </div>
-            <p className="text-lg text-gray-600">
-              Make data-driven decisions with comprehensive analytics across platforms.
-            </p>
-          </div>
-          <div className="flex-1 w-full">
-            <div className="bg-white rounded-xl shadow-lg p-2 sm:p-3 md:p-6">
-              <div className="h-[300px] -mx-2 sm:mx-0">
+              
+              <div className="h-[400px] -mx-2 sm:mx-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={mockData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area 
+                  <LineChart data={mockData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#666666', fontSize: 12 }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#666666', fontSize: 12 }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line 
                       type="monotone" 
                       dataKey="views" 
-                      stackId="1" 
-                      stroke="#6851FB" 
-                      fill="#6851FB" 
-                      fillOpacity={0.2}
-                      name="Views"
+                      stroke="#007CF0"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#007CF0" }}
+                      activeDot={{ r: 6, fill: "#007CF0" }}
                     />
-                    <Area 
+                    <Line 
                       type="monotone" 
                       dataKey="clicks" 
-                      stackId="2" 
-                      stroke="#37D299" 
-                      fill="#37D299" 
-                      fillOpacity={0.2}
-                      name="Clicks"
+                      stroke="#37D299"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#37D299" }}
+                      activeDot={{ r: 6, fill: "#37D299" }}
                     />
-                  </AreaChart>
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
