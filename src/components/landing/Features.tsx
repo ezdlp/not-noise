@@ -584,16 +584,16 @@ const Features: React.FC = () => {
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-6 h-[400px] overflow-hidden">
+            <div className="bg-white rounded-xl shadow-lg border border-neutral-200 p-6 h-[400px] overflow-hidden">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
-                <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white/80 hover:bg-white">
+                <Button variant="secondary" size="sm" className="flex items-center gap-2">
                   Export CSV
                 </Button>
               </div>
               <div className="overflow-x-auto">
                 <div className="min-w-[500px] md:min-w-0">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
+                  <div className="bg-white rounded-lg">
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-gray-50/50">
