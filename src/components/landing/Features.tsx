@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
+import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Instagram, Twitter, Facebook, Tiktok, Snapchat } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
 
-// Generate mock data for analytics
 const generateMockData = () => {
   const baseViews = 80;
   const baseClicks = 20;
@@ -30,7 +29,6 @@ const generateMockData = () => {
 
 const mockData = generateMockData();
 
-// Mock data for email subscribers
 const mockSubscribers = [
   { id: 1, email: "john.smith@example.com", date: "2024-03-25", platform: "Spotify" },
   { id: 2, email: "emma.wilson@example.com", date: "2024-03-24", platform: "Apple Music" },
@@ -120,9 +118,42 @@ const SocialAssetsShowcase: React.FC = () => {
           <span className="text-sm font-medium text-primary">Social Promotion</span>
         </div>
         <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-600 mb-8">
           Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
         </p>
+        
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+              <Instagram className="w-6 h-6 text-[#8E9196]" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Instagram</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+              <Tiktok className="w-6 h-6 text-[#8E9196]" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">TikTok</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+              <Twitter className="w-6 h-6 text-[#8E9196]" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">X</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+              <Snapchat className="w-6 h-6 text-[#8E9196]" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Snapchat</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+              <Facebook className="w-6 h-6 text-[#8E9196]" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Facebook</span>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 w-full">
@@ -158,39 +189,12 @@ const SocialAssetsShowcase: React.FC = () => {
                 <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-white rounded-lg overflow-hidden shadow-sm`}>
                   <img 
                     src={activeFormat === 'post' 
-                      ? '/lovable-uploads/54cde551-5073-4972-8394-5fb47bd525af.png'
-                      : '/lovable-uploads/9974419b-8233-4418-bcf0-ed6707b27d9a.png'
+                      ? '/lovable-uploads/6655a595-a342-4600-a02d-d9187b360621.png'
+                      : '/lovable-uploads/4fc2e818-cfaf-4123-9138-2557be621ea3.png'
                     }
                     alt="Social media preview"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap justify-center gap-6 mt-6">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-[#E4405F]/10 flex items-center justify-center">
-                    <Instagram className="w-6 h-6 text-[#E4405F]" />
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">Instagram</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 flex items-center justify-center">
-                    <Twitter className="w-6 h-6 text-[#1DA1F2]" />
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">Twitter</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-[#4267B2]/10 flex items-center justify-center">
-                    <Facebook className="w-6 h-6 text-[#4267B2]" />
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">Facebook</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-[#0A66C2]/10 flex items-center justify-center">
-                    <Linkedin className="w-6 h-6 text-[#0A66C2]" />
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">LinkedIn</span>
                 </div>
               </div>
             </div>
