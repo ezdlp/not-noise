@@ -1,8 +1,20 @@
+
 import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
   const navigate = useNavigate();
+
+  const smartLinks = [
+    { image: "/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png" },
+    { image: "/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png" },
+    { image: "/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png" },
+  ];
+
+  const getRotation = (index: number) => {
+    const rotations = [-10, 0, 10];
+    return rotations[index];
+  };
 
   return (
     <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-4 md:py-20 bg-white overflow-hidden">
@@ -33,108 +45,54 @@ export const Hero = () => {
             }}
           />
           
-          {/* Decorative squares - visible only on desktop */}
-          <div 
-            className="absolute top-1/2 left-1/2 w-[200px] sm:w-[300px] md:w-[500px] h-[200px] sm:h-[300px] md:h-[500px] border-2 rounded-none hidden md:block"
-            style={{ 
-              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-60%, -50%) rotate(-12deg)',
-              animation: 'rotate 20s linear infinite'
-            }}
-          />
-          
-          <div 
-            className="absolute top-1/2 left-1/2 w-[150px] sm:w-[250px] md:w-[400px] h-[150px] sm:h-[250px] md:h-[400px] border-2 rounded-none hidden md:block"
-            style={{ 
-              borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-20%, -50%) rotate(12deg)',
-              animation: 'rotate 15s linear infinite reverse'
-            }}
-          />
-          
           {/* Smart Link Mockups Group */}
           <div className="relative w-full h-full pt-12 md:pt-24">
             {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
-              <div 
-                className="absolute left-0 bottom-0 w-[45%] transform -rotate-6 z-10 transition-all duration-300"
-                style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-              >
-                <img
-                  src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
-                  alt="Taylor Swift Smart Link"
-                  className="w-full rounded-xl"
-                />
-              </div>
-              
-              <div 
-                className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
-                style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
-              >
-                <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
-                  alt="Tyler Smart Link"
-                  className="w-full rounded-xl"
-                />
-              </div>
-              
-              <div 
-                className="absolute right-0 bottom-0 w-[45%] transform rotate-6 z-10 transition-all duration-300"
-                style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-              >
-                <img
-                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
-                  alt="Olivia Rodrigo Smart Link"
-                  className="w-full rounded-xl"
-                />
+              <div className="flex gap-2 min-w-max overflow-x-auto snap-x snap-mandatory py-8">
+                {smartLinks.map((link, index) => (
+                  <div
+                    key={index}
+                    className="flex-none w-[280px] group relative"
+                    style={{
+                      transform: `rotate(${getRotation(index)}deg)`,
+                      marginLeft: index === 0 ? '0' : '-60px',
+                      transition: 'all 0.3s ease-in-out',
+                      zIndex: index,
+                    }}
+                  >
+                    <div className="relative transition-all duration-300 group-hover:rotate-0 group-hover:-translate-y-4 group-hover:z-50">
+                      <img
+                        src={link.image}
+                        alt={`Smart Link Example ${index + 1}`}
+                        className="w-full shadow-md"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Desktop Layout */}
             <div className="hidden md:block">
-              <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[80%] -translate-y-[60%] -rotate-6 transition-all duration-300 hover:scale-105"
-                style={{
-                  animation: 'float 6s ease-in-out infinite',
-                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
-                }}
-              >
-                <img
-                  src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
-                  alt="Taylor Swift Smart Link"
-                  className="w-full rounded-xl"
-                />
-              </div>
-              
-              <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300 hover:scale-105"
-                style={{
-                  animation: 'float 6s ease-in-out infinite',
-                  animationDelay: '2s',
-                  filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
-                  zIndex: 20
-                }}
-              >
-                <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
-                  alt="Tyler Smart Link"
-                  className="w-full rounded-xl"
-                />
-              </div>
-              
-              <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[20%] -translate-y-[40%] rotate-12 transition-all duration-300 hover:scale-105"
-                style={{
-                  animation: 'float 6s ease-in-out infinite',
-                  animationDelay: '4s',
-                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
-                }}
-              >
-                <img
-                  src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
-                  alt="Olivia Rodrigo Smart Link"
-                  className="w-full rounded-xl"
-                />
+              <div className="relative flex justify-center items-center">
+                {smartLinks.map((link, index) => (
+                  <div
+                    key={index}
+                    className="absolute w-[300px] transform transition-all duration-300 hover:scale-105"
+                    style={{
+                      transform: `translateX(${(index - 1) * 40}px) rotate(${getRotation(index)}deg)`,
+                      zIndex: index === 1 ? 20 : 10,
+                      filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+                    }}
+                  >
+                    <img
+                      src={link.image}
+                      alt={`Smart Link Example ${index + 1}`}
+                      className="w-full"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
