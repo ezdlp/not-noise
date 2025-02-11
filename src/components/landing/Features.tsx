@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -96,7 +95,7 @@ const SmartLinkShowcase: React.FC = () => {
                 <img
                   src={link.image}
                   alt={`Smart Link Example ${index + 1}`}
-                  className="w-full h-[700px] object-contain rounded-xl shadow-md bg-white"
+                  className="w-full shadow-md rounded-xl"
                 />
               </div>
             </div>
