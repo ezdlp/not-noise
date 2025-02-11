@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -481,7 +482,7 @@ const Features: React.FC = () => {
     <section className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
         <h2 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
-          From One Link to Endless Plays
+          Break Through The Noise With Smart Links
         </h2>
 
         <div className="mt-16" data-scroll="parallax">
@@ -494,7 +495,7 @@ const Features: React.FC = () => {
             </div>
             <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">One Link for All Platforms</h3>
             <p className="text-lg text-neutral-600/90">
-              Create a single, powerful smart link that connects your fans to your music across all major streaming platforms.
+              Connect your fans to their preferred streaming service instantly. No more juggling multiple links or losing potential listeners.
             </p>
           </div>
 
@@ -503,11 +504,56 @@ const Features: React.FC = () => {
 
         <div className="w-full h-px bg-neutral-100/50 my-16" />
 
-        <AnalyticsSection />
+        <div className="mt-16">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-primary/5">
+                <BarChart3 className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-neutral-500">Analytics Dashboard</span>
+            </div>
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Track Your Performance</h3>
+            <p className="text-lg text-neutral-600/90">
+              See where your fans are listening, which platforms drive the most streams, and optimize your promotion strategy in real-time.
+            </p>
+          </div>
+
+          <AnalyticsSection />
+        </div>
 
         <div className="w-full h-px bg-neutral-100/50 my-16" />
 
-        <div className="mt-16">
+        <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
+          <div className="flex-1 lg:max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-primary/5">
+                <ImageIcon className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-neutral-500">Social Media Tools</span>
+            </div>
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Stand Out on Social Media</h3>
+            <p className="text-lg text-neutral-600/90">
+              Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
+            </p>
+
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-6 mt-8">
+              {[
+                { icon: faInstagram, label: "Instagram" },
+                { icon: faTiktok, label: "TikTok" },
+                { icon: faXTwitter, label: "X" },
+                { icon: faSnapchat, label: "Snapchat" },
+                { icon: faFacebookF, label: "Facebook" }
+              ].map((platform) => (
+                <div key={platform.label} className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+                    <FontAwesomeIcon icon={platform.icon} className="w-5 h-5 text-neutral-500" />
+                  </div>
+                  <span className="text-xs font-medium text-neutral-600">{platform.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <SocialAssetsShowcase />
         </div>
 
@@ -523,11 +569,11 @@ const Features: React.FC = () => {
               <div className="p-2 rounded-lg bg-primary/5">
                 <Mail className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-neutral-500">Fan Engagement</span>
+              <span className="text-sm font-medium text-neutral-500">Fan Email Collection</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">Build Your Email List</h3>
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">Own Your Fan Relationships</h3>
             <p className="text-lg text-neutral-600/90">
-              Turn passive listeners into engaged fans with powerful email collection tools. Build a direct connection with your audience.
+              Build your mailing list right from your smart link page. Export your fan contacts directly from your dashboard and use them with your favorite email marketing platform - MailChimp, ConvertKit, or any other provider.
             </p>
           </div>
           <div className="flex-1 w-full">
@@ -575,3 +621,4 @@ const Features: React.FC = () => {
 };
 
 export default Features;
+
