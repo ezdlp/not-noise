@@ -1,4 +1,3 @@
-
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -71,54 +70,70 @@ const Features = () => {
         <div className="mt-24 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-3 rounded-lg bg-primary-light">
-                <Link2 className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-lg bg-primary-light">
+                <Link2 className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-primary">Smart Links</span>
+              <span className="text-sm font-medium text-gray-500">Smart Links</span>
             </div>
             <h3 className="text-2xl md:text-3xl font-bold">One Link for All Platforms</h3>
             <p className="text-lg text-gray-600">
               Create a single, powerful smart link that connects your fans to your music across all major streaming platforms.
             </p>
           </div>
-          <div className="flex-1 w-full md:w-auto">
-            <div className="max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
-              <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-                <div className="aspect-square bg-[#271153] rounded-t-3xl overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
-                    alt="Inside Out by Spoon"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="text-center">
-                    <h4 className="text-xl font-bold text-gray-900">Inside Out</h4>
-                    <p className="text-gray-600">Spoon</p>
-                  </div>
-                  <div className="space-y-3">
-                    {[
-                      { name: "Spotify", icon: "/lovable-uploads/spotify.png" },
-                      { name: "Apple Music", icon: "/lovable-uploads/applemusic.png" },
-                      { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png" }
-                    ].map((platform) => (
-                      <div 
-                        key={platform.name}
-                        className="flex items-center justify-between py-3 border-b last:border-b-0"
-                      >
-                        <div className="flex items-center gap-3">
-                          <img src={platform.icon} alt={platform.name} className="w-8 h-8" />
-                          <span className="font-medium text-gray-900">{platform.name}</span>
-                        </div>
-                        <Button variant="default" size="sm" className="bg-black hover:bg-black/90 min-w-[80px]">
-                          Play
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <div className="flex-1 relative w-full h-[600px]">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[560px] bg-black rounded-[3rem] border-[8px] border-black overflow-hidden shadow-xl">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl"></div>
+              <div className="w-full h-full bg-[#271153] rounded-[2.5rem] overflow-hidden">
+                <img 
+                  src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
+                  alt="Album artwork"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
+            
+            {[
+              { name: "Spotify", icon: "/lovable-uploads/spotify.png", angle: 0 },
+              { name: "Apple Music", icon: "/lovable-uploads/applemusic.png", angle: 60 },
+              { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png", angle: 120 },
+              { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png", angle: 180 },
+              { name: "Deezer", icon: "/lovable-uploads/deezer.png", angle: 240 },
+              { name: "Tidal", icon: "/lovable-uploads/tidal.png", angle: 300 }
+            ].map((platform, index) => (
+              <div
+                key={platform.name}
+                className="absolute left-1/2 top-1/2 w-12 h-12 -translate-x-1/2 -translate-y-1/2 animate-float"
+                style={{
+                  transform: `rotate(${platform.angle}deg) translateX(180px) rotate(-${platform.angle}deg)`,
+                }}
+              >
+                <div className="bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform duration-200">
+                  <img
+                    src={platform.icon}
+                    alt={platform.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            ))}
+            
+            <svg className="absolute inset-0 w-full h-full animate-rotate" style={{ transform: 'translate(-50%, -50%)' }}>
+              <path
+                d="M280,280 A140,140 0 1,1 280,279.9"
+                fill="none"
+                stroke="url(#gradient)"
+                strokeWidth="2"
+                strokeDasharray="4,4"
+                className="opacity-50"
+              />
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#6851FB" stopOpacity="0.2" />
+                  <stop offset="50%" stopColor="#6851FB" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#6851FB" stopOpacity="0.2" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
         </div>
 
@@ -369,4 +384,3 @@ const Features = () => {
 };
 
 export default Features;
-
