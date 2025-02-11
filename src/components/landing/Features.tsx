@@ -1,10 +1,10 @@
+import React, { useCallback, useEffect, useState } from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import useEmblaCarousel from 'embla-carousel-react';
-import { useCallback, useEffect, useState } from "react";
 
 // Generate mock data for analytics
 const generateMockData = () => {
@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const SmartLinkShowcase = () => {
+const SmartLinkShowcase: React.FC = () => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     loop: true,
     align: 'center',
@@ -146,7 +146,7 @@ const SmartLinkShowcase = () => {
   );
 };
 
-const Features = () => {
+const Features: React.FC = () => {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
