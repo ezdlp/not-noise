@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Users, Percent, DollarSign, Laptop, Phone, MonitorSmartphone } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -119,7 +120,7 @@ const SocialAssetsShowcase: React.FC = () => {
           <div className="p-2 rounded-lg bg-primary-light">
             <ImageIcon className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-sm font-medium text-primary">Social Promotion</span>
+          <span className="text-sm font-medium text-gray-500">Social Promotion</span>
         </div>
         <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
         <p className="text-lg text-gray-600 mb-8">
@@ -631,7 +632,7 @@ const Features: React.FC = () => {
                   <div className="p-2 rounded-lg bg-primary-light">
                     <Globe2 className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-sm font-medium text-primary">Global Impact</span>
+                  <span className="text-sm font-medium text-gray-500">Global Impact</span>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold mb-4">Reach Fans Worldwide</h3>
                 <p className="text-lg text-gray-600 max-w-2xl">
@@ -642,32 +643,4 @@ const Features: React.FC = () => {
             <div className="bg-gradient-to-br from-[#ECE9FF] to-[#D0C7FF] rounded-xl shadow-lg p-6 max-w-full mx-auto">
               <div className="flex items-center justify-between mb-6">
                 <h4 className="text-xl font-semibold text-[#271153]">Global Listeners</h4>
-                <span className="text-2xl font-bold text-[#6851FB]">2.4M</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "United States", percentage: 45 },
-                  { name: "United Kingdom", percentage: 25 },
-                  { name: "Brazil", percentage: 20 },
-                  { name: "Mexico", percentage: 10 }
-                ].map((region) => (
-                  <div key={region.name} className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-lg text-[#271153] truncate pr-4">{region.name}</span>
-                      <span className="text-[#6851FB] text-lg font-semibold whitespace-nowrap">{region.percentage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 h-2.5 rounded-full">
-                      <div className="h-2.5 rounded-full transition-all duration-500 bg-[#6851FB]" style={{ width: `${region.percentage}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-export default Features;
+                
