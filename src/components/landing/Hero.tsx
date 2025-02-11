@@ -54,7 +54,7 @@ export const Hero = () => {
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
               >
                 <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  src="/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png"
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                 />
@@ -92,7 +92,7 @@ export const Hero = () => {
                 }}
               >
                 <img
-                  src="/lovable-uploads/e709fc84-dd53-4a41-be18-f0a50ed7e297.png"
+                  src="/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png"
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                 />
