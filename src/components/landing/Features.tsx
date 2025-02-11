@@ -481,7 +481,7 @@ const Features: React.FC = () => {
             </div>
             <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Track Your Performance</h3>
             <p className="text-lg text-neutral-600/90">
-              See where your fans are listening, which platforms drive the most streams, and optimize your promotion strategy in real-time.
+              Get detailed insights into your smart link performance. Monitor views, clicks, and conversion rates in real-time.
             </p>
           </div>
 
