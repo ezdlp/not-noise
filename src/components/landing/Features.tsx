@@ -192,8 +192,8 @@ const SocialAssetsShowcase: React.FC = () => {
                 <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-white rounded-lg overflow-hidden shadow-sm`}>
                   <img 
                     src={activeFormat === 'post' 
-                      ? '/lovable-uploads/19c7c8be-1cc2-4db8-af18-d8b1ce59dde3.png'
-                      : '/lovable-uploads/1dae115b-82ba-4b43-8128-a57a8b04963e.png'
+                      ? '/lovable-uploads/46d964b5-f64d-421d-97ca-19961d3c3b48.png'
+                      : '/lovable-uploads/dfa7125a-006e-455d-8163-1f8e059412cc.png'
                     }
                     alt="Social media preview"
                     className="absolute inset-0 w-full h-full object-cover"
