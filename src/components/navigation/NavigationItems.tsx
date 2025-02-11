@@ -16,6 +16,7 @@ import {
   BookOpen, 
   HelpCircle,
 } from "lucide-react"
+import { useLocation } from "react-router-dom"
 
 const features = [
   {
@@ -60,27 +61,35 @@ const resources = [
 ]
 
 export function NavigationItems() {
+  const location = useLocation()
+
   return (
     <NavigationMenu>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Features</NavigationMenuTrigger>
+          <NavigationMenuTrigger
+            className="h-9 px-4 py-2 hover:bg-neutral-50 transition-colors"
+          >
+            Features
+          </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid gap-3 p-6 w-[500px]">
+            <div className="grid gap-3 p-6 w-[500px] animate-scale-in">
               <div className="grid grid-cols-2 gap-4">
                 {features.map((feature) => (
                   <NavigationMenuLink
                     key={feature.title}
                     href={feature.href}
                     className={cn(
-                      "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                      "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+                      "hover:bg-neutral-50 focus:bg-neutral-50",
+                      location.hash === feature.href.split('#')[1] && "bg-neutral-50"
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <feature.icon className="h-4 w-4" />
+                      <feature.icon className="h-4 w-4 text-primary" />
                       <div className="text-sm font-medium leading-none">{feature.title}</div>
                     </div>
-                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-2">
                       {feature.description}
                     </p>
                   </NavigationMenuLink>
@@ -98,22 +107,28 @@ export function NavigationItems() {
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
+          <NavigationMenuTrigger
+            className="h-9 px-4 py-2 hover:bg-neutral-50 transition-colors"
+          >
+            Resources
+          </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid gap-3 p-6 w-[400px]">
+            <div className="grid gap-3 p-6 w-[400px] animate-scale-in">
               {resources.map((resource) => (
                 <NavigationMenuLink
                   key={resource.title}
                   href={resource.href}
                   className={cn(
-                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+                    "hover:bg-neutral-50 focus:bg-neutral-50",
+                    location.pathname === resource.href && "bg-neutral-50"
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <resource.icon className="h-4 w-4" />
+                    <resource.icon className="h-4 w-4 text-primary" />
                     <div className="text-sm font-medium leading-none">{resource.title}</div>
                   </div>
-                  <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                  <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-2">
                     {resource.description}
                   </p>
                 </NavigationMenuLink>
@@ -124,7 +139,12 @@ export function NavigationItems() {
         <NavigationMenuItem>
           <NavigationMenuLink
             href="/pricing"
-            className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:text-primary focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+            className={cn(
+              "group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              "hover:bg-neutral-50 hover:text-primary focus:bg-neutral-50 focus:text-primary focus:outline-none",
+              "disabled:pointer-events-none disabled:opacity-50",
+              location.pathname === "/pricing" && "bg-neutral-50 text-primary"
+            )}
           >
             Pricing
           </NavigationMenuLink>
