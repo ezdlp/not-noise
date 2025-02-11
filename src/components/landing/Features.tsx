@@ -587,7 +587,11 @@ const Features: React.FC = () => {
             <div className="bg-white rounded-xl shadow-lg border border-neutral-200 p-6 h-[400px] overflow-hidden">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
-                <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-sm hover:bg-neutral-50 transition-colors font-medium border border-neutral-200"
+                >
                   Export CSV
                 </Button>
               </div>
