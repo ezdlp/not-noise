@@ -333,11 +333,13 @@ const MetaPixelSection = () => {
                 <CardContent>
                   <div className="space-y-2">
                     {[
-                      { name: 'Spotify', value: 35 },
-                      { name: 'Apple Music', value: 25 },
-                      { name: 'YouTube Music', value: 20 },
-                      { name: 'Amazon Music', value: 12 },
-                      { name: 'Others', value: 8 }
+                      { name: 'Spotify', value: 30 },
+                      { name: 'Apple Music', value: 22 },
+                      { name: 'YouTube Music', value: 18 },
+                      { name: 'Amazon Music', value: 10 },
+                      { name: 'Deezer', value: 8 },
+                      { name: 'Tidal', value: 6 },
+                      { name: 'Others', value: 6 }
                     ].map((platform) => (
                       <div key={platform.name} className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{platform.name}</span>
