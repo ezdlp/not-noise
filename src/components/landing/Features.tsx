@@ -1,11 +1,9 @@
-
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import useEmblaCarousel from 'embla-carousel-react';
 
 // Generate mock data for analytics
 const generateMockData = () => {
@@ -62,86 +60,34 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const SmartLinkShowcase: React.FC = () => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    loop: true,
-    align: 'center',
-  });
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const scrollTo = useCallback((index: number) => {
-    if (emblaApi) emblaApi.scrollTo(index);
-  }, [emblaApi]);
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-  }, [emblaApi, onSelect]);
-
   const smartLinks = [
-    {
-      image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png",
-      gradient: "from-indigo-500/20 to-purple-500",
-    },
-    {
-      image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png",
-      gradient: "from-yellow-500/20 via-orange-500 to-pink-500",
-    },
-    {
-      image: "/lovable-uploads/49bdc125-2fb6-44ad-ba5d-ef8efca7df5a.png",
-      gradient: "from-gray-500/20 to-gray-500",
-    },
-    {
-      image: "/lovable-uploads/97a73c26-6a75-4622-8548-019d36864f45.png",
-      gradient: "from-purple-500/20 to-blue-500",
-    },
-    {
-      image: "/lovable-uploads/de90434e-fe22-4dba-ba49-615f2e221fc8.png",
-      gradient: "from-blue-500/20 to-blue-700",
-    },
+    { image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png" },
+    { image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png" },
+    { image: "/lovable-uploads/49bdc125-2fb6-44ad-ba5d-ef8efca7df5a.png" },
+    { image: "/lovable-uploads/97a73c26-6a75-4622-8548-019d36864f45.png" },
+    { image: "/lovable-uploads/de90434e-fe22-4dba-ba49-615f2e221fc8.png" },
   ];
 
   return (
-    <div className="mt-12 overflow-hidden">
-      <div className="overflow-hidden w-full" ref={emblaRef}>
-        <div className="flex touch-pan-y">
+    <div className="mt-12 relative">
+      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none md:hidden z-10" />
+      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden z-10" />
+      
+      <div className="overflow-x-auto snap-x snap-mandatory pb-6 -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-4 md:gap-6 min-w-max md:min-w-0 md:justify-center">
           {smartLinks.map((link, index) => (
             <div
               key={index}
-              className="relative flex-[0_0_100%] min-w-0 pl-4 md:flex-[0_0_80%] lg:flex-[0_0_60%]"
+              className="flex-none w-[280px] md:w-[220px] transition-transform duration-300 hover:scale-[1.02]"
             >
-              <div 
-                className={`relative overflow-hidden rounded-xl transition-all duration-500 transform
-                  ${selectedIndex === index ? 'scale-100 opacity-100' : 'scale-95 opacity-50'}`}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-50`} />
-                <img
-                  src={link.image}
-                  alt={`Smart Link Example ${index + 1}`}
-                  className="w-full h-[700px] object-contain rounded-xl mx-auto"
-                />
-              </div>
+              <img
+                src={link.image}
+                alt={`Smart Link Example ${index + 1}`}
+                className="w-full h-[700px] object-contain rounded-xl"
+              />
             </div>
           ))}
         </div>
-      </div>
-      
-      <div className="flex justify-center gap-2 mt-4">
-        {smartLinks.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => scrollTo(index)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 
-              ${selectedIndex === index ? 'bg-primary w-4' : 'bg-gray-300'}`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
       </div>
     </div>
   );
@@ -155,7 +101,7 @@ const Features: React.FC = () => {
           From One Link to Endless Plays
         </h2>
 
-        {/* One Link Feature - Modern Grid Layout */}
+        {/* One Link Feature */}
         <div className="mt-24" data-scroll="parallax">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="flex items-center justify-center gap-2 mb-4">
