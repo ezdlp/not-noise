@@ -2,7 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/ui/cta-button"
-import { Menu, Plus } from "lucide-react"
+import { Menu } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -113,13 +113,12 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <CTAButton 
+                  <Button 
                     onClick={() => navigate("/create")} 
-                    className="w-full h-8 gap-2 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 transition-all duration-300"
+                    className="w-full h-8 text-sm bg-black text-white hover:bg-black/90 transition-colors"
                   >
-                    <Plus className="h-4 w-4" />
                     Create Smart Link
-                  </CTAButton>
+                  </Button>
                   <div className="flex flex-col gap-1.5">
                     <Link 
                       to="/dashboard" 
@@ -193,9 +192,8 @@ const Header = () => {
               {!isDashboard && (
                 <Button
                   onClick={() => navigate("/create")}
-                  className="hidden md:flex gap-2 h-8 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
+                  className="hidden md:flex h-8 px-3 text-sm bg-black text-white hover:bg-black/90 transition-colors"
                 >
-                  <Plus className="h-4 w-4" />
                   Create Smart Link
                 </Button>
               )}
@@ -233,4 +231,3 @@ const Header = () => {
 }
 
 export default Header
-
