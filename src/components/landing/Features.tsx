@@ -44,8 +44,8 @@ const mockSubscribers = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-4 border border-neutral-200 rounded-lg shadow-sm">
-        <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+      <div className="bg-white/50 p-4 border border-neutral-100/60 rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+        <p className="text-sm font-medium text-neutral-600 mb-2">{label}</p>
         {payload.map((pld: any, index: number) => (
           <div key={index} className="flex items-center gap-2 mb-1">
             <div className={`w-2 h-2 rounded-full ${pld.name === 'views' ? 'bg-[#9b87f5]' : 'bg-[#37D299]'}`} />
@@ -98,7 +98,7 @@ const SmartLinkShowcase = () => {
                 <img
                   src={link.image}
                   alt={`Smart Link Example ${index + 1}`}
-                  className="w-full shadow-md rounded-xl"
+                  className="w-full shadow-[0_2px_4px_rgba(0,0,0,0.02)] rounded-xl"
                 />
               </div>
             </div>
@@ -116,61 +116,45 @@ const SocialAssetsShowcase = () => {
     <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
       <div className="flex-1 lg:max-w-md">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-primary-light">
+          <div className="p-2 rounded-lg bg-primary/5">
             <ImageIcon className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-sm font-medium text-gray-500">Social Promotion</span>
+          <span className="text-sm font-medium text-neutral-500">Social Promotion</span>
         </div>
-        <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
-        <p className="text-lg text-gray-600 mb-8">
+        <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Create Professional Social Assets Instantly</h3>
+        <p className="text-lg text-neutral-600/90">
           Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
         </p>
         
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-6">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <FontAwesomeIcon icon={faInstagram} className="w-5 h-5 text-[#8E9196]" />
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-6 mt-8">
+          {[
+            { icon: faInstagram, label: "Instagram" },
+            { icon: faTiktok, label: "TikTok" },
+            { icon: faXTwitter, label: "X" },
+            { icon: faSnapchat, label: "Snapchat" },
+            { icon: faFacebookF, label: "Facebook" }
+          ].map((platform) => (
+            <div key={platform.label} className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+                <FontAwesomeIcon icon={platform.icon} className="w-5 h-5 text-neutral-500" />
+              </div>
+              <span className="text-xs font-medium text-neutral-600">{platform.label}</span>
             </div>
-            <span className="text-xs font-medium text-gray-600">Instagram</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <FontAwesomeIcon icon={faTiktok} className="w-5 h-5 text-[#8E9196]" />
-            </div>
-            <span className="text-xs font-medium text-gray-600">TikTok</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5 text-[#8E9196]" />
-            </div>
-            <span className="text-xs font-medium text-gray-600">X</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <FontAwesomeIcon icon={faSnapchat} className="w-5 h-5 text-[#8E9196]" />
-            </div>
-            <span className="text-xs font-medium text-gray-600">Snapchat</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-              <FontAwesomeIcon icon={faFacebookF} className="w-5 h-5 text-[#8E9196]" />
-            </div>
-            <span className="text-xs font-medium text-gray-600">Facebook</span>
-          </div>
+          ))}
         </div>
       </div>
 
       <div className="flex-1 w-full">
         <div className="max-w-xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+          <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
             <div className="flex justify-center gap-4 pt-6 pb-4">
               <Toggle
                 pressed={activeFormat === 'post'}
                 onPressedChange={() => setActiveFormat('post')}
                 className={`px-6 py-2 text-sm font-medium transition-all ${
                   activeFormat === 'post' 
-                    ? 'bg-primary text-white shadow-md' 
-                    : 'text-gray-600 hover:bg-neutral-50'
+                    ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
+                    : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
                 Post
@@ -180,8 +164,8 @@ const SocialAssetsShowcase = () => {
                 onPressedChange={() => setActiveFormat('story')}
                 className={`px-6 py-2 text-sm font-medium transition-all ${
                   activeFormat === 'story' 
-                    ? 'bg-primary text-white shadow-md' 
-                    : 'text-gray-600 hover:bg-neutral-50'
+                    ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
+                    : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
                 Story
@@ -196,7 +180,7 @@ const SocialAssetsShowcase = () => {
                     : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
                   }
                   alt="Social media preview"
-                  className="w-full h-full object-contain rounded-lg"
+                  className="w-full h-full object-contain rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
                 />
               </div>
             </div>
@@ -205,51 +189,6 @@ const SocialAssetsShowcase = () => {
       </div>
     </div>
   );
-};
-
-const generateMetaPixelData = () => {
-  const data = [];
-  const baseClicks = 860;
-  const baseConversions = 208;
-  
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
-    const clicks = Math.floor(baseClicks + Math.random() * 100);
-    const conversions = Math.floor(baseConversions + Math.random() * 30);
-    
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      clicks,
-      conversions,
-      conversionRate: ((conversions / clicks) * 100).toFixed(1),
-      costPerConversion: ((clicks * 0.5) / conversions).toFixed(2)
-    });
-  }
-  return data;
-};
-
-const deviceData = [
-  { name: 'Desktop', value: 45 },
-  { name: 'Mobile', value: 40 },
-  { name: 'Tablet', value: 15 }
-];
-
-const MetaPixelTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white p-4 border border-neutral-200 rounded-lg shadow-sm">
-        <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
-        {payload.map((pld: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 mb-1">
-            <div className={`w-2 h-2 rounded-full ${pld.name === 'clicks' ? 'bg-[#6851FB]' : 'bg-[#37D299]'}`} />
-            <span className="text-sm font-medium">{pld.name === 'clicks' ? 'Clicks' : 'Conversions'}</span>
-            <span className="text-sm font-medium">{pld.value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
 };
 
 const MetaPixelSection = () => {
@@ -261,22 +200,22 @@ const MetaPixelSection = () => {
   ];
   
   return (
-    <div className="mt-32">
+    <div className="mt-16">
       <div className="text-center max-w-2xl mx-auto mb-8">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-primary-light">
+          <div className="p-2 rounded-lg bg-primary/5">
             <Activity className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-sm font-medium text-gray-500">Meta Pixel Integration</span>
+          <span className="text-sm font-medium text-neutral-500">Meta Pixel Integration</span>
         </div>
-        <h3 className="text-2xl md:text-3xl font-bold mb-4">Target Your True Fans</h3>
-        <p className="text-lg text-gray-600">
+        <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Target Your True Fans</h3>
+        <p className="text-lg text-neutral-600/90">
           Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
         </p>
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+        <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
           <div className="p-8 md:p-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card className="border-none bg-card/50 shadow-none">
@@ -286,11 +225,11 @@ const MetaPixelSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Users className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Ad Clicks</span>
+                      <span className="font-medium text-sm text-neutral-600">Ad Clicks</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">860</p>
+                  <p className="text-2xl font-bold text-neutral-900">860</p>
                 </CardContent>
               </Card>
 
@@ -301,11 +240,11 @@ const MetaPixelSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Percent className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Conversion Rate</span>
+                      <span className="font-medium text-sm text-neutral-600">Conversion Rate</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">24.2%</p>
+                  <p className="text-2xl font-bold text-neutral-900">24.2%</p>
                 </CardContent>
               </Card>
 
@@ -316,11 +255,11 @@ const MetaPixelSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <DollarSign className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Cost per Conversion</span>
+                      <span className="font-medium text-sm text-neutral-600">Cost per Conversion</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">-5.2%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">$2.15</p>
+                  <p className="text-2xl font-bold text-neutral-900">$2.15</p>
                 </CardContent>
               </Card>
             </div>
@@ -328,7 +267,7 @@ const MetaPixelSection = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="border-none bg-card/50 shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Platform Distribution</CardTitle>
+                  <CardTitle className="text-sm font-medium text-neutral-900">Platform Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -342,15 +281,15 @@ const MetaPixelSection = () => {
                       { name: 'Others', value: 6 }
                     ].map((platform) => (
                       <div key={platform.name} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{platform.name}</span>
+                        <span className="text-sm text-neutral-600">{platform.name}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary rounded-full"
                               style={{ width: `${platform.value}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{platform.value}%</span>
+                          <span className="text-sm font-medium text-neutral-900">{platform.value}%</span>
                         </div>
                       </div>
                     ))}
@@ -360,7 +299,7 @@ const MetaPixelSection = () => {
 
               <Card className="border-none bg-card/50 shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Geographic Data</CardTitle>
+                  <CardTitle className="text-sm font-medium text-neutral-900">Geographic Data</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -374,8 +313,8 @@ const MetaPixelSection = () => {
                       { country: 'Others', value: 4 }
                     ].map((geo) => (
                       <div key={geo.country} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{geo.country}</span>
-                        <span className="text-sm font-medium">{geo.value}%</span>
+                        <span className="text-sm text-neutral-600">{geo.country}</span>
+                        <span className="text-sm font-medium text-neutral-900">{geo.value}%</span>
                       </div>
                     ))}
                   </div>
@@ -384,7 +323,7 @@ const MetaPixelSection = () => {
 
               <Card className="border-none bg-card/50 shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Device Types</CardTitle>
+                  <CardTitle className="text-sm font-medium text-neutral-900">Device Types</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[150px]">
@@ -413,7 +352,7 @@ const MetaPixelSection = () => {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: COLORS[index] }}
                         />
-                        <span className="text-sm text-gray-600">{device.name}</span>
+                        <span className="text-sm text-neutral-600">{device.name}</span>
                       </div>
                     ))}
                   </div>
@@ -431,25 +370,25 @@ const AnalyticsSection = () => {
   const [timeframe, setTimeframe] = useState('7d');
   
   return (
-    <div className="mt-32">
+    <div className="mt-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="p-2 rounded-lg bg-primary-light">
+            <div className="p-2 rounded-lg bg-primary/5">
               <BarChart3 className="w-4 h-4 text-primary" />
             </div>
-            <span className="text-sm font-medium text-gray-500">Analytics Dashboard</span>
+            <span className="text-sm font-medium text-neutral-500">Analytics Dashboard</span>
           </div>
-          <h3 className="text-2xl md:text-3xl font-bold mb-4">Track Your Performance</h3>
-          <p className="text-lg text-gray-600">
+          <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Track Your Performance</h3>
+          <p className="text-lg text-neutral-600/90">
             Get detailed insights into your smart link performance. Monitor views, clicks, and conversion rates in real-time.
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+        <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
           <div className="p-8 md:p-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <h4 className="text-xl font-semibold">Performance Overview</h4>
+              <h4 className="text-xl font-semibold text-neutral-900">Performance Overview</h4>
               <ToggleGroup type="single" value={timeframe} onValueChange={(value) => value && setTimeframe(value)}>
                 <ToggleGroupItem value="24h" aria-label="Toggle 24 hours view">24h</ToggleGroupItem>
                 <ToggleGroupItem value="7d" aria-label="Toggle 7 days view">7d</ToggleGroupItem>
@@ -465,11 +404,11 @@ const AnalyticsSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Users className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Total Views</span>
+                      <span className="font-medium text-sm text-neutral-600">Total Views</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">2,847</p>
+                  <p className="text-2xl font-bold text-neutral-900">2,847</p>
                 </CardContent>
               </Card>
 
@@ -480,11 +419,11 @@ const AnalyticsSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Activity className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Total Clicks</span>
+                      <span className="font-medium text-sm text-neutral-600">Total Clicks</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">1,249</p>
+                  <p className="text-2xl font-bold text-neutral-900">1,249</p>
                 </CardContent>
               </Card>
 
@@ -495,11 +434,11 @@ const AnalyticsSection = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Percent className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="font-medium text-sm">Click Rate</span>
+                      <span className="font-medium text-sm text-neutral-600">Click Rate</span>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+5.2%</Badge>
                   </div>
-                  <p className="text-2xl font-bold">43.9%</p>
+                  <p className="text-2xl font-bold text-neutral-900">43.9%</p>
                 </CardContent>
               </Card>
             </div>
@@ -508,8 +447,8 @@ const AnalyticsSection = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={mockData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200/40" />
-                  <XAxis dataKey="date" className="text-sm" />
-                  <YAxis className="text-sm" />
+                  <XAxis dataKey="date" className="text-sm text-neutral-600" />
+                  <YAxis className="text-sm text-neutral-600" />
                   <Tooltip content={<CustomTooltip />} />
                   <Line 
                     type="monotone" 
@@ -594,7 +533,7 @@ const Features: React.FC = () => {
           <div className="flex-1 w-full">
             <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.03)] border border-neutral-100/60 p-8 h-[400px] overflow-hidden transition-all duration-200">
               <div className="flex justify-between items-center mb-6">
-                <h4 className="text-lg font-semibold">Recent Subscribers</h4>
+                <h4 className="text-lg font-semibold text-neutral-900">Recent Subscribers</h4>
                 <Button
                   variant="ghost"
                   size="sm"
