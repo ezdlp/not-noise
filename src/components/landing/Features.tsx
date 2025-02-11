@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -114,76 +113,44 @@ const SocialAssetsShowcase = () => {
   const [activeFormat, setActiveFormat] = useState<'post' | 'story'>('post');
   
   return (
-    <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
-      <div className="flex-1 lg:max-w-md">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-primary/5">
-            <ImageIcon className="w-4 h-4 text-primary" />
+    <div className="flex-1 w-full">
+      <div className="max-w-xl mx-auto">
+        <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
+          <div className="flex justify-center gap-4 pt-6 pb-4">
+            <Toggle
+              pressed={activeFormat === 'post'}
+              onPressedChange={() => setActiveFormat('post')}
+              className={`px-6 py-2 text-sm font-medium transition-all ${
+                activeFormat === 'post' 
+                  ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
+                  : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              Post
+            </Toggle>
+            <Toggle
+              pressed={activeFormat === 'story'}
+              onPressedChange={() => setActiveFormat('story')}
+              className={`px-6 py-2 text-sm font-medium transition-all ${
+                activeFormat === 'story' 
+                  ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
+                  : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              Story
+            </Toggle>
           </div>
-          <span className="text-sm font-medium text-neutral-500">Social Promotion</span>
-        </div>
-        <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Create Professional Social Assets Instantly</h3>
-        <p className="text-lg text-neutral-600/90">
-          Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
-        </p>
-        
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-6 mt-8">
-          {[
-            { icon: faInstagram, label: "Instagram" },
-            { icon: faTiktok, label: "TikTok" },
-            { icon: faXTwitter, label: "X" },
-            { icon: faSnapchat, label: "Snapchat" },
-            { icon: faFacebookF, label: "Facebook" }
-          ].map((platform) => (
-            <div key={platform.label} className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-                <FontAwesomeIcon icon={platform.icon} className="w-5 h-5 text-neutral-500" />
-              </div>
-              <span className="text-xs font-medium text-neutral-600">{platform.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="flex-1 w-full">
-        <div className="max-w-xl mx-auto">
-          <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
-            <div className="flex justify-center gap-4 pt-6 pb-4">
-              <Toggle
-                pressed={activeFormat === 'post'}
-                onPressedChange={() => setActiveFormat('post')}
-                className={`px-6 py-2 text-sm font-medium transition-all ${
-                  activeFormat === 'post' 
-                    ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
-                    : 'text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                Post
-              </Toggle>
-              <Toggle
-                pressed={activeFormat === 'story'}
-                onPressedChange={() => setActiveFormat('story')}
-                className={`px-6 py-2 text-sm font-medium transition-all ${
-                  activeFormat === 'story' 
-                    ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
-                    : 'text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                Story
-              </Toggle>
-            </div>
-
-            <div className="h-[480px] flex items-center justify-center bg-neutral-50 p-6">
-              <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[270px]'}`}>
-                <img 
-                  src={activeFormat === 'post' 
-                    ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg'
-                    : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
-                  }
-                  alt="Social media preview"
-                  className="w-full h-full object-contain rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
-                />
-              </div>
+          <div className="h-[480px] flex items-center justify-center bg-neutral-50 p-6">
+            <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[270px]'}`}>
+              <img 
+                src={activeFormat === 'post' 
+                  ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg'
+                  : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
+                }
+                alt="Social media preview"
+                className="w-full h-full object-contain rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
+              />
             </div>
           </div>
         </div>
@@ -621,4 +588,3 @@ const Features: React.FC = () => {
 };
 
 export default Features;
-
