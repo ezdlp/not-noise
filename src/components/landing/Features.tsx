@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useState } from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -85,24 +86,24 @@ const SmartLinkShowcase: React.FC = () => {
 
   const smartLinks = [
     {
-      image: "/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png",
-      gradient: "from-purple-500/20 to-purple-500",
+      image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png",
+      gradient: "from-indigo-500/20 to-purple-500",
     },
     {
-      image: "/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png",
-      gradient: "from-pink-500/20 to-orange-500",
+      image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png",
+      gradient: "from-yellow-500/20 via-orange-500 to-pink-500",
     },
     {
-      image: "/lovable-uploads/4c9eb575-58f0-4d5e-9109-0fe49ff42c02.png",
-      gradient: "from-blue-500/20 to-purple-500",
+      image: "/lovable-uploads/49bdc125-2fb6-44ad-ba5d-ef8efca7df5a.png",
+      gradient: "from-gray-500/20 to-gray-500",
     },
     {
-      image: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png",
-      gradient: "from-emerald-500/20 to-sky-500",
+      image: "/lovable-uploads/97a73c26-6a75-4622-8548-019d36864f45.png",
+      gradient: "from-purple-500/20 to-blue-500",
     },
     {
-      image: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png",
-      gradient: "from-amber-500/20 to-red-500",
+      image: "/lovable-uploads/de90434e-fe22-4dba-ba49-615f2e221fc8.png",
+      gradient: "from-blue-500/20 to-blue-700",
     },
   ];
 
@@ -123,7 +124,7 @@ const SmartLinkShowcase: React.FC = () => {
                 <img
                   src={link.image}
                   alt={`Smart Link Example ${index + 1}`}
-                  className="w-full h-auto aspect-[4/3] object-cover rounded-xl"
+                  className="w-full h-[700px] object-contain rounded-xl mx-auto"
                 />
               </div>
             </div>
