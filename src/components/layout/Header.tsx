@@ -99,7 +99,7 @@ const Header = () => {
                   <Button
                     variant="default"
                     onClick={() => navigate("/register")}
-                    className="w-full h-8 text-sm bg-black hover:bg-black/90 transition-colors"
+                    className="w-full h-8 text-sm bg-primary hover:bg-primary/90 transition-colors"
                   >
                     Sign Up
                   </Button>
@@ -115,7 +115,7 @@ const Header = () => {
                 <>
                   <Button 
                     onClick={() => navigate("/create")} 
-                    className="w-full h-8 text-sm bg-black text-white hover:bg-black/90 transition-colors"
+                    className="w-full h-8 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
                   >
                     Create Smart Link
                   </Button>
@@ -182,7 +182,7 @@ const Header = () => {
               </Button>
               <Button 
                 onClick={() => navigate("/register")}
-                className="hidden md:flex h-8 px-3 text-sm font-medium bg-black hover:bg-black/90 transition-colors"
+                className="hidden md:flex h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90 transition-colors"
               >
                 Sign Up
               </Button>
@@ -192,7 +192,7 @@ const Header = () => {
               {!isDashboard && (
                 <Button
                   onClick={() => navigate("/create")}
-                  className="hidden md:flex h-8 px-3 text-sm bg-black text-white hover:bg-black/90 transition-colors"
+                  className="hidden md:flex h-8 px-3 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
                 >
                   Create Smart Link
                 </Button>
@@ -206,8 +206,12 @@ const Header = () => {
                     aria-label="User menu"
                   >
                     <Avatar 
-                      className={`h-7 w-7 transition-all duration-200 ring-offset-background
-                        ${subscription?.tier === "pro" ? "ring-2 ring-primary hover:ring-primary/90" : "hover:ring-2 hover:ring-neutral-200"}`}
+                      className={cn(
+                        "h-7 w-7 transition-all duration-200 ring-offset-background",
+                        subscription?.tier === "pro" 
+                          ? "ring-2 ring-primary/30 hover:ring-primary/40" 
+                          : "hover:ring-2 hover:ring-neutral-200"
+                      )}
                     >
                       <AvatarFallback 
                         className="bg-primary/5 text-primary text-xs font-medium"
@@ -231,3 +235,4 @@ const Header = () => {
 }
 
 export default Header
+
