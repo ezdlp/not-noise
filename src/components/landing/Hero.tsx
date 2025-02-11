@@ -1,3 +1,4 @@
+
 import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
 
@@ -24,7 +25,7 @@ export const Hero = () => {
           <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        <div className="relative order-2 h-[400px] sm:h-[500px] md:h-[600px] mt-12 md:mt-24">
+        <div className="relative order-2 w-full h-[400px] sm:h-[500px] md:h-[700px] mt-12 md:mt-0">
           {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -35,7 +36,7 @@ export const Hero = () => {
           
           {/* Decorative squares - visible only on desktop */}
           <div 
-            className="absolute top-1/2 left-1/2 w-[200px] sm:w-[300px] md:w-[500px] h-[200px] sm:h-[300px] md:h-[500px] border-2 rounded-none hidden md:block"
+            className="absolute top-1/2 left-1/2 w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] border-2 rounded-none hidden md:block"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
               transform: 'translate(-60%, -50%) rotate(-12deg)',
@@ -44,16 +45,16 @@ export const Hero = () => {
           />
           
           <div 
-            className="absolute top-1/2 left-1/2 w-[150px] sm:w-[250px] md:w-[400px] h-[150px] sm:h-[250px] md:h-[400px] border-2 rounded-none hidden md:block"
+            className="absolute top-1/2 left-1/2 w-[250px] sm:w-[350px] md:w-[400px] h-[250px] sm:h-[350px] md:h-[400px] border-2 rounded-none hidden md:block"
             style={{ 
               borderImage: 'linear-gradient(45deg, rgba(104, 81, 251, 0.3), rgba(74, 71, 165, 0.5)) 1',
-              transform: 'translate(-20%, -50%) rotate(12deg)',
+              transform: 'translate(-40%, -50%) rotate(12deg)',
               animation: 'rotate 15s linear infinite reverse'
             }}
           />
           
           {/* Smart Link Mockups Group */}
-          <div className="relative w-full h-full pt-12 md:pt-24">
+          <div className="relative w-full h-full">
             {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
               <div 
@@ -91,12 +92,12 @@ export const Hero = () => {
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:block">
+            <div className="hidden md:block absolute inset-0">
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[80%] -translate-y-[60%] -rotate-6 transition-all duration-300 hover:scale-105"
+                className="absolute top-1/2 left-[15%] w-[320px] transform -translate-y-[60%] -rotate-6 transition-all duration-300 hover:scale-105"
                 style={{
-                  animation: 'float 6s ease-in-out infinite',
-                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
+                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+                  animation: 'float 6s ease-in-out infinite'
                 }}
               >
                 <img
@@ -107,11 +108,11 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[50%] -translate-y-[50%] rotate-3 transition-all duration-300 hover:scale-105"
+                className="absolute top-1/2 left-[50%] w-[320px] transform -translate-x-1/2 -translate-y-1/2 rotate-3 transition-all duration-300 hover:scale-105"
                 style={{
+                  filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
                   animation: 'float 6s ease-in-out infinite',
                   animationDelay: '2s',
-                  filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
                   zIndex: 20
                 }}
               >
@@ -123,11 +124,11 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute top-1/2 left-1/2 w-[300px] transform -translate-x-[20%] -translate-y-[40%] rotate-12 transition-all duration-300 hover:scale-105"
+                className="absolute top-1/2 right-[15%] w-[320px] transform -translate-y-[40%] rotate-12 transition-all duration-300 hover:scale-105"
                 style={{
+                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
                   animation: 'float 6s ease-in-out infinite',
-                  animationDelay: '4s',
-                  filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))'
+                  animationDelay: '4s'
                 }}
               >
                 <img
