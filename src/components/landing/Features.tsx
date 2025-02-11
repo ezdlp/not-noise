@@ -472,19 +472,6 @@ const Features: React.FC = () => {
         <div className="w-full h-px bg-neutral-100/50 my-16" />
 
         <div className="mt-16">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary/5">
-                <BarChart3 className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-neutral-500">Analytics Dashboard</span>
-            </div>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Track Your Performance</h3>
-            <p className="text-lg text-neutral-600/90">
-              Get detailed insights into your smart link performance. Monitor views, clicks, and conversion rates in real-time.
-            </p>
-          </div>
-
           <AnalyticsSection />
         </div>
 
