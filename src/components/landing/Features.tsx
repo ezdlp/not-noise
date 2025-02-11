@@ -43,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
         {payload.map((pld: any, index: number) => (
           <div key={index} className="flex items-center gap-2 mb-1">
-            <div className={`w-2 h-2 rounded-full ${pld.name === 'views' ? 'bg-[#007CF0]' : 'bg-emerald-500'}`} />
+            <div className={`w-2 h-2 rounded-full ${pld.name === 'views' ? 'bg-[#9b87f5]' : 'bg-[#37D299]'}`} />
             <span className="text-sm font-medium">{pld.name === 'views' ? 'Views' : 'Clicks'}</span>
             <span className="text-sm font-medium">{pld.value}</span>
             <span className={`text-xs ${Number(pld.payload[`${pld.name}Change`]) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -202,10 +202,10 @@ const Features = () => {
                     <Line 
                       type="monotone" 
                       dataKey="views" 
-                      stroke="#007CF0"
+                      stroke="#9b87f5"
                       strokeWidth={2}
-                      dot={{ r: 4, fill: "#007CF0" }}
-                      activeDot={{ r: 6, fill: "#007CF0" }}
+                      dot={{ r: 4, fill: "#9b87f5" }}
+                      activeDot={{ r: 6, fill: "#9b87f5" }}
                     />
                     <Line 
                       type="monotone" 
