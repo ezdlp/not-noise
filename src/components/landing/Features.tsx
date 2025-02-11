@@ -116,8 +116,8 @@ const SocialAssetsShowcase: React.FC = () => {
     <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
       <div className="flex-1 lg:max-w-md">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-3 rounded-lg bg-primary-light">
-            <ImageIcon className="w-6 h-6 text-primary" />
+          <div className="p-2 rounded-lg bg-primary-light">
+            <ImageIcon className="w-4 h-4 text-primary" />
           </div>
           <span className="text-sm font-medium text-primary">Social Promotion</span>
         </div>
@@ -573,10 +573,10 @@ const Features: React.FC = () => {
         <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-3 rounded-lg bg-primary-light">
-                <Mail className="w-6 h-6 text-primary" />
+              <div className="p-2 rounded-lg bg-primary-light">
+                <Mail className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-primary">Fan Engagement</span>
+              <span className="text-sm font-medium text-gray-500">Fan Engagement</span>
             </div>
             <h3 className="text-2xl md:text-3xl font-bold">Build Your Email List</h3>
             <p className="text-lg text-gray-600">
@@ -628,8 +628,8 @@ const Features: React.FC = () => {
             <div className="flex items-start justify-between mb-8">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="p-3 rounded-lg bg-primary-light">
-                    <Globe2 className="w-6 h-6 text-primary" />
+                  <div className="p-2 rounded-lg bg-primary-light">
+                    <Globe2 className="w-4 h-4 text-primary" />
                   </div>
                   <span className="text-sm font-medium text-primary">Global Impact</span>
                 </div>
