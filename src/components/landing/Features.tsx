@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -162,49 +161,41 @@ const SocialAssetsShowcase: React.FC = () => {
       <div className="flex-1 w-full">
         <div className="max-w-xl mx-auto">
           <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-center gap-4 mb-8">
-                <Toggle
-                  pressed={activeFormat === 'post'}
-                  onPressedChange={() => setActiveFormat('post')}
-                  className={`px-6 py-2 text-sm font-medium transition-all ${
-                    activeFormat === 'post' 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-neutral-50'
-                  }`}
-                >
-                  Post
-                </Toggle>
-                <Toggle
-                  pressed={activeFormat === 'story'}
-                  onPressedChange={() => setActiveFormat('story')}
-                  className={`px-6 py-2 text-sm font-medium transition-all ${
-                    activeFormat === 'story' 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-neutral-50'
-                  }`}
-                >
-                  Story
-                </Toggle>
-              </div>
+            <div className="flex justify-center gap-4 pt-6 pb-4">
+              <Toggle
+                pressed={activeFormat === 'post'}
+                onPressedChange={() => setActiveFormat('post')}
+                className={`px-6 py-2 text-sm font-medium transition-all ${
+                  activeFormat === 'post' 
+                    ? 'bg-primary text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-neutral-50'
+                }`}
+              >
+                Post
+              </Toggle>
+              <Toggle
+                pressed={activeFormat === 'story'}
+                onPressedChange={() => setActiveFormat('story')}
+                className={`px-6 py-2 text-sm font-medium transition-all ${
+                  activeFormat === 'story' 
+                    ? 'bg-primary text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-neutral-50'
+                }`}
+              >
+                Story
+              </Toggle>
+            </div>
 
-              <div className="bg-neutral-50 rounded-lg p-6">
-                <div className="h-[480px] relative bg-white rounded-lg overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 flex items-center justify-center bg-neutral-50">
-                    <div className={`relative h-full ${
-                      activeFormat === 'post' ? 'w-full' : 'w-[270px]'
-                    }`}>
-                      <img 
-                        src={activeFormat === 'post' 
-                          ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg'
-                          : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
-                        }
-                        alt="Social media preview"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  </div>
-                </div>
+            <div className="h-[480px] flex items-center justify-center bg-neutral-50">
+              <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[270px]'}`}>
+                <img 
+                  src={activeFormat === 'post' 
+                    ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg'
+                    : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
+                  }
+                  alt="Social media preview"
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
           </div>
