@@ -3,6 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import useEmblaCarousel from 'embla-carousel-react';
+import { useCallback, useEffect, useState } from "react";
 
 // Generate mock data for analytics
 const generateMockData = () => {
@@ -58,6 +60,92 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+const SmartLinkShowcase = () => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: true,
+    align: 'center',
+  });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const scrollTo = useCallback((index: number) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
+  const smartLinks = [
+    {
+      image: "/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png",
+      gradient: "from-purple-500/20 to-purple-500",
+    },
+    {
+      image: "/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png",
+      gradient: "from-pink-500/20 to-orange-500",
+    },
+    {
+      image: "/lovable-uploads/4c9eb575-58f0-4d5e-9109-0fe49ff42c02.png",
+      gradient: "from-blue-500/20 to-purple-500",
+    },
+    {
+      image: "/lovable-uploads/28f75700-3d24-45a7-8bca-02635c910bf8.png",
+      gradient: "from-emerald-500/20 to-sky-500",
+    },
+    {
+      image: "/lovable-uploads/9e0bd143-b390-4507-95bb-4608c17e614a.png",
+      gradient: "from-amber-500/20 to-red-500",
+    },
+  ];
+
+  return (
+    <div className="mt-12 overflow-hidden">
+      <div className="overflow-hidden w-full" ref={emblaRef}>
+        <div className="flex touch-pan-y">
+          {smartLinks.map((link, index) => (
+            <div
+              key={index}
+              className="relative flex-[0_0_100%] min-w-0 pl-4 md:flex-[0_0_80%] lg:flex-[0_0_60%]"
+            >
+              <div 
+                className={`relative overflow-hidden rounded-xl transition-all duration-500 transform
+                  ${selectedIndex === index ? 'scale-100 opacity-100' : 'scale-95 opacity-50'}`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${link.gradient} opacity-50`} />
+                <img
+                  src={link.image}
+                  alt={`Smart Link Example ${index + 1}`}
+                  className="w-full h-auto aspect-[4/3] object-cover rounded-xl"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="flex justify-center gap-2 mt-4">
+        {smartLinks.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => scrollTo(index)}
+            className={`w-2 h-2 rounded-full transition-all duration-300 
+              ${selectedIndex === index ? 'bg-primary w-4' : 'bg-gray-300'}`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Features = () => {
   return (
     <section className="py-24 bg-white">
@@ -81,61 +169,7 @@ const Features = () => {
             </p>
           </div>
 
-          <div className="relative max-w-4xl mx-auto">
-            {/* Central Album Art */}
-            <div className="w-48 h-48 mx-auto mb-12 rounded-xl overflow-hidden shadow-lg relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary opacity-50"></div>
-              <img 
-                src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
-                alt="Album artwork"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Platforms Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { name: "Spotify", icon: "/lovable-uploads/spotify.png", action: "Play" },
-                { name: "Apple Music", icon: "/lovable-uploads/applemusic.png", action: "Listen" },
-                { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png", action: "Listen" },
-                { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png", action: "Play" },
-                { name: "Deezer", icon: "/lovable-uploads/deezer.png", action: "Listen" },
-                { name: "Tidal", icon: "/lovable-uploads/tidal.png", action: "Listen" }
-              ].map((platform, index) => (
-                <div
-                  key={platform.name}
-                  className="bg-white rounded-lg p-4 border border-neutral-border hover:shadow-md transition-all duration-200 group relative"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-neutral-seasalt p-2 flex items-center justify-center">
-                      <img
-                        src={platform.icon}
-                        alt={`${platform.name} logo`}
-                        className="w-8 h-8 object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{platform.name}</h4>
-                      <Button 
-                        variant="default"
-                        size="sm"
-                        className="mt-2 w-full bg-primary hover:bg-primary-hover text-white transition-colors duration-200"
-                      >
-                        {platform.action}
-                      </Button>
-                    </div>
-                  </div>
-                  {/* Connecting Lines */}
-                  {index < 5 && (
-                    <div className="absolute -right-2 top-1/2 w-4 border-t border-dashed border-neutral-border hidden md:block"></div>
-                  )}
-                  {index < 3 && (
-                    <div className="absolute -bottom-2 left-1/2 h-4 border-l border-dashed border-neutral-border hidden md:block"></div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <SmartLinkShowcase />
         </div>
 
         {/* Social Media Assets - Full Width */}
@@ -149,7 +183,7 @@ const Features = () => {
                   </div>
                   <span className="text-sm font-medium text-primary">Social Promotion</span>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
+                <h3 className="text-2xl md:text-3xl font-bold">Create Professional Social Assets Instantly</h3>
                 <p className="text-lg text-gray-600 max-w-2xl">
                   Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
                 </p>
