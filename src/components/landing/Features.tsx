@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3, Users, Percent, DollarSign, Laptop, Phone, MonitorSmartphone } from "lucide-react";
+import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInstagram, faTiktok, faXTwitter, faSnapchat, faFacebookF } from "@fortawesome/free-brands-svg-icons";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -109,7 +109,7 @@ const SmartLinkShowcase = () => {
   );
 };
 
-const SocialAssetsShowcase: React.FC = () => {
+const SocialAssetsShowcase = () => {
   const [activeFormat, setActiveFormat] = useState<'post' | 'story'>('post');
   
   return (
@@ -539,22 +539,22 @@ const AnalyticsSection = () => {
 
 const Features: React.FC = () => {
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-night font-heading">
+    <section className="py-20 bg-white">
+      <div className="max-w-6xl mx-auto px-4 md:px-8">
+        <h2 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
           From One Link to Endless Plays
         </h2>
 
-        <div className="mt-12" data-scroll="parallax">
+        <div className="mt-16" data-scroll="parallax">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary-light">
+              <div className="p-2 rounded-lg bg-primary/5">
                 <Link2 className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-gray-500">Smart Links</span>
+              <span className="text-sm font-medium text-neutral-500">Smart Links</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">One Link for All Platforms</h3>
-            <p className="text-lg text-gray-600">
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">One Link for All Platforms</h3>
+            <p className="text-lg text-neutral-600/90">
               Create a single, powerful smart link that connects your fans to your music across all major streaming platforms.
             </p>
           </div>
@@ -562,45 +562,53 @@ const Features: React.FC = () => {
           <SmartLinkShowcase />
         </div>
 
+        <div className="w-full h-px bg-neutral-100/50 my-16" />
+
         <AnalyticsSection />
 
-        <div className="mt-32">
+        <div className="w-full h-px bg-neutral-100/50 my-16" />
+
+        <div className="mt-16">
           <SocialAssetsShowcase />
         </div>
 
+        <div className="w-full h-px bg-neutral-100/50 my-16" />
+
         <MetaPixelSection />
 
-        <div className="mt-32 flex flex-col lg:flex-row items-center gap-12">
+        <div className="w-full h-px bg-neutral-100/50 my-16" />
+
+        <div className="mt-16 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-primary-light">
+              <div className="p-2 rounded-lg bg-primary/5">
                 <Mail className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-gray-500">Fan Engagement</span>
+              <span className="text-sm font-medium text-neutral-500">Fan Engagement</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold">Build Your Email List</h3>
-            <p className="text-lg text-gray-600">
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">Build Your Email List</h3>
+            <p className="text-lg text-neutral-600/90">
               Turn passive listeners into engaged fans with powerful email collection tools. Build a direct connection with your audience.
             </p>
           </div>
           <div className="flex-1 w-full">
-            <div className="bg-white rounded-xl shadow-lg border border-neutral-200 p-6 h-[400px] overflow-hidden">
+            <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.03)] border border-neutral-100/60 p-8 h-[400px] overflow-hidden transition-all duration-200">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-lg font-semibold">Recent Subscribers</h4>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-sm hover:bg-neutral-50 transition-colors font-medium border border-neutral-200"
+                  className="h-8 text-sm hover:bg-neutral-50 transition-colors font-medium border border-neutral-100/60"
                 >
                   Export CSV
                 </Button>
               </div>
               <div className="overflow-x-auto">
                 <div className="min-w-[500px] md:min-w-0">
-                  <div className="bg-white rounded-lg">
+                  <div className="bg-white/50 rounded-lg">
                     <Table>
                       <TableHeader>
-                        <TableRow className="hover:bg-gray-50/50">
+                        <TableRow className="hover:bg-neutral-50/50">
                           <TableHead>Email</TableHead>
                           <TableHead>Platform</TableHead>
                           <TableHead>Date</TableHead>
@@ -608,7 +616,7 @@ const Features: React.FC = () => {
                       </TableHeader>
                       <TableBody>
                         {mockSubscribers.map((subscriber) => (
-                          <TableRow key={subscriber.id} className="hover:bg-gray-50/50">
+                          <TableRow key={subscriber.id} className="hover:bg-neutral-50/50">
                             <TableCell className="font-medium">{subscriber.email}</TableCell>
                             <TableCell>{subscriber.platform}</TableCell>
                             <TableCell>{subscriber.date}</TableCell>
