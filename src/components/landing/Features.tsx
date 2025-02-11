@@ -261,163 +261,148 @@ const MetaPixelSection = () => {
   ];
   
   return (
-    <div className="mt-32">
-      <div className="text-center max-w-2xl mx-auto mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-primary-light">
-            <Activity className="w-4 h-4 text-primary" />
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+        <div className="p-8 md:p-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Ad Clicks</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
+                </div>
+                <p className="text-2xl font-bold">860</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Percent className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Conversion Rate</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
+                </div>
+                <p className="text-2xl font-bold">24.2%</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-medium text-sm">Cost per Conversion</span>
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">-5.2%</Badge>
+                </div>
+                <p className="text-2xl font-bold">$2.15</p>
+              </CardContent>
+            </Card>
           </div>
-          <span className="text-sm font-medium text-gray-500">Meta Pixel Integration</span>
-        </div>
-        <h3 className="text-2xl md:text-3xl font-bold mb-4">Target Your True Fans</h3>
-        <p className="text-lg text-gray-600">
-          Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
-        </p>
-      </div>
 
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
-          <div className="p-8 md:p-10">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Users className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium text-sm">Ad Clicks</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+12.5%</Badge>
-                  </div>
-                  <p className="text-2xl font-bold">860</p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Percent className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium text-sm">Conversion Rate</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">+8.3%</Badge>
-                  </div>
-                  <p className="text-2xl font-bold">24.2%</p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <DollarSign className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium text-sm">Cost per Conversion</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">-5.2%</Badge>
-                  </div>
-                  <p className="text-2xl font-bold">$2.15</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Platform Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'Spotify', value: 35 },
-                      { name: 'Apple Music', value: 25 },
-                      { name: 'YouTube Music', value: 20 },
-                      { name: 'Amazon Music', value: 12 },
-                      { name: 'Others', value: 8 }
-                    ].map((platform) => (
-                      <div key={platform.name} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{platform.name}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary rounded-full"
-                              style={{ width: `${platform.value}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{platform.value}%</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Platform Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Spotify', value: 35 },
+                    { name: 'Apple Music', value: 25 },
+                    { name: 'YouTube Music', value: 20 },
+                    { name: 'Amazon Music', value: 12 },
+                    { name: 'Others', value: 8 }
+                  ].map((platform) => (
+                    <div key={platform.name} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">{platform.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${platform.value}%` }}
+                          />
                         </div>
+                        <span className="text-sm font-medium">{platform.value}%</span>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Geographic Data</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { country: 'United States', value: 35 },
-                      { country: 'United Kingdom', value: 20 },
-                      { country: 'Germany', value: 15 },
-                      { country: 'Brazil', value: 12 },
-                      { country: 'Spain', value: 8 },
-                      { country: 'Argentina', value: 6 },
-                      { country: 'Others', value: 4 }
-                    ].map((geo) => (
-                      <div key={geo.country} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{geo.country}</span>
-                        <span className="text-sm font-medium">{geo.value}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Geographic Data</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {[
+                    { country: 'United States', value: 35 },
+                    { country: 'United Kingdom', value: 20 },
+                    { country: 'Germany', value: 15 },
+                    { country: 'Brazil', value: 12 },
+                    { country: 'Spain', value: 8 },
+                    { country: 'Argentina', value: 6 },
+                    { country: 'Others', value: 4 }
+                  ].map((geo) => (
+                    <div key={geo.country} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">{geo.country}</span>
+                      <span className="text-sm font-medium">{geo.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="border-none bg-card/50 shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Device Types</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[150px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={deviceData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={60}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {deviceData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex justify-center gap-4 mt-4">
-                    {deviceData.map((device, index) => (
-                      <div key={device.name} className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLORS[index] }}
-                        />
-                        <span className="text-sm text-gray-600">{device.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="border-none bg-card/50 shadow-none">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Device Types</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[150px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={deviceData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {deviceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  {deviceData.map((device, index) => (
+                    <div key={device.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COLORS[index] }}
+                      />
+                      <span className="text-sm text-gray-600">{device.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
