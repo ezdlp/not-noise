@@ -66,74 +66,75 @@ const Features = () => {
           From One Link to Endless Plays
         </h2>
 
-        {/* One Link Feature - Two Column */}
-        <div className="mt-24 flex flex-col lg:flex-row items-center gap-12" data-scroll="parallax">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2 mb-4">
+        {/* One Link Feature - Modern Grid Layout */}
+        <div className="mt-24" data-scroll="parallax">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="flex items-center justify-center gap-2 mb-4">
               <div className="p-2 rounded-lg bg-primary-light">
                 <Link2 className="w-4 h-4 text-primary" />
               </div>
               <span className="text-sm font-medium text-gray-500">Smart Links</span>
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold">One Link for All Platforms</h3>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">One Link for All Platforms</h3>
             <p className="text-lg text-gray-600">
               Create a single, powerful smart link that connects your fans to your music across all major streaming platforms.
             </p>
           </div>
-          <div className="flex-1 relative w-full h-[600px]">
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[560px] bg-black rounded-[3rem] border-[8px] border-black overflow-hidden shadow-xl">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl"></div>
-              <div className="w-full h-full bg-[#271153] rounded-[2.5rem] overflow-hidden">
-                <img 
-                  src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
-                  alt="Album artwork"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            
-            {[
-              { name: "Spotify", icon: "/lovable-uploads/spotify.png", angle: 0 },
-              { name: "Apple Music", icon: "/lovable-uploads/applemusic.png", angle: 60 },
-              { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png", angle: 120 },
-              { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png", angle: 180 },
-              { name: "Deezer", icon: "/lovable-uploads/deezer.png", angle: 240 },
-              { name: "Tidal", icon: "/lovable-uploads/tidal.png", angle: 300 }
-            ].map((platform, index) => (
-              <div
-                key={platform.name}
-                className="absolute left-1/2 top-1/2 w-12 h-12 -translate-x-1/2 -translate-y-1/2 animate-float"
-                style={{
-                  transform: `rotate(${platform.angle}deg) translateX(180px) rotate(-${platform.angle}deg)`,
-                }}
-              >
-                <div className="bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform duration-200">
-                  <img
-                    src={platform.icon}
-                    alt={platform.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-            ))}
-            
-            <svg className="absolute inset-0 w-full h-full animate-rotate" style={{ transform: 'translate(-50%, -50%)' }}>
-              <path
-                d="M280,280 A140,140 0 1,1 280,279.9"
-                fill="none"
-                stroke="url(#gradient)"
-                strokeWidth="2"
-                strokeDasharray="4,4"
-                className="opacity-50"
+
+          <div className="relative max-w-4xl mx-auto">
+            {/* Central Album Art */}
+            <div className="w-48 h-48 mx-auto mb-12 rounded-xl overflow-hidden shadow-lg relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary opacity-50"></div>
+              <img 
+                src="/lovable-uploads/a26e1c6d-0929-49c7-a91f-ad7e1e7c4eff.png"
+                alt="Album artwork"
+                className="w-full h-full object-cover"
               />
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#6851FB" stopOpacity="0.2" />
-                  <stop offset="50%" stopColor="#6851FB" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#6851FB" stopOpacity="0.2" />
-                </linearGradient>
-              </defs>
-            </svg>
+            </div>
+
+            {/* Platforms Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { name: "Spotify", icon: "/lovable-uploads/spotify.png", action: "Play" },
+                { name: "Apple Music", icon: "/lovable-uploads/applemusic.png", action: "Listen" },
+                { name: "Amazon Music", icon: "/lovable-uploads/amazonmusic.png", action: "Listen" },
+                { name: "YouTube Music", icon: "/lovable-uploads/youtubemusic.png", action: "Play" },
+                { name: "Deezer", icon: "/lovable-uploads/deezer.png", action: "Listen" },
+                { name: "Tidal", icon: "/lovable-uploads/tidal.png", action: "Listen" }
+              ].map((platform, index) => (
+                <div
+                  key={platform.name}
+                  className="bg-white rounded-lg p-4 border border-neutral-border hover:shadow-md transition-all duration-200 group relative"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-neutral-seasalt p-2 flex items-center justify-center">
+                      <img
+                        src={platform.icon}
+                        alt={`${platform.name} logo`}
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{platform.name}</h4>
+                      <Button 
+                        variant="default"
+                        size="sm"
+                        className="mt-2 w-full bg-primary hover:bg-primary-hover text-white transition-colors duration-200"
+                      >
+                        {platform.action}
+                      </Button>
+                    </div>
+                  </div>
+                  {/* Connecting Lines */}
+                  {index < 5 && (
+                    <div className="absolute -right-2 top-1/2 w-4 border-t border-dashed border-neutral-border hidden md:block"></div>
+                  )}
+                  {index < 3 && (
+                    <div className="absolute -bottom-2 left-1/2 h-4 border-l border-dashed border-neutral-border hidden md:block"></div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
