@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -44,14 +45,14 @@ const mockSubscribers = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white/50 p-4 border border-neutral-100/60 rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-        <p className="text-sm font-medium text-neutral-600 mb-2">{label}</p>
+      <div className="bg-white/50 p-3 md:p-4 border border-neutral-100/60 rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+        <p className="text-xs md:text-sm font-medium text-neutral-600 mb-2">{label}</p>
         {payload.map((pld: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 mb-1">
-            <div className={`w-2 h-2 rounded-full ${pld.name === 'views' ? 'bg-[#9b87f5]' : 'bg-[#37D299]'}`} />
-            <span className="text-sm font-medium">{pld.name === 'views' ? 'Views' : 'Clicks'}</span>
-            <span className="text-sm font-medium">{pld.value}</span>
-            <span className={`text-xs ${Number(pld.payload[`${pld.name}Change`]) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+          <div key={index} className="flex items-center gap-1.5 md:gap-2 mb-1">
+            <div className={`w-1.5 md:w-2 h-1.5 md:h-2 rounded-full ${pld.name === 'views' ? 'bg-[#9b87f5]' : 'bg-[#37D299]'}`} />
+            <span className="text-xs md:text-sm font-medium">{pld.name === 'views' ? 'Views' : 'Clicks'}</span>
+            <span className="text-xs md:text-sm font-medium">{pld.value}</span>
+            <span className={`text-[10px] md:text-xs ${Number(pld.payload[`${pld.name}Change`]) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {Number(pld.payload[`${pld.name}Change`]) > 0 ? '+' : ''}{pld.payload[`${pld.name}Change`]}%
             </span>
           </div>
@@ -77,16 +78,16 @@ const SmartLinkShowcase = () => {
   };
 
   return (
-    <div className="mt-12 relative">
+    <div className="mt-8 md:mt-12 relative">
       <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none md:hidden z-10" />
       <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden z-10" />
       
       <div className="overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-2 md:gap-0 min-w-max md:min-w-0 md:justify-center relative py-8">
+        <div className="flex gap-2 md:gap-0 min-w-max md:min-w-0 md:justify-center relative py-6 md:py-8">
           {smartLinks.map((link, index) => (
             <div
               key={index}
-              className="flex-none w-[280px] md:w-[220px] group relative"
+              className="flex-none w-[220px] md:w-[280px] group relative"
               style={{
                 transform: `rotate(${getRotation(index)}deg)`,
                 marginLeft: index === 0 ? '0' : '-60px',
@@ -116,11 +117,11 @@ const SocialAssetsShowcase = () => {
     <div className="flex-1 w-full">
       <div className="max-w-xl mx-auto">
         <div className="bg-white/50 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] border border-neutral-100/60 overflow-hidden">
-          <div className="flex justify-center gap-4 pt-6 pb-4">
+          <div className="flex justify-center gap-3 md:gap-4 pt-4 md:pt-6 pb-3 md:pb-4">
             <Toggle
               pressed={activeFormat === 'post'}
               onPressedChange={() => setActiveFormat('post')}
-              className={`px-6 py-2 text-sm font-medium transition-all ${
+              className={`px-4 md:px-6 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-all ${
                 activeFormat === 'post' 
                   ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
                   : 'text-neutral-600 hover:bg-neutral-50'
@@ -131,7 +132,7 @@ const SocialAssetsShowcase = () => {
             <Toggle
               pressed={activeFormat === 'story'}
               onPressedChange={() => setActiveFormat('story')}
-              className={`px-6 py-2 text-sm font-medium transition-all ${
+              className={`px-4 md:px-6 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-all ${
                 activeFormat === 'story' 
                   ? 'bg-primary text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]' 
                   : 'text-neutral-600 hover:bg-neutral-50'
@@ -141,8 +142,8 @@ const SocialAssetsShowcase = () => {
             </Toggle>
           </div>
 
-          <div className="h-[480px] flex items-center justify-center bg-neutral-50 p-6">
-            <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[270px]'}`}>
+          <div className="h-[360px] md:h-[480px] flex items-center justify-center bg-neutral-50 p-4 md:p-6">
+            <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[200px] md:w-[270px]'}`}>
               <img 
                 src={activeFormat === 'post' 
                   ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg'
