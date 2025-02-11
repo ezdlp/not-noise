@@ -19,7 +19,7 @@ export const Hero = () => {
   return (
     <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-4 md:py-20 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 md:gap-12 items-center">
-        <div className="text-left relative z-10 order-1">
+        <div className="text-left relative z-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[72px] leading-tight font-bold mb-4 md:mb-6 font-heading text-night">
             Elevate Your Music With{" "}
             <span className="text-primary">Smart Links</span>
@@ -36,7 +36,37 @@ export const Hero = () => {
           <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        <div className="relative order-2 h-[400px] sm:h-[500px] md:h-[600px] mt-12 md:mt-24">
+        <div className="relative h-[400px] sm:h-[500px] md:h-[600px]">
+          {/* Decorative Squares */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div 
+              className="absolute w-72 h-72 bg-[#E5DEFF]/40 rounded-xl blur-sm transform rotate-6 animate-float"
+              style={{
+                bottom: '10%',
+                right: '10%',
+                zIndex: 1,
+              }}
+            />
+            <div 
+              className="absolute w-64 h-64 bg-[#9b87f5]/20 rounded-xl blur-sm transform -rotate-3 animate-float"
+              style={{
+                bottom: '15%',
+                right: '15%',
+                zIndex: 2,
+                animationDelay: '1s',
+              }}
+            />
+            <div 
+              className="absolute w-56 h-56 bg-[#D6BCFA]/15 rounded-xl blur-sm transform rotate-12 animate-float"
+              style={{
+                bottom: '20%',
+                right: '20%',
+                zIndex: 3,
+                animationDelay: '2s',
+              }}
+            />
+          </div>
+
           {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -48,7 +78,10 @@ export const Hero = () => {
           {/* Smart Link Mockups Group */}
           <div className="relative w-full h-full pt-12 md:pt-24">
             {/* Mobile Layout */}
-            <div className="md:hidden relative h-full flex items-center justify-center">
+            <div className="md:hidden relative h-full">
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+              
               <div className="flex gap-2 min-w-max overflow-x-auto snap-x snap-mandatory py-8">
                 {smartLinks.map((link, index) => (
                   <div
@@ -58,14 +91,14 @@ export const Hero = () => {
                       transform: `rotate(${getRotation(index)}deg)`,
                       marginLeft: index === 0 ? '0' : '-60px',
                       transition: 'all 0.3s ease-in-out',
-                      zIndex: index,
+                      zIndex: index * 10,
                     }}
                   >
                     <div className="relative transition-all duration-300 group-hover:rotate-0 group-hover:-translate-y-4 group-hover:z-50">
                       <img
                         src={link.image}
                         alt={`Smart Link Example ${index + 1}`}
-                        className="w-full shadow-md"
+                        className="w-full shadow-md rounded-xl"
                       />
                     </div>
                   </div>
@@ -79,17 +112,17 @@ export const Hero = () => {
                 {smartLinks.map((link, index) => (
                   <div
                     key={index}
-                    className="absolute w-[300px] transform transition-all duration-300 hover:scale-105"
+                    className="absolute w-[300px] transform transition-all duration-300 hover:scale-105 hover:-translate-y-4 hover:z-50"
                     style={{
-                      transform: `translateX(${(index - 1) * 40}px) rotate(${getRotation(index)}deg)`,
-                      zIndex: index === 1 ? 20 : 10,
-                      filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+                      transform: `rotate(${getRotation(index)}deg)`,
+                      marginLeft: index === 0 ? '0' : '-60px',
+                      zIndex: index * 10,
                     }}
                   >
                     <img
                       src={link.image}
                       alt={`Smart Link Example ${index + 1}`}
-                      className="w-full"
+                      className="w-full shadow-md rounded-xl"
                     />
                   </div>
                 ))}
@@ -101,3 +134,4 @@ export const Hero = () => {
     </div>
   );
 };
+
