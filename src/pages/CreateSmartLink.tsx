@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import MetaPixelStep from "@/components/create-smart-link/MetaPixelStep";
 import EmailCaptureStep from "@/components/create-smart-link/EmailCaptureStep";
 import ReviewStep from "@/components/create-smart-link/ReviewStep";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 const CreateSmartLink = () => {
   const navigate = useNavigate();
@@ -66,12 +68,10 @@ const CreateSmartLink = () => {
               Step {step} of 6
             </span>
           </div>
-          <div className="w-full bg-secondary/20 h-2 rounded-full">
-            <div
-              className="bg-primary h-full rounded-full transition-all duration-300"
-              style={{ width: `${(step / 6) * 100}%` }}
-            />
-          </div>
+          <Progress 
+            value={(step / 6) * 100} 
+            className="h-2 [&>div]:bg-primary [&:not([data-state='complete'])]:bg-primary/10"
+          />
         </div>
 
         {step === 1 && <SearchStep onNext={handleSearchComplete} />}
