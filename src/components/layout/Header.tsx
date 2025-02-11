@@ -2,7 +2,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/ui/cta-button"
-import { User, LogIn, Menu, Plus } from "lucide-react"
+import { LogIn, Menu, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -10,6 +10,8 @@ import { NavigationItems } from "@/components/navigation/NavigationItems"
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { UserMenuContent } from "@/components/navigation/UserMenuContent"
 import { cn } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 const Header = () => {
   const navigate = useNavigate()
@@ -25,6 +27,47 @@ const Header = () => {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+
+      return profile
+    },
+  })
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      return data
+    },
+  })
+
+  const getInitials = (name: string) => {
+    return name
+      ?.split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U'
+  }
 
   const MarketingNavLinks = () => (
     <div className="hidden md:flex md:space-x-4">
@@ -162,13 +205,23 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="relative h-9 w-9 rounded-full hover:bg-neutral-50 transition-colors"
+                    className="relative h-9 w-9 rounded-full hover:bg-neutral-50 transition-colors p-0"
                     aria-label="User menu"
                   >
-                    <User className="h-5 w-5" />
+                    <Avatar 
+                      className={`h-8 w-8 transition-all duration-200 ring-offset-background
+                        ${subscription?.tier === "pro" ? "ring-2 ring-primary hover:ring-primary/90" : "hover:ring-2 hover:ring-neutral-200"}`}
+                    >
+                      <AvatarFallback 
+                        className="bg-primary/5 text-primary font-medium"
+                        aria-label={`User avatar for ${profile?.name || "User"}`}
+                      >
+                        {getInitials(profile?.name || "User")}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <UserMenuContent />
+                <UserMenuContent profile={profile} subscription={subscription} />
               </DropdownMenu>
             </>
           )}
@@ -181,3 +234,4 @@ const Header = () => {
 }
 
 export default Header
+
