@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link2, Image as ImageIcon, Globe2, Mail, Activity, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -68,23 +69,36 @@ const SmartLinkShowcase: React.FC = () => {
     { image: "/lovable-uploads/de90434e-fe22-4dba-ba49-615f2e221fc8.png" },
   ];
 
+  const getRotation = (index: number) => {
+    const rotations = [-10, -5, 0, 5, 10];
+    return rotations[index];
+  };
+
   return (
     <div className="mt-12 relative">
       <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none md:hidden z-10" />
       <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden z-10" />
       
-      <div className="overflow-x-auto snap-x snap-mandatory pb-6 -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-4 md:gap-6 min-w-max md:min-w-0 md:justify-center">
+      <div className="overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-2 md:gap-0 min-w-max md:min-w-0 md:justify-center relative py-8">
           {smartLinks.map((link, index) => (
             <div
               key={index}
-              className="flex-none w-[280px] md:w-[220px] transition-transform duration-300 hover:scale-[1.02]"
+              className="flex-none w-[280px] md:w-[220px] group relative"
+              style={{
+                transform: `rotate(${getRotation(index)}deg)`,
+                marginLeft: index === 0 ? '0' : '-60px',
+                transition: 'all 0.3s ease-in-out',
+                zIndex: index,
+              }}
             >
-              <img
-                src={link.image}
-                alt={`Smart Link Example ${index + 1}`}
-                className="w-full h-[700px] object-contain rounded-xl"
-              />
+              <div className="relative transition-all duration-300 group-hover:rotate-0 group-hover:-translate-y-4 group-hover:z-50">
+                <img
+                  src={link.image}
+                  alt={`Smart Link Example ${index + 1}`}
+                  className="w-full h-[700px] object-contain rounded-xl shadow-md bg-white"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -102,8 +116,8 @@ const Features: React.FC = () => {
         </h2>
 
         {/* One Link Feature */}
-        <div className="mt-24" data-scroll="parallax">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="mt-12" data-scroll="parallax">
+          <div className="text-center max-w-2xl mx-auto mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="p-2 rounded-lg bg-primary-light">
                 <Link2 className="w-4 h-4 text-primary" />
