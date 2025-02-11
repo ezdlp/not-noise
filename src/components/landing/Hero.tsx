@@ -6,26 +6,26 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-4 md:py-20 bg-white overflow-hidden">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-6 md:gap-12 items-center">
+    <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-8 md:py-20 bg-white overflow-hidden">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-4 md:gap-12 items-center">
         <div className="text-left relative z-10 order-1">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[72px] leading-tight font-bold mb-4 md:mb-6 font-heading text-night">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-[72px] leading-tight font-bold mb-3 md:mb-6 font-heading text-night">
             Elevate Your Music With{" "}
             <span className="text-primary">Smart Links</span>
           </h1>
-          <p className="text-base md:text-lg text-[#333333] mb-6 md:mb-8 max-w-xl leading-relaxed font-sans">
+          <p className="text-sm md:text-lg text-[#333333] mb-4 md:mb-8 max-w-xl leading-relaxed font-sans">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
             onClick={() => navigate("/create")}
-            className="w-auto px-6 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
+            className="w-auto px-4 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
           >
             Get Started For Free
           </CTAButton>
-          <p className="mt-3 md:mt-4 text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
+          <p className="mt-2 md:mt-4 text-xs md:text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
         </div>
 
-        <div className="relative order-2 w-full h-[400px] sm:h-[500px] md:h-[700px] mt-12 md:mt-0">
+        <div className="relative order-2 w-full h-[350px] sm:h-[500px] md:h-[700px] mt-8 md:mt-0">
           {/* Background with subtle grain texture */}
           <div 
             className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -39,7 +39,7 @@ export const Hero = () => {
             {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
               <div 
-                className="absolute left-0 bottom-0 w-[45%] transform -rotate-6 z-10 transition-all duration-300"
+                className="absolute left-0 bottom-0 w-[40%] sm:w-[45%] transform -rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <img
@@ -50,7 +50,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
+                className="absolute w-[50%] sm:w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
               >
                 <img
@@ -61,7 +61,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute right-0 bottom-0 w-[45%] transform rotate-6 z-10 transition-all duration-300"
+                className="absolute right-0 bottom-0 w-[40%] sm:w-[45%] transform rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <img
