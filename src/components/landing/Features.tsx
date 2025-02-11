@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const SmartLinkShowcase: React.FC = () => {
+const SmartLinkShowcase = () => {
   const smartLinks = [
     { image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png" },
     { image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png" },
@@ -111,72 +111,88 @@ const SocialAssetsShowcase: React.FC = () => {
   const [activeFormat, setActiveFormat] = useState<'post' | 'story'>('post');
   
   return (
-    <div className="mt-8 relative">
-      <div className="relative bg-gradient-to-br from-[#E5DEFF] via-[#D3E4FD] to-[#ECE9FF] rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23202020' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        />
-        
-        <div className="flex justify-center gap-4 mb-8">
-          <Toggle
-            pressed={activeFormat === 'post'}
-            onPressedChange={() => setActiveFormat('post')}
-            className={`px-6 py-2 text-sm font-medium transition-all ${
-              activeFormat === 'post' 
-                ? 'bg-white text-primary shadow-md' 
-                : 'text-gray-600 hover:bg-white/50'
-            }`}
-          >
-            Post
-          </Toggle>
-          <Toggle
-            pressed={activeFormat === 'story'}
-            onPressedChange={() => setActiveFormat('story')}
-            className={`px-6 py-2 text-sm font-medium transition-all ${
-              activeFormat === 'story' 
-                ? 'bg-white text-primary shadow-md' 
-                : 'text-gray-600 hover:bg-white/50'
-            }`}
-          >
-            Story
-          </Toggle>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 max-w-3xl mx-auto">
-          <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg mb-6 overflow-hidden`}>
-            <img 
-              src="/lovable-uploads/soundraiser-logo/Iso A.svg"
-              alt="Preview"
-              className="absolute inset-0 w-full h-full object-contain p-12"
-            />
+    <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-12">
+      <div className="flex-1 lg:max-w-md">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-3 rounded-lg bg-primary-light">
+            <ImageIcon className="w-6 h-6 text-primary" />
           </div>
-          
-          <div className="flex flex-wrap justify-center gap-6">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-[#E4405F]/10 flex items-center justify-center">
-                <Instagram className="w-6 h-6 text-[#E4405F]" />
+          <span className="text-sm font-medium text-primary">Social Promotion</span>
+        </div>
+        <h3 className="text-2xl md:text-3xl font-bold mb-4">Create Professional Social Assets Instantly</h3>
+        <p className="text-lg text-gray-600">
+          Generate stunning social media cards automatically for every platform. Share your music professionally across Instagram, Twitter, Facebook, and more.
+        </p>
+      </div>
+
+      <div className="flex-1 w-full">
+        <div className="max-w-xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-center gap-4 mb-8">
+                <Toggle
+                  pressed={activeFormat === 'post'}
+                  onPressedChange={() => setActiveFormat('post')}
+                  className={`px-6 py-2 text-sm font-medium transition-all ${
+                    activeFormat === 'post' 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'text-gray-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  Post
+                </Toggle>
+                <Toggle
+                  pressed={activeFormat === 'story'}
+                  onPressedChange={() => setActiveFormat('story')}
+                  className={`px-6 py-2 text-sm font-medium transition-all ${
+                    activeFormat === 'story' 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'text-gray-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  Story
+                </Toggle>
               </div>
-              <span className="text-xs font-medium text-gray-600">Instagram</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 flex items-center justify-center">
-                <Twitter className="w-6 h-6 text-[#1DA1F2]" />
+
+              <div className="bg-neutral-50 rounded-lg p-6">
+                <div className={`aspect-${activeFormat === 'post' ? 'square' : '[9/16]'} relative bg-white rounded-lg overflow-hidden shadow-sm`}>
+                  <img 
+                    src={activeFormat === 'post' 
+                      ? '/lovable-uploads/54cde551-5073-4972-8394-5fb47bd525af.png'
+                      : '/lovable-uploads/9974419b-8233-4418-bcf0-ed6707b27d9a.png'
+                    }
+                    alt="Social media preview"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </div>
               </div>
-              <span className="text-xs font-medium text-gray-600">Twitter</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-[#4267B2]/10 flex items-center justify-center">
-                <Facebook className="w-6 h-6 text-[#4267B2]" />
+              
+              <div className="flex flex-wrap justify-center gap-6 mt-6">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-[#E4405F]/10 flex items-center justify-center">
+                    <Instagram className="w-6 h-6 text-[#E4405F]" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Instagram</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 flex items-center justify-center">
+                    <Twitter className="w-6 h-6 text-[#1DA1F2]" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Twitter</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-[#4267B2]/10 flex items-center justify-center">
+                    <Facebook className="w-6 h-6 text-[#4267B2]" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Facebook</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-[#0A66C2]/10 flex items-center justify-center">
+                    <Linkedin className="w-6 h-6 text-[#0A66C2]" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">LinkedIn</span>
+                </div>
               </div>
-              <span className="text-xs font-medium text-gray-600">Facebook</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-[#0A66C2]/10 flex items-center justify-center">
-                <Linkedin className="w-6 h-6 text-[#0A66C2]" />
-              </div>
-              <span className="text-xs font-medium text-gray-600">LinkedIn</span>
             </div>
           </div>
         </div>
