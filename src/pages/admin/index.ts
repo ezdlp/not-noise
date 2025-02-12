@@ -1,7 +1,7 @@
+
 export { default as Overview } from "./Overview";
 export { default as Users } from "./Users";
 export { default as Content } from "./Content";
-export { default as Settings } from "./Settings";
 export { default as UserLinks } from "./UserLinks";
 export { default as Media } from "./MediaLibrary";
 export { default as Import } from "./Import";

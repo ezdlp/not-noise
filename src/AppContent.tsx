@@ -26,7 +26,6 @@ import AdminUserLinks from "@/pages/admin/UserLinks";
 import AdminUsers from "@/pages/admin/Users";
 import AdminContent from "@/pages/admin/Content";
 import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
-import AdminSettings from "@/pages/admin/Settings";
 import AdminImport from "@/pages/admin/Import";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 
@@ -72,7 +71,6 @@ const AppContent = () => {
         <Route path="users" element={<AdminUsers />} />
         <Route path="content" element={<AdminContent />} />
         <Route path="media" element={<AdminMediaLibrary />} />
-        <Route path="settings" element={<AdminSettings />} />
         <Route path="import" element={<AdminImport />} />
       </Route>
     </Routes>

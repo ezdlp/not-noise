@@ -4,7 +4,6 @@ import {
   UsersIcon, 
   FolderIcon, 
   LayoutDashboardIcon,
-  Settings,
   ImageIcon,
   DownloadIcon,
   Link2Icon,
@@ -47,11 +46,6 @@ const menuItems = [
     icon: DownloadIcon,
     href: "/control-room/import",
   },
-  {
-    title: "Settings",
-    icon: Settings,
-    href: "/control-room/settings",
-  },
 ];
 
 export function AdminSidebar() {
@@ -86,4 +80,3 @@ export function AdminSidebar() {
     </div>
   );
 }
-
