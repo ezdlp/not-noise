@@ -1,3 +1,4 @@
+
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "./RichTextEditor";
@@ -8,9 +9,11 @@ export function PostContent({ form }: any) {
   const [focusKeyword, setFocusKeyword] = useState(form.getValues().focus_keyword || '');
   const [seoTitle, setSeoTitle] = useState(form.getValues().seo_title || '');
   const [metaDescription, setMetaDescription] = useState(form.getValues().meta_description || '');
-  const [ogTitle, setOgTitle] = useState('');
-  const [ogDescription, setOgDescription] = useState('');
-  const [ogImage, setOgImage] = useState('');
+  const [ogTitle, setOgTitle] = useState(form.getValues().og_title || '');
+  const [ogDescription, setOgDescription] = useState(form.getValues().og_description || '');
+  const [twitterTitle, setTwitterTitle] = useState(form.getValues().twitter_title || '');
+  const [twitterDescription, setTwitterDescription] = useState(form.getValues().twitter_description || '');
+  const [ogImage, setOgImage] = useState(form.getValues().og_image || '');
 
   const baseUrl = window.location.origin;
   const postUrl = `${baseUrl}/${form.getValues().slug || ''}`;
@@ -87,11 +90,45 @@ export function PostContent({ form }: any) {
           });
         }}
         ogTitle={ogTitle}
-        onOgTitleChange={setOgTitle}
+        onOgTitleChange={(value) => {
+          setOgTitle(value);
+          form.setValue('og_title', value, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }}
         ogDescription={ogDescription}
-        onOgDescriptionChange={setOgDescription}
+        onOgDescriptionChange={(value) => {
+          setOgDescription(value);
+          form.setValue('og_description', value, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }}
+        twitterTitle={twitterTitle}
+        onTwitterTitleChange={(value) => {
+          setTwitterTitle(value);
+          form.setValue('twitter_title', value, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }}
+        twitterDescription={twitterDescription}
+        onTwitterDescriptionChange={(value) => {
+          setTwitterDescription(value);
+          form.setValue('twitter_description', value, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }}
         ogImage={ogImage}
-        onOgImageChange={setOgImage}
+        onOgImageChange={(value) => {
+          setOgImage(value);
+          form.setValue('og_image', value, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }}
         url={postUrl}
       />
     </div>

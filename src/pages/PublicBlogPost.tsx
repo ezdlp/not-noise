@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Helmet } from "react-helmet";
 import { Calendar, Clock, Share2, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -13,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { ArticleSEO } from "@/components/ui/article-seo";
+import { ArticleSEO } from "@/components/seo/ArticleSEO";
 
 interface Profile {
   name: string | null;
