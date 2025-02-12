@@ -107,18 +107,20 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Custom URL Slug</Label>
+            <Label className="text-sm font-medium">Custom URL</Label>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">xnoi.se/</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap bg-neutral-50 px-2 py-1.5 rounded-md border">
+                soundraiser.io/link/
+              </span>
               <Input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                placeholder="e.g., my-awesome-release"
+                placeholder="your-custom-url"
                 className="flex-1 h-10"
               />
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Leave empty to use auto-generated URL
+              Your track will be available at soundraiser.io/link/your-custom-url
             </p>
           </div>
         </div>
@@ -135,3 +137,4 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 };
 
 export default DetailsStep;
+
