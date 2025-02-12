@@ -25,25 +25,25 @@ const features = [
   {
     title: "Release Pages",
     description: "Connect your fans to their preferred streaming service instantly",
-    href: "/features#release-pages",
+    href: "/#release-pages",
     icon: Link2
   },
   {
     title: "Analytics Dashboard",
     description: "Track your performance with detailed insights",
-    href: "/features#analytics",
+    href: "/#analytics",
     icon: BarChart3
   },
   {
     title: "Meta Pixel Integration",
     description: "Track conversions and retarget your audience",
-    href: "/features#meta-pixel",
+    href: "/#meta-pixel",
     icon: Activity
   },
   {
     title: "Social Media Tools",
     description: "Transform your links into eye-catching social cards",
-    href: "/features#social-media",
+    href: "/#social-media",
     icon: ImageIcon
   },
 ]
@@ -100,7 +100,7 @@ export function NavigationItems() {
               </div>
               <div className="mt-3 border-t pt-3">
                 <NavigationMenuLink
-                  href="/features"
+                  href="/#release-pages"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   View all features →
