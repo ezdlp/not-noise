@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ const EmailSubscribeForm = ({ smartLinkId, title, description }: EmailSubscribeF
   const [email, setEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
 
-  const handleSubscribe = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast.error("Please enter your email address");
@@ -43,7 +44,7 @@ const EmailSubscribeForm = ({ smartLinkId, title, description }: EmailSubscribeF
   };
 
   return (
-    <form onSubmit={handleSubscribe} className="mt-8 p-6 bg-gray-50 rounded-xl">
+    <form onSubmit={handleSubmit} className="mt-8 p-6 bg-gray-50 rounded-xl">
       <h3 className="text-lg font-semibold mb-2">
         {title || "Subscribe to my newsletter"}
       </h3>
