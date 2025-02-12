@@ -1,6 +1,14 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { 
+  Search,
+  BookOpen,
+  List,
+  BarChart3,
+  Image as ImageIcon,
+  HelpCircle 
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HelpArticle } from "@/components/help/HelpArticle";
 import { HelpSidebar } from "@/components/help/HelpSidebar";
