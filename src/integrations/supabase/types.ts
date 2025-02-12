@@ -1217,6 +1217,15 @@ export type Database = {
           clicks: number
         }[]
       }
+      get_sitemap_urls: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          url: string
+          updated_at: string
+          changefreq: string
+          priority: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
