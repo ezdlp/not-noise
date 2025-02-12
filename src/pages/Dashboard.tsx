@@ -7,16 +7,18 @@ import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link2 } from "lucide-react";
+import { Link2, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { cn } from "@/lib/utils";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'smart-links' | 'email-subscribers'>('smart-links');
+  const { isFeatureEnabled } = useFeatureAccess();
   
   const { data: subscription } = useQuery({
     queryKey: ["subscription"],
@@ -94,6 +96,14 @@ export default function Dashboard() {
     }
   };
 
+  const handleTabClick = (tab: 'smart-links' | 'email-subscribers') => {
+    if (tab === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       {/* Subscription Banner */}
@@ -122,7 +132,7 @@ export default function Dashboard() {
         <div className="mt-8 border-b border-border/50">
           <div className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('smart-links')}
+              onClick={() => handleTabClick('smart-links')}
               className={cn(
                 "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
                 activeTab === 'smart-links'
@@ -133,15 +143,20 @@ export default function Dashboard() {
               Smart Links
             </button>
             <button
-              onClick={() => setActiveTab('email-subscribers')}
+              onClick={() => handleTabClick('email-subscribers')}
               className={cn(
-                "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
+                "pb-4 text-sm font-medium relative transition-colors hover:text-primary group",
                 activeTab === 'email-subscribers'
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground"
               )}
             >
-              Email Subscribers
+              <span className="flex items-center gap-1.5">
+                Email Subscribers
+                {!isFeatureEnabled('email_capture') && (
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-primary/70 transition-colors" />
+                )}
+              </span>
             </button>
           </div>
         </div>
@@ -159,8 +174,10 @@ export default function Dashboard() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        feature="create more smart links"
-        description="You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"
+        feature={activeTab === 'email-subscribers' ? "collect email subscribers" : "create more smart links"}
+        description={activeTab === 'email-subscribers' 
+          ? "Upgrade to Pro to collect emails from your fans and build your mailing list!"
+          : "You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"}
       />
     </div>
   );
