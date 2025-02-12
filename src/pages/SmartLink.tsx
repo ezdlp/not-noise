@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -234,7 +235,19 @@ const SmartLink = () => {
         </div>
         
         <div className="mt-8 text-center">
-          <p className="text-sm text-white/60">Powered by notnoise</p>
+          <a 
+            href="https://soundraiser.io" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
+          >
+            <img 
+              src="/lovable-uploads/soundraiser-logo/Iso D.svg"
+              alt="Soundraiser"
+              className="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
+            />
+            <span className="text-sm">Powered by Soundraiser</span>
+          </a>
         </div>
       </div>
     </div>
