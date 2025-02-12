@@ -63,11 +63,13 @@ export default function Help() {
 
               <TabsContent value="getting-started" className="space-y-6">
                 <HelpArticle
-                  title="Welcome to Soundraiser"
+                  title="Welcome Guide"
                   icon={BookOpen}
                   content={`
                     Welcome to Soundraiser! We're excited to help you promote your music effectively. 
                     This guide will walk you through everything you need to know to get started.
+                    
+                    Our platform helps you create professional Smart Links, track performance, and grow your audience through powerful marketing tools.
                   `}
                 />
                 <HelpArticle
@@ -79,6 +81,8 @@ export default function Help() {
                     2. Enter your email and password
                     3. Fill in your artist details
                     4. Start creating Smart Links or access analytics features
+                    
+                    Once your account is created, you'll have immediate access to create your first Smart Link.
                   `}
                 />
                 <HelpArticle
@@ -92,6 +96,23 @@ export default function Help() {
                     - Access Meta Pixel integration
                     - View social media metrics
                     - Manage email subscribers
+                    
+                    Each section is designed to give you clear insights into your music's performance.
+                  `}
+                />
+                <HelpArticle
+                  title="Platform Overview"
+                  icon={BookOpen}
+                  content={`
+                    Soundraiser offers a comprehensive suite of tools:
+                    - Smart Links creation and management
+                    - Advanced analytics and tracking
+                    - Email capture and fan data collection
+                    - Meta Pixel integration for retargeting
+                    - Social media optimization
+                    - Custom branding options
+                    
+                    Each feature is designed to help you promote your music more effectively.
                   `}
                 />
               </TabsContent>
@@ -126,23 +147,49 @@ export default function Help() {
                   `}
                 />
                 <HelpArticle
-                  title="Email Capture & Custom URLs"
+                  title="Custom URLs"
                   icon={List}
                   content={`
-                    Maximize your Smart Links:
-                    - Set up email capture forms
-                    - Create custom URLs
-                    - Design branded experiences
-                    - Manage subscriber lists
-                    - Export contact data
+                    Customize your Smart Link URLs:
+                    - Create memorable, branded URLs
+                    - Choose custom slugs for each link
+                    - Use your artist name or song title
+                    - Maintain consistent branding
+                    - Track performance by URL
+                    - Manage multiple custom URLs
+                  `}
+                />
+                <HelpArticle
+                  title="Email Capture"
+                  icon={List}
+                  content={`
+                    Build your fan email list:
+                    - Customize email capture forms
+                    - Set up automated responses
+                    - Export subscriber data
                     - Track conversion rates
+                    - Segment your audience
+                    - Integrate with email marketing tools
+                  `}
+                />
+                <HelpArticle
+                  title="Design & Customization"
+                  icon={List}
+                  content={`
+                    Create your unique branded experience:
+                    - Customize colors and themes
+                    - Upload custom artwork
+                    - Add artist bio and details
+                    - Customize button styles
+                    - Add custom backgrounds
+                    - Create mobile-optimized layouts
                   `}
                 />
               </TabsContent>
 
               <TabsContent value="analytics" className="space-y-6">
                 <HelpArticle
-                  title="Analytics Dashboard Overview"
+                  title="Dashboard Overview"
                   icon={BarChart3}
                   content={`
                     Your analytics dashboard provides:
@@ -155,7 +202,20 @@ export default function Help() {
                   `}
                 />
                 <HelpArticle
-                  title="Meta Pixel Integration"
+                  title="Performance Metrics"
+                  icon={BarChart3}
+                  content={`
+                    Track key performance indicators:
+                    - Total link views
+                    - Platform-specific clicks
+                    - Conversion rates
+                    - Geographic distribution
+                    - Device analytics
+                    - Time-based performance
+                  `}
+                />
+                <HelpArticle
+                  title="Meta Pixel Setup"
                   icon={BarChart3}
                   content={`
                     Enhance your marketing with Meta Pixel:
@@ -165,6 +225,32 @@ export default function Help() {
                     - Retarget your audience
                     - Optimize ad campaigns
                     - Measure ROI
+                  `}
+                />
+                <HelpArticle
+                  title="Conversion Tracking"
+                  icon={BarChart3}
+                  content={`
+                    Monitor and optimize conversions:
+                    - Track click-through rates
+                    - Measure platform preferences
+                    - Monitor email signups
+                    - Track custom events
+                    - Analyze user journeys
+                    - Export conversion data
+                  `}
+                />
+                <HelpArticle
+                  title="Audience Insights"
+                  icon={BarChart3}
+                  content={`
+                    Understand your audience better:
+                    - Geographic distribution
+                    - Platform preferences
+                    - Device usage
+                    - Time-based activity
+                    - Engagement patterns
+                    - Audience segmentation
                   `}
                 />
               </TabsContent>
@@ -194,6 +280,34 @@ export default function Help() {
                     - Platform-specific analytics
                   `}
                 />
+                <HelpArticle
+                  title="Best Practices"
+                  icon={ImageIcon}
+                  content={`
+                    Optimize your social media strategy:
+                    - Timing your posts
+                    - Platform-specific content
+                    - Hashtag strategies
+                    - Engagement optimization
+                    - Cross-platform promotion
+                    - Content calendar planning
+                  `}
+                />
+                <HelpArticle
+                  title="Supported Networks"
+                  icon={ImageIcon}
+                  content={`
+                    Share across major platforms:
+                    - Facebook & Instagram
+                    - Twitter & X
+                    - TikTok
+                    - LinkedIn
+                    - YouTube
+                    - Pinterest
+                    
+                    Each platform is optimized for maximum engagement and reach.
+                  `}
+                />
               </TabsContent>
 
               <TabsContent value="support" className="space-y-6">
@@ -221,6 +335,32 @@ export default function Help() {
                     - Technical assistance
                     - Feature requests
                     - Account help
+                  `}
+                />
+                <HelpArticle
+                  title="Account Issues"
+                  icon={HelpCircle}
+                  content={`
+                    Get help with your account:
+                    - Password reset
+                    - Account security
+                    - Profile updates
+                    - Linking platforms
+                    - Account recovery
+                    - Data management
+                  `}
+                />
+                <HelpArticle
+                  title="Billing Questions"
+                  icon={HelpCircle}
+                  content={`
+                    Understanding billing and subscriptions:
+                    - Plan comparisons
+                    - Payment methods
+                    - Subscription management
+                    - Invoices and receipts
+                    - Pro plan features
+                    - Refund policy
                   `}
                 />
               </TabsContent>
