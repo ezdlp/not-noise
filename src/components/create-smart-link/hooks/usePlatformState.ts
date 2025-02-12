@@ -37,6 +37,7 @@ const standardPlatforms: Platform[] = [
   { id: "spotify", name: "Spotify", enabled: false, url: "", icon: getPlatformIcon("spotify") },
   { id: "appleMusic", name: "Apple Music", enabled: false, url: "", icon: getPlatformIcon("appleMusic") },
   { id: "youtubeMusic", name: "YouTube Music", enabled: false, url: "", icon: getPlatformIcon("youtubeMusic") },
+  { id: "amazonMusic", name: "Amazon Music", enabled: false, url: "", icon: getPlatformIcon("amazonMusic") },
   { id: "deezer", name: "Deezer", enabled: false, url: "", icon: getPlatformIcon("deezer") },
   { id: "soundcloud", name: "SoundCloud", enabled: false, url: "", icon: getPlatformIcon("soundcloud") },
   { id: "youtube", name: "YouTube", enabled: false, url: "", icon: getPlatformIcon("youtube") },

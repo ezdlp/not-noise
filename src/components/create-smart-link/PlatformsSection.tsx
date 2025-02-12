@@ -43,13 +43,10 @@ const PlatformsSection = ({
     })
   );
 
-  const content = platforms.map((platform, index) => (
+  const content = platforms.map((platform) => (
     <div 
       key={platform.id}
-      className={cn(
-        "relative",
-        isBlurred && index > 2 && "opacity-60"
-      )}
+      className="relative"
     >
       <PlatformItem
         platform={platform}
@@ -57,11 +54,6 @@ const PlatformsSection = ({
         onUrlChange={onUrlChange}
         isDraggable={isDraggable}
       />
-      {platform.isPremium && (
-        <div className="absolute right-0 top-0 -translate-y-1/2 translate-x-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-        </div>
-      )}
     </div>
   ));
 
@@ -71,20 +63,19 @@ const PlatformsSection = ({
         <h3 className="text-lg font-semibold">{title}</h3>
         {isBlurred && (
           <div className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded-full">
-            Used by 2000+ artists
+            Reach 118M+ more listeners
           </div>
         )}
       </div>
       {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
       <div className={cn(
-        "relative rounded-lg border bg-card",
-        isBlurred && "pointer-events-none select-none"
+        "relative rounded-lg border bg-card"
       )}>
         {isBlurred && (
           <div className="absolute inset-0 z-10">
             <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background/80 backdrop-blur-[2px]" />
             
-            <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center">
+            <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center pointer-events-auto">
               <h4 className="text-xl font-semibold mb-2">Unlock All Platforms</h4>
               <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                 Get access to all premium music platforms and reach a wider audience
@@ -104,7 +95,10 @@ const PlatformsSection = ({
             </div>
           </div>
         )}
-        <div className="p-4 space-y-4">
+        <div className={cn(
+          "p-4 space-y-4",
+          isBlurred && "pointer-events-none select-none"
+        )}>
           {isDraggable && onDragEnd ? (
             <DndContext
               sensors={sensors}
