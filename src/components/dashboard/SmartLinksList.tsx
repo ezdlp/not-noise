@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { UpgradeModal } from "../subscription/UpgradeModal";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useNavigate } from "react-router-dom";
 
 interface SmartLinksListProps {
   links?: any[];
@@ -21,7 +22,16 @@ interface SmartLinksListProps {
 export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
   const [sortBy, setSortBy] = useState<string>("newest");
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const { subscription } = useFeatureAccess();
+  const { subscription, isFeatureEnabled } = useFeatureAccess();
+  const navigate = useNavigate();
+
+  const handleAnalyticsClick = (linkId: string) => {
+    if (subscription?.tier === 'pro') {
+      navigate(`/links/${linkId}/analytics`);
+    } else {
+      setShowAnalyticsModal(true);
+    }
+  };
 
   const sortedLinks = [...links].sort((a, b) => {
     switch (sortBy) {
@@ -94,7 +104,7 @@ export function SmartLinksList({ links = [], isLoading }: SmartLinksListProps) {
           <SmartLinkCard
             key={link.id}
             link={link}
-            onAnalyticsClick={() => setShowAnalyticsModal(true)}
+            onAnalyticsClick={() => handleAnalyticsClick(link.id)}
           />
         ))}
       </div>
