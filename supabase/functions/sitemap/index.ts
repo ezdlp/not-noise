@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://not-noise.vercel.app' // Default to development URL
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing environment variables')
@@ -50,8 +51,8 @@ Deno.serve(async (req) => {
 
     console.log(`Generated sitemap with ${urls.length} URLs`)
 
-    // Generate XML sitemap
-    const xml = generateSitemapXml(urls as SitemapUrl[])
+    // Generate XML sitemap with configurable domain
+    const xml = generateSitemapXml(urls as SitemapUrl[], siteUrl)
 
     // Return the XML with appropriate headers
     return new Response(xml, {
@@ -73,10 +74,10 @@ Deno.serve(async (req) => {
   }
 })
 
-function generateSitemapXml(urls: SitemapUrl[]): string {
+function generateSitemapXml(urls: SitemapUrl[], siteUrl: string): string {
   const urlElements = urls.map(url => `
     <url>
-      <loc>https://soundraiser.io${url.url}</loc>
+      <loc>${siteUrl}${url.url}</loc>
       <lastmod>${new Date(url.updated_at).toISOString()}</lastmod>
       <changefreq>${url.changefreq}</changefreq>
       <priority>${url.priority}</priority>
