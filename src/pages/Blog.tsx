@@ -5,6 +5,14 @@ import { BlogCard } from "@/components/blog/BlogCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BlogSEO } from "@/components/seo/BlogSEO";
 
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  featured_image?: string;
+  published_at: string;
+}
+
 export default function Blog() {
   const { data: posts, isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -37,13 +45,22 @@ export default function Blog() {
         throw error;
       }
 
-      return data;
+      return data as BlogPost[];
     },
   });
 
+  // Calculate total pages (assuming 12 posts per page)
+  const postsPerPage = 12;
+  const totalPages = posts ? Math.ceil(posts.length / postsPerPage) : 0;
+  const currentPage = 1; // In the future, this would come from the URL/route params
+
   return (
     <>
-      <BlogSEO />
+      <BlogSEO 
+        currentPage={currentPage}
+        totalPages={totalPages}
+      />
+      
       <div className="container py-12 px-4 mx-auto">
         <h1 className="text-4xl font-bold mb-8">Blog</h1>
         
