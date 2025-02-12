@@ -43,8 +43,10 @@ const SmartLink = () => {
             platform_name,
             url
           ),
-          profiles!smart_links_user_id_fkey (
-            hide_branding
+          user:user_id (
+            profile:profiles (
+              hide_branding
+            )
           )
         `)
         .eq('slug', slug)
@@ -62,8 +64,10 @@ const SmartLink = () => {
               platform_name,
               url
             ),
-            profiles!smart_links_user_id_fkey (
-              hide_branding
+            user:user_id (
+              profile:profiles (
+                hide_branding
+              )
             )
           `)
           .eq('id', slug)
@@ -239,7 +243,7 @@ const SmartLink = () => {
           )}
         </div>
         
-        {!smartLink.profiles?.hide_branding && (
+        {!smartLink.user?.profile?.hide_branding && (
           <div className="mt-8 text-center">
             <a 
               href="https://soundraiser.io" 
