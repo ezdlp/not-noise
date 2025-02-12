@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,10 @@ interface SeoSectionProps {
   onOgTitleChange: (value: string) => void;
   ogDescription: string;
   onOgDescriptionChange: (value: string) => void;
+  twitterTitle: string;
+  onTwitterTitleChange: (value: string) => void;
+  twitterDescription: string;
+  onTwitterDescriptionChange: (value: string) => void;
   ogImage: string;
   onOgImageChange: (value: string) => void;
   url: string;
@@ -38,6 +43,10 @@ export function SeoSection({
   onOgTitleChange,
   ogDescription,
   onOgDescriptionChange,
+  twitterTitle,
+  onTwitterTitleChange,
+  twitterDescription,
+  onTwitterDescriptionChange,
   ogImage,
   onOgImageChange,
   url,
@@ -101,23 +110,55 @@ export function SeoSection({
         <TabsContent value="social" className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ogTitle">Social Title</Label>
+              <Label htmlFor="ogTitle">Facebook Title</Label>
               <Input
                 id="ogTitle"
                 value={ogTitle}
                 onChange={(e) => onOgTitleChange(e.target.value)}
-                placeholder="Enter social media title"
+                placeholder="Enter Facebook title"
               />
+              <p className="text-sm text-muted-foreground">
+                {ogTitle.length}/60 characters
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ogDescription">Social Description</Label>
+              <Label htmlFor="ogDescription">Facebook Description</Label>
               <Textarea
                 id="ogDescription"
                 value={ogDescription}
                 onChange={(e) => onOgDescriptionChange(e.target.value)}
-                placeholder="Enter social media description"
+                placeholder="Enter Facebook description"
               />
+              <p className="text-sm text-muted-foreground">
+                {ogDescription.length}/156 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twitterTitle">Twitter Title</Label>
+              <Input
+                id="twitterTitle"
+                value={twitterTitle}
+                onChange={(e) => onTwitterTitleChange(e.target.value)}
+                placeholder="Enter Twitter title"
+              />
+              <p className="text-sm text-muted-foreground">
+                {twitterTitle.length}/60 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twitterDescription">Twitter Description</Label>
+              <Textarea
+                id="twitterDescription"
+                value={twitterDescription}
+                onChange={(e) => onTwitterDescriptionChange(e.target.value)}
+                placeholder="Enter Twitter description"
+              />
+              <p className="text-sm text-muted-foreground">
+                {twitterDescription.length}/156 characters
+              </p>
             </div>
 
             <div className="space-y-2">

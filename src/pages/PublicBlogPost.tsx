@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
+import { ArticleSEO } from "@/components/ui/article-seo";
 
 interface Profile {
   name: string | null;
@@ -169,22 +170,25 @@ const PublicBlogPost = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{post.seo_title || post.title}</title>
-        <meta name="description" content={post.meta_description || post.excerpt || ''} />
-        <meta name="keywords" content={post.focus_keyword || ''} />
-        <meta property="og:title" content={post.seo_title || post.title} />
-        <meta property="og:description" content={post.meta_description || post.excerpt || ''} />
-        {post.featured_image && (
-          <meta property="og:image" content={post.featured_image} />
-        )}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.seo_title || post.title} />
-        <meta name="twitter:description" content={post.meta_description || post.excerpt || ''} />
-        {post.featured_image && (
-          <meta name="twitter:image" content={post.featured_image} />
-        )}
-      </Helmet>
+      {post && (
+        <ArticleSEO
+          title={post.seo_title || post.title}
+          description={post.meta_description || post.excerpt || ''}
+          image={post.featured_image}
+          author={{
+            name: post.author_name || post.author?.name || 'Unknown author',
+            url: `/author/${post.author_id}`,
+          }}
+          publishedAt={post.published_at || post.created_at}
+          modifiedAt={post.updated_at}
+          categories={post.blog_post_categories?.map(pc => pc.category?.name) || []}
+          tags={post.blog_posts_tags?.map(pt => pt.tag?.name) || []}
+          ogTitle={post.og_title}
+          ogDescription={post.og_description}
+          twitterTitle={post.twitter_title}
+          twitterDescription={post.twitter_description}
+        />
+      )}
       
       <article className="max-w-3xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-6">{post.title}</h1>

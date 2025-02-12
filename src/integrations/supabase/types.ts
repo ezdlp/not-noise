@@ -237,6 +237,8 @@ export type Database = {
           is_sticky: boolean | null
           meta_description: string | null
           meta_keywords: string | null
+          og_description: string | null
+          og_title: string | null
           password: string | null
           published_at: string | null
           reading_time: number | null
@@ -245,6 +247,8 @@ export type Database = {
           slug: string
           status: string
           title: string
+          twitter_description: string | null
+          twitter_title: string | null
           updated_at: string | null
           visibility: string
         }
@@ -264,6 +268,8 @@ export type Database = {
           is_sticky?: boolean | null
           meta_description?: string | null
           meta_keywords?: string | null
+          og_description?: string | null
+          og_title?: string | null
           password?: string | null
           published_at?: string | null
           reading_time?: number | null
@@ -272,6 +278,8 @@ export type Database = {
           slug: string
           status?: string
           title: string
+          twitter_description?: string | null
+          twitter_title?: string | null
           updated_at?: string | null
           visibility?: string
         }
@@ -291,6 +299,8 @@ export type Database = {
           is_sticky?: boolean | null
           meta_description?: string | null
           meta_keywords?: string | null
+          og_description?: string | null
+          og_title?: string | null
           password?: string | null
           published_at?: string | null
           reading_time?: number | null
@@ -299,6 +309,8 @@ export type Database = {
           slug?: string
           status?: string
           title?: string
+          twitter_description?: string | null
+          twitter_title?: string | null
           updated_at?: string | null
           visibility?: string
         }
