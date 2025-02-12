@@ -39,6 +39,7 @@ const AppContent = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/page/:page" element={<Blog />} />
       <Route path="/help" element={<Help />} />
       <Route path="/spotify-royalty-calculator" element={<StreamingCalculator />} />
       <Route path="/streaming-royalty-calculator" element={<Navigate to="/spotify-royalty-calculator" replace />} />

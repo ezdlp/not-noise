@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BlogSEO } from "@/components/seo/BlogSEO";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -14,8 +17,13 @@ interface BlogPost {
 }
 
 export default function Blog() {
-  const { data: posts, isLoading } = useQuery({
-    queryKey: ["blog-posts"],
+  const navigate = useNavigate();
+  const { page } = useParams();
+  const currentPage = page ? parseInt(page) : 1;
+  const postsPerPage = 12;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["blog-posts", currentPage],
     queryFn: async () => {
       const { data: blogCategory } = await supabase
         .from("blog_categories")
@@ -25,10 +33,21 @@ export default function Blog() {
 
       if (!blogCategory) {
         console.error("Blog category not found");
-        return [];
+        return { posts: [], total: 0 };
       }
 
-      const { data, error } = await supabase
+      // First, get total count
+      const { count } = await supabase
+        .from("blog_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published")
+        .eq("blog_post_categories.category_id", blogCategory.id);
+
+      // Then get paginated data
+      const from = (currentPage - 1) * postsPerPage;
+      const to = from + postsPerPage - 1;
+
+      const { data: posts, error } = await supabase
         .from("blog_posts")
         .select(`
           *,
@@ -38,21 +57,27 @@ export default function Blog() {
         `)
         .eq("status", "published")
         .eq("blog_post_categories.category_id", blogCategory.id)
-        .order("published_at", { ascending: false });
+        .order("published_at", { ascending: false })
+        .range(from, to);
 
       if (error) {
         console.error("Error fetching blog posts:", error);
         throw error;
       }
 
-      return data as BlogPost[];
+      return {
+        posts: posts as BlogPost[],
+        total: count || 0
+      };
     },
   });
 
-  // Calculate total pages (assuming 12 posts per page)
-  const postsPerPage = 12;
-  const totalPages = posts ? Math.ceil(posts.length / postsPerPage) : 0;
-  const currentPage = 1; // In the future, this would come from the URL/route params
+  const totalPages = data ? Math.ceil(data.total / postsPerPage) : 0;
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    navigate(newPage === 1 ? "/blog" : `/blog/page/${newPage}`);
+  };
 
   return (
     <>
@@ -74,22 +99,59 @@ export default function Blog() {
               </div>
             ))}
           </div>
-        ) : posts?.length === 0 ? (
+        ) : data?.posts.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">
             No blog posts found.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts?.map((post) => (
-              <BlogCard
-                key={post.id}
-                title={post.title}
-                featuredImage={post.featured_image}
-                publishedAt={post.published_at}
-                slug={post.slug}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {data?.posts.map((post) => (
+                <BlogCard
+                  key={post.id}
+                  title={post.title}
+                  featuredImage={post.featured_image}
+                  publishedAt={post.published_at}
+                  slug={post.slug}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-2 mx-4">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <Button
+                      key={i + 1}
+                      variant={currentPage === i + 1 ? "default" : "outline"}
+                      onClick={() => handlePageChange(i + 1)}
+                      className="w-10 h-10 p-0"
+                    >
+                      {i + 1}
+                    </Button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>
