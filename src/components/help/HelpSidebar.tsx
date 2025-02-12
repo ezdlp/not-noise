@@ -1,6 +1,8 @@
 
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, Info, List } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpCategory } from "@/pages/Help";
 
@@ -14,24 +16,30 @@ const categories = [
     title: "Getting Started",
     value: "getting-started" as HelpCategory,
     icon: BookOpen,
-    items: ["Welcome Guide", "Creating Your Account", "Understanding Your Dashboard"],
+    items: ["Welcome Guide", "Creating Your Account", "Understanding Your Dashboard", "Platform Overview"],
   },
   {
     title: "Smart Links",
     value: "smart-links" as HelpCategory,
     icon: List,
-    items: ["What are Smart Links?", "Creating Smart Links", "Analytics & Tracking", "Customization"],
+    items: ["What are Smart Links?", "Creating Smart Links", "Custom URLs", "Email Capture", "Design & Customization"],
   },
   {
-    title: "Promotion",
-    value: "promotion" as HelpCategory,
-    icon: FileText,
-    items: ["How it Works", "Submission Guide", "Campaign Tracking", "Best Practices"],
+    title: "Analytics & Tracking",
+    value: "analytics" as HelpCategory,
+    icon: BarChart3,
+    items: ["Dashboard Overview", "Performance Metrics", "Meta Pixel Setup", "Conversion Tracking", "Audience Insights"],
+  },
+  {
+    title: "Social Media",
+    value: "social-media" as HelpCategory,
+    icon: ImageIcon,
+    items: ["Social Cards", "Platform Integration", "Best Practices", "Supported Networks"],
   },
   {
     title: "Support",
-    value: "faq" as HelpCategory,
-    icon: Info,
+    value: "support" as HelpCategory,
+    icon: HelpCircle,
     items: ["FAQs", "Contact Support", "Account Issues", "Billing Questions"],
   },
 ];
@@ -54,18 +62,26 @@ export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarPro
               <category.icon className="h-4 w-4" />
               <span>{category.title}</span>
             </button>
-            {category.items.map((item) => (
+            {category.items.map((item, index) => (
               <Button
                 key={item}
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start pl-8 font-normal",
+                  "w-full justify-start pl-8 font-normal group",
                   activeCategory === category.value
                     ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
-                {item}
+                <span className="truncate">{item}</span>
+                {(item === "Meta Pixel Setup" || item === "Email Capture") && (
+                  <Badge 
+                    variant="outline" 
+                    className="ml-2 bg-primary/5 text-primary border-primary/20"
+                  >
+                    Pro
+                  </Badge>
+                )}
               </Button>
             ))}
           </div>

@@ -1,5 +1,6 @@
 
 import { LucideIcon } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface HelpArticleProps {
   title: string;
@@ -9,18 +10,20 @@ interface HelpArticleProps {
 
 export function HelpArticle({ title, content, icon: Icon }: HelpArticleProps) {
   return (
-    <article className="p-6 bg-white rounded-lg border border-border">
-      <div className="flex items-start gap-4">
-        <div className="p-2 rounded-lg bg-primary/5">
-          <Icon className="h-5 w-5 text-primary" />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <div className="text-muted-foreground whitespace-pre-line">
-            {content}
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-4">
+          <div className="p-2 rounded-lg bg-primary/5">
+            <Icon className="h-5 w-5 text-primary" />
           </div>
+          <h3 className="text-lg font-semibold">{title}</h3>
         </div>
-      </div>
-    </article>
+      </CardHeader>
+      <CardContent>
+        <div className="text-muted-foreground whitespace-pre-line">
+          {content}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
