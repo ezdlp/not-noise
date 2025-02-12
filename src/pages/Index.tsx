@@ -1,3 +1,4 @@
+
 import { Hero } from "@/components/landing/Hero";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
 import Features from "@/components/landing/Features";
@@ -6,6 +7,7 @@ import { CallToAction } from "@/components/landing/CallToAction";
 import { Footer } from "@/components/landing/Footer";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { DefaultSEO } from "@/components/seo/DefaultSEO";
 
 const Index = () => {
   useEffect(() => {
@@ -20,6 +22,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
+      <DefaultSEO />
       <Hero />
       <TrustedLabels />
       <Features />
