@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,7 +166,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Search Your Track</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">Search Your Track</h2>
         <p className="text-sm text-muted-foreground">
           Search for your track or paste a Spotify URL
         </p>
@@ -175,37 +176,40 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           placeholder="Search by track name, artist or paste Spotify URL..."
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="flex-1 focus:ring-primary focus:border-primary"
+          className="flex-1 focus:ring-primary focus:border-primary h-10"
           disabled={isLoading}
         />
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Searching...</span>
+        <div className="flex items-center justify-center py-6 sm:py-8">
+          <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+          <span className="ml-2 text-sm sm:text-base text-muted-foreground">Searching...</span>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {searchResults.map((track) => (
-          <Card key={track.spotifyId} className="p-4">
-            <div className="flex items-center gap-4">
+          <Card key={track.spotifyId} className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <img 
                 src={track.artworkUrl || "/placeholder.svg"} 
                 alt={`${track.title} cover`} 
-                className="w-24 h-24 object-cover rounded-lg"
+                className="w-full sm:w-24 h-40 sm:h-24 object-cover rounded-lg"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   console.error("Failed to load search result artwork:", track.artworkUrl);
                   img.src = "/placeholder.svg";
                 }}
               />
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{track.title}</h3>
-                <p className="text-muted-foreground">{track.artist}</p>
-                <p className="text-sm text-muted-foreground mt-1">{track.album}</p>
-                <Button onClick={() => handleSelectTrack(track)} className="mt-4">
+              <div className="flex-1 space-y-2">
+                <h3 className="font-semibold text-base sm:text-lg">{track.title}</h3>
+                <p className="text-sm text-muted-foreground">{track.artist}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{track.album}</p>
+                <Button 
+                  onClick={() => handleSelectTrack(track)} 
+                  className="w-full sm:w-auto mt-2 sm:mt-4"
+                >
                   Use This Track
                 </Button>
               </div>

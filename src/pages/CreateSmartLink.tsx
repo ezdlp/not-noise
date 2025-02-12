@@ -59,12 +59,12 @@ const CreateSmartLink = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <Card className="max-w-2xl mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">Create Your Smart Link</h1>
-            <span className="text-sm text-muted-foreground">
+    <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
+      <Card className="max-w-2xl mx-auto p-4 sm:p-6">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
+            <h1 className="text-xl sm:text-2xl font-bold">Create Your Smart Link</h1>
+            <span className="text-xs sm:text-sm text-muted-foreground">
               Step {step} of 6
             </span>
           </div>
