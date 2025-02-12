@@ -30,10 +30,12 @@ export function useFeatureAccess() {
   };
 
   const getAvailablePlatforms = () => {
-    if (!subscription || subscription.tier === 'free') {
-      return FREE_PLATFORMS;
+    // Return null (meaning all platforms are available) for Pro users
+    if (subscription && subscription.tier !== 'free') {
+      return null;
     }
-    return null; // null means all platforms are available
+    // Return limited platforms for free users
+    return FREE_PLATFORMS;
   };
 
   return {
