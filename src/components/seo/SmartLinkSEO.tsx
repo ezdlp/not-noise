@@ -8,6 +8,10 @@ interface SmartLinkSEOProps {
   artworkUrl: string;
   description?: string;
   releaseDate?: string;
+  streamingPlatforms?: {
+    name: string;
+    url: string;
+  }[];
 }
 
 export function SmartLinkSEO({
@@ -16,10 +20,28 @@ export function SmartLinkSEO({
   artworkUrl,
   description,
   releaseDate,
+  streamingPlatforms = [],
 }: SmartLinkSEOProps) {
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
+
+  // Generate action buttons for schema markup
+  const actionButtons = streamingPlatforms.map(platform => ({
+    "@type": "ListenAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": platform.url,
+      "actionPlatform": [
+        "http://schema.org/MusicPlatform",
+        platform.url
+      ]
+    },
+    "expectsAcceptanceOf": {
+      "@type": "Offer",
+      "category": "stream"
+    }
+  }));
 
   return (
     <Helmet>
@@ -36,6 +58,9 @@ export function SmartLinkSEO({
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
+      {streamingPlatforms.map((platform, index) => (
+        <meta key={index} property="music:musician" content={platform.url} />
+      ))}
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -53,8 +78,24 @@ export function SmartLinkSEO({
             "@type": "MusicGroup",
             "name": artistName
           },
+          "image": artworkUrl,
           ...(releaseDate && { "datePublished": releaseDate }),
-          "image": artworkUrl
+          "potentialAction": actionButtons,
+          "url": canonical,
+          "offers": streamingPlatforms.map(platform => ({
+            "@type": "Offer",
+            "url": platform.url,
+            "availability": "https://schema.org/InStock",
+            "category": "stream"
+          })),
+          "publisher": {
+            "@type": "Organization",
+            "name": "Soundraiser",
+            "logo": {
+              "@type": "ImageObject",
+              "url": `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
+            }
+          }
         })}
       </script>
     </Helmet>

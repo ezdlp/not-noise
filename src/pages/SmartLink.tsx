@@ -8,7 +8,7 @@ import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { toast } from "sonner";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 
-const SmartLink = () => {
+export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
 
   // Separate mutation for recording views
@@ -191,6 +191,11 @@ const SmartLink = () => {
     amazonMusic: "/lovable-uploads/amazonmusic.png",
   };
 
+  const streamingPlatforms = smartLink.platform_links?.map(pl => ({
+    name: pl.platform_name,
+    url: pl.url
+  })) || [];
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       <SmartLinkSEO
@@ -198,6 +203,7 @@ const SmartLink = () => {
         artistName={smartLink.artist_name}
         artworkUrl={smartLink.artwork_url}
         releaseDate={smartLink.release_date}
+        streamingPlatforms={streamingPlatforms}
       />
       
       <div 
@@ -267,6 +273,4 @@ const SmartLink = () => {
       </div>
     </div>
   );
-};
-
-export default SmartLink;
+}
