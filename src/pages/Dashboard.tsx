@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
+import { EmailSubscribersList } from "@/components/dashboard/EmailSubscribersList";
 import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { Link2, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -118,7 +120,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <SmartLinksList links={links} isLoading={isLoading} />
+        {/* Tabbed Content */}
+        <Tabs defaultValue="smart-links" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <TabsTrigger value="smart-links">Smart Links</TabsTrigger>
+            <TabsTrigger value="email-subscribers">Email Subscribers</TabsTrigger>
+          </TabsList>
+          <TabsContent value="smart-links" className="mt-6">
+            <SmartLinksList links={links} isLoading={isLoading} />
+          </TabsContent>
+          <TabsContent value="email-subscribers" className="mt-6">
+            <EmailSubscribersList />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <UpgradeModal
@@ -129,4 +143,4 @@ export default function Dashboard() {
       />
     </div>
   );
-};
+}
