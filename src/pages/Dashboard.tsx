@@ -7,15 +7,16 @@ import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link2, Lock } from "lucide-react";
+import { Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'smart-links' | 'email-subscribers'>('smart-links');
   
   const { data: subscription } = useQuery({
     queryKey: ["subscription"],
@@ -95,44 +96,64 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
-      <div className="grid grid-cols-1 gap-4">
-        {/* Subscription Section */}
-        <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
-          <SubscriptionBanner />
+      {/* Subscription Banner */}
+      <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
+        <SubscriptionBanner />
+      </div>
+      
+      {/* Dashboard Overview Section */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Overview</h2>
+          <Button
+            onClick={handleCreateClick}
+            className="gap-2"
+          >
+            <Link2 className="h-4 w-4" />
+            Create Smart Link
+          </Button>
         </div>
-        
-        {/* Dashboard Overview Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Overview</h2>
-              <Button
-                onClick={handleCreateClick}
-                className="gap-2"
-              >
-                <Link2 className="h-4 w-4" />
-                Create Smart Link
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <DashboardStats data={links} />
-            </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DashboardStats data={links} />
+        </div>
+
+        {/* Integrated Navigation */}
+        <div className="mt-8 border-b border-border/50">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('smart-links')}
+              className={cn(
+                "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
+                activeTab === 'smart-links'
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Smart Links
+            </button>
+            <button
+              onClick={() => setActiveTab('email-subscribers')}
+              className={cn(
+                "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
+                activeTab === 'email-subscribers'
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Email Subscribers
+            </button>
           </div>
         </div>
 
-        {/* Tabbed Content */}
-        <Tabs defaultValue="smart-links" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-            <TabsTrigger value="smart-links">Smart Links</TabsTrigger>
-            <TabsTrigger value="email-subscribers">Email Subscribers</TabsTrigger>
-          </TabsList>
-          <TabsContent value="smart-links" className="mt-6">
+        {/* Content Area */}
+        <div className="min-h-[300px] animate-in fade-in-50 duration-200">
+          {activeTab === 'smart-links' ? (
             <SmartLinksList links={links} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="email-subscribers" className="mt-6">
+          ) : (
             <EmailSubscribersList />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
 
       <UpgradeModal
