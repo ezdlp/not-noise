@@ -2,9 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
+import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpCategory } from "@/pages/Help";
+import { useState } from "react";
 
 interface HelpSidebarProps {
   activeCategory: HelpCategory;
@@ -45,45 +46,69 @@ const categories = [
 ];
 
 export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarProps) {
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    [activeCategory]: true
+  });
+
+  const toggleCategory = (value: HelpCategory) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [value]: !prev[value]
+    }));
+  };
+
   return (
-    <aside className="space-y-6">
+    <aside className="space-y-2">
       <div className="space-y-1">
         {categories.map((category) => (
-          <div key={category.title} className="space-y-2">
+          <div key={category.title} className="space-y-1">
             <button
-              onClick={() => onCategoryChange(category.value)}
+              onClick={() => {
+                onCategoryChange(category.value);
+                toggleCategory(category.value);
+              }}
               className={cn(
-                "flex items-center gap-2 font-medium px-2 py-1.5 w-full text-left rounded-md transition-colors",
-                activeCategory === category.value
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-primary/5"
+                "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-primary/5",
+                activeCategory === category.value && "bg-primary/10 text-primary"
               )}
             >
-              <category.icon className="h-4 w-4" />
-              <span>{category.title}</span>
+              <div className="flex items-center gap-2">
+                <category.icon className="h-4 w-4" />
+                <span className="font-medium">{category.title}</span>
+              </div>
+              {expandedCategories[category.value] ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
             </button>
-            {category.items.map((item, index) => (
-              <Button
-                key={item}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start pl-8 font-normal group",
-                  activeCategory === category.value
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                )}
-              >
-                <span className="truncate">{item}</span>
-                {(item === "Meta Pixel Setup" || item === "Email Capture") && (
-                  <Badge 
-                    variant="outline" 
-                    className="ml-2 bg-primary/5 text-primary border-primary/20"
+            
+            {expandedCategories[category.value] && (
+              <div className="ml-9 space-y-1">
+                {category.items.map((item, index) => (
+                  <Button
+                    key={item}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start font-normal h-8 hover:bg-primary/5",
+                      activeCategory === category.value
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
                   >
-                    Pro
-                  </Badge>
-                )}
-              </Button>
-            ))}
+                    <span className="truncate">{item}</span>
+                    {(item === "Meta Pixel Setup" || item === "Email Capture") && (
+                      <Badge 
+                        variant="outline" 
+                        className="ml-2 bg-primary/5 text-primary border-primary/20"
+                      >
+                        Pro
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
