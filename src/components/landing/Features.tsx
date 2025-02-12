@@ -497,7 +497,7 @@ const Features: React.FC = () => {
           Break Through The Noise With Smart Links
         </h2>
 
-        <div className="mt-12 md:mt-16" data-scroll="parallax">
+        <div id="release-pages" className="mt-12 md:mt-16" data-scroll="parallax">
           <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
             <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
               <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
@@ -516,15 +516,19 @@ const Features: React.FC = () => {
 
         <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
 
-        <AnalyticsSection />
+        <div id="analytics">
+          <AnalyticsSection />
+        </div>
 
         <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
 
-        <MetaPixelSection />
+        <div id="meta-pixel">
+          <MetaPixelSection />
+        </div>
 
         <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
 
-        <div className="mt-8 relative flex flex-col lg:flex-row items-start gap-8 md:gap-12">
+        <div id="social-media" className="mt-8 relative flex flex-col lg:flex-row items-start gap-8 md:gap-12">
           <div className="flex-1 lg:max-w-md">
             <div className="flex items-center gap-2 mb-3 md:mb-4">
               <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
@@ -563,4 +567,3 @@ const Features: React.FC = () => {
 };
 
 export default Features;
-

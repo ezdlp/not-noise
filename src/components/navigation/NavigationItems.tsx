@@ -15,33 +15,36 @@ import {
   Target, 
   BookOpen, 
   HelpCircle,
+  Link2,
+  Activity,
+  Image as ImageIcon,
 } from "lucide-react"
 import { useLocation } from "react-router-dom"
 
 const features = [
   {
     title: "Release Pages",
-    description: "Beautifully designed pages for your releases",
+    description: "Connect your fans to their preferred streaming service instantly",
     href: "/features#release-pages",
-    icon: Share2
+    icon: Link2
+  },
+  {
+    title: "Analytics Dashboard",
+    description: "Track your performance with detailed insights",
+    href: "/features#analytics",
+    icon: BarChart3
   },
   {
     title: "Meta Pixel Integration",
     description: "Track conversions and retarget your audience",
     href: "/features#meta-pixel",
-    icon: Target
+    icon: Activity
   },
   {
-    title: "Real-Time Analytics",
-    description: "Comprehensive analytics across platforms",
-    href: "/features#analytics",
-    icon: BarChart3
-  },
-  {
-    title: "Email List Building",
-    description: "Turn passive listeners into engaged fans",
-    href: "/features#email-list",
-    icon: Mail
+    title: "Social Media Tools",
+    description: "Transform your links into eye-catching social cards",
+    href: "/features#social-media",
+    icon: ImageIcon
   },
 ]
 
@@ -153,4 +156,3 @@ export function NavigationItems() {
     </NavigationMenu>
   )
 }
-
