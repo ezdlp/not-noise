@@ -36,12 +36,18 @@ export default function Blog() {
         return { posts: [], total: 0 };
       }
 
-      // First, get total count
+      // First, get total count with proper join
       const { count } = await supabase
         .from("blog_posts")
         .select("id", { count: "exact", head: true })
         .eq("status", "published")
-        .eq("blog_post_categories.category_id", blogCategory.id);
+        .eq("blog_post_categories.category_id", blogCategory.id)
+        .inner("blog_post_categories", {
+          foreignTable: "blog_post_categories",
+          filter: {
+            category_id: blogCategory.id
+          }
+        });
 
       // Then get paginated data
       const from = (currentPage - 1) * postsPerPage;
@@ -50,7 +56,11 @@ export default function Blog() {
       const { data: posts, error } = await supabase
         .from("blog_posts")
         .select(`
-          *,
+          id,
+          title,
+          slug,
+          featured_image,
+          published_at,
           blog_post_categories!inner (
             category_id
           )
