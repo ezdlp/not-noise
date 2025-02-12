@@ -865,16 +865,22 @@ export type Database = {
           artist_name: string
           artwork_url: string | null
           created_at: string | null
+          duration_seconds: number | null
           email_capture_description: string | null
           email_capture_enabled: boolean | null
           email_capture_title: string | null
+          genre: string | null
           id: string
+          isrc: string | null
+          language: string | null
+          lyrics: string | null
           meta_click_event: string | null
           meta_pixel_id: string | null
           meta_view_event: string | null
           release_date: string | null
           slug: string | null
           title: string
+          upc: string | null
           updated_at: string | null
           user_id: string
         }
@@ -882,16 +888,22 @@ export type Database = {
           artist_name: string
           artwork_url?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
           email_capture_title?: string | null
+          genre?: string | null
           id?: string
+          isrc?: string | null
+          language?: string | null
+          lyrics?: string | null
           meta_click_event?: string | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           release_date?: string | null
           slug?: string | null
           title: string
+          upc?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -899,16 +911,22 @@ export type Database = {
           artist_name?: string
           artwork_url?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
           email_capture_title?: string | null
+          genre?: string | null
           id?: string
+          isrc?: string | null
+          language?: string | null
+          lyrics?: string | null
           meta_click_event?: string | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           release_date?: string | null
           slug?: string | null
           title?: string
+          upc?: string | null
           updated_at?: string | null
           user_id?: string
         }
