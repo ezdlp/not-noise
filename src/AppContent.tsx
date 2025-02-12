@@ -43,6 +43,10 @@ const AppContent = () => {
       <Route path="/spotify-royalty-calculator" element={<StreamingCalculator />} />
       <Route path="/streaming-royalty-calculator" element={<Navigate to="/spotify-royalty-calculator" replace />} />
       
+      {/* SEO-friendly redirects */}
+      <Route path="/links-creator" element={<Navigate to="/create" replace />} />
+      <Route path="/my-links" element={<Navigate to="/dashboard" replace />} />
+      
       {/* Spotify Playlist Promotion routes */}
       <Route path="/spotify-playlist-promotion">
         <Route index element={<SpotifyPlaylistPromotion />} />
