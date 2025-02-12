@@ -1,7 +1,6 @@
 
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { CTAButton } from "@/components/ui/cta-button"
 import { Menu } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useEffect, useState } from "react"
@@ -12,11 +11,14 @@ import { UserMenuContent } from "@/components/navigation/UserMenuContent"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useSmartLinkCreation } from "@/hooks/useSmartLinkCreation"
+import { UpgradeModal } from "@/components/subscription/UpgradeModal"
 
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { handleCreateClick, showUpgradeModal, setShowUpgradeModal } = useSmartLinkCreation()
 
   const isDashboard = location.pathname.startsWith('/dashboard')
 
@@ -114,7 +116,7 @@ const Header = () => {
               ) : (
                 <>
                   <Button 
-                    onClick={() => navigate("/create")} 
+                    onClick={handleCreateClick}
                     className="w-full h-8 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
                   >
                     Create Smart Link
@@ -191,7 +193,7 @@ const Header = () => {
             <>
               {!isDashboard && (
                 <Button
-                  onClick={() => navigate("/create")}
+                  onClick={handleCreateClick}
                   className="hidden md:flex h-8 px-3 text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
                 >
                   Create Smart Link
@@ -230,9 +232,15 @@ const Header = () => {
           <MobileMenu />
         </div>
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="create more smart links"
+        description="You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"
+      />
     </header>
   )
 }
 
 export default Header
-
