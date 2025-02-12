@@ -15,6 +15,30 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Check for authentication
+  const authHeader = req.headers.get('Authorization')
+  const apiKey = req.headers.get('apikey')
+
+  if (!authHeader || !apiKey) {
+    console.error('Missing required headers:', {
+      hasAuthHeader: !!authHeader,
+      hasApiKey: !!apiKey
+    })
+    return new Response(
+      JSON.stringify({ 
+        error: 'Unauthorized',
+        message: 'Missing required authentication headers'
+      }), 
+      { 
+        status: 401,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+  }
+
   try {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
