@@ -37,6 +37,7 @@ export function SubscriptionBanner() {
 
       if (subscriptionError) throw subscriptionError;
       
+      // Default to free tier if no subscription is found
       const tier = subscriptionData?.tier || 'free';
 
       const { data: features, error: featuresError } = await supabase
@@ -54,21 +55,22 @@ export function SubscriptionBanner() {
     },
   });
 
-  // Hide banner while loading or if no subscription data
-  if (isLoading) return null;
-  
-  // Hide banner for pro users
-  if (subscription?.tier === 'pro') return null;
+  // Debug logging to track state
+  console.log('Subscription Banner State:', {
+    isLoading,
+    subscription,
+    tier: subscription?.tier,
+  });
 
-  const isFreeTier = subscription?.tier === "free";
-  const isEarlyAdopter = subscription?.is_early_adopter;
+  // Don't show anything while loading
+  if (isLoading) return null;
+
+  // Don't show for pro users
+  if (subscription?.tier === 'pro') return null;
 
   const handleUpgradeClick = () => {
     navigate("/pricing");
   };
-
-  // Only show banner for free tier users
-  if (!isFreeTier) return null;
 
   return (
     <div>
@@ -80,29 +82,25 @@ export function SubscriptionBanner() {
             </div>
             <div>
               <h3 className="font-semibold capitalize">
-                {subscription?.tier} Plan
-                {isEarlyAdopter && (
+                Free Plan
+                {subscription?.is_early_adopter && (
                   <span className="ml-2 text-xs bg-secondary px-2 py-1 rounded-full">
                     Early Adopter
                   </span>
                 )}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {isFreeTier
-                  ? "Upgrade to unlock all features"
-                  : "Thanks for supporting us!"}
+                Upgrade to unlock all features
               </p>
             </div>
           </div>
-          {isFreeTier && (
-            <Button 
-              variant="outline" 
-              className="border-primary hover:bg-primary/5 text-primary"
-              onClick={handleUpgradeClick}
-            >
-              Upgrade Now
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            className="border-primary hover:bg-primary/5 text-primary"
+            onClick={handleUpgradeClick}
+          >
+            Upgrade Now
+          </Button>
         </div>
       </div>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
