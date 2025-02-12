@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
@@ -33,46 +32,70 @@ const getPlatformIcon = (platformId: string) => {
   return icons[platformId] || "/placeholder.svg";
 };
 
+const basePlatforms: Platform[] = [
+  { id: "spotify", name: "Spotify", enabled: false, url: "", icon: getPlatformIcon("spotify") },
+  { id: "youtubeMusic", name: "YouTube Music", enabled: false, url: "", icon: getPlatformIcon("youtubeMusic") },
+  { id: "appleMusic", name: "Apple Music", enabled: false, url: "", icon: getPlatformIcon("appleMusic") },
+  { id: "amazonMusic", name: "Amazon Music", enabled: false, url: "", icon: getPlatformIcon("amazonMusic") },
+  { id: "deezer", name: "Deezer", enabled: false, url: "", icon: getPlatformIcon("deezer") },
+];
+
+const premiumPlatforms: Platform[] = [
+  { id: "tidal", name: "Tidal", enabled: false, url: "", icon: getPlatformIcon("tidal"), isPremium: true },
+  { id: "anghami", name: "Anghami", enabled: false, url: "", icon: getPlatformIcon("anghami"), isPremium: true },
+  { id: "napster", name: "Napster", enabled: false, url: "", icon: getPlatformIcon("napster"), isPremium: true },
+  { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: getPlatformIcon("boomplay"), isPremium: true },
+  { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: getPlatformIcon("yandex"), isPremium: true },
+  { id: "beatport", name: "Beatport", enabled: false, url: "", icon: getPlatformIcon("beatport"), isPremium: true },
+  { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp"), isPremium: true },
+  { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius"), isPremium: true },
+];
+
 export const usePlatformState = (initialSpotifyUrl: string) => {
   const { getAvailablePlatforms } = useFeatureAccess();
   const availablePlatforms = getAvailablePlatforms();
+  const isPro = availablePlatforms === null;
 
-  const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: "spotify", name: "Spotify", enabled: true, url: initialSpotifyUrl, icon: getPlatformIcon("spotify") },
-    { id: "youtubeMusic", name: "YouTube Music", enabled: false, url: "", icon: getPlatformIcon("youtubeMusic") },
-    { id: "appleMusic", name: "Apple Music", enabled: false, url: "", icon: getPlatformIcon("appleMusic") },
-    { id: "amazonMusic", name: "Amazon Music", enabled: false, url: "", icon: getPlatformIcon("amazonMusic") },
-    { id: "deezer", name: "Deezer", enabled: false, url: "", icon: getPlatformIcon("deezer") },
-  ]);
+  // For Pro users, combine all platforms into one array
+  // For free users, keep them separate
+  const [platforms, setPlatforms] = useState<Platform[]>(() => {
+    const initialPlatforms = [...basePlatforms];
+    if (isPro) {
+      initialPlatforms.push(...premiumPlatforms);
+    }
+    // Set initial Spotify URL
+    const spotifyPlatform = initialPlatforms.find(p => p.id === "spotify");
+    if (spotifyPlatform) {
+      spotifyPlatform.enabled = true;
+      spotifyPlatform.url = initialSpotifyUrl;
+    }
+    return initialPlatforms;
+  });
 
-  const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>([
-    { id: "tidal", name: "Tidal", enabled: false, url: "", icon: getPlatformIcon("tidal"), isPremium: true },
-    { id: "anghami", name: "Anghami", enabled: false, url: "", icon: getPlatformIcon("anghami"), isPremium: true },
-    { id: "napster", name: "Napster", enabled: false, url: "", icon: getPlatformIcon("napster"), isPremium: true },
-    { id: "boomplay", name: "Boomplay", enabled: false, url: "", icon: getPlatformIcon("boomplay"), isPremium: true },
-    { id: "yandex", name: "Yandex Music", enabled: false, url: "", icon: getPlatformIcon("yandex"), isPremium: true },
-    { id: "beatport", name: "Beatport", enabled: false, url: "", icon: getPlatformIcon("beatport"), isPremium: true },
-    { id: "bandcamp", name: "Bandcamp", enabled: false, url: "", icon: getPlatformIcon("bandcamp"), isPremium: true },
-    { id: "audius", name: "Audius", enabled: false, url: "", icon: getPlatformIcon("audius"), isPremium: true },
-  ]);
+  // Only used for free users
+  const [additionalPlatforms, setAdditionalPlatforms] = useState<Platform[]>(() => 
+    isPro ? [] : [...premiumPlatforms]
+  );
 
   const togglePlatform = (platformId: string) => {
-    if (availablePlatforms && !availablePlatforms.includes(platformId)) {
-      return; // Don't allow toggling premium platforms for free users
+    // For Pro users or free platforms, simply toggle enabled state
+    const platformIndex = platforms.findIndex(p => p.id === platformId);
+    if (platformIndex !== -1) {
+      setPlatforms(prev => prev.map((p, index) => 
+        index === platformIndex ? { ...p, enabled: !p.enabled } : p
+      ));
+      return;
     }
 
-    const additionalPlatform = additionalPlatforms.find(p => p.id === platformId);
-    if (additionalPlatform) {
-      if (!additionalPlatform.enabled) {
-        setPlatforms(prev => [...prev, { ...additionalPlatform, enabled: true }]);
-        setAdditionalPlatforms(prev => prev.filter(p => p.id !== platformId));
+    // For free users toggling premium platforms
+    if (!isPro) {
+      const additionalPlatform = additionalPlatforms.find(p => p.id === platformId);
+      if (additionalPlatform) {
+        if (!additionalPlatform.enabled) {
+          setPlatforms(prev => [...prev, { ...additionalPlatform, enabled: true }]);
+          setAdditionalPlatforms(prev => prev.filter(p => p.id !== platformId));
+        }
       }
-    } else {
-      setPlatforms(
-        platforms.map((p) =>
-          p.id === platformId ? { ...p, enabled: !p.enabled } : p
-        )
-      );
     }
   };
 
@@ -85,7 +108,7 @@ export const usePlatformState = (initialSpotifyUrl: string) => {
   return {
     platforms,
     setPlatforms,
-    additionalPlatforms,
+    additionalPlatforms: isPro ? [] : additionalPlatforms,
     togglePlatform,
     updateUrl,
   };

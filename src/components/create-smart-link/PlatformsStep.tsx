@@ -23,8 +23,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { isFeatureEnabled } = useFeatureAccess();
+  const { isFeatureEnabled, getAvailablePlatforms } = useFeatureAccess();
   const canReorderPlatforms = isFeatureEnabled('platform_reordering');
+  const isPro = getAvailablePlatforms() === null;
 
   const {
     platforms,
@@ -138,13 +139,15 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             isDraggable={canReorderPlatforms}
           />
 
-          <PlatformsSection
-            title="Additional Services (Pro)"
-            platforms={additionalPlatforms}
-            onToggle={() => setShowUpgradeModal(true)}
-            onUrlChange={updateUrl}
-            isDraggable={false}
-          />
+          {!isPro && additionalPlatforms.length > 0 && (
+            <PlatformsSection
+              title="Additional Services (Pro)"
+              platforms={additionalPlatforms}
+              onToggle={() => setShowUpgradeModal(true)}
+              onUrlChange={updateUrl}
+              isDraggable={false}
+            />
+          )}
         </>
       )}
 
