@@ -20,12 +20,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    // Initialize Supabase client with auth bypass for public access
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
 
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing environment variables')
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${supabaseAnonKey}`
+        }
+      }
+    })
+
+    console.log('Fetching sitemap URLs...')
+    
     // Fetch sitemap URLs from our database function
     const { data: urls, error } = await supabaseClient
       .rpc('get_sitemap_urls')
@@ -34,6 +51,13 @@ Deno.serve(async (req) => {
       console.error('Error fetching sitemap URLs:', error)
       throw error
     }
+
+    if (!urls || urls.length === 0) {
+      console.warn('No URLs returned from get_sitemap_urls')
+      throw new Error('No URLs found')
+    }
+
+    console.log(`Generated sitemap with ${urls.length} URLs`)
 
     // Generate XML sitemap
     const xml = generateSitemapXml(urls as SitemapUrl[])
@@ -48,7 +72,10 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     console.error('Error generating sitemap:', error)
-    return new Response(JSON.stringify({ error: 'Error generating sitemap' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Error generating sitemap',
+      details: error.message 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
