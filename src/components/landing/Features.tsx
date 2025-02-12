@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -502,7 +503,7 @@ const Features: React.FC = () => {
               <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
                 <Link2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
               </div>
-              <span className="text-sm md:text-base font-medium text-neutral-500">Smart Links</span>
+              <span className="text-sm md:text-base font-medium text-neutral-500">Release Pages</span>
             </div>
             <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">One Link for All Platforms</h3>
             <p className="text-base md:text-lg text-neutral-600/90">
@@ -562,3 +563,4 @@ const Features: React.FC = () => {
 };
 
 export default Features;
+
