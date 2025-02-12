@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ export default function AccountSettings() {
     artist_name: "",
     music_genre: "",
     country: "",
+    hide_branding: false,
   });
   const [email, setEmail] = useState("");
   const [passwords, setPasswords] = useState({
@@ -68,6 +69,7 @@ export default function AccountSettings() {
         artist_name: profileData.artist_name,
         music_genre: profileData.music_genre,
         country: profileData.country,
+        hide_branding: profileData.hide_branding || false,
       });
     }
   };
@@ -84,6 +86,7 @@ export default function AccountSettings() {
         artist_name: profile.artist_name,
         music_genre: profile.music_genre,
         country: profile.country,
+        hide_branding: profile.hide_branding,
       })
       .eq("id", session.user.id);
 
@@ -179,6 +182,33 @@ export default function AccountSettings() {
       navigate("/");
     }
     setLoading(false);
+  };
+
+  const handleBrandingToggle = async (checked: boolean) => {
+    setProfile(prev => ({ ...prev, hide_branding: checked }));
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ hide_branding: checked })
+      .eq("id", session.user.id);
+
+    if (error) {
+      toast({
+        title: "Error updating branding settings",
+        description: error.message,
+        variant: "destructive",
+      });
+      // Revert the toggle if there was an error
+      setProfile(prev => ({ ...prev, hide_branding: !checked }));
+    } else {
+      toast({
+        title: "Branding settings updated",
+        description: checked ? "Branding has been hidden from your smart links." : "Branding is now visible on your smart links.",
+      });
+    }
   };
 
   const { data: subscription } = useQuery({
@@ -336,6 +366,30 @@ export default function AccountSettings() {
               </Button>
             </CardContent>
           </Card>
+
+          {subscription?.tier === 'pro' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Smart Link Branding</CardTitle>
+                <CardDescription>Control the visibility of Soundraiser branding on your smart links</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="branding-toggle">Hide Soundraiser branding</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Remove "Powered by Soundraiser" from your smart links
+                    </p>
+                  </div>
+                  <Switch
+                    id="branding-toggle"
+                    checked={profile.hide_branding}
+                    onCheckedChange={handleBrandingToggle}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
