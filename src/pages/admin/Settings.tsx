@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings as SettingsIcon, CreditCard } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -122,6 +122,24 @@ export default function Settings() {
     } catch (error) {
       console.error('Error managing subscription:', error);
       toast.error("Failed to open subscription management portal");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBrandingToggle = async (checked: boolean) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ hide_branding: checked })
+        .eq('id', profile?.id);
+
+      if (error) throw error;
+      toast.success("Branding preference updated");
+    } catch (error) {
+      console.error('Error updating branding preference:', error);
+      toast.error("Failed to update branding preference");
     } finally {
       setIsLoading(false);
     }
@@ -241,6 +259,24 @@ export default function Settings() {
                   Your email address is managed through your authentication provider.
                 </p>
               </div>
+
+              {subscription?.tier === 'pro' && (
+                <div className="space-y-2 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Smart Link Branding</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Powered by Soundraiser" attribution on your smart links
+                      </p>
+                    </div>
+                    <Switch
+                      checked={profile?.hide_branding || false}
+                      onCheckedChange={handleBrandingToggle}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
