@@ -6,6 +6,7 @@ import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { toast } from "sonner";
+import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 
 const SmartLink = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -192,6 +193,13 @@ const SmartLink = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
+      <SmartLinkSEO
+        title={smartLink.title}
+        artistName={smartLink.artist_name}
+        artworkUrl={smartLink.artwork_url}
+        releaseDate={smartLink.release_date}
+      />
+      
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
