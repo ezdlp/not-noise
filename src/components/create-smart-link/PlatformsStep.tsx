@@ -23,9 +23,8 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { isFeatureEnabled, getAvailablePlatforms } = useFeatureAccess();
+  const { isFeatureEnabled } = useFeatureAccess();
   const canReorderPlatforms = isFeatureEnabled('platform_reordering');
-  const isPro = getAvailablePlatforms() === null;
 
   const {
     platforms,
@@ -33,6 +32,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     additionalPlatforms,
     togglePlatform,
     updateUrl,
+    isPro,
   } = usePlatformState(initialData.spotifyUrl);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       ) : (
         <>
           <PlatformsSection
-            title="Manage Platforms"
+            title="Standard Platforms"
             platforms={platforms}
             onToggle={togglePlatform}
             onUrlChange={updateUrl}
@@ -139,15 +139,15 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             isDraggable={canReorderPlatforms}
           />
 
-          {!isPro && additionalPlatforms.length > 0 && (
-            <PlatformsSection
-              title="Additional Services (Pro)"
-              platforms={additionalPlatforms}
-              onToggle={() => setShowUpgradeModal(true)}
-              onUrlChange={updateUrl}
-              isDraggable={false}
-            />
-          )}
+          <PlatformsSection
+            title="Additional Platforms"
+            description={!isPro ? "Upgrade to Pro to access these platforms" : undefined}
+            platforms={additionalPlatforms}
+            onToggle={isPro ? togglePlatform : () => setShowUpgradeModal(true)}
+            onUrlChange={updateUrl}
+            isDraggable={false}
+            isBlurred={!isPro}
+          />
         </>
       )}
 
