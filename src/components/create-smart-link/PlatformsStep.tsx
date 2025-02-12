@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { arrayMove } from '@dnd-kit/sortable';
@@ -102,6 +101,14 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     }
   };
 
+  const handlePlatformToggle = (platformId: string) => {
+    if (platformId === "upgrade") {
+      setShowUpgradeModal(true);
+      return;
+    }
+    togglePlatform(platformId);
+  };
+
   const handleNext = () => {
     const enabledPlatforms = platforms.filter((p) => p.enabled);
     if (!enabledPlatforms.some((p) => p.url)) {
@@ -133,7 +140,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
           <PlatformsSection
             title="Standard Platforms"
             platforms={platforms}
-            onToggle={togglePlatform}
+            onToggle={handlePlatformToggle}
             onUrlChange={updateUrl}
             onDragEnd={handleDragEnd}
             isDraggable={canReorderPlatforms}
@@ -141,9 +148,9 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
 
           <PlatformsSection
             title="Additional Platforms"
-            description={!isPro ? "Upgrade to Pro to access these platforms" : undefined}
+            description={!isPro ? "Premium platforms to expand your reach" : undefined}
             platforms={additionalPlatforms}
-            onToggle={isPro ? togglePlatform : () => setShowUpgradeModal(true)}
+            onToggle={handlePlatformToggle}
             onUrlChange={updateUrl}
             isDraggable={false}
             isBlurred={!isPro}
