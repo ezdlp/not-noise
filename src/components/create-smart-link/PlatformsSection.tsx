@@ -12,6 +12,7 @@ interface Platform {
   enabled: boolean;
   url: string;
   icon: string;
+  isPremium?: boolean;
 }
 
 interface PlatformsSectionProps {
@@ -81,10 +82,8 @@ const PlatformsSection = ({
       )}>
         {isBlurred && (
           <div className="absolute inset-0 z-10">
-            {/* Gradient overlay that gets more intense towards the bottom */}
             <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background/80 backdrop-blur-[2px]" />
             
-            {/* Centered upgrade content */}
             <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center">
               <h4 className="text-xl font-semibold mb-2">Unlock All Platforms</h4>
               <p className="text-sm text-muted-foreground mb-4 max-w-sm">
