@@ -21,7 +21,7 @@ const supabaseAdmin = createClient(
   }
 );
 
-const BATCH_SIZE = 5; // Reduced batch size
+const BATCH_SIZE = 5;
 const INITIAL_DELAY = 1000; // 1 second between emails
 const MAX_RETRIES = 3;
 
@@ -57,6 +57,19 @@ async function processUserBatch(users: { id: string; email: string }[]) {
   
   for (const user of users) {
     try {
+      // Check if user already has a successful email sent
+      const { data: statusData } = await supabaseAdmin
+        .from('user_migration_status')
+        .select('status')
+        .eq('user_id', user.id)
+        .single();
+
+      if (statusData?.status === 'email_sent') {
+        console.log(`Skipping ${user.email} - reset email already sent successfully`);
+        results.push({ email: user.email, success: true, skipped: true });
+        continue;
+      }
+
       console.log(`Processing reset email for user: ${user.email}`);
       
       const result = await sendPasswordResetWithRetry(user);
@@ -90,7 +103,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
           }, { onConflict: 'user_id' });
       }
 
-      // Wait longer between emails to avoid rate limits
+      // Wait between emails to avoid rate limits
       await sleep(INITIAL_DELAY);
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
@@ -124,11 +137,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination
+    // Get users with pagination, excluding those who already received emails successfully
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
       .select('id, email', { count: 'exact' })
       .not('email', 'is', null)
+      .not('user_migration_status.status', 'eq', 'email_sent')
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
@@ -167,6 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Calculate summary
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
+    const skipped = results.filter(r => r.skipped).length;
 
     return new Response(
       JSON.stringify({
@@ -175,6 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
           total: results.length,
           successful,
           failed,
+          skipped
         },
         progress: {
           processed: offset + users.length,
