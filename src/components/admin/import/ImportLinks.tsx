@@ -25,8 +25,9 @@ interface ImportSummary {
   unassigned: string[];
 }
 
-// Constants for chunking
-const CHUNK_SIZE = 500 * 1024; // 500KB per chunk
+// Reduced chunk size and added delay between chunks
+const CHUNK_SIZE = 100 * 1024; // 100KB per chunk
+const CHUNK_DELAY = 1000; // 1 second delay between chunks
 const MAX_RETRIES = 3;
 
 export function ImportLinks() {
@@ -37,43 +38,44 @@ export function ImportLinks() {
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
 
   const splitXmlContent = (content: string): string[] => {
-    // Find XML prolog and root element
-    const xmlProlog = content.substring(0, content.indexOf('<?xml'));
-    const rootStart = content.substring(0, content.indexOf('<channel>') + 9);
-    const rootEnd = '</channel></rss>';
+    // Extract the XML structure parts
+    const xmlStart = content.substring(0, content.indexOf('<item>'));
+    const xmlEnd = '</channel></rss>';
     
-    // Extract items using regex
-    const itemRegex = /<item[\s\S]*?<\/item>/g;
-    const items = Array.from(content.matchAll(itemRegex)).map(m => m[0]);
-    
-    if (items.length === 0) {
-      return [content];
-    }
-
+    // Extract items with a more memory-efficient approach
     const chunks: string[] = [];
+    let currentPosition = content.indexOf('<item>');
     let currentChunk = '';
     let currentSize = 0;
-
-    for (const item of items) {
+    
+    while (currentPosition !== -1) {
+      const nextItemStart = content.indexOf('<item>', currentPosition + 5);
+      const itemEndPosition = content.indexOf('</item>', currentPosition) + 7;
+      
+      const item = content.substring(
+        currentPosition,
+        nextItemStart !== -1 ? nextItemStart : itemEndPosition
+      );
+      
       const itemSize = new TextEncoder().encode(item).length;
       
       if (currentSize + itemSize > CHUNK_SIZE && currentChunk) {
-        // Complete the current chunk with proper XML structure
-        chunks.push(`${xmlProlog}${rootStart}${currentChunk}${rootEnd}`);
+        chunks.push(`${xmlStart}${currentChunk}${xmlEnd}`);
         currentChunk = item;
         currentSize = itemSize;
       } else {
         currentChunk += item;
         currentSize += itemSize;
       }
+      
+      currentPosition = nextItemStart;
     }
-
-    // Add the last chunk if there's remaining content
+    
     if (currentChunk) {
-      chunks.push(`${xmlProlog}${rootStart}${currentChunk}${rootEnd}`);
+      chunks.push(`${xmlStart}${currentChunk}${xmlEnd}`);
     }
-
-    return chunks;
+    
+    return chunks.length ? chunks : [content];
   };
 
   const processChunk = async (
@@ -101,11 +103,13 @@ export function ImportLinks() {
 
         if (error) throw error;
 
-        // Update progress based on chunk completion
         const chunkProgress = ((chunkIndex + 1) / totalChunks) * 100;
         setProgress(chunkProgress);
 
         success = true;
+        
+        // Add delay between chunks to prevent resource exhaustion
+        await new Promise(resolve => setTimeout(resolve, CHUNK_DELAY));
       } catch (error) {
         console.error(`Error processing chunk ${chunkIndex + 1}/${totalChunks}:`, error);
         retryCount++;
@@ -114,8 +118,10 @@ export function ImportLinks() {
           throw error;
         }
         
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        // Exponential backoff with longer delays
+        await new Promise(resolve => 
+          setTimeout(resolve, Math.pow(2, retryCount) * 2000)
+        );
       }
     }
   };
@@ -129,11 +135,10 @@ export function ImportLinks() {
       setProgress(0);
       setSummary(null);
 
-      // Read the file content
       const text = await file.text();
       const chunks = splitXmlContent(text);
       
-      // Create an import batch
+      // Create import batch
       const { data: batchData, error: batchError } = await supabase
         .from('import_batches')
         .insert({
@@ -150,12 +155,12 @@ export function ImportLinks() {
       const batchId = batchData.id;
       setCurrentBatchId(batchId);
 
-      // Process chunks sequentially
+      // Process chunks with delay between each
       for (let i = 0; i < chunks.length; i++) {
         await processChunk(chunks[i], batchId, i, chunks.length);
       }
 
-      // Get final import results
+      // Get final results
       const { data: importResults, error: resultsError } = await supabase
         .from('import_batches')
         .select(`
@@ -172,7 +177,6 @@ export function ImportLinks() {
 
       if (resultsError) throw resultsError;
 
-      // Calculate summary
       const logs = importResults.import_logs;
       const summary: ImportSummary = {
         total: logs.length,
@@ -206,7 +210,6 @@ export function ImportLinks() {
       console.error("Error importing smart links:", error);
       toast.error("Failed to import smart links");
       
-      // Update batch status if we have a batch ID
       if (currentBatchId) {
         await supabase
           .from('import_batches')
