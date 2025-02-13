@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -55,70 +56,42 @@ const platformDisplayNames: Record<string, string> = {
 };
 
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
-  console.log('Starting platform links parsing with input:', serializedLinks);
-  
   try {
-    // Extract the inner array content from the outer serialized string
+    // Extract the inner array content
     const arrayMatch = serializedLinks.match(/^s:\d+:"(a:\d+:\{.*\})";$/);
     if (!arrayMatch) {
-      console.error('Invalid serialized format');
       throw new Error('Invalid serialized format');
     }
 
     const arrayContent = arrayMatch[1];
-    console.log('Extracted array content:', arrayContent);
-
-    // Split the array content into key-value pairs
     const pairs = arrayContent.match(/s:\d+:"[^"]+";s:\d+:"[^"]*";/g) || [];
-    console.log(`Found ${pairs.length} platform pairs`);
-
     const links: PlatformLink[] = [];
 
     for (const pair of pairs) {
-      // Extract key and value from each pair
       const keyMatch = pair.match(/s:\d+:"([^"]+)";/);
       const valueMatch = pair.match(/;s:\d+:"([^"]*)";/);
 
-      if (!keyMatch || !valueMatch) {
-        console.warn('Skipping invalid pair:', pair);
-        continue;
-      }
+      if (!keyMatch || !valueMatch) continue;
 
       const platformKey = keyMatch[1];
       const url = valueMatch[1];
 
-      // Skip empty URLs
-      if (!url) {
-        console.log(`Skipping ${platformKey} - empty URL`);
-        continue;
-      }
+      if (!url) continue;
 
-      // Map to our platform conventions
       const platformId = platformMapping[platformKey];
-      if (!platformId) {
-        console.warn(`Unknown platform type: ${platformKey}`);
-        continue;
-      }
+      if (!platformId) continue;
 
       links.push({
         platform_id: platformId,
         platform_name: platformDisplayNames[platformId],
         url: url.trim()
       });
-      
-      console.log(`Added platform link:`, {
-        platform_id: platformId,
-        platform_name: platformDisplayNames[platformId],
-        url: url.trim()
-      });
     }
 
-    console.log('Successfully parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
-    console.error('Input that caused error:', serializedLinks);
-    throw error;
+    return [];
   }
 }
 
@@ -130,13 +103,14 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const file = formData.get('file');
+    const testMode = formData.get('testMode') === 'true';
+    const batchId = formData.get('batchId') as string;
     
     if (!file || !(file instanceof File)) {
       throw new Error('No file uploaded');
     }
 
     const text = await file.text();
-    console.log('Parsing XML file...');
     const xmlDoc = parse(text);
 
     if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
@@ -144,34 +118,32 @@ serve(async (req) => {
     }
 
     const items = xmlDoc.rss.channel.item || [];
-    console.log(`Found ${items.length} items in XML`);
+    const itemsToProcess = testMode ? items.slice(0, 10) : items;
 
-    const results = {
-      total: items.length,
-      success: 0,
-      errors: [] as { link: string; error: string }[],
-      unassigned: [] as string[]
-    };
-
-    // Create Supabase client with service role key for admin operations
+    // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') as string,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    for (const item of items) {
+    const results = {
+      processed: 0,
+      success: 0,
+      errors: [] as { link: string; error: string }[],
+      unassigned: [] as string[]
+    };
+
+    for (const item of itemsToProcess) {
       try {
         const title = extractCDATAContent(item.title) || '';
-        console.log(`Processing link: ${title}`);
-
         const creatorEmail = extractCDATAContent(item['dc:creator']);
+
         if (!creatorEmail) {
-          console.log('No creator email found, skipping');
           results.unassigned.push(title);
           continue;
         }
 
-        console.log(`Looking for user with email: ${creatorEmail}`);
+        // Get user ID from email
         const { data: userData, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id')
@@ -179,7 +151,6 @@ serve(async (req) => {
           .single();
 
         if (userError || !userData) {
-          console.log(`No matching user found for email: ${creatorEmail}`);
           results.unassigned.push(title);
           continue;
         }
@@ -194,7 +165,6 @@ serve(async (req) => {
           const value = extractCDATAContent(meta['wp:meta_value']);
 
           if (key === '_links' && value) {
-            console.log('Found platform links data:', value);
             platformLinksData = value;
           } else if (key === '_artist_name' && value) {
             artistName = value;
@@ -203,7 +173,7 @@ serve(async (req) => {
           }
         }
 
-        // Create smart link using admin client and get the inserted record
+        // Insert smart link
         const { data: smartLink, error: insertError } = await supabaseAdmin
           .from('smart_links')
           .insert({
@@ -216,50 +186,64 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (insertError || !smartLink) {
-          throw new Error(`Failed to insert smart link: ${insertError?.message}`);
-        }
+        if (insertError) throw insertError;
 
-        console.log('Successfully created smart link:', smartLink);
-
+        // Insert platform links if available
         if (platformLinksData) {
-          console.log('Processing platform links data:', platformLinksData);
           const platformLinks = parsePlatformLinks(platformLinksData);
-          console.log('Parsed platform links:', platformLinks);
-
           if (platformLinks.length > 0) {
             const platformLinksWithId = platformLinks.map(pl => ({
               ...pl,
               smart_link_id: smartLink.id
             }));
 
-            console.log('Attempting to insert platform links:', platformLinksWithId);
-
             const { error: platformError } = await supabaseAdmin
               .from('platform_links')
               .insert(platformLinksWithId);
 
-            if (platformError) {
-              console.error('Error inserting platform links:', platformError);
-              throw new Error(`Failed to insert platform links: ${platformError.message}`);
-            }
-            console.log('Successfully inserted platform links');
-          } else {
-            console.log('No valid platform links found to insert');
+            if (platformError) throw platformError;
           }
         }
 
-        results.success++;
-        console.log(`Successfully processed item: ${title}`);
+        // Log success
+        await supabaseAdmin
+          .from('import_logs')
+          .insert({
+            batch_id: batchId,
+            wp_post_id: title,
+            smart_link_id: smartLink.id,
+            status: 'completed'
+          });
 
+        results.success++;
       } catch (error) {
         console.error('Error processing item:', error);
+        await supabaseAdmin
+          .from('import_logs')
+          .insert({
+            batch_id: batchId,
+            wp_post_id: extractCDATAContent(item.title) || 'Unknown',
+            status: 'failed',
+            error_message: error.message
+          });
+
         results.errors.push({
           link: extractCDATAContent(item.title) || 'Unknown',
           error: error.message
         });
       }
+      results.processed++;
     }
+
+    // Update batch status
+    await supabaseAdmin
+      .from('import_batches')
+      .update({
+        status: 'completed',
+        processed_items: results.processed,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', batchId);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -303,4 +287,3 @@ function extractCDATAContent(value: any): string {
   
   return '';
 }
-
