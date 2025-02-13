@@ -30,7 +30,7 @@ interface ChunkProgress {
   total: number;
 }
 
-async function splitXMLFile(file: File, chunkSize: number = 400000) { // 400KB chunks
+async function splitXMLFile(file: File, chunkSize: number = 200000) { // 200KB chunks for safer memory usage
   const text = await file.text();
   const chunks: string[] = [];
   
@@ -65,6 +65,8 @@ async function splitXMLFile(file: File, chunkSize: number = 400000) { // 400KB c
   return chunks;
 }
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -72,29 +74,48 @@ export function ImportLinks() {
   const [testMode, setTestMode] = useState(true);
   const [chunkProgress, setChunkProgress] = useState<ChunkProgress>({ current: 0, total: 0 });
 
-  const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number): Promise<ImportSummary> => {
-    const formData = new FormData();
-    const blob = new Blob([chunk], { type: 'text/xml' });
-    const file = new File([blob], 'chunk.xml', { type: 'text/xml' });
-    
-    formData.append('file', file);
-    formData.append('testMode', testMode.toString());
+  const processChunkWithRetry = async (
+    chunk: string, 
+    chunkIndex: number, 
+    totalChunks: number,
+    retryCount: number = 0
+  ): Promise<ImportSummary> => {
+    try {
+      const formData = new FormData();
+      const blob = new Blob([chunk], { type: 'text/xml' });
+      const file = new File([blob], 'chunk.xml', { type: 'text/xml' });
+      
+      formData.append('file', file);
+      formData.append('testMode', testMode.toString());
 
-    const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-      body: formData,
-    });
+      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+        body: formData,
+      });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    setChunkProgress({ current: chunkIndex + 1, total: totalChunks });
-    setProgress(((chunkIndex + 1) / totalChunks) * 100);
+      setChunkProgress({ current: chunkIndex + 1, total: totalChunks });
+      setProgress(((chunkIndex + 1) / totalChunks) * 100);
 
-    return {
-      total: data?.total ?? 0,
-      success: data?.success ?? 0,
-      errors: Array.isArray(data?.errors) ? data.errors : [],
-      unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
-    };
+      return {
+        total: data?.total ?? 0,
+        success: data?.success ?? 0,
+        errors: Array.isArray(data?.errors) ? data.errors : [],
+        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+      };
+    } catch (error) {
+      console.error(`Error processing chunk ${chunkIndex + 1}:`, error);
+      
+      // If we haven't exceeded max retries, wait and try again
+      if (retryCount < 3) {
+        const backoffDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.log(`Retrying chunk ${chunkIndex + 1} after ${backoffDelay}ms...`);
+        await delay(backoffDelay);
+        return processChunkWithRetry(chunk, chunkIndex, totalChunks, retryCount + 1);
+      }
+      
+      throw error;
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,17 +138,19 @@ export function ImportLinks() {
       let totalErrors: { link: string; error: string }[] = [];
       let totalUnassigned: string[] = [];
 
-      // Process each chunk sequentially
+      // Process each chunk sequentially with delay between chunks
       for (let i = 0; i < chunks.length; i++) {
-        const result = await processChunk(chunks[i], i, chunks.length);
+        const result = await processChunkWithRetry(chunks[i], i, chunks.length);
         
         totalProcessed += result.total;
         totalSuccess += result.success;
         totalErrors = [...totalErrors, ...result.errors];
         totalUnassigned = [...totalUnassigned, ...result.unassigned];
 
-        // Update progress
-        setProgress(((i + 1) / chunks.length) * 100);
+        // Add delay between chunks to allow for GC
+        if (i < chunks.length - 1) {
+          await delay(1000);
+        }
       }
 
       const finalSummary: ImportSummary = {
