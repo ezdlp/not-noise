@@ -69,6 +69,43 @@ export function WebsiteSEO() {
     }
   };
 
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Soundraiser Pro",
+    "applicationCategory": "MusicApplication",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Pro Plan",
+        "description": "Unlimited Smart Links, advanced analytics, email capture, and custom branding",
+        "price": "9.99",
+        "priceCurrency": "USD",
+        "frequency": "monthly"
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro Plan Annual",
+        "description": "Pro plan with annual billing - save 20%",
+        "price": "95.88",
+        "priceCurrency": "USD",
+        "frequency": "yearly"
+      }
+    ],
+    "featureList": [
+      "Unlimited Smart Links",
+      "All Music Platforms",
+      "Advanced Analytics",
+      "Email Collection",
+      "Platform Reordering",
+      "Remove Branding",
+      "Meta Pixel Integration",
+      "Social Media Cards"
+    ],
+    "operatingSystem": "Web-based",
+    "url": `${DEFAULT_SEO_CONFIG.siteUrl}/pricing`
+  };
+
   return (
     <Helmet>
       {/* Technical SEO */}
@@ -97,6 +134,9 @@ export function WebsiteSEO() {
       </script>
       <script type="application/ld+json">
         {JSON.stringify(faqSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(productSchema)}
       </script>
     </Helmet>
   );
