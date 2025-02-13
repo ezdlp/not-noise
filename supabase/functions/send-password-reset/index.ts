@@ -58,15 +58,13 @@ async function processUserBatch(users: { id: string; email: string }[]) {
         continue;
       }
 
-      // Then generate and send the recovery link
-      const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: user.email,
-        newEmail: user.email
+      // Use inviteUserByEmail to trigger the actual email sending
+      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(user.email, {
+        redirectTo: 'https://soundraiser.io/login'
       });
 
       if (error) {
-        console.error(`Error generating reset link for ${user.email}:`, error);
+        console.error(`Error sending invite email to ${user.email}:`, error);
         results.push({ email: user.email, success: false, error: error.message });
         
         await supabaseAdmin
@@ -79,7 +77,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
       } else {
-        console.log(`Successfully generated reset link for ${user.email}`);
+        console.log(`Successfully sent invite email to ${user.email}`);
         results.push({ email: user.email, success: true });
         
         await supabaseAdmin
