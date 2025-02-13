@@ -160,7 +160,9 @@ async function sendPasswordResetWithRetry(user: { id: string; email: string }, r
     const htmlContent = emailTemplate.replace('{{ .ConfirmationURL }}', resetUrl);
 
     try {
-      // Send email using Resend
+      // Send email using Resend with more detailed logging
+      console.log(`Attempting to send email to ${user.email}...`);
+      
       const emailResult = await resend.emails.send({
         from: 'Soundraiser <hello@soundraiser.io>',
         to: user.email,
@@ -168,12 +170,23 @@ async function sendPasswordResetWithRetry(user: { id: string; email: string }, r
         html: htmlContent
       });
 
-      if (!emailResult?.id) {
-        throw new Error('Failed to send email through Resend');
-      }
+      // Log the full response for debugging
+      console.log(`Resend API Response for ${user.email}:`, JSON.stringify(emailResult));
 
-      return { success: true };
-    } catch (resendError) {
+      // Update success check to be more lenient
+      // If we get a response object at all, consider it a success unless there's an error
+      if (emailResult && !emailResult.error) {
+        console.log(`Successfully sent email to ${user.email}`);
+        return { success: true };
+      } else {
+        const errorMessage = emailResult.error?.message || 'Unknown error occurred';
+        console.error(`Resend API error for ${user.email}:`, errorMessage);
+        return { success: false, error: errorMessage };
+      }
+    } catch (resendError: any) {
+      // Log the full error object for debugging
+      console.error(`Detailed Resend error for ${user.email}:`, JSON.stringify(resendError));
+
       // If we hit rate limit and haven't exceeded retries, wait and try again
       if (resendError.message?.includes('rate') && retryCount < MAX_RETRIES) {
         const backoffDelay = INITIAL_DELAY * Math.pow(2, retryCount);
@@ -181,10 +194,18 @@ async function sendPasswordResetWithRetry(user: { id: string; email: string }, r
         await sleep(backoffDelay);
         return sendPasswordResetWithRetry(user, retryCount + 1);
       }
-      return { success: false, error: resendError.message };
+
+      return { 
+        success: false, 
+        error: `Resend error: ${resendError.message || 'Unknown error'}`
+      };
     }
-  } catch (error) {
-    return { success: false, error: error.message };
+  } catch (error: any) {
+    console.error(`Unexpected error for ${user.email}:`, error);
+    return { 
+      success: false, 
+      error: `Unexpected error: ${error.message || 'Unknown error'}`
+    };
   }
 }
 
@@ -196,6 +217,9 @@ async function processUserBatch(users: { id: string; email: string }[]) {
       console.log(`Processing reset email for user: ${user.email}`);
       
       const result = await sendPasswordResetWithRetry(user);
+      
+      // Log the result regardless of success/failure
+      console.log(`Result for ${user.email}:`, JSON.stringify(result));
 
       if (!result.success) {
         console.error(`Error sending reset email to ${user.email}:`, result.error);
