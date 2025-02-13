@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -150,7 +151,13 @@ serve(async (req) => {
       total: items.length,
       success: 0,
       errors: [] as { link: string; error: string }[],
-      unassigned: [] as string[]
+      unassigned: [] as string[],
+      emailMatches: [] as { 
+        email: string,
+        found: boolean,
+        title: string,
+        matchAttempt: string 
+      }[]
     };
 
     // Create Supabase client with service role key for admin operations
@@ -162,27 +169,60 @@ serve(async (req) => {
     for (const item of items) {
       try {
         const title = extractCDATAContent(item.title) || '';
-        console.log(`Processing link: ${title}`);
+        console.log(`\n----- Processing link: ${title} -----`);
 
         const creatorEmail = extractCDATAContent(item['dc:creator']);
         if (!creatorEmail) {
           console.log('No creator email found, skipping');
           results.unassigned.push(title);
+          results.emailMatches.push({
+            email: 'none',
+            found: false,
+            title,
+            matchAttempt: 'No email provided in WordPress export'
+          });
           continue;
         }
 
-        console.log(`Looking for user with email: ${creatorEmail}`);
+        const normalizedEmail = creatorEmail.trim().toLowerCase();
+        console.log(`Looking for user with email: ${normalizedEmail}`);
+        
+        // Log the email lookup attempt
         const { data: userData, error: userError } = await supabaseAdmin
           .from('profiles')
-          .select('id')
-          .eq('email', creatorEmail)
+          .select('id, email')
+          .ilike('email', normalizedEmail)
           .single();
 
         if (userError || !userData) {
-          console.log(`No matching user found for email: ${creatorEmail}`);
+          console.log(`No matching user found for email: ${normalizedEmail}`);
+          console.log('Database lookup error:', userError?.message || 'No match');
+          
+          // Log all existing emails for debugging
+          const { data: allEmails } = await supabaseAdmin
+            .from('profiles')
+            .select('email')
+            .not('email', 'is', null);
+            
+          console.log('Available emails in database:', allEmails?.map(p => p.email));
+          
           results.unassigned.push(title);
+          results.emailMatches.push({
+            email: normalizedEmail,
+            found: false,
+            title,
+            matchAttempt: `No match found. Error: ${userError?.message || 'No matching profile'}`
+          });
           continue;
         }
+
+        console.log(`Found matching user with ID: ${userData.id}`);
+        results.emailMatches.push({
+          email: normalizedEmail,
+          found: true,
+          title,
+          matchAttempt: `Matched to user ID: ${userData.id}`
+        });
 
         const metas = item['wp:postmeta'] || [];
         let artistName = '';
@@ -260,6 +300,14 @@ serve(async (req) => {
         });
       }
     }
+
+    // Final summary logging
+    console.log('\n----- Import Summary -----');
+    console.log(`Total items processed: ${results.total}`);
+    console.log(`Successful imports: ${results.success}`);
+    console.log(`Failed imports: ${results.errors.length}`);
+    console.log(`Unassigned links: ${results.unassigned.length}`);
+    console.log('\nEmail matching results:', results.emailMatches);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
