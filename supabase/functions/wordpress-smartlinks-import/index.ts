@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -98,8 +97,7 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 
     return links;
   } catch (error) {
-    console.error('Error parsing platform links:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -120,7 +118,6 @@ serve(async (req) => {
       throw new Error('No file content provided');
     }
 
-    // Extract the base64 content (remove data:application/xml;base64, prefix)
     const base64Data = fileContent.split(',')[1];
     const decodedContent = atob(base64Data);
 
@@ -129,12 +126,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    const startMemory = Deno.memoryUsage();
-    console.log('Initial memory usage:', {
-      heapUsed: startMemory.heapUsed / 1024 / 1024 + ' MB',
-      heapTotal: startMemory.heapTotal / 1024 / 1024 + ' MB',
-    });
-
     const xmlDoc = parse(decodedContent);
 
     if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
@@ -142,22 +133,14 @@ serve(async (req) => {
     }
 
     const items = xmlDoc.rss.channel.item || [];
-    console.log(`Processing ${items.length} items`);
 
     const results = {
       total: items.length,
       success: 0,
       errors: [] as { link: string; error: string }[],
-      unassigned: [] as string[],
-      emailMatches: [] as { 
-        email: string,
-        found: boolean,
-        title: string,
-        matchAttempt: string 
-      }[]
+      unassigned: [] as string[]
     };
 
-    // Process only first 10 items if in test mode
     const itemsToProcess = testMode ? items.slice(0, 10) : items;
 
     for (const item of itemsToProcess) {
@@ -178,28 +161,12 @@ serve(async (req) => {
           .ilike('email', normalizedEmail)
           .limit(1);
 
-        if (userError) {
-          throw new Error(`Database lookup error: ${userError.message}`);
-        }
-
-        if (!matchingProfiles || matchingProfiles.length === 0) {
+        if (userError || !matchingProfiles || matchingProfiles.length === 0) {
           results.unassigned.push(title);
-          results.emailMatches.push({
-            email: normalizedEmail,
-            found: false,
-            title,
-            matchAttempt: 'No matching profile found'
-          });
           continue;
         }
 
         const userData = matchingProfiles[0];
-        results.emailMatches.push({
-          email: normalizedEmail,
-          found: true,
-          title,
-          matchAttempt: `Matched to user ID: ${userData.id}`
-        });
 
         const metas = item['wp:postmeta'] || [];
         let artistName = '';
@@ -232,7 +199,7 @@ serve(async (req) => {
           .single();
 
         if (insertError || !smartLink) {
-          throw new Error(`Failed to insert smart link: ${insertError?.message}`);
+          throw new Error('Failed to insert smart link');
         }
 
         if (platformLinksData) {
@@ -249,7 +216,7 @@ serve(async (req) => {
               .insert(platformLinksWithId);
 
             if (platformError) {
-              throw new Error(`Failed to insert platform links: ${platformError.message}`);
+              throw new Error('Failed to insert platform links');
             }
           }
         }
@@ -262,23 +229,7 @@ serve(async (req) => {
           error: error.message
         });
       }
-
-      if (results.success % 10 === 0) {
-        const currentMemory = Deno.memoryUsage();
-        console.log('Current memory usage:', {
-          heapUsed: currentMemory.heapUsed / 1024 / 1024 + ' MB',
-          heapTotal: currentMemory.heapTotal / 1024 / 1024 + ' MB',
-          processed: results.success,
-          total: results.total
-        });
-      }
     }
-
-    const endMemory = Deno.memoryUsage();
-    console.log('Final memory usage:', {
-      heapUsed: endMemory.heapUsed / 1024 / 1024 + ' MB',
-      heapTotal: endMemory.heapTotal / 1024 / 1024 + ' MB',
-    });
 
     return new Response(
       JSON.stringify(results),
@@ -291,7 +242,6 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing import:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
