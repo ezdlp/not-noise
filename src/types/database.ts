@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   name: string;
@@ -90,11 +91,4 @@ export interface BlogPost {
       name: string;
     };
   }[];
-}
-
-export interface ImportSummary {
-  total: number;
-  success: number;
-  errors: { link: string; error: string }[];
-  unassigned: string[];
 }

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,213 +122,185 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   }
 }
 
-async function processItem(
-  item: Element,
-  supabaseAdmin: any
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const title = item.querySelector('title')?.textContent || '';
-    console.log(`Processing link: ${title}`);
-
-    const creatorEmail = item.querySelector('dc\\:creator')?.textContent;
-    if (!creatorEmail) {
-      console.log('No creator email found, skipping');
-      return { success: false, error: 'No creator email found' };
-    }
-
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', creatorEmail)
-      .single();
-
-    if (userError || !userData) {
-      console.log(`No matching user found for email: ${creatorEmail}`);
-      return { success: false, error: 'No matching user found' };
-    }
-
-    const metas = Array.from(item.querySelectorAll('wp\\:postmeta') || []);
-    let artistName = '';
-    let artworkUrl = '';
-    let platformLinksData = null;
-
-    for (const meta of metas) {
-      const key = meta.querySelector('wp\\:meta_key')?.textContent;
-      const value = meta.querySelector('wp\\:meta_value')?.textContent;
-      
-      if (key === '_links' && value) {
-        platformLinksData = value;
-      } else if (key === '_artist_name' && value) {
-        artistName = value;
-      } else if (key === '_default_image' && value) {
-        artworkUrl = value;
-      }
-    }
-
-    const { data: smartLink, error: insertError } = await supabaseAdmin
-      .from('smart_links')
-      .insert({
-        user_id: userData.id,
-        title,
-        artist_name: artistName || 'Unknown Artist',
-        artwork_url: artworkUrl || null,
-        slug: item.querySelector('wp\\:post_name')?.textContent || undefined
-      })
-      .select()
-      .single();
-
-    if (insertError || !smartLink) {
-      throw new Error(`Failed to insert smart link: ${insertError?.message}`);
-    }
-
-    if (platformLinksData) {
-      const platformLinks = parsePlatformLinks(platformLinksData);
-
-      if (platformLinks.length > 0) {
-        const platformLinksWithId = platformLinks.map(pl => ({
-          ...pl,
-          smart_link_id: smartLink.id
-        }));
-
-        const { error: platformError } = await supabaseAdmin
-          .from('platform_links')
-          .insert(platformLinksWithId);
-
-        if (platformError) {
-          throw new Error(`Failed to insert platform links: ${platformError.message}`);
-        }
-      }
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error processing item:', error);
-    return { success: false, error: error.message };
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('[Import] Starting WordPress import process');
     const formData = await req.formData();
     const file = formData.get('file');
-    const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
-      console.error('[Import] No file uploaded');
       throw new Error('No file uploaded');
     }
 
-    console.log('[Import] File received:', file.name, 'Size:', file.size);
-
-    // Read file content
     const text = await file.text();
-    if (!text || text.length === 0) {
-      console.error('[Import] Empty file content');
-      throw new Error('Empty file content');
+    console.log('Parsing XML file...');
+    const xmlDoc = parse(text);
+
+    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
+      throw new Error('Invalid XML file structure');
     }
 
-    console.log('[Import] File content length:', text.length);
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const items = xmlDoc.rss.channel.item || [];
+    console.log(`Found ${items.length} items in XML`);
 
     const results = {
-      total: 0,
+      total: items.length,
       success: 0,
       errors: [] as { link: string; error: string }[],
       unassigned: [] as string[]
     };
 
-    // Parse XML as HTML since text/xml is not supported
-    const parser = new DOMParser();
-    console.log('[Import] Attempting to parse XML content');
-    const xmlDoc = parser.parseFromString(text, "text/html");
-    
-    if (!xmlDoc) {
-      console.error('[Import] Failed to parse XML document');
-      throw new Error('Failed to parse XML document');
-    }
-
-    console.log('[Import] XML parsed successfully');
-    
-    const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => {
-      const postType = item.querySelector('wp\\:post_type');
-      console.log('[Import] Found item with post type:', postType?.textContent);
-      return postType?.textContent === 'smart-link';
-    });
-
-    console.log(`[Import] Found ${items.length} smart link items`);
-
-    if (items.length === 0) {
-      console.warn('[Import] No smart link items found in XML');
-      return new Response(
-        JSON.stringify(results),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const itemsToProcess = testMode ? items.slice(0, 10) : items;
-    console.log(`[Import] Processing ${itemsToProcess.length} items (test mode: ${testMode})`);
-
-    for (const item of itemsToProcess) {
-      results.total++;
-      const title = item.querySelector('title')?.textContent || 'Untitled';
-      console.log(`[Import] Processing item: ${title}`);
-      
-      try {
-        const result = await processItem(item, supabaseAdmin);
-        
-        if (result.success) {
-          results.success++;
-          console.log(`[Import] Successfully processed: ${title}`);
-        } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
-          results.unassigned.push(title);
-          console.log(`[Import] Unassigned: ${title} - ${result.error}`);
-        } else {
-          results.errors.push({ link: title, error: result.error || 'Unknown error' });
-          console.log(`[Import] Error processing: ${title} - ${result.error}`);
-        }
-      } catch (error) {
-        console.error('[Import] Error processing item:', error);
-        results.errors.push({ link: title, error: error.message });
-      }
-    }
-
-    console.log('[Import] Import completed:', results);
-
-    return new Response(
-      JSON.stringify(results),
-      {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') as string,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
+    for (const item of items) {
+      try {
+        const title = extractCDATAContent(item.title) || '';
+        console.log(`Processing link: ${title}`);
+
+        const creatorEmail = extractCDATAContent(item['dc:creator']);
+        if (!creatorEmail) {
+          console.log('No creator email found, skipping');
+          results.unassigned.push(title);
+          continue;
+        }
+
+        console.log(`Looking for user with email: ${creatorEmail}`);
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', creatorEmail)
+          .single();
+
+        if (userError || !userData) {
+          console.log(`No matching user found for email: ${creatorEmail}`);
+          results.unassigned.push(title);
+          continue;
+        }
+
+        const metas = item['wp:postmeta'] || [];
+        let artistName = '';
+        let artworkUrl = '';
+        let platformLinksData = null;
+
+        for (const meta of metas) {
+          const key = extractCDATAContent(meta['wp:meta_key']);
+          const value = extractCDATAContent(meta['wp:meta_value']);
+
+          if (key === '_links' && value) {
+            console.log('Found platform links data:', value);
+            platformLinksData = value;
+          } else if (key === '_artist_name' && value) {
+            artistName = value;
+          } else if (key === '_default_image' && value) {
+            artworkUrl = value;
+          }
+        }
+
+        // Create smart link using admin client and get the inserted record
+        const { data: smartLink, error: insertError } = await supabaseAdmin
+          .from('smart_links')
+          .insert({
+            user_id: userData.id,
+            title,
+            artist_name: artistName || 'Unknown Artist',
+            artwork_url: artworkUrl || null,
+            slug: extractCDATAContent(item['wp:post_name']) || undefined
+          })
+          .select()
+          .single();
+
+        if (insertError || !smartLink) {
+          throw new Error(`Failed to insert smart link: ${insertError?.message}`);
+        }
+
+        console.log('Successfully created smart link:', smartLink);
+
+        if (platformLinksData) {
+          console.log('Processing platform links data:', platformLinksData);
+          const platformLinks = parsePlatformLinks(platformLinksData);
+          console.log('Parsed platform links:', platformLinks);
+
+          if (platformLinks.length > 0) {
+            const platformLinksWithId = platformLinks.map(pl => ({
+              ...pl,
+              smart_link_id: smartLink.id
+            }));
+
+            console.log('Attempting to insert platform links:', platformLinksWithId);
+
+            const { error: platformError } = await supabaseAdmin
+              .from('platform_links')
+              .insert(platformLinksWithId);
+
+            if (platformError) {
+              console.error('Error inserting platform links:', platformError);
+              throw new Error(`Failed to insert platform links: ${platformError.message}`);
+            }
+            console.log('Successfully inserted platform links');
+          } else {
+            console.log('No valid platform links found to insert');
+          }
+        }
+
+        results.success++;
+        console.log(`Successfully processed item: ${title}`);
+
+      } catch (error) {
+        console.error('Error processing item:', error);
+        results.errors.push({
+          link: extractCDATAContent(item.title) || 'Unknown',
+          error: error.message
+        });
+      }
+    }
+
+    return new Response(JSON.stringify(results), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    console.error('[Import] Error processing WordPress import:', error);
+    console.error('Error processing import:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to process WordPress import', 
-        details: error.message,
-        stack: error.stack,
-        type: error.constructor.name
-      }),
-      {
+      JSON.stringify({ error: error.message }),
+      { 
         status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
 });
+
+function extractCDATAContent(value: any): string {
+  if (!value) return '';
+  
+  if (typeof value === 'string') return value;
+  
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    const firstItem = value[0];
+    
+    if (typeof firstItem === 'object') {
+      if (firstItem['#cdata']) return firstItem['#cdata'];
+      if (firstItem['#text']) return firstItem['#text'];
+      return firstItem;
+    }
+    
+    return firstItem;
+  }
+  
+  if (typeof value === 'object') {
+    if (value['#cdata']) return value['#cdata'];
+    if (value['#text']) return value['#text'];
+    if (value.toString) return value.toString();
+  }
+  
+  return '';
+}
+
