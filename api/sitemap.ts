@@ -25,7 +25,10 @@ export default async function handler(request: Request) {
     return new Response(xml, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=1800' // Cache for 30 minutes
+        'Cache-Control': 'public, max-age=1800', // Cache for 30 minutes
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "default-src 'none'; style-src 'none'; script-src 'none'",
       },
     });
   } catch (error) {
@@ -41,9 +44,13 @@ export default async function handler(request: Request) {
       {
         headers: {
           'Content-Type': 'application/xml',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+          'Content-Security-Policy': "default-src 'none'; style-src 'none'; script-src 'none'",
         },
         status: 500
       }
     );
   }
 }
+
