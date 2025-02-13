@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
@@ -35,36 +34,11 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     try {
       console.log(`Processing reset email for user: ${user.email}`);
       
-      // First, make sure the user's email is confirmed
-      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        user.id,
-        { email_confirm: true }
-      );
-
-      if (updateError) {
-        console.error(`Error confirming email for ${user.email}:`, updateError);
-        results.push({ email: user.email, success: false, error: updateError.message });
-        
-        await supabaseAdmin
-          .from('user_migration_status')
-          .upsert({
-            user_id: user.id,
-            email: user.email,
-            status: 'failed',
-            error_message: updateError.message,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
-          
-        continue;
-      }
-
-      // Use inviteUserByEmail to trigger the actual email sending
-      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(user.email, {
-        redirectTo: 'https://soundraiser.io/login'
-      });
+      // Send password reset email directly
+      const { data, error } = await supabaseAdmin.auth.admin.sendPasswordResetEmail(user.email);
 
       if (error) {
-        console.error(`Error sending invite email to ${user.email}:`, error);
+        console.error(`Error sending reset email to ${user.email}:`, error);
         results.push({ email: user.email, success: false, error: error.message });
         
         await supabaseAdmin
@@ -77,7 +51,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
       } else {
-        console.log(`Successfully sent invite email to ${user.email}`);
+        console.log(`Successfully sent reset email to ${user.email}`);
         results.push({ email: user.email, success: true });
         
         await supabaseAdmin
