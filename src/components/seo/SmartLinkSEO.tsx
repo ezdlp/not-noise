@@ -43,14 +43,45 @@ export function SmartLinkSEO({
     }
   }));
 
+  // Enhanced MusicRecording schema
+  const musicSchema = {
+    "@context": "https://schema.org",
+    "@type": "MusicRecording",
+    "name": title,
+    "byArtist": {
+      "@type": "MusicGroup",
+      "name": artistName,
+      "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
+    },
+    "image": artworkUrl,
+    ...(releaseDate && { "datePublished": releaseDate }),
+    "potentialAction": actionButtons,
+    "url": canonical,
+    "offers": streamingPlatforms.map(platform => ({
+      "@type": "Offer",
+      "url": platform.url,
+      "availability": "https://schema.org/InStock",
+      "category": "stream"
+    })),
+    "publisher": {
+      "@type": "Organization",
+      "name": "Soundraiser",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
+      }
+    }
+  };
+
   return (
     <Helmet>
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
       <link rel="canonical" href={canonical} />
-
-      {/* Open Graph Music */}
+      
+      {/* Technical SEO */}
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
@@ -62,41 +93,19 @@ export function SmartLinkSEO({
         <meta key={index} property="music:musician" content={platform.url} />
       ))}
 
+      {/* Image dimensions for social media */}
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={artworkUrl} />
 
-      {/* Music-specific Schema.org structured data */}
+      {/* Schema.org structured data */}
       <script type="application/ld+json">
-        {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "MusicRecording",
-          "name": title,
-          "byArtist": {
-            "@type": "MusicGroup",
-            "name": artistName
-          },
-          "image": artworkUrl,
-          ...(releaseDate && { "datePublished": releaseDate }),
-          "potentialAction": actionButtons,
-          "url": canonical,
-          "offers": streamingPlatforms.map(platform => ({
-            "@type": "Offer",
-            "url": platform.url,
-            "availability": "https://schema.org/InStock",
-            "category": "stream"
-          })),
-          "publisher": {
-            "@type": "Organization",
-            "name": "Soundraiser",
-            "logo": {
-              "@type": "ImageObject",
-              "url": `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
-            }
-          }
-        })}
+        {JSON.stringify(musicSchema)}
       </script>
     </Helmet>
   );
