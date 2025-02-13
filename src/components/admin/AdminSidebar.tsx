@@ -7,7 +7,8 @@ import {
   ImageIcon,
   DownloadIcon,
   Link2Icon,
-  BarChart2Icon
+  BarChart2Icon,
+  RefreshCwIcon,
 } from "lucide-react";
 
 const menuItems = [
@@ -25,6 +26,13 @@ const menuItems = [
     title: "Users",
     icon: UsersIcon,
     href: "/control-room/users",
+    subItems: [
+      {
+        title: "User Migration",
+        icon: RefreshCwIcon,
+        href: "/control-room/users/migration",
+      }
+    ]
   },
   {
     title: "Smart Links",
@@ -59,19 +67,45 @@ export function AdminSidebar() {
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              
               return (
-                <Link
-                  key={item.title}
-                  to={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
-                    isActive 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:text-primary"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
-                </Link>
+                <div key={item.title}>
+                  <Link
+                    to={item.href}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
+                      isActive 
+                        ? "bg-accent text-accent-foreground" 
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                  
+                  {hasSubItems && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.subItems.map((subItem) => {
+                        const isSubItemActive = location.pathname === subItem.href;
+                        
+                        return (
+                          <Link
+                            key={subItem.title}
+                            to={subItem.href}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
+                              isSubItemActive 
+                                ? "bg-accent text-accent-foreground" 
+                                : "text-muted-foreground hover:text-primary"
+                            }`}
+                          >
+                            <subItem.icon className="h-4 w-4" />
+                            <span>{subItem.title}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
