@@ -1,6 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SAXParser } from "https://deno.land/x/xmlp@v0.3.0/mod.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,14 +124,14 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 }
 
 async function processItem(
-  item: Record<string, any>,
+  item: Element,
   supabaseAdmin: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const title = item.title || '';
+    const title = item.querySelector('title')?.textContent || '';
     console.log(`Processing link: ${title}`);
 
-    const creatorEmail = item['dc:creator'];
+    const creatorEmail = item.querySelector('dc\\:creator')?.textContent;
     if (!creatorEmail) {
       console.log('No creator email found, skipping');
       return { success: false, error: 'No creator email found' };
@@ -147,18 +148,21 @@ async function processItem(
       return { success: false, error: 'No matching user found' };
     }
 
-    const metas = item['wp:postmeta'] || [];
+    const metas = Array.from(item.querySelectorAll('wp\\:postmeta') || []);
     let artistName = '';
     let artworkUrl = '';
     let platformLinksData = null;
 
     for (const meta of metas) {
-      if (meta['wp:meta_key'] === '_links' && meta['wp:meta_value']) {
-        platformLinksData = meta['wp:meta_value'];
-      } else if (meta['wp:meta_key'] === '_artist_name' && meta['wp:meta_value']) {
-        artistName = meta['wp:meta_value'];
-      } else if (meta['wp:meta_key'] === '_default_image' && meta['wp:meta_value']) {
-        artworkUrl = meta['wp:meta_value'];
+      const key = meta.querySelector('wp\\:meta_key')?.textContent;
+      const value = meta.querySelector('wp\\:meta_value')?.textContent;
+      
+      if (key === '_links' && value) {
+        platformLinksData = value;
+      } else if (key === '_artist_name' && value) {
+        artistName = value;
+      } else if (key === '_default_image' && value) {
+        artworkUrl = value;
       }
     }
 
@@ -169,7 +173,7 @@ async function processItem(
         title,
         artist_name: artistName || 'Unknown Artist',
         artwork_url: artworkUrl || null,
-        slug: item['wp:post_name'] || undefined
+        slug: item.querySelector('wp\\:post_name')?.textContent || undefined
       })
       .select()
       .single();
@@ -210,13 +214,31 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[Import] Starting WordPress import process');
     const formData = await req.formData();
     const file = formData.get('file');
     const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
+      console.error('[Import] No file uploaded');
       throw new Error('No file uploaded');
     }
+
+    console.log('[Import] File received:', file.name, 'Size:', file.size);
+
+    // Read file content
+    const text = await file.text();
+    if (!text || text.length === 0) {
+      console.error('[Import] Empty file content');
+      throw new Error('Empty file content');
+    }
+
+    console.log('[Import] File content length:', text.length);
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const results = {
       total: 0,
@@ -225,90 +247,83 @@ serve(async (req) => {
       unassigned: [] as string[]
     };
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') as string,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
+    // Parse XML with DOM parser
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(text, "text/xml");
+    
+    if (!xmlDoc) {
+      console.error('[Import] Failed to parse XML document');
+      throw new Error('Failed to parse XML document');
+    }
+
+    console.log('[Import] XML parsed successfully');
+    
+    const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => 
+      item.querySelector('wp\\:post_type')?.textContent === 'smart-link'
     );
 
-    const text = await file.text();
-    const parser = new SAXParser();
-    let currentItem: Record<string, any> | null = null;
-    let currentTag = '';
-    let currentMetaKey = '';
-    let itemCount = 0;
-    let processingItem = false;
-    
-    parser.on('startElement', async (name, attrs) => {
-      currentTag = name;
-      if (name === 'item') {
-        processingItem = true;
-        currentItem = {};
-      }
-    });
+    console.log(`[Import] Found ${items.length} smart link items`);
 
-    parser.on('endElement', async (name) => {
-      if (name === 'item' && currentItem) {
-        itemCount++;
-        
-        if (!testMode || itemCount <= 10) {
-          const result = await processItem(currentItem, supabaseAdmin);
-          results.total++;
-          
-          if (result.success) {
-            results.success++;
-          } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
-            results.unassigned.push(currentItem.title || 'Unknown');
-          } else {
-            results.errors.push({ 
-              link: currentItem.title || 'Unknown', 
-              error: result.error || 'Unknown error' 
-            });
-          }
-          
-          // Add delay between items
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        currentItem = null;
-        processingItem = false;
-      }
-      currentTag = '';
-    });
+    if (items.length === 0) {
+      console.warn('[Import] No smart link items found in XML');
+      return new Response(
+        JSON.stringify(results),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    parser.on('text', (text) => {
-      if (processingItem && currentItem && text.trim()) {
-        if (currentTag.startsWith('wp:meta')) {
-          if (currentTag === 'wp:meta_key') {
-            currentMetaKey = text;
-          } else if (currentTag === 'wp:meta_value' && currentMetaKey) {
-            if (!currentItem['wp:postmeta']) {
-              currentItem['wp:postmeta'] = [];
-            }
-            currentItem['wp:postmeta'].push({
-              'wp:meta_key': currentMetaKey,
-              'wp:meta_value': text
-            });
-          }
+    const itemsToProcess = testMode ? items.slice(0, 10) : items;
+    console.log(`[Import] Processing ${itemsToProcess.length} items (test mode: ${testMode})`);
+
+    for (const item of itemsToProcess) {
+      results.total++;
+      const title = item.querySelector('title')?.textContent || 'Untitled';
+      
+      try {
+        const result = await processItem(item, supabaseAdmin);
+        
+        if (result.success) {
+          results.success++;
+        } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
+          results.unassigned.push(title);
         } else {
-          currentItem[currentTag] = text;
+          results.errors.push({ link: title, error: result.error || 'Unknown error' });
         }
+      } catch (error) {
+        console.error('[Import] Error processing item:', error);
+        results.errors.push({ link: title, error: error.message });
       }
-    });
+    }
 
-    await parser.parse(text);
+    console.log('[Import] Import completed:', results);
 
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify(results),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
   } catch (error) {
-    console.error('Error processing import:', error);
+    console.error('[Import] Error processing WordPress import:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
+      JSON.stringify({ 
+        error: 'Failed to process WordPress import', 
+        details: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      }),
+      {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
     );
   }
 });
+
