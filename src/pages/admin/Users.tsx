@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Pencil, Trash2, Search, Users } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search, Users, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { toast } from "sonner";
 import {
   Select,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Profile } from "@/types/database";
 import { Card } from "@/components/ui/card";
+import { format } from "date-fns";
 
 export default function UsersPage() {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ export default function UsersPage() {
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const { data: totalCount } = useQuery({
     queryKey: ["adminTotalUsers"],
@@ -69,7 +72,7 @@ export default function UsersPage() {
   });
 
   const { data: users, isLoading, error } = useQuery({
-    queryKey: ["adminUsers", pageSize, currentPage, searchQuery],
+    queryKey: ["adminUsers", pageSize, currentPage, searchQuery, sortDirection],
     queryFn: async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -105,6 +108,7 @@ export default function UsersPage() {
               user_id
             )
           `)
+          .order('created_at', { ascending: sortDirection === 'asc' })
           .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
         if (searchQuery) {
@@ -151,6 +155,16 @@ export default function UsersPage() {
     setSelectedUser(null);
   };
 
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchValue);
+    setCurrentPage(0);
+  };
+
+  const toggleSort = () => {
+    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
   if (isLoading) return <div>Loading...</div>;
 
   if (error) {
@@ -184,15 +198,15 @@ export default function UsersPage() {
       </Card>
 
       <div className="flex justify-between items-center mb-4">
-        <div className="relative w-72">
+        <form onSubmit={handleSearch} className="relative w-72">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
             className="pl-8 bg-neutral-light border-neutral focus:border-primary-medium transition-colors"
           />
-        </div>
+        </form>
         <Select
           value={pageSize.toString()}
           onValueChange={(value) => {
@@ -216,11 +230,19 @@ export default function UsersPage() {
           <TableHeader>
             <TableRow className="bg-neutral-light hover:bg-neutral-light">
               <TableHead className="font-heading">Name</TableHead>
+              <TableHead className="font-heading">Email</TableHead>
               <TableHead className="font-heading">Artist Name</TableHead>
               <TableHead className="font-heading">Genre</TableHead>
               <TableHead className="font-heading">Country</TableHead>
               <TableHead className="font-heading">Role</TableHead>
               <TableHead className="font-heading">Smart Links</TableHead>
+              <TableHead 
+                className="font-heading cursor-pointer"
+                onClick={toggleSort}
+              >
+                Created At
+                <ArrowUpDown className="ml-2 h-4 w-4 inline-block" />
+              </TableHead>
               <TableHead className="font-heading">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -228,6 +250,7 @@ export default function UsersPage() {
             {users?.map((user) => (
               <TableRow key={user.id} className="hover:bg-neutral-light transition-colors">
                 <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
                 <TableCell>{user.artist_name}</TableCell>
                 <TableCell>{user.music_genre}</TableCell>
                 <TableCell>{user.country}</TableCell>
@@ -240,6 +263,9 @@ export default function UsersPage() {
                   >
                     {user.smart_links?.length || 0} links
                   </Button>
+                </TableCell>
+                <TableCell>
+                  {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
                 </TableCell>
                 <TableCell className="space-x-2">
                   <Dialog>
