@@ -854,6 +854,38 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_update_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          new_email: string | null
+          old_email: string | null
+          profile_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          new_email?: string | null
+          old_email?: string | null
+          profile_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          new_email?: string | null
+          old_email?: string | null
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_update_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           artist_name: string
