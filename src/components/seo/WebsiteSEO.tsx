@@ -1,6 +1,6 @@
-
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
+import { useLocation } from "react-router-dom";
 
 // Define FAQ type for better type safety
 type FAQItem = {
@@ -9,6 +9,36 @@ type FAQItem = {
 };
 
 export function WebsiteSEO() {
+  const location = useLocation();
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+
+  // Generate breadcrumb items based on current path
+  const breadcrumbItems = pathSegments.map((segment, index) => {
+    const path = `/${pathSegments.slice(0, index + 1).join('/')}`;
+    return {
+      "@type": "ListItem",
+      "position": index + 1,
+      "name": segment.charAt(0).toUpperCase() + segment.slice(1),
+      "item": `${DEFAULT_SEO_CONFIG.siteUrl}${path}`
+    };
+  });
+
+  // Add home page as first item if we're not on home page
+  if (pathSegments.length > 0) {
+    breadcrumbItems.unshift({
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": DEFAULT_SEO_CONFIG.siteUrl
+    });
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": breadcrumbItems
+  };
+
   // FAQ data from our FAQ component
   const faqSchema = {
     "@context": "https://schema.org",
@@ -137,6 +167,9 @@ export function WebsiteSEO() {
       </script>
       <script type="application/ld+json">
         {JSON.stringify(productSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(breadcrumbSchema)}
       </script>
     </Helmet>
   );
