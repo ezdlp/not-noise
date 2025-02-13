@@ -1,7 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { SAXParser } from "https://deno.land/x/xmlp@v0.3.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,42 +122,15 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   }
 }
 
-function extractCDATAContent(value: any): string {
-  if (!value) return '';
-  
-  if (typeof value === 'string') return value;
-  
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '';
-    const firstItem = value[0];
-    
-    if (typeof firstItem === 'object') {
-      if (firstItem['#cdata']) return firstItem['#cdata'];
-      if (firstItem['#text']) return firstItem['#text'];
-      return firstItem;
-    }
-    
-    return firstItem;
-  }
-  
-  if (typeof value === 'object') {
-    if (value['#cdata']) return value['#cdata'];
-    if (value['#text']) return value['#text'];
-    if (value.toString) return value.toString();
-  }
-  
-  return '';
-}
-
 async function processItem(
-  item: any,
+  item: Record<string, any>,
   supabaseAdmin: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const title = extractCDATAContent(item.title) || '';
+    const title = item.title || '';
     console.log(`Processing link: ${title}`);
 
-    const creatorEmail = extractCDATAContent(item['dc:creator']);
+    const creatorEmail = item['dc:creator'];
     if (!creatorEmail) {
       console.log('No creator email found, skipping');
       return { success: false, error: 'No creator email found' };
@@ -181,15 +153,12 @@ async function processItem(
     let platformLinksData = null;
 
     for (const meta of metas) {
-      const key = extractCDATAContent(meta['wp:meta_key']);
-      const value = extractCDATAContent(meta['wp:meta_value']);
-
-      if (key === '_links' && value) {
-        platformLinksData = value;
-      } else if (key === '_artist_name' && value) {
-        artistName = value;
-      } else if (key === '_default_image' && value) {
-        artworkUrl = value;
+      if (meta['wp:meta_key'] === '_links' && meta['wp:meta_value']) {
+        platformLinksData = meta['wp:meta_value'];
+      } else if (meta['wp:meta_key'] === '_artist_name' && meta['wp:meta_value']) {
+        artistName = meta['wp:meta_value'];
+      } else if (meta['wp:meta_key'] === '_default_image' && meta['wp:meta_value']) {
+        artworkUrl = meta['wp:meta_value'];
       }
     }
 
@@ -200,7 +169,7 @@ async function processItem(
         title,
         artist_name: artistName || 'Unknown Artist',
         artwork_url: artworkUrl || null,
-        slug: extractCDATAContent(item['wp:post_name']) || undefined
+        slug: item['wp:post_name'] || undefined
       })
       .select()
       .single();
@@ -249,25 +218,8 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    const text = await file.text();
-    console.log('Parsing XML file...');
-    const xmlDoc = parse(text);
-
-    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
-      throw new Error('Invalid XML file structure');
-    }
-
-    let items = xmlDoc.rss.channel.item || [];
-    console.log(`Found ${items.length} items in XML`);
-
-    // In test mode, only process first 10 items
-    if (testMode) {
-      items = items.slice(0, 10);
-      console.log('Test mode: processing first 10 items only');
-    }
-
     const results = {
-      total: items.length,
+      total: 0,
       success: 0,
       errors: [] as { link: string; error: string }[],
       unassigned: [] as string[]
@@ -278,53 +230,72 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    // Reduce batch size to 5 and implement more aggressive memory management
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-      const batch = items.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(items.length / BATCH_SIZE)}`);
-      
-      // Process items sequentially within each batch
-      for (let j = 0; j < batch.length; j++) {
-        const item = batch[j];
-        const result = await processItem(item, supabaseAdmin);
-        const title = extractCDATAContent(item.title) || 'Unknown';
-        
-        if (result.success) {
-          results.success++;
-        } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
-          results.unassigned.push(title);
-        } else {
-          results.errors.push({ link: title, error: result.error || 'Unknown error' });
-        }
-        
-        // Clear item reference to help garbage collection
-        batch[j] = null;
-        
-        // Add a small delay between individual items
-        await new Promise(resolve => setTimeout(resolve, 200));
+    const text = await file.text();
+    const parser = new SAXParser();
+    let currentItem: Record<string, any> | null = null;
+    let currentTag = '';
+    let currentMetaKey = '';
+    let itemCount = 0;
+    let processingItem = false;
+    
+    parser.on('startElement', async (name, attrs) => {
+      currentTag = name;
+      if (name === 'item') {
+        processingItem = true;
+        currentItem = {};
       }
-      
-      // Clear batch array references
-      batch.length = 0;
-      
-      // Longer delay between batches
-      if (i + BATCH_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Try to force garbage collection
-        try {
-          if (typeof Deno.heap === 'object' && Deno.heap.collections) {
-            Deno.heap.collections();
-          }
-        } catch (e) {
-          console.log('GC not available');
-        }
-      }
-    }
+    });
 
-    // Clear main items array
-    items = [];
+    parser.on('endElement', async (name) => {
+      if (name === 'item' && currentItem) {
+        itemCount++;
+        
+        if (!testMode || itemCount <= 10) {
+          const result = await processItem(currentItem, supabaseAdmin);
+          results.total++;
+          
+          if (result.success) {
+            results.success++;
+          } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
+            results.unassigned.push(currentItem.title || 'Unknown');
+          } else {
+            results.errors.push({ 
+              link: currentItem.title || 'Unknown', 
+              error: result.error || 'Unknown error' 
+            });
+          }
+          
+          // Add delay between items
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        currentItem = null;
+        processingItem = false;
+      }
+      currentTag = '';
+    });
+
+    parser.on('text', (text) => {
+      if (processingItem && currentItem && text.trim()) {
+        if (currentTag.startsWith('wp:meta')) {
+          if (currentTag === 'wp:meta_key') {
+            currentMetaKey = text;
+          } else if (currentTag === 'wp:meta_value' && currentMetaKey) {
+            if (!currentItem['wp:postmeta']) {
+              currentItem['wp:postmeta'] = [];
+            }
+            currentItem['wp:postmeta'].push({
+              'wp:meta_key': currentMetaKey,
+              'wp:meta_value': text
+            });
+          }
+        } else {
+          currentItem[currentTag] = text;
+        }
+      }
+    });
+
+    await parser.parse(text);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
