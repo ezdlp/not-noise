@@ -137,23 +137,31 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination, using a subquery to exclude those who already received emails
+    // Get users with pagination, using a LEFT JOIN to check email status
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
-      .select('id, email', { count: 'exact' })
+      .select(`
+        id,
+        email,
+        user_migration_status!left (
+          status
+        )
+      `, { count: 'exact' })
       .not('email', 'is', null)
-      .not('id', 'in', (sq) => 
-        sq.from('user_migration_status')
-          .select('user_id')
-          .eq('status', 'email_sent')
-      )
+      .or('user_migration_status.status.is.null,user_migration_status.status.neq.email_sent')
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Error fetching users: ${fetchError.message}`);
     }
 
-    if (!users || users.length === 0) {
+    // Clean up the user data to only include id and email
+    const cleanUsers = users?.map(user => ({
+      id: user.id,
+      email: user.email
+    })) || [];
+
+    if (!cleanUsers || cleanUsers.length === 0) {
       return new Response(
         JSON.stringify({ 
           message: "No more users to process",
@@ -166,10 +174,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Processing users ${offset + 1} to ${offset + users.length} of ${count}`);
+    console.log(`Processing users ${offset + 1} to ${offset + cleanUsers.length} of ${count}`);
 
     // Initialize migration status for this batch
-    const migrationStatusData = users.map(user => ({
+    const migrationStatusData = cleanUsers.map(user => ({
       user_id: user.id,
       email: user.email,
       status: 'pending',
@@ -180,7 +188,7 @@ const handler = async (req: Request): Promise<Response> => {
       .upsert(migrationStatusData, { onConflict: 'user_id' });
 
     // Process the current batch
-    const results = await processUserBatch(users);
+    const results = await processUserBatch(cleanUsers);
 
     // Calculate summary
     const successful = results.filter(r => r.success).length;
@@ -197,11 +205,11 @@ const handler = async (req: Request): Promise<Response> => {
           skipped
         },
         progress: {
-          processed: offset + users.length,
+          processed: offset + cleanUsers.length,
           total: count,
-          complete: offset + users.length >= count,
+          complete: offset + cleanUsers.length >= count,
         },
-        nextOffset: offset + users.length,
+        nextOffset: offset + cleanUsers.length,
         results
       }),
       {
