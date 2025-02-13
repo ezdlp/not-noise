@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,11 +25,77 @@ interface ImportSummary {
   unassigned: string[];
 }
 
+interface ChunkProgress {
+  current: number;
+  total: number;
+}
+
+async function splitXMLFile(file: File, chunkSize: number = 400000) { // 400KB chunks
+  const text = await file.text();
+  const chunks: string[] = [];
+  
+  // Find all <item> elements
+  const itemRegex = /<item[\s\S]*?<\/item>/g;
+  const items = text.match(itemRegex) || [];
+  
+  let currentChunk = '<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n<channel>';
+  let currentSize = currentChunk.length;
+  
+  for (const item of items) {
+    if (currentSize + item.length > chunkSize) {
+      // Close the current chunk
+      currentChunk += '\n</channel>\n</rss>';
+      chunks.push(currentChunk);
+      
+      // Start a new chunk
+      currentChunk = '<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n<channel>';
+      currentSize = currentChunk.length;
+    }
+    
+    currentChunk += '\n' + item;
+    currentSize += item.length + 1;
+  }
+  
+  // Add the last chunk if it has content
+  if (currentSize > 0) {
+    currentChunk += '\n</channel>\n</rss>';
+    chunks.push(currentChunk);
+  }
+  
+  return chunks;
+}
+
 export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [testMode, setTestMode] = useState(true);
+  const [chunkProgress, setChunkProgress] = useState<ChunkProgress>({ current: 0, total: 0 });
+
+  const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number): Promise<ImportSummary> => {
+    const formData = new FormData();
+    const blob = new Blob([chunk], { type: 'text/xml' });
+    const file = new File([blob], 'chunk.xml', { type: 'text/xml' });
+    
+    formData.append('file', file);
+    formData.append('testMode', testMode.toString());
+
+    const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+      body: formData,
+    });
+
+    if (error) throw error;
+
+    setChunkProgress({ current: chunkIndex + 1, total: totalChunks });
+    setProgress(((chunkIndex + 1) / totalChunks) * 100);
+
+    return {
+      total: data?.total ?? 0,
+      success: data?.success ?? 0,
+      errors: Array.isArray(data?.errors) ? data.errors : [],
+      unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+    };
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -36,41 +103,54 @@ export function ImportLinks() {
 
     try {
       setIsImporting(true);
-      setProgress(10);
+      setProgress(0);
+      setSummary(null);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('testMode', testMode.toString());
+      // Split the file into chunks
+      const chunks = await splitXMLFile(file);
+      setChunkProgress({ current: 0, total: chunks.length });
+      
+      console.log(`File split into ${chunks.length} chunks`);
 
-      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-        body: formData,
-      });
+      let totalProcessed = 0;
+      let totalSuccess = 0;
+      let totalErrors: { link: string; error: string }[] = [];
+      let totalUnassigned: string[] = [];
 
-      if (error) throw error;
+      // Process each chunk sequentially
+      for (let i = 0; i < chunks.length; i++) {
+        const result = await processChunk(chunks[i], i, chunks.length);
+        
+        totalProcessed += result.total;
+        totalSuccess += result.success;
+        totalErrors = [...totalErrors, ...result.errors];
+        totalUnassigned = [...totalUnassigned, ...result.unassigned];
 
-      setProgress(100);
+        // Update progress
+        setProgress(((i + 1) / chunks.length) * 100);
+      }
 
-      // Ensure data has the expected structure with default values
-      const processedData: ImportSummary = {
-        total: data?.total ?? 0,
-        success: data?.success ?? 0,
-        errors: Array.isArray(data?.errors) ? data.errors : [],
-        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+      const finalSummary: ImportSummary = {
+        total: totalProcessed,
+        success: totalSuccess,
+        errors: totalErrors,
+        unassigned: totalUnassigned
       };
 
-      setSummary(processedData);
+      setSummary(finalSummary);
 
-      if (processedData.success > 0) {
-        toast.success(`Successfully imported ${processedData.success} smart links`);
+      if (totalSuccess > 0) {
+        toast.success(`Successfully imported ${totalSuccess} smart links`);
       }
 
-      if (processedData.errors.length > 0) {
-        toast.error(`Failed to import ${processedData.errors.length} smart links`);
+      if (totalErrors.length > 0) {
+        toast.error(`Failed to import ${totalErrors.length} smart links`);
       }
 
-      if (processedData.unassigned.length > 0) {
-        toast.warning(`${processedData.unassigned.length} smart links were unassigned`);
+      if (totalUnassigned.length > 0) {
+        toast.warning(`${totalUnassigned.length} smart links were unassigned`);
       }
+
     } catch (error) {
       console.error("Error importing smart links:", error);
       toast.error("Failed to import smart links");
@@ -110,6 +190,11 @@ export function ImportLinks() {
           <Progress value={progress} className="w-[300px]" />
           <p className="text-sm text-muted-foreground">
             Importing smart links... {Math.round(progress)}%
+            {chunkProgress.total > 1 && (
+              <span className="ml-2">
+                (Processing chunk {chunkProgress.current} of {chunkProgress.total})
+              </span>
+            )}
           </p>
         </div>
       )}
