@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,21 +147,24 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     }
 
     try {
-      // Check if user exists using the new Edge Function
-      const { data, error } = await supabase.functions.invoke('check-existing-users', {
-        body: { emails: [email] }
+      // Check if user exists using the Edge Function
+      const { data: checkData, error: checkError } = await supabase.functions.invoke('check-existing-users', {
+        body: { 
+          action: 'check',
+          userData: { emails: [email] }
+        }
       });
 
-      if (error) {
-        console.error("Error checking existing user:", error);
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
         stats.errors.push({
           row: index + 1,
-          error: `Error checking existing user: ${error.message}`,
+          error: `Error checking existing user: ${checkError.message}`,
         });
         return false;
       }
 
-      if (data.results[0].exists) {
+      if (checkData.results[0].exists) {
         stats.warnings.push({
           row: index + 1,
           warning: `User with email ${email} already exists, skipping`,
@@ -176,8 +178,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             const userData = {
               email: email,
               password: crypto.randomUUID(),
-              email_confirm: true,
-              user_metadata: {
+              metadata: {
                 name: user[fieldMapping.name]?.trim() || "-",
                 artist_name: user[fieldMapping.artistName]?.trim() || "-",
                 music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
@@ -186,10 +187,15 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
             };
 
             console.log(`Creating user: ${email}`);
-            const { data: authData, error: authError } = await supabase.auth.admin.createUser(userData);
+            const { data: createData, error: createError } = await supabase.functions.invoke('check-existing-users', {
+              body: { 
+                action: 'create',
+                userData
+              }
+            });
 
-            if (authError) {
-              if (authError.status === 429) {
+            if (createError) {
+              if (createError.status === 429) {
                 console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms... (${retries} retries left)`);
                 stats.retried++;
                 await delay(currentDelay);
@@ -197,21 +203,11 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
                 retries--;
                 continue;
               }
-
-              throw authError;
+              throw createError;
             }
 
-            if (authData.user) {
+            if (createData.user) {
               console.log(`Successfully created user: ${email}`);
-              const { error: roleError } = await supabase
-                .from("user_roles")
-                .insert({
-                  user_id: authData.user.id,
-                  role: "user",
-                });
-
-              if (roleError) throw roleError;
-
               queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
 
               const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
@@ -222,7 +218,7 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           processedEmails.add(email);
           return true;
         } catch (error) {
-          if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
+          if (retries === 1 || error.status !== 429) {
             console.error(`Error importing user ${email}:`, error);
             stats.errors.push({
               row: index + 1,
