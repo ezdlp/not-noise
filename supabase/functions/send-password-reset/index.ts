@@ -57,19 +57,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
   
   for (const user of users) {
     try {
-      // Check if user already has a successful email sent
-      const { data: statusData } = await supabaseAdmin
-        .from('user_migration_status')
-        .select('status')
-        .eq('user_id', user.id)
-        .single();
-
-      if (statusData?.status === 'email_sent') {
-        console.log(`Skipping ${user.email} - reset email already sent successfully`);
-        results.push({ email: user.email, success: true, skipped: true });
-        continue;
-      }
-
       console.log(`Processing reset email for user: ${user.email}`);
       
       const result = await sendPasswordResetWithRetry(user);
@@ -108,16 +95,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
       results.push({ email: user.email, success: false, error: error.message });
-      
-      await supabaseAdmin
-        .from('user_migration_status')
-        .upsert({
-          user_id: user.id,
-          email: user.email,
-          status: 'failed',
-          error_message: error.message,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
     }
   }
 
@@ -137,31 +114,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination
+    // Get users with pagination - simplified query
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
-      .select(`
-        id,
-        email,
-        user_migration_status (
-          status
-        )
-      `, { count: 'exact' })
+      .select('id, email', { count: 'exact' })
       .not('email', 'is', null)
-      .or('user_migration_status.is.null,user_migration_status.status.neq.email_sent')
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Error fetching users: ${fetchError.message}`);
     }
 
-    // Clean up the user data to only include id and email
-    const cleanUsers = users?.map(user => ({
-      id: user.id,
-      email: user.email
-    })) || [];
-
-    if (!cleanUsers || cleanUsers.length === 0) {
+    if (!users || users.length === 0) {
       return new Response(
         JSON.stringify({ 
           message: "No more users to process",
@@ -174,26 +138,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Processing users ${offset + 1} to ${offset + cleanUsers.length} of ${count}`);
-
-    // Initialize migration status for this batch
-    const migrationStatusData = cleanUsers.map(user => ({
-      user_id: user.id,
-      email: user.email,
-      status: 'pending',
-    }));
-
-    await supabaseAdmin
-      .from('user_migration_status')
-      .upsert(migrationStatusData, { onConflict: 'user_id' });
+    console.log(`Processing users ${offset + 1} to ${offset + users.length} of ${count}`);
 
     // Process the current batch
-    const results = await processUserBatch(cleanUsers);
+    const results = await processUserBatch(users);
 
     // Calculate summary
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
-    const skipped = results.filter(r => r.skipped).length;
 
     return new Response(
       JSON.stringify({
@@ -202,14 +154,13 @@ const handler = async (req: Request): Promise<Response> => {
           total: results.length,
           successful,
           failed,
-          skipped
         },
         progress: {
-          processed: offset + cleanUsers.length,
+          processed: offset + users.length,
           total: count,
-          complete: offset + cleanUsers.length >= count,
+          complete: offset + users.length >= count,
         },
-        nextOffset: offset + cleanUsers.length,
+        nextOffset: offset + users.length,
         results
       }),
       {
