@@ -28,21 +28,12 @@ export function ImportLinks() {
   const [testMode, setTestMode] = useState(true);
 
   const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number) => {
-    // Create a new Blob with the XML content
-    const blob = new Blob([chunk], { type: 'text/xml' });
-    const file = new File([blob], 'chunk.xml', { type: 'text/xml' });
-
-    // Create FormData
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('testMode', testMode.toString());
-
     try {
       const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
+        body: {
+          content: chunk,
+          testMode: testMode
+        }
       });
 
       if (error) {
@@ -63,19 +54,19 @@ export function ImportLinks() {
   };
 
   const splitXmlContent = (content: string): string[] => {
-    const itemRegex = /<item[\s\S]*?<\/item>/g;
+    const itemPattern = /(<item[\s\S]*?<\/item>)/g;
     const xmlHeader = content.substring(0, content.indexOf('<item>'));
     const xmlFooter = content.substring(content.lastIndexOf('</item>') + 7);
-    const items = content.match(itemRegex) || [];
+    
+    const items = content.match(itemPattern) || [];
+    console.log(`Found ${items.length} items to process`);
     
     const chunks: string[] = [];
     let currentChunk = '';
     
     items.forEach((item) => {
-      if ((currentChunk + item).length > MAX_CHUNK_SIZE) {
-        if (currentChunk) {
-          chunks.push(xmlHeader + currentChunk + xmlFooter);
-        }
+      if ((currentChunk + item).length > MAX_CHUNK_SIZE && currentChunk) {
+        chunks.push(xmlHeader + currentChunk + xmlFooter);
         currentChunk = item;
       } else {
         currentChunk += item;
@@ -86,6 +77,7 @@ export function ImportLinks() {
       chunks.push(xmlHeader + currentChunk + xmlFooter);
     }
     
+    console.log(`Split content into ${chunks.length} chunks`);
     return chunks;
   };
 
@@ -127,7 +119,7 @@ export function ImportLinks() {
           toast.error(`Error processing chunk ${i + 1}`);
         }
 
-        // Add delay between chunks
+        // Add delay between chunks to prevent rate limiting
         if (i < chunks.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }

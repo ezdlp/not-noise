@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -292,23 +291,13 @@ serve(async (req) => {
   try {
     console.log('[Import] Starting WordPress import process');
     
-    const formData = await req.formData();
-    const file = formData.get('file');
-    const testMode = formData.get('testMode') === 'true';
+    const { content, testMode } = await req.json();
     
-    if (!file || !(file instanceof File)) {
-      throw new Error('No file uploaded');
+    if (!content) {
+      throw new Error('No content provided');
     }
 
-    console.log('[Import] File received:', file.name, 'Size:', file.size);
-
-    // Read file content
-    const text = await file.text();
-    if (!text || text.length === 0) {
-      throw new Error('Empty file content');
-    }
-
-    console.log('[Import] File content loaded, length:', text.length);
+    console.log('[Import] Content received, length:', content.length);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -316,7 +305,7 @@ serve(async (req) => {
     );
 
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/html");
+    const xmlDoc = parser.parseFromString(content, "text/xml");
     
     if (!xmlDoc) {
       throw new Error('Failed to parse XML document');
