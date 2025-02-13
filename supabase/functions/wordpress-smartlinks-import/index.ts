@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38-alpha/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -324,7 +324,7 @@ serve(async (req) => {
     // Parse XML content
     console.log('[Import] Attempting to parse XML content');
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(content, "text/xml");
+    const xmlDoc = parser.parseFromString(content, "text/html");
     
     if (!xmlDoc) {
       console.error('[Import] Failed to parse XML document');
