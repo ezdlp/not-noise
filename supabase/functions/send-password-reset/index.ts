@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 import { Resend } from "npm:resend@2.0.0";
@@ -188,12 +189,15 @@ const handler = async (req: Request): Promise<Response> => {
       .select(`
         id,
         email,
-        user_migration_status (
+        user_migration_status!left (
           status
         )
       `, { count: 'exact' })
       .not('email', 'is', null)
-      .or('user_migration_status.is.null,user_migration_status.status.neq.email_sent')
+      .or([
+        'user_migration_status.status.is.null',
+        'user_migration_status.status.neq.email_sent'
+      ])
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
