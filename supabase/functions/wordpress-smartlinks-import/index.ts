@@ -187,16 +187,26 @@ serve(async (req) => {
         const normalizedEmail = creatorEmail.trim().toLowerCase();
         console.log(`Looking for user with email: ${normalizedEmail}`);
         
-        // Log the email lookup attempt
-        const { data: userData, error: userError } = await supabaseAdmin
+        // Get all matching profiles for the email
+        const { data: matchingProfiles, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id, email')
-          .ilike('email', normalizedEmail)
-          .single();
+          .ilike('email', normalizedEmail);
 
-        if (userError || !userData) {
+        if (userError) {
+          console.error('Database lookup error:', userError);
+          results.unassigned.push(title);
+          results.emailMatches.push({
+            email: normalizedEmail,
+            found: false,
+            title,
+            matchAttempt: `Database error: ${userError.message}`
+          });
+          continue;
+        }
+
+        if (!matchingProfiles || matchingProfiles.length === 0) {
           console.log(`No matching user found for email: ${normalizedEmail}`);
-          console.log('Database lookup error:', userError?.message || 'No match');
           
           // Log all existing emails for debugging
           const { data: allEmails } = await supabaseAdmin
@@ -211,17 +221,20 @@ serve(async (req) => {
             email: normalizedEmail,
             found: false,
             title,
-            matchAttempt: `No match found. Error: ${userError?.message || 'No matching profile'}`
+            matchAttempt: 'No matching profile found'
           });
           continue;
         }
 
-        console.log(`Found matching user with ID: ${userData.id}`);
+        // Take the first matching profile if multiple exist
+        const userData = matchingProfiles[0];
+        console.log(`Found ${matchingProfiles.length} matching profile(s), using ID: ${userData.id}`);
+        
         results.emailMatches.push({
           email: normalizedEmail,
           found: true,
           title,
-          matchAttempt: `Matched to user ID: ${userData.id}`
+          matchAttempt: `Matched to user ID: ${userData.id} (${matchingProfiles.length} matching profiles found)`
         });
 
         const metas = item['wp:postmeta'] || [];
