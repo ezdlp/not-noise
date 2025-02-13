@@ -55,72 +55,92 @@ const platformDisplayNames: Record<string, string> = {
   'audius': 'Audius'
 };
 
-function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
-  console.log('Starting platform links parsing with input:', serializedLinks);
+function unserializePhp(serializedString: string): Record<string, string> {
+  console.log('Unserializing PHP string:', serializedString);
   
   try {
-    // Extract the inner array content from the outer serialized string
-    const arrayMatch = serializedLinks.match(/^s:\d+:"(a:\d+:\{.*\})";$/);
-    if (!arrayMatch) {
-      console.error('Invalid serialized format');
-      throw new Error('Invalid serialized format');
+    // First, remove the outer string serialization wrapper
+    const arrayContent = serializedString.match(/^s:\d+:"(.*?)";$/)?.[1];
+    if (!arrayContent) {
+      console.error('Invalid serialized format - no outer string wrapper');
+      return {};
     }
 
-    const arrayContent = arrayMatch[1];
-    console.log('Extracted array content:', arrayContent);
+    // Then, remove the array length indicator
+    const arrayData = arrayContent.match(/^a:\d+:{(.+)}$/)?.[1];
+    if (!arrayData) {
+      console.error('Invalid serialized format - no array data');
+      return {};
+    }
 
-    // Split the array content into key-value pairs
-    const pairs = arrayContent.match(/s:\d+:"[^"]+";s:\d+:"[^"]*";/g) || [];
-    console.log(`Found ${pairs.length} platform pairs`);
+    const result: Record<string, string> = {};
+    const pairs = arrayData.match(/s:\d+:"([^"]+)";s:\d+:"([^"]*)";/g) || [];
 
-    const links: PlatformLink[] = [];
-
-    for (const pair of pairs) {
-      // Extract key and value from each pair
+    pairs.forEach(pair => {
       const keyMatch = pair.match(/s:\d+:"([^"]+)";/);
       const valueMatch = pair.match(/;s:\d+:"([^"]*)";/);
-
-      if (!keyMatch || !valueMatch) {
-        console.warn('Skipping invalid pair:', pair);
-        continue;
-      }
-
-      const platformKey = keyMatch[1];
-      const url = valueMatch[1];
-
-      // Skip empty URLs
-      if (!url) {
-        console.log(`Skipping ${platformKey} - empty URL`);
-        continue;
-      }
-
-      // Map to our platform conventions
-      const platformId = platformMapping[platformKey];
-      if (!platformId) {
-        console.warn(`Unknown platform type: ${platformKey}`);
-        continue;
-      }
-
-      links.push({
-        platform_id: platformId,
-        platform_name: platformDisplayNames[platformId],
-        url: url.trim()
-      });
       
-      console.log(`Added platform link:`, {
-        platform_id: platformId,
-        platform_name: platformDisplayNames[platformId],
-        url: url.trim()
-      });
+      if (keyMatch && valueMatch) {
+        const key = keyMatch[1];
+        const value = valueMatch[1];
+        if (value) { // Only add non-empty values
+          result[key] = value;
+        }
+      }
+    });
+
+    console.log('Unserialized result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error unserializing PHP string:', error);
+    return {};
+  }
+}
+
+function parsePlatformLinks(linksData: string | null): PlatformLink[] {
+  if (!linksData) {
+    console.log('No links data provided');
+    return [];
+  }
+  
+  console.log('Parsing platform links from:', linksData);
+  
+  try {
+    const linksMap = unserializePhp(linksData);
+    const links: PlatformLink[] = [];
+
+    for (const [platformKey, url] of Object.entries(linksMap)) {
+      const platformId = platformMapping[platformKey];
+      if (platformId && url) {
+        links.push({
+          platform_id: platformId,
+          platform_name: platformDisplayNames[platformId],
+          url: url.trim()
+        });
+        console.log('Added platform link:', {
+          platform_id: platformId,
+          platform_name: platformDisplayNames[platformId],
+          url: url.trim()
+        });
+      }
     }
 
-    console.log('Successfully parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
-    console.error('Input that caused error:', serializedLinks);
-    throw error;
+    return [];
   }
+}
+
+function extractCData(element: Element | null, selector: string): string {
+  if (!element) return '';
+  
+  const node = element.querySelector(selector);
+  if (!node) return '';
+  
+  // Get text content, removing CDATA wrapper if present
+  const content = node.textContent || '';
+  return content.replace(/^\s*<!\[CDATA\[(.*)\]\]>\s*$/, '$1');
 }
 
 async function processItem(
@@ -128,14 +148,16 @@ async function processItem(
   supabaseAdmin: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const title = item.querySelector('title')?.textContent || '';
-    console.log(`Processing link: ${title}`);
+    console.log('[Import] Processing item...');
+    const title = extractCData(item, 'title');
+    console.log('[Import] Title:', title);
 
-    const creatorEmail = item.querySelector('dc\\:creator')?.textContent;
+    const creatorEmail = extractCData(item, 'dc\\:creator');
     if (!creatorEmail) {
-      console.log('No creator email found, skipping');
+      console.log('[Import] No creator email found');
       return { success: false, error: 'No creator email found' };
     }
+    console.log('[Import] Creator email:', creatorEmail);
 
     const { data: userData, error: userError } = await supabaseAdmin
       .from('profiles')
@@ -144,11 +166,16 @@ async function processItem(
       .single();
 
     if (userError || !userData) {
-      console.log(`No matching user found for email: ${creatorEmail}`);
+      console.log('[Import] No matching user found for email:', creatorEmail);
       return { success: false, error: 'No matching user found' };
     }
 
-    const metas = Array.from(item.querySelectorAll('wp\\:postmeta') || []);
+    const postType = extractCData(item, 'wp\\:post_type');
+    if (postType !== 'custom_links') {
+      console.log('[Import] Not a custom link:', postType);
+      return { success: false, error: 'Not a custom link' };
+    }
+
     let artistName = '';
     let artworkUrl = '';
     let platformLinksData = null;
@@ -156,27 +183,50 @@ async function processItem(
     let metaPixelEnabled = false;
     let totalViews = 0;
     let totalClicks = 0;
+    const slug = extractCData(item, 'wp\\:post_name');
 
+    const metas = Array.from(item.querySelectorAll('wp\\:postmeta') || []);
+    
     for (const meta of metas) {
-      const key = meta.querySelector('wp\\:meta_key')?.textContent;
-      const value = meta.querySelector('wp\\:meta_value')?.textContent;
+      const key = extractCData(meta, 'wp\\:meta_key');
+      const value = extractCData(meta, 'wp\\:meta_value');
       
-      if (key === '_links' && value) {
-        platformLinksData = value;
-      } else if (key === '_artist_name' && value) {
-        artistName = value;
-      } else if (key === '_default_image' && value) {
-        artworkUrl = value;
-      } else if (key === '_fb_pixel' && value === '1') {
-        metaPixelEnabled = true;
-      } else if (key === '_fb_pixel_id' && value) {
-        metaPixelId = value;
-      } else if (key === '_link_views' && value) {
-        totalViews = parseInt(value, 10) || 0;
-      } else if (key === '_link_clicks' && value) {
-        totalClicks = parseInt(value, 10) || 0;
+      console.log('[Import] Processing meta:', { key, value });
+      
+      switch (key) {
+        case '_links':
+          platformLinksData = value;
+          break;
+        case '_artist_name':
+          artistName = value;
+          break;
+        case '_default_image':
+          artworkUrl = value;
+          break;
+        case '_fb_pixel':
+          metaPixelEnabled = value === '1';
+          break;
+        case '_fb_pixel_id':
+          metaPixelId = value;
+          break;
+        case '_link_views':
+          totalViews = parseInt(value, 10) || 0;
+          break;
+        case '_link_clicks':
+          totalClicks = parseInt(value, 10) || 0;
+          break;
       }
     }
+
+    console.log('[Import] Extracted metadata:', {
+      artistName,
+      artworkUrl,
+      metaPixelEnabled,
+      metaPixelId,
+      totalViews,
+      totalClicks,
+      slug
+    });
 
     const { data: smartLink, error: insertError } = await supabaseAdmin
       .from('smart_links')
@@ -185,7 +235,7 @@ async function processItem(
         title,
         artist_name: artistName || 'Unknown Artist',
         artwork_url: artworkUrl || null,
-        slug: item.querySelector('wp\\:post_name')?.textContent || undefined,
+        slug: slug || undefined,
         meta_pixel_id: metaPixelEnabled ? metaPixelId : null,
         wp_total_views: totalViews,
         wp_total_clicks: totalClicks
@@ -193,12 +243,20 @@ async function processItem(
       .select()
       .single();
 
-    if (insertError || !smartLink) {
-      throw new Error(`Failed to insert smart link: ${insertError?.message}`);
+    if (insertError) {
+      console.error('[Import] Failed to insert smart link:', insertError);
+      throw insertError;
     }
+
+    if (!smartLink) {
+      throw new Error('No smart link data returned after insert');
+    }
+
+    console.log('[Import] Created smart link:', smartLink.id);
 
     if (platformLinksData) {
       const platformLinks = parsePlatformLinks(platformLinksData);
+      console.log('[Import] Parsed platform links:', platformLinks);
 
       if (platformLinks.length > 0) {
         const platformLinksWithId = platformLinks.map(pl => ({
@@ -211,14 +269,17 @@ async function processItem(
           .insert(platformLinksWithId);
 
         if (platformError) {
-          throw new Error(`Failed to insert platform links: ${platformError.message}`);
+          console.error('[Import] Failed to insert platform links:', platformError);
+          throw platformError;
         }
+
+        console.log('[Import] Inserted platform links successfully');
       }
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Error processing item:', error);
+    console.error('[Import] Error processing item:', error);
     return { success: false, error: error.message };
   }
 }
@@ -230,12 +291,12 @@ serve(async (req) => {
 
   try {
     console.log('[Import] Starting WordPress import process');
+    
     const formData = await req.formData();
     const file = formData.get('file');
     const testMode = formData.get('testMode') === 'true';
     
     if (!file || !(file instanceof File)) {
-      console.error('[Import] No file uploaded');
       throw new Error('No file uploaded');
     }
 
@@ -244,16 +305,22 @@ serve(async (req) => {
     // Read file content
     const text = await file.text();
     if (!text || text.length === 0) {
-      console.error('[Import] Empty file content');
       throw new Error('Empty file content');
     }
 
-    console.log('[Import] File content length:', text.length);
+    console.log('[Import] File content loaded, length:', text.length);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(text, "text/html");
+    
+    if (!xmlDoc) {
+      throw new Error('Failed to parse XML document');
+    }
 
     const results = {
       total: 0,
@@ -262,28 +329,17 @@ serve(async (req) => {
       unassigned: [] as string[]
     };
 
-    // Parse XML as HTML since text/xml is not supported
-    const parser = new DOMParser();
-    console.log('[Import] Attempting to parse XML content');
-    const xmlDoc = parser.parseFromString(text, "text/html");
-    
-    if (!xmlDoc) {
-      console.error('[Import] Failed to parse XML document');
-      throw new Error('Failed to parse XML document');
-    }
-
-    console.log('[Import] XML parsed successfully');
-    
     const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => {
       const postType = item.querySelector('wp\\:post_type');
-      console.log('[Import] Found item with post type:', postType?.textContent);
-      return postType?.textContent === 'custom_links';  // FIXED: Changed from 'smart-link' to 'custom_links'
+      const typeName = postType?.textContent?.replace(/^\s*<!\[CDATA\[(.*)\]\]>\s*$/, '$1');
+      console.log('[Import] Found item with post type:', typeName);
+      return typeName === 'custom_links';
     });
 
-    console.log(`[Import] Found ${items.length} smart link items`);
+    console.log(`[Import] Found ${items.length} custom_links items`);
 
     if (items.length === 0) {
-      console.warn('[Import] No smart link items found in XML');
+      console.warn('[Import] No custom_links items found in XML');
       return new Response(
         JSON.stringify(results),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -295,7 +351,7 @@ serve(async (req) => {
 
     for (const item of itemsToProcess) {
       results.total++;
-      const title = item.querySelector('title')?.textContent || 'Untitled';
+      const title = extractCData(item, 'title');
       console.log(`[Import] Processing item: ${title}`);
       
       try {
