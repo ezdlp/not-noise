@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   name: string;
@@ -40,6 +41,8 @@ export interface SmartLink {
   email_capture_title?: string;
   email_capture_description?: string;
   slug?: string;
+  wp_total_views?: number;  // Added for WordPress import
+  wp_total_clicks?: number; // Added for WordPress import
 }
 
 export interface LinkView {
@@ -98,3 +101,4 @@ export interface ImportSummary {
   errors: { link: string; error: string }[];
   unassigned: string[];
 }
+

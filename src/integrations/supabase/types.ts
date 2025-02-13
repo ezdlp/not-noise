@@ -977,6 +977,8 @@ export type Database = {
           upc: string | null
           updated_at: string | null
           user_id: string
+          wp_total_clicks: number | null
+          wp_total_views: number | null
         }
         Insert: {
           artist_name: string
@@ -1001,6 +1003,8 @@ export type Database = {
           upc?: string | null
           updated_at?: string | null
           user_id: string
+          wp_total_clicks?: number | null
+          wp_total_views?: number | null
         }
         Update: {
           artist_name?: string
@@ -1025,6 +1029,8 @@ export type Database = {
           upc?: string | null
           updated_at?: string | null
           user_id?: string
+          wp_total_clicks?: number | null
+          wp_total_views?: number | null
         }
         Relationships: [
           {
