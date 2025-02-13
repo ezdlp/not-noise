@@ -28,18 +28,38 @@ export function ImportLinks() {
   const [testMode, setTestMode] = useState(true);
 
   const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number) => {
-    const formData = new FormData();
+    // Create a new Blob with the XML content
     const blob = new Blob([chunk], { type: 'text/xml' });
-    formData.append('file', blob, 'chunk.xml');
+    const file = new File([blob], 'chunk.xml', { type: 'text/xml' });
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', file);
     formData.append('testMode', testMode.toString());
 
-    const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-      body: formData,
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
 
-    if (error) throw error;
-    setProgress(((chunkIndex + 1) / totalChunks) * 100);
-    return data as ImportSummary;
+      if (error) {
+        console.error('Error processing chunk:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data received from import function');
+      }
+
+      setProgress(((chunkIndex + 1) / totalChunks) * 100);
+      return data as ImportSummary;
+    } catch (error) {
+      console.error('Error in processChunk:', error);
+      throw error;
+    }
   };
 
   const splitXmlContent = (content: string): string[] => {
@@ -76,8 +96,11 @@ export function ImportLinks() {
     try {
       setIsImporting(true);
       setProgress(0);
+      console.log('Starting import process...');
 
       const content = await file.text();
+      console.log('File content loaded, size:', content.length);
+
       const chunks = splitXmlContent(content);
       console.log(`Processing file in ${chunks.length} chunks`);
 
@@ -89,11 +112,20 @@ export function ImportLinks() {
       };
 
       for (let i = 0; i < chunks.length; i++) {
-        const result = await processChunk(chunks[i], i, chunks.length);
-        totalResults.total += result.total;
-        totalResults.success += result.success;
-        totalResults.errors.push(...result.errors);
-        totalResults.unassigned.push(...result.unassigned);
+        console.log(`Processing chunk ${i + 1} of ${chunks.length}`);
+        
+        try {
+          const result = await processChunk(chunks[i], i, chunks.length);
+          console.log('Chunk result:', result);
+          
+          totalResults.total += result.total;
+          totalResults.success += result.success;
+          totalResults.errors.push(...result.errors);
+          totalResults.unassigned.push(...result.unassigned);
+        } catch (error) {
+          console.error(`Error processing chunk ${i + 1}:`, error);
+          toast.error(`Error processing chunk ${i + 1}`);
+        }
 
         // Add delay between chunks
         if (i < chunks.length - 1) {
@@ -102,6 +134,7 @@ export function ImportLinks() {
       }
 
       setSummary(totalResults);
+      console.log('Final import results:', totalResults);
 
       if (totalResults.success > 0) {
         toast.success(`Successfully imported ${totalResults.success} smart links`);
