@@ -35,11 +35,38 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     try {
       console.log(`Processing reset email for user: ${user.email}`);
       
-      // Use resetUserPassword instead of generateLink to trigger email sending
-      const { data, error } = await supabaseAdmin.auth.admin.resetUserPassword(user.id);
+      // First, make sure the user's email is confirmed
+      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        user.id,
+        { email_confirm: true }
+      );
+
+      if (updateError) {
+        console.error(`Error confirming email for ${user.email}:`, updateError);
+        results.push({ email: user.email, success: false, error: updateError.message });
+        
+        await supabaseAdmin
+          .from('user_migration_status')
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            status: 'failed',
+            error_message: updateError.message,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+          
+        continue;
+      }
+
+      // Then generate and send the recovery link
+      const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: user.email,
+        newEmail: user.email
+      });
 
       if (error) {
-        console.error(`Error sending reset email for ${user.email}:`, error);
+        console.error(`Error generating reset link for ${user.email}:`, error);
         results.push({ email: user.email, success: false, error: error.message });
         
         await supabaseAdmin
@@ -52,7 +79,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
       } else {
-        console.log(`Successfully sent reset email to ${user.email}`);
+        console.log(`Successfully generated reset link for ${user.email}`);
         results.push({ email: user.email, success: true });
         
         await supabaseAdmin
