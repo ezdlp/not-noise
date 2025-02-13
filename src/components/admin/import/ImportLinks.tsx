@@ -52,9 +52,8 @@ export function ImportLinks() {
       const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
         body: formData,
         headers: {
-          'Accept': 'application/json',
-        },
-        responseType: 'json'
+          'Accept': 'application/json'
+        }
       });
 
       if (error) throw error;
