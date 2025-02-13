@@ -202,6 +202,7 @@ export default function SmartLink() {
         title={smartLink.title}
         artistName={smartLink.artist_name}
         artworkUrl={smartLink.artwork_url}
+        description={smartLink.description}
         releaseDate={smartLink.release_date}
         streamingPlatforms={streamingPlatforms}
       />
@@ -221,6 +222,7 @@ export default function SmartLink() {
             title={smartLink.title}
             artistName={smartLink.artist_name}
             artworkUrl={smartLink.artwork_url}
+            description={smartLink.description}
           />
           
           <div className="space-y-4">

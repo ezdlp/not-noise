@@ -42,7 +42,8 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
             email_capture_description: data.emailCapture?.description || null,
             title: data.title,
             artist_name: data.artist,
-            slug: data.slug
+            slug: data.slug,
+            description: data.description
           })
           .eq('id', data.id);
 
@@ -98,7 +99,8 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
             title: data.title,
             artist_name: data.artist,
             user_id: session.session.user.id,
-            slug: data.slug
+            slug: data.slug,
+            description: data.description
           })
           .select()
           .single();
@@ -174,7 +176,9 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           <div>
             <h3 className="font-semibold text-lg">{data.title}</h3>
             <p className="text-muted-foreground">{data.artist}</p>
-            <p className="text-sm text-muted-foreground mt-1">{data.album}</p>
+            {data.description && (
+              <p className="text-sm text-muted-foreground mt-1">{data.description}</p>
+            )}
           </div>
         </div>
       </Card>
@@ -230,4 +234,3 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
 };
 
 export default ReviewStep;
-
