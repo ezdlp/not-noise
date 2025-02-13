@@ -1,11 +1,13 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
+  'Access-Control-Expose-Headers': '*'
 };
 
 interface PlatformLink {
@@ -102,7 +104,12 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Content-Length': '0'
+      }
+    });
   }
 
   try {
@@ -113,13 +120,11 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
-    // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') as string,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    // Log memory usage at start
     const startMemory = Deno.memoryUsage();
     console.log('Initial memory usage:', {
       heapUsed: startMemory.heapUsed / 1024 / 1024 + ' MB',
@@ -161,7 +166,6 @@ serve(async (req) => {
 
         const normalizedEmail = creatorEmail.trim().toLowerCase();
         
-        // Get matching profile for the email
         const { data: matchingProfiles, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id, email')
@@ -253,7 +257,6 @@ serve(async (req) => {
         });
       }
 
-      // Log memory usage every 10 items
       if (results.success % 10 === 0) {
         const currentMemory = Deno.memoryUsage();
         console.log('Current memory usage:', {
@@ -265,16 +268,21 @@ serve(async (req) => {
       }
     }
 
-    // Log final memory usage
     const endMemory = Deno.memoryUsage();
     console.log('Final memory usage:', {
       heapUsed: endMemory.heapUsed / 1024 / 1024 + ' MB',
       heapTotal: endMemory.heapTotal / 1024 / 1024 + ' MB',
     });
 
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify(results),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
   } catch (error) {
     console.error('Error processing import:', error);
@@ -282,7 +290,10 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
   }
@@ -314,4 +325,3 @@ function extractCDATAContent(value: any): string {
   
   return '';
 }
-
