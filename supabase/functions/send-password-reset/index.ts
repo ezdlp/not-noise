@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
@@ -34,8 +35,10 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     try {
       console.log(`Processing reset email for user: ${user.email}`);
       
-      // Send password reset email directly
-      const { data, error } = await supabaseAdmin.auth.admin.sendPasswordResetEmail(user.email);
+      // Send password reset email using the correct method
+      const { data, error } = await supabaseAdmin.auth.resetPasswordForEmail(user.email, {
+        redirectTo: 'https://soundraiser.io/login'
+      });
 
       if (error) {
         console.error(`Error sending reset email to ${user.email}:`, error);
