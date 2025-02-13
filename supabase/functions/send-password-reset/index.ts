@@ -137,12 +137,16 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination, excluding those who already received emails successfully
+    // Get users with pagination, using a subquery to exclude those who already received emails
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
       .select('id, email', { count: 'exact' })
       .not('email', 'is', null)
-      .not('user_migration_status.status', 'eq', 'email_sent')
+      .not('id', 'in', (sq) => 
+        sq.from('user_migration_status')
+          .select('user_id')
+          .eq('status', 'email_sent')
+      )
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
