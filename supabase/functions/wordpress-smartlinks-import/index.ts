@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -151,6 +152,10 @@ async function processItem(
     let artistName = '';
     let artworkUrl = '';
     let platformLinksData = null;
+    let metaPixelId = null;
+    let metaPixelEnabled = false;
+    let totalViews = 0;
+    let totalClicks = 0;
 
     for (const meta of metas) {
       const key = meta.querySelector('wp\\:meta_key')?.textContent;
@@ -162,6 +167,14 @@ async function processItem(
         artistName = value;
       } else if (key === '_default_image' && value) {
         artworkUrl = value;
+      } else if (key === '_fb_pixel' && value === '1') {
+        metaPixelEnabled = true;
+      } else if (key === '_fb_pixel_id' && value) {
+        metaPixelId = value;
+      } else if (key === '_link_views' && value) {
+        totalViews = parseInt(value, 10) || 0;
+      } else if (key === '_link_clicks' && value) {
+        totalClicks = parseInt(value, 10) || 0;
       }
     }
 
@@ -172,7 +185,10 @@ async function processItem(
         title,
         artist_name: artistName || 'Unknown Artist',
         artwork_url: artworkUrl || null,
-        slug: item.querySelector('wp\\:post_name')?.textContent || undefined
+        slug: item.querySelector('wp\\:post_name')?.textContent || undefined,
+        meta_pixel_id: metaPixelEnabled ? metaPixelId : null,
+        wp_total_views: totalViews,
+        wp_total_clicks: totalClicks
       })
       .select()
       .single();
@@ -261,7 +277,7 @@ serve(async (req) => {
     const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => {
       const postType = item.querySelector('wp\\:post_type');
       console.log('[Import] Found item with post type:', postType?.textContent);
-      return postType?.textContent === 'smart-link';
+      return postType?.textContent === 'custom_links';  // FIXED: Changed from 'smart-link' to 'custom_links'
     });
 
     console.log(`[Import] Found ${items.length} smart link items`);
