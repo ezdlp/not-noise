@@ -32,12 +32,102 @@ const MAX_RETRIES = 3;
 const emailTemplate = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Password Reset</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundraiser just got way better! 🎉</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+      color: #0F0F0F;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .logo {
+      max-width: 200px;
+      margin-bottom: 20px;
+    }
+    .title {
+      color: #6851FB;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .feature-list {
+      background: #F8F8F8;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .feature-item {
+      margin-bottom: 15px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #6851FB;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      margin: 20px 0;
+      font-weight: 500;
+    }
+    .button:hover {
+      background-color: #4A47A5;
+    }
+    .footer {
+      text-align: center;
+      color: #666666;
+      font-size: 12px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #E6E6E6;
+    }
+  </style>
 </head>
 <body>
-  <h1>Password Reset Request</h1>
-  <p>To reset your password, please click the link below:</p>
-  <a href="{{ .ConfirmationURL }}">Reset Password</a>
+  <div class="container">
+    <div class="header">
+      <img src="https://soundraiser.io/assets/soundraiser-logo.png" alt="Soundraiser Logo" class="logo">
+      <h1 class="title">Soundraiser just got way better! 🎉</h1>
+    </div>
+    
+    <p>Hey there!</p>
+    
+    <p>We've been working hard to make Soundraiser even better for you. Here's what's new:</p>
+    
+    <div class="feature-list">
+      <div class="feature-item">✨ <strong>Smart Links:</strong> Create beautiful landing pages for your music in seconds</div>
+      <div class="feature-item">📊 <strong>Analytics Dashboard:</strong> Track your performance across all platforms</div>
+      <div class="feature-item">🎯 <strong>Meta Pixel Integration:</strong> Retarget your fans with precision</div>
+      <div class="feature-item">🎨 <strong>Social Media Tools:</strong> Generate eye-catching assets automatically</div>
+    </div>
+    
+    <p>To access all these amazing features, you'll need to reset your password first. Click the button below:</p>
+    
+    <div style="text-align: center;">
+      <a href="{{ .ConfirmationURL }}" class="button">Reset Your Password</a>
+    </div>
+    
+    <p><strong>Pro Plan Update:</strong> We've also introduced a new Pro plan with advanced features to help you grow your audience faster than ever!</p>
+    
+    <p>All your previously imported Smart Links are waiting for you in your dashboard. Just reset your password and you'll be ready to go!</p>
+    
+    <div class="footer">
+      <p>© 2024 Soundraiser. All rights reserved.</p>
+      <p>You're receiving this email because you requested a password reset.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  </div>
 </body>
 </html>`;
 
@@ -72,9 +162,9 @@ async function sendPasswordResetWithRetry(user: { id: string; email: string }, r
     try {
       // Send email using Resend
       const emailResult = await resend.emails.send({
-        from: 'Soundraiser <no-reply@soundraiser.io>',
+        from: 'Soundraiser <hello@soundraiser.io>',
         to: user.email,
-        subject: 'Soundraiser Password Reset',
+        subject: 'Soundraiser just got way better! 🎉',
         html: htmlContent
       });
 
@@ -206,3 +296,4 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
+
