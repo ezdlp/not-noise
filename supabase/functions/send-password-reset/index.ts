@@ -74,7 +74,7 @@ async function sendPasswordResetWithRetry(user: { id: string; email: string }, r
       const emailResult = await resend.emails.send({
         from: 'Soundraiser <no-reply@soundraiser.io>',
         to: user.email,
-        subject: 'Soundraiser just got way better! 🎉',
+        subject: 'Soundraiser Password Reset',
         html: htmlContent
       });
 
@@ -103,19 +103,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
   
   for (const user of users) {
     try {
-      // Check if user already has a successful email sent
-      const { data: statusData } = await supabaseAdmin
-        .from('user_migration_status')
-        .select('status')
-        .eq('user_id', user.id)
-        .single();
-
-      if (statusData?.status === 'email_sent') {
-        console.log(`Skipping ${user.email} - reset email already sent successfully`);
-        results.push({ email: user.email, success: true, skipped: true });
-        continue;
-      }
-
       console.log(`Processing reset email for user: ${user.email}`);
       
       const result = await sendPasswordResetWithRetry(user);
@@ -123,30 +110,9 @@ async function processUserBatch(users: { id: string; email: string }[]) {
       if (!result.success) {
         console.error(`Error sending reset email to ${user.email}:`, result.error);
         results.push({ email: user.email, success: false, error: result.error });
-        
-        await supabaseAdmin
-          .from('user_migration_status')
-          .upsert({
-            user_id: user.id,
-            email: user.email,
-            status: 'failed',
-            error_message: result.error,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
       } else {
         console.log(`Successfully sent reset email to ${user.email}`);
         results.push({ email: user.email, success: true });
-        
-        await supabaseAdmin
-          .from('user_migration_status')
-          .upsert({
-            user_id: user.id,
-            email: user.email,
-            status: 'email_sent',
-            reset_email_sent_at: new Date().toISOString(),
-            error_message: null,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
       }
 
       // Wait between emails to avoid rate limits
@@ -154,16 +120,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
       results.push({ email: user.email, success: false, error: error.message });
-      
-      await supabaseAdmin
-        .from('user_migration_status')
-        .upsert({
-          user_id: user.id,
-          email: user.email,
-          status: 'failed',
-          error_message: error.message,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
     }
   }
 
@@ -183,34 +139,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination - including migration status
+    // Get users with pagination
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
-      .select(`
-        id,
-        email,
-        user_migration_status!left (
-          status
-        )
-      `, { count: 'exact' })
+      .select('id, email', { count: 'exact' })
       .not('email', 'is', null)
-      .or([
-        'user_migration_status.status.is.null',
-        'user_migration_status.status.neq.email_sent'
-      ])
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Error fetching users: ${fetchError.message}`);
     }
 
-    // Clean up the user data to only include id and email
-    const cleanUsers = users?.map(user => ({
-      id: user.id,
-      email: user.email
-    })) || [];
-
-    if (!cleanUsers || cleanUsers.length === 0) {
+    if (!users || users.length === 0) {
       return new Response(
         JSON.stringify({ 
           message: "No more users to process",
@@ -223,15 +163,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Processing users ${offset + 1} to ${offset + cleanUsers.length} of ${count}`);
+    console.log(`Processing users ${offset + 1} to ${offset + users.length} of ${count}`);
 
     // Process the current batch
-    const results = await processUserBatch(cleanUsers);
+    const results = await processUserBatch(users);
 
     // Calculate summary
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
-    const skipped = results.filter(r => r.skipped).length;
 
     return new Response(
       JSON.stringify({
@@ -239,15 +178,14 @@ const handler = async (req: Request): Promise<Response> => {
         summary: {
           total: results.length,
           successful,
-          failed,
-          skipped
+          failed
         },
         progress: {
-          processed: offset + cleanUsers.length,
+          processed: offset + users.length,
           total: count,
-          complete: offset + cleanUsers.length >= count,
+          complete: offset + users.length >= count,
         },
-        nextOffset: offset + cleanUsers.length,
+        nextOffset: offset + users.length,
         results
       }),
       {
