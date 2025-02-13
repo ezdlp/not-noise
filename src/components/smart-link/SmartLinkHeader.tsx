@@ -1,12 +1,14 @@
+
 import React, { useEffect } from 'react';
 
 interface SmartLinkHeaderProps {
   title: string;
   artistName?: string;
   artworkUrl: string;
+  description?: string;
 }
 
-const SmartLinkHeader = ({ title, artistName, artworkUrl }: SmartLinkHeaderProps) => {
+const SmartLinkHeader = ({ title, artistName, artworkUrl, description }: SmartLinkHeaderProps) => {
   useEffect(() => {
     console.log("Artwork URL received:", artworkUrl);
   }, [artworkUrl]);
@@ -27,7 +29,12 @@ const SmartLinkHeader = ({ title, artistName, artworkUrl }: SmartLinkHeaderProps
         onError={handleImageError}
       />
       <h1 className="text-2xl font-bold mb-1 text-gray-900">{title}</h1>
-      {artistName && <p className="text-lg text-gray-600">{artistName}</p>}
+      {artistName && <p className="text-lg text-gray-600 mb-2">{artistName}</p>}
+      {description && (
+        <p className="text-sm text-gray-500 max-w-md mx-auto mt-3 px-4">
+          {description}
+        </p>
+      )}
     </div>
   );
 };

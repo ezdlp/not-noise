@@ -865,6 +865,7 @@ export type Database = {
           artist_name: string
           artwork_url: string | null
           created_at: string | null
+          description: string | null
           duration_seconds: number | null
           email_capture_description: string | null
           email_capture_enabled: boolean | null
@@ -888,6 +889,7 @@ export type Database = {
           artist_name: string
           artwork_url?: string | null
           created_at?: string | null
+          description?: string | null
           duration_seconds?: number | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
@@ -911,6 +913,7 @@ export type Database = {
           artist_name?: string
           artwork_url?: string | null
           created_at?: string | null
+          description?: string | null
           duration_seconds?: number | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
@@ -945,6 +948,7 @@ export type Database = {
           artist_name: string | null
           artwork_url: string | null
           created_at: string | null
+          description: string | null
           email_capture_description: string | null
           email_capture_enabled: boolean | null
           email_capture_title: string | null
@@ -962,6 +966,7 @@ export type Database = {
           artist_name?: string | null
           artwork_url?: string | null
           created_at?: string | null
+          description?: string | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
           email_capture_title?: string | null
@@ -979,6 +984,7 @@ export type Database = {
           artist_name?: string | null
           artwork_url?: string | null
           created_at?: string | null
+          description?: string | null
           email_capture_description?: string | null
           email_capture_enabled?: boolean | null
           email_capture_title?: string | null

@@ -22,6 +22,7 @@ export interface SmartLink {
   title: string;
   artist_name: string;
   artwork_url?: string;
+  description?: string;
   created_at: string;
   user_id: string;
   profiles?: {

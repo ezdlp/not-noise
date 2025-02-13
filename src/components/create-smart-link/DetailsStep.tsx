@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,6 +13,7 @@ interface DetailsStepProps {
     artist: string;
     artworkUrl: string;
     spotifyUrl: string;
+    description?: string;
   };
   onNext: (data: any) => void;
   onBack: () => void;
@@ -21,6 +23,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [title, setTitle] = useState(initialData.title || "");
   const [artistName, setArtistName] = useState(initialData.artist || "");
   const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState(initialData.description || "");
 
   useEffect(() => {
     // Generate slug from artist name and title
@@ -38,6 +41,11 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 
     if (!artistName.trim()) {
       toast.error("Please enter an artist name");
+      return;
+    }
+
+    if (description && description.length > 120) {
+      toast.error("Description must be 120 characters or less");
       return;
     }
 
@@ -60,6 +68,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       title,
       artist: artistName,
       slug: slug || undefined,
+      description: description || undefined,
     });
   };
 
@@ -123,6 +132,20 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
               Your track will be available at soundraiser.io/link/your-custom-url
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Description (Optional)</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a short description about your release..."
+              className="resize-none"
+              maxLength={120}
+            />
+            <p className="text-xs text-muted-foreground">
+              {description.length}/120 characters
+            </p>
+          </div>
         </div>
       </div>
 
@@ -137,4 +160,3 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 };
 
 export default DetailsStep;
-

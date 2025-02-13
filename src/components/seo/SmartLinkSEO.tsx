@@ -54,6 +54,7 @@ export function SmartLinkSEO({
       "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
     },
     "image": artworkUrl,
+    "description": description,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
     "url": canonical,
