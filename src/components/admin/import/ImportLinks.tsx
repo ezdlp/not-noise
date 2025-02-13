@@ -17,13 +17,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import type { ImportSummary } from "@/types/database";
 
-interface ImportSummary {
-  total: number;
-  success: number;
-  errors: { link: string; error: string }[];
-  unassigned: string[];
-}
+const MAX_CHUNK_SIZE = 500 * 1024; // 500KB chunks
 
 export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
@@ -31,46 +27,92 @@ export function ImportLinks() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [testMode, setTestMode] = useState(true);
 
+  const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number) => {
+    const formData = new FormData();
+    const blob = new Blob([chunk], { type: 'text/xml' });
+    formData.append('file', blob, 'chunk.xml');
+    formData.append('testMode', testMode.toString());
+
+    const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+      body: formData,
+    });
+
+    if (error) throw error;
+    setProgress(((chunkIndex + 1) / totalChunks) * 100);
+    return data as ImportSummary;
+  };
+
+  const splitXmlContent = (content: string): string[] => {
+    const itemRegex = /<item[\s\S]*?<\/item>/g;
+    const xmlHeader = content.substring(0, content.indexOf('<item>'));
+    const xmlFooter = content.substring(content.lastIndexOf('</item>') + 7);
+    const items = content.match(itemRegex) || [];
+    
+    const chunks: string[] = [];
+    let currentChunk = '';
+    
+    items.forEach((item) => {
+      if ((currentChunk + item).length > MAX_CHUNK_SIZE) {
+        if (currentChunk) {
+          chunks.push(xmlHeader + currentChunk + xmlFooter);
+        }
+        currentChunk = item;
+      } else {
+        currentChunk += item;
+      }
+    });
+    
+    if (currentChunk) {
+      chunks.push(xmlHeader + currentChunk + xmlFooter);
+    }
+    
+    return chunks;
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       setIsImporting(true);
-      setProgress(10);
+      setProgress(0);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('testMode', testMode.toString());
+      const content = await file.text();
+      const chunks = splitXmlContent(content);
+      console.log(`Processing file in ${chunks.length} chunks`);
 
-      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-        body: formData,
-      });
-
-      if (error) throw error;
-
-      setProgress(100);
-
-      // Ensure data has the expected structure with default values
-      const processedData: ImportSummary = {
-        total: data?.total ?? 0,
-        success: data?.success ?? 0,
-        errors: Array.isArray(data?.errors) ? data.errors : [],
-        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+      let totalResults: ImportSummary = {
+        total: 0,
+        success: 0,
+        errors: [],
+        unassigned: []
       };
 
-      setSummary(processedData);
+      for (let i = 0; i < chunks.length; i++) {
+        const result = await processChunk(chunks[i], i, chunks.length);
+        totalResults.total += result.total;
+        totalResults.success += result.success;
+        totalResults.errors.push(...result.errors);
+        totalResults.unassigned.push(...result.unassigned);
 
-      if (processedData.success > 0) {
-        toast.success(`Successfully imported ${processedData.success} smart links`);
+        // Add delay between chunks
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
 
-      if (processedData.errors.length > 0) {
-        toast.error(`Failed to import ${processedData.errors.length} smart links`);
+      setSummary(totalResults);
+
+      if (totalResults.success > 0) {
+        toast.success(`Successfully imported ${totalResults.success} smart links`);
       }
 
-      if (processedData.unassigned.length > 0) {
-        toast.warning(`${processedData.unassigned.length} smart links were unassigned`);
+      if (totalResults.errors.length > 0) {
+        toast.error(`Failed to import ${totalResults.errors.length} smart links`);
+      }
+
+      if (totalResults.unassigned.length > 0) {
+        toast.warning(`${totalResults.unassigned.length} smart links were unassigned`);
       }
     } catch (error) {
       console.error("Error importing smart links:", error);
