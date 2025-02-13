@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,10 +148,9 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
     }
 
     // Check if user already exists using admin API
-    const { data: existingUser, error: existingUserError } = await supabase.auth.admin.listUsers({
+    const { data: existingUsers, error: existingUserError } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 10,
-      query: email
+      perPage: 50
     });
 
     if (existingUserError) {
@@ -162,7 +162,8 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       return false;
     }
 
-    if (existingUser?.users?.some(u => u.email === email)) {
+    // Filter users after fetching
+    if (existingUsers?.users && existingUsers.users.some((u: User) => u.email === email)) {
       stats.warnings.push({
         row: index + 1,
         warning: `User with email ${email} already exists, skipping`,
