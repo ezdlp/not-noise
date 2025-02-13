@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -277,32 +278,37 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    // Process items in batches of 50
-    const BATCH_SIZE = 50;
+    // Reduce batch size to 10 items and increase delay between batches
+    const BATCH_SIZE = 10;
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
       const batch = items.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(items.length / BATCH_SIZE)}`);
+      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(items.length / BATCH_SIZE)}`);
       
-      const batchResults = await Promise.all(
-        batch.map(async (item) => {
-          const result = await processItem(item, supabaseAdmin);
-          const title = extractCDATAContent(item.title) || 'Unknown';
-          
-          if (result.success) {
-            results.success++;
-          } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
-            results.unassigned.push(title);
-          } else {
-            results.errors.push({ link: title, error: result.error || 'Unknown error' });
-          }
-          
-          return result;
-        })
-      );
+      // Process items sequentially within each batch to reduce memory usage
+      for (const item of batch) {
+        const result = await processItem(item, supabaseAdmin);
+        const title = extractCDATAContent(item.title) || 'Unknown';
+        
+        if (result.success) {
+          results.success++;
+        } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
+          results.unassigned.push(title);
+        } else {
+          results.errors.push({ link: title, error: result.error || 'Unknown error' });
+        }
+        
+        // Add a small delay between individual items
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       
-      // Add a small delay between batches to prevent resource exhaustion
+      // Longer delay between batches
       if (i + BATCH_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Force garbage collection if available
+        if (typeof Deno.heap === 'object' && Deno.heap.collections) {
+          Deno.heap.collections();
+        }
       }
     }
 
