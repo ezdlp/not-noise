@@ -28,6 +28,7 @@ import AdminContent from "@/pages/admin/Content";
 import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminImport from "@/pages/admin/Import";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+import { UserMigration } from "@/pages/admin";
 
 const AppContent = () => {
   return (
@@ -74,6 +75,7 @@ const AppContent = () => {
         <Route path="smart-links" element={<AdminSmartLinks />} />
         <Route path="user-links" element={<AdminUserLinks />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="users/migration" element={<UserMigration />} />
         <Route path="content" element={<AdminContent />} />
         <Route path="media" element={<AdminMediaLibrary />} />
         <Route path="import" element={<AdminImport />} />
