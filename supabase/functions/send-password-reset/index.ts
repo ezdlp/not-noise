@@ -21,11 +21,35 @@ const supabaseAdmin = createClient(
   }
 );
 
-const BATCH_SIZE = 10; // Reduced batch size to avoid timeouts
-const DELAY_BETWEEN_EMAILS = 200;
+const BATCH_SIZE = 5; // Reduced batch size
+const INITIAL_DELAY = 1000; // 1 second between emails
+const MAX_RETRIES = 3;
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function sendPasswordResetWithRetry(user: { id: string; email: string }, retryCount = 0): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.resetPasswordForEmail(user.email, {
+      redirectTo: 'https://soundraiser.io/login'
+    });
+
+    if (error) {
+      // If we hit rate limit and haven't exceeded retries, wait and try again
+      if (error.message.includes('rate limit') && retryCount < MAX_RETRIES) {
+        const backoffDelay = INITIAL_DELAY * Math.pow(2, retryCount);
+        console.log(`Rate limit hit for ${user.email}, retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        await sleep(backoffDelay);
+        return sendPasswordResetWithRetry(user, retryCount + 1);
+      }
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }
 
 async function processUserBatch(users: { id: string; email: string }[]) {
@@ -35,14 +59,11 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     try {
       console.log(`Processing reset email for user: ${user.email}`);
       
-      // Send password reset email using the correct method
-      const { data, error } = await supabaseAdmin.auth.resetPasswordForEmail(user.email, {
-        redirectTo: 'https://soundraiser.io/login'
-      });
+      const result = await sendPasswordResetWithRetry(user);
 
-      if (error) {
-        console.error(`Error sending reset email to ${user.email}:`, error);
-        results.push({ email: user.email, success: false, error: error.message });
+      if (!result.success) {
+        console.error(`Error sending reset email to ${user.email}:`, result.error);
+        results.push({ email: user.email, success: false, error: result.error });
         
         await supabaseAdmin
           .from('user_migration_status')
@@ -50,7 +71,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
             user_id: user.id,
             email: user.email,
             status: 'failed',
-            error_message: error.message,
+            error_message: result.error,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
       } else {
@@ -69,7 +90,8 @@ async function processUserBatch(users: { id: string; email: string }[]) {
           }, { onConflict: 'user_id' });
       }
 
-      await sleep(DELAY_BETWEEN_EMAILS);
+      // Wait longer between emails to avoid rate limits
+      await sleep(INITIAL_DELAY);
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
       results.push({ email: user.email, success: false, error: error.message });
