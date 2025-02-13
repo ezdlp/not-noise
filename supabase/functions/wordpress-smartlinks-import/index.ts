@@ -56,48 +56,33 @@ const platformDisplayNames: Record<string, string> = {
 };
 
 function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
-  console.log('Starting platform links parsing with input:', serializedLinks);
-  
   try {
-    // Extract the inner array content from the outer serialized string
     const arrayMatch = serializedLinks.match(/^s:\d+:"(a:\d+:\{.*\})";$/);
     if (!arrayMatch) {
-      console.error('Invalid serialized format');
       throw new Error('Invalid serialized format');
     }
 
     const arrayContent = arrayMatch[1];
-    console.log('Extracted array content:', arrayContent);
-
-    // Split the array content into key-value pairs
     const pairs = arrayContent.match(/s:\d+:"[^"]+";s:\d+:"[^"]*";/g) || [];
-    console.log(`Found ${pairs.length} platform pairs`);
-
     const links: PlatformLink[] = [];
 
     for (const pair of pairs) {
-      // Extract key and value from each pair
       const keyMatch = pair.match(/s:\d+:"([^"]+)";/);
       const valueMatch = pair.match(/;s:\d+:"([^"]*)";/);
 
       if (!keyMatch || !valueMatch) {
-        console.warn('Skipping invalid pair:', pair);
         continue;
       }
 
       const platformKey = keyMatch[1];
       const url = valueMatch[1];
 
-      // Skip empty URLs
       if (!url) {
-        console.log(`Skipping ${platformKey} - empty URL`);
         continue;
       }
 
-      // Map to our platform conventions
       const platformId = platformMapping[platformKey];
       if (!platformId) {
-        console.warn(`Unknown platform type: ${platformKey}`);
         continue;
       }
 
@@ -106,19 +91,11 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
         platform_name: platformDisplayNames[platformId],
         url: url.trim()
       });
-      
-      console.log(`Added platform link:`, {
-        platform_id: platformId,
-        platform_name: platformDisplayNames[platformId],
-        url: url.trim()
-      });
     }
 
-    console.log('Successfully parsed platform links:', links);
     return links;
   } catch (error) {
     console.error('Error parsing platform links:', error);
-    console.error('Input that caused error:', serializedLinks);
     throw error;
   }
 }
@@ -136,8 +113,20 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
 
+    // Create Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') as string,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
+    );
+
+    // Log memory usage at start
+    const startMemory = Deno.memoryUsage();
+    console.log('Initial memory usage:', {
+      heapUsed: startMemory.heapUsed / 1024 / 1024 + ' MB',
+      heapTotal: startMemory.heapTotal / 1024 / 1024 + ' MB',
+    });
+
     const text = await file.text();
-    console.log('Parsing XML file...');
     const xmlDoc = parse(text);
 
     if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
@@ -145,7 +134,7 @@ serve(async (req) => {
     }
 
     const items = xmlDoc.rss.channel.item || [];
-    console.log(`Found ${items.length} items in XML`);
+    console.log(`Processing ${items.length} items`);
 
     const results = {
       total: items.length,
@@ -160,62 +149,30 @@ serve(async (req) => {
       }[]
     };
 
-    // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') as string,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
-    );
-
     for (const item of items) {
       try {
         const title = extractCDATAContent(item.title) || '';
-        console.log(`\n----- Processing link: ${title} -----`);
-
         const creatorEmail = extractCDATAContent(item['dc:creator']);
+        
         if (!creatorEmail) {
-          console.log('No creator email found, skipping');
           results.unassigned.push(title);
-          results.emailMatches.push({
-            email: 'none',
-            found: false,
-            title,
-            matchAttempt: 'No email provided in WordPress export'
-          });
           continue;
         }
 
         const normalizedEmail = creatorEmail.trim().toLowerCase();
-        console.log(`Looking for user with email: ${normalizedEmail}`);
         
-        // Get all matching profiles for the email
+        // Get matching profile for the email
         const { data: matchingProfiles, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id, email')
-          .ilike('email', normalizedEmail);
+          .ilike('email', normalizedEmail)
+          .limit(1);
 
         if (userError) {
-          console.error('Database lookup error:', userError);
-          results.unassigned.push(title);
-          results.emailMatches.push({
-            email: normalizedEmail,
-            found: false,
-            title,
-            matchAttempt: `Database error: ${userError.message}`
-          });
-          continue;
+          throw new Error(`Database lookup error: ${userError.message}`);
         }
 
         if (!matchingProfiles || matchingProfiles.length === 0) {
-          console.log(`No matching user found for email: ${normalizedEmail}`);
-          
-          // Log all existing emails for debugging
-          const { data: allEmails } = await supabaseAdmin
-            .from('profiles')
-            .select('email')
-            .not('email', 'is', null);
-            
-          console.log('Available emails in database:', allEmails?.map(p => p.email));
-          
           results.unassigned.push(title);
           results.emailMatches.push({
             email: normalizedEmail,
@@ -226,15 +183,12 @@ serve(async (req) => {
           continue;
         }
 
-        // Take the first matching profile if multiple exist
         const userData = matchingProfiles[0];
-        console.log(`Found ${matchingProfiles.length} matching profile(s), using ID: ${userData.id}`);
-        
         results.emailMatches.push({
           email: normalizedEmail,
           found: true,
           title,
-          matchAttempt: `Matched to user ID: ${userData.id} (${matchingProfiles.length} matching profiles found)`
+          matchAttempt: `Matched to user ID: ${userData.id}`
         });
 
         const metas = item['wp:postmeta'] || [];
@@ -247,7 +201,6 @@ serve(async (req) => {
           const value = extractCDATAContent(meta['wp:meta_value']);
 
           if (key === '_links' && value) {
-            console.log('Found platform links data:', value);
             platformLinksData = value;
           } else if (key === '_artist_name' && value) {
             artistName = value;
@@ -256,7 +209,6 @@ serve(async (req) => {
           }
         }
 
-        // Create smart link using admin client and get the inserted record
         const { data: smartLink, error: insertError } = await supabaseAdmin
           .from('smart_links')
           .insert({
@@ -273,12 +225,8 @@ serve(async (req) => {
           throw new Error(`Failed to insert smart link: ${insertError?.message}`);
         }
 
-        console.log('Successfully created smart link:', smartLink);
-
         if (platformLinksData) {
-          console.log('Processing platform links data:', platformLinksData);
           const platformLinks = parsePlatformLinks(platformLinksData);
-          console.log('Parsed platform links:', platformLinks);
 
           if (platformLinks.length > 0) {
             const platformLinksWithId = platformLinks.map(pl => ({
@@ -286,41 +234,43 @@ serve(async (req) => {
               smart_link_id: smartLink.id
             }));
 
-            console.log('Attempting to insert platform links:', platformLinksWithId);
-
             const { error: platformError } = await supabaseAdmin
               .from('platform_links')
               .insert(platformLinksWithId);
 
             if (platformError) {
-              console.error('Error inserting platform links:', platformError);
               throw new Error(`Failed to insert platform links: ${platformError.message}`);
             }
-            console.log('Successfully inserted platform links');
-          } else {
-            console.log('No valid platform links found to insert');
           }
         }
 
         results.success++;
-        console.log(`Successfully processed item: ${title}`);
 
       } catch (error) {
-        console.error('Error processing item:', error);
         results.errors.push({
           link: extractCDATAContent(item.title) || 'Unknown',
           error: error.message
         });
       }
+
+      // Log memory usage every 10 items
+      if (results.success % 10 === 0) {
+        const currentMemory = Deno.memoryUsage();
+        console.log('Current memory usage:', {
+          heapUsed: currentMemory.heapUsed / 1024 / 1024 + ' MB',
+          heapTotal: currentMemory.heapTotal / 1024 / 1024 + ' MB',
+          processed: results.success,
+          total: results.total
+        });
+      }
     }
 
-    // Final summary logging
-    console.log('\n----- Import Summary -----');
-    console.log(`Total items processed: ${results.total}`);
-    console.log(`Successful imports: ${results.success}`);
-    console.log(`Failed imports: ${results.errors.length}`);
-    console.log(`Unassigned links: ${results.unassigned.length}`);
-    console.log('\nEmail matching results:', results.emailMatches);
+    // Log final memory usage
+    const endMemory = Deno.memoryUsage();
+    console.log('Final memory usage:', {
+      heapUsed: endMemory.heapUsed / 1024 / 1024 + ' MB',
+      heapTotal: endMemory.heapTotal / 1024 / 1024 + ' MB',
+    });
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
