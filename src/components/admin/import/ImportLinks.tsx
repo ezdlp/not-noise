@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +16,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import type { ImportSummary } from "@/types/database";
 
-const MAX_CHUNK_SIZE = 500 * 1024; // 500KB chunks
+interface ImportSummary {
+  total: number;
+  success: number;
+  errors: { link: string; error: string }[];
+  unassigned: string[];
+}
 
 export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
@@ -27,117 +30,46 @@ export function ImportLinks() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [testMode, setTestMode] = useState(true);
 
-  const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-        body: {
-          content: chunk,
-          testMode: testMode
-        }
-      });
-
-      if (error) {
-        console.error('Error processing chunk:', error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error('No data received from import function');
-      }
-
-      setProgress(((chunkIndex + 1) / totalChunks) * 100);
-      return data as ImportSummary;
-    } catch (error) {
-      console.error('Error in processChunk:', error);
-      throw error;
-    }
-  };
-
-  const splitXmlContent = (content: string): string[] => {
-    const itemPattern = /(<item[\s\S]*?<\/item>)/g;
-    const xmlHeader = content.substring(0, content.indexOf('<item>'));
-    const xmlFooter = content.substring(content.lastIndexOf('</item>') + 7);
-    
-    const items = content.match(itemPattern) || [];
-    console.log(`Found ${items.length} items to process`);
-    
-    const chunks: string[] = [];
-    let currentChunk = '';
-    
-    items.forEach((item) => {
-      if ((currentChunk + item).length > MAX_CHUNK_SIZE && currentChunk) {
-        chunks.push(xmlHeader + currentChunk + xmlFooter);
-        currentChunk = item;
-      } else {
-        currentChunk += item;
-      }
-    });
-    
-    if (currentChunk) {
-      chunks.push(xmlHeader + currentChunk + xmlFooter);
-    }
-    
-    console.log(`Split content into ${chunks.length} chunks`);
-    return chunks;
-  };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       setIsImporting(true);
-      setProgress(0);
-      console.log('Starting import process...');
+      setProgress(10);
 
-      const content = await file.text();
-      console.log('File content loaded, size:', content.length);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('testMode', testMode.toString());
 
-      const chunks = splitXmlContent(content);
-      console.log(`Processing file in ${chunks.length} chunks`);
+      const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+        body: formData,
+      });
 
-      let totalResults: ImportSummary = {
-        total: 0,
-        success: 0,
-        errors: [],
-        unassigned: []
+      if (error) throw error;
+
+      setProgress(100);
+
+      // Ensure data has the expected structure with default values
+      const processedData: ImportSummary = {
+        total: data?.total ?? 0,
+        success: data?.success ?? 0,
+        errors: Array.isArray(data?.errors) ? data.errors : [],
+        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
       };
 
-      for (let i = 0; i < chunks.length; i++) {
-        console.log(`Processing chunk ${i + 1} of ${chunks.length}`);
-        
-        try {
-          const result = await processChunk(chunks[i], i, chunks.length);
-          console.log('Chunk result:', result);
-          
-          totalResults.total += result.total;
-          totalResults.success += result.success;
-          totalResults.errors.push(...result.errors);
-          totalResults.unassigned.push(...result.unassigned);
-        } catch (error) {
-          console.error(`Error processing chunk ${i + 1}:`, error);
-          toast.error(`Error processing chunk ${i + 1}`);
-        }
+      setSummary(processedData);
 
-        // Add delay between chunks to prevent rate limiting
-        if (i < chunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      if (processedData.success > 0) {
+        toast.success(`Successfully imported ${processedData.success} smart links`);
       }
 
-      setSummary(totalResults);
-      console.log('Final import results:', totalResults);
-
-      if (totalResults.success > 0) {
-        toast.success(`Successfully imported ${totalResults.success} smart links`);
+      if (processedData.errors.length > 0) {
+        toast.error(`Failed to import ${processedData.errors.length} smart links`);
       }
 
-      if (totalResults.errors.length > 0) {
-        toast.error(`Failed to import ${totalResults.errors.length} smart links`);
-      }
-
-      if (totalResults.unassigned.length > 0) {
-        toast.warning(`${totalResults.unassigned.length} smart links were unassigned`);
+      if (processedData.unassigned.length > 0) {
+        toast.warning(`${processedData.unassigned.length} smart links were unassigned`);
       }
     } catch (error) {
       console.error("Error importing smart links:", error);

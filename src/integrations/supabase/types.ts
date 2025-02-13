@@ -521,99 +521,6 @@ export type Database = {
         }
         Relationships: []
       }
-      import_batches: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          error_message: string | null
-          file_name: string
-          id: string
-          processed_items: number | null
-          status: Database["public"]["Enums"]["import_status"] | null
-          total_items: number
-          updated_at: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          file_name: string
-          id?: string
-          processed_items?: number | null
-          status?: Database["public"]["Enums"]["import_status"] | null
-          total_items: number
-          updated_at?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          file_name?: string
-          id?: string
-          processed_items?: number | null
-          status?: Database["public"]["Enums"]["import_status"] | null
-          total_items?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      import_logs: {
-        Row: {
-          batch_id: string | null
-          created_at: string | null
-          error_message: string | null
-          id: string
-          mapped_user_id: string | null
-          retries: number | null
-          smart_link_id: string | null
-          status: Database["public"]["Enums"]["import_status"] | null
-          updated_at: string | null
-          wp_post_id: string | null
-          wp_user_id: string | null
-        }
-        Insert: {
-          batch_id?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          mapped_user_id?: string | null
-          retries?: number | null
-          smart_link_id?: string | null
-          status?: Database["public"]["Enums"]["import_status"] | null
-          updated_at?: string | null
-          wp_post_id?: string | null
-          wp_user_id?: string | null
-        }
-        Update: {
-          batch_id?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          mapped_user_id?: string | null
-          retries?: number | null
-          smart_link_id?: string | null
-          status?: Database["public"]["Enums"]["import_status"] | null
-          updated_at?: string | null
-          wp_post_id?: string | null
-          wp_user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "import_logs_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "import_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "import_logs_smart_link_id_fkey"
-            columns: ["smart_link_id"]
-            isOneToOne: false
-            referencedRelation: "smart_links"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       link_views: {
         Row: {
           country: string | null
@@ -977,8 +884,6 @@ export type Database = {
           upc: string | null
           updated_at: string | null
           user_id: string
-          wp_total_clicks: number | null
-          wp_total_views: number | null
         }
         Insert: {
           artist_name: string
@@ -1003,8 +908,6 @@ export type Database = {
           upc?: string | null
           updated_at?: string | null
           user_id: string
-          wp_total_clicks?: number | null
-          wp_total_views?: number | null
         }
         Update: {
           artist_name?: string
@@ -1029,8 +932,6 @@ export type Database = {
           upc?: string | null
           updated_at?: string | null
           user_id?: string
-          wp_total_clicks?: number | null
-          wp_total_views?: number | null
         }
         Relationships: [
           {
@@ -1288,33 +1189,6 @@ export type Database = {
         }
         Relationships: []
       }
-      wp_user_mappings: {
-        Row: {
-          created_at: string | null
-          id: string
-          supabase_user_id: string | null
-          updated_at: string | null
-          wp_user_email: string | null
-          wp_user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          supabase_user_id?: string | null
-          updated_at?: string | null
-          wp_user_email?: string | null
-          wp_user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          supabase_user_id?: string | null
-          updated_at?: string | null
-          wp_user_email?: string | null
-          wp_user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1368,7 +1242,6 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       billing_period: "monthly" | "annual"
-      import_status: "pending" | "processing" | "completed" | "failed"
       playlist_category: "curated" | "algorithmic" | "editorial" | "independent"
       promotion_status: "pending" | "active" | "completed" | "rejected"
       social_media_platform:
