@@ -146,15 +146,23 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       return false;
     }
 
-    // Check if user already exists
-    const { data: existingUsersData } = await supabase.auth.admin.listUsers({
+    // Check if user already exists using admin API
+    const { data: existingUser, error: existingUserError } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 1
+      perPage: 10,
+      query: email
     });
 
-    const existingUsers = existingUsersData?.users?.filter((u: User) => u.email === email) || [];
-    
-    if (existingUsers.length > 0) {
+    if (existingUserError) {
+      console.error("Error checking existing user:", existingUserError);
+      stats.errors.push({
+        row: index + 1,
+        error: `Error checking existing user: ${existingUserError.message}`,
+      });
+      return false;
+    }
+
+    if (existingUser?.users?.some(u => u.email === email)) {
       stats.warnings.push({
         row: index + 1,
         warning: `User with email ${email} already exists, skipping`,
@@ -168,19 +176,17 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
           const userData = {
             email: email,
             password: crypto.randomUUID(),
-            options: {
-              data: {
-                name: user[fieldMapping.name]?.trim() || "-",
-                artist_name: user[fieldMapping.artistName]?.trim() || "-",
-                music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
-                country: user[fieldMapping.country]?.trim() || "-",
-                email_confirm: true,
-              },
+            email_confirm: true,
+            user_metadata: {
+              name: user[fieldMapping.name]?.trim() || "-",
+              artist_name: user[fieldMapping.artistName]?.trim() || "-",
+              music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
+              country: user[fieldMapping.country]?.trim() || "-",
             },
           };
 
           console.log(`Creating user: ${email}`);
-          const { data: authData, error: authError } = await supabase.auth.signUp(userData);
+          const { data: authData, error: authError } = await supabase.auth.admin.createUser(userData);
 
           if (authError) {
             if (authError.status === 429) {
@@ -190,14 +196,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
               currentDelay = Math.min(currentDelay * 2, 5000);
               retries--;
               continue;
-            }
-
-            if (authError.message.includes('user_already_exists')) {
-              stats.warnings.push({
-                row: index + 1,
-                warning: `User with email ${email} already exists, skipping`,
-              });
-              return false;
             }
 
             throw authError;
@@ -226,15 +224,6 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       } catch (error) {
         if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
           console.error(`Error importing user ${email}:`, error);
-          
-          if (error instanceof Error && error.message.includes('user_already_exists')) {
-            stats.warnings.push({
-              row: index + 1,
-              warning: `User with email ${email} already exists, skipping`,
-            });
-            return false;
-          }
-          
           stats.errors.push({
             row: index + 1,
             error: error instanceof Error ? error.message : "Unknown error occurred",
