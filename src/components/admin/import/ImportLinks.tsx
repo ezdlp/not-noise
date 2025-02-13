@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,12 @@ interface ImportSummary {
   success: number;
   errors: { link: string; error: string }[];
   unassigned: string[];
+  emailMatches?: { 
+    email: string;
+    found: boolean;
+    title: string;
+    matchAttempt: string;
+  }[];
 }
 
 export function ImportLinks() {
@@ -44,6 +51,10 @@ export function ImportLinks() {
 
       const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
         body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
+        responseType: 'json'
       });
 
       if (error) throw error;
@@ -55,7 +66,8 @@ export function ImportLinks() {
         total: data?.total ?? 0,
         success: data?.success ?? 0,
         errors: Array.isArray(data?.errors) ? data.errors : [],
-        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : []
+        unassigned: Array.isArray(data?.unassigned) ? data.unassigned : [],
+        emailMatches: Array.isArray(data?.emailMatches) ? data.emailMatches : []
       };
 
       setSummary(processedData);
