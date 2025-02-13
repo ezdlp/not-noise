@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38-alpha/deno-dom-wasm.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.49/deno-dom-wasm.ts";
+import { Document } from "https://deno.land/x/deno_dom@v0.1.49/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -291,7 +292,6 @@ serve(async (req) => {
   try {
     console.log('[Import] Starting WordPress import process');
     
-    // Parse request body
     let body;
     try {
       body = await req.json();
@@ -315,20 +315,29 @@ serve(async (req) => {
 
     console.log('[Import] Content received, length:', content.length);
 
-    // Initialize Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Parse XML content
+    // Initialize DOM parser and parse XML
     console.log('[Import] Attempting to parse XML content');
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(content, "text/html");
+    let xmlDoc: Document;
     
-    if (!xmlDoc) {
-      console.error('[Import] Failed to parse XML document');
-      throw new Error('Failed to parse XML document');
+    try {
+      // First try as application/xml
+      xmlDoc = parser.parseFromString(content, "application/xml");
+      if (!xmlDoc) {
+        // Fallback to text/html if XML parsing fails
+        xmlDoc = parser.parseFromString(content, "text/html");
+      }
+      if (!xmlDoc) {
+        throw new Error('Failed to parse document');
+      }
+    } catch (parseError) {
+      console.error('[Import] Failed to parse XML document:', parseError);
+      throw new Error(`Failed to parse XML document: ${parseError.message}`);
     }
 
     console.log('[Import] XML parsed successfully');
@@ -353,7 +362,12 @@ serve(async (req) => {
       console.warn('[Import] No custom_links items found in XML');
       return new Response(
         JSON.stringify(results),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
     }
 
