@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -174,7 +175,7 @@ export default function Pricing() {
       return (
         <Button 
           className="w-full bg-primary hover:bg-primary/90"
-          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1QmuqgFx6uwYcH3S7OiAn1Y7' : 'price_1QmuqgFx6uwYcH3SlOR5WTXM')}
+          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1Qs5B3Fx6uwYcH3Stuus8Kkg')}
           disabled={isLoading}
         >
           {isLoading ? "Preparing..." : "Upgrade to Pro"}
@@ -311,12 +312,12 @@ export default function Pricing() {
                 <div className="mt-4">
                   {billingPeriod === 'monthly' ? (
                     <>
-                      <span className="text-4xl font-bold">$4.99</span>
+                      <span className="text-4xl font-bold">$6</span>
                       <span className="text-muted-foreground">/month</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-4xl font-bold">$4.16</span>
+                      <span className="text-4xl font-bold">$5</span>
                       <span className="text-muted-foreground">/mo</span>
                       <div className="text-sm text-primary mt-1">
                         billed annually (Save 17%)
