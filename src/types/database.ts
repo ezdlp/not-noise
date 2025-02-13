@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   name: string;
@@ -5,6 +6,7 @@ export interface Profile {
   music_genre: string;
   country: string;
   email?: string;
+  created_at?: string; // Adding this field
   user_roles: { 
     id?: string;  // Made optional since it's not always returned
     role: 'admin' | 'user';
