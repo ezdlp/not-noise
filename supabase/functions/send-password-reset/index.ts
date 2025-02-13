@@ -34,6 +34,7 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     try {
       console.log(`Processing reset email for user: ${user.email}`);
       
+      // Generate reset link
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email: user.email,
@@ -42,9 +43,32 @@ async function processUserBatch(users: { id: string; email: string }[]) {
       if (error) {
         console.error(`Error generating reset link for ${user.email}:`, error);
         results.push({ email: user.email, success: false, error: error.message });
+        
+        // Update migration status
+        await supabaseAdmin
+          .from('user_migration_status')
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            status: 'failed',
+            error_message: error.message,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
       } else {
         console.log(`Successfully generated reset link for ${user.email}`);
         results.push({ email: user.email, success: true });
+        
+        // Update migration status
+        await supabaseAdmin
+          .from('user_migration_status')
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            status: 'email_sent',
+            reset_email_sent_at: new Date().toISOString(),
+            error_message: null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
       }
 
       // Add delay between emails
@@ -52,6 +76,17 @@ async function processUserBatch(users: { id: string; email: string }[]) {
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
       results.push({ email: user.email, success: false, error: error.message });
+      
+      // Update migration status
+      await supabaseAdmin
+        .from('user_migration_status')
+        .upsert({
+          user_id: user.id,
+          email: user.email,
+          status: 'failed',
+          error_message: error.message,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
     }
   }
 
@@ -86,6 +121,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Found ${users.length} users to process`);
+
+    // Initialize migration status for all users
+    const migrationStatusData = users.map(user => ({
+      user_id: user.id,
+      email: user.email,
+      status: 'pending',
+    }));
+
+    await supabaseAdmin
+      .from('user_migration_status')
+      .upsert(migrationStatusData, { onConflict: 'user_id' });
 
     // Process users in batches
     const results = [];
