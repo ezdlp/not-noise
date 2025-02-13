@@ -278,14 +278,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     );
 
-    // Reduce batch size to 10 items and increase delay between batches
-    const BATCH_SIZE = 10;
+    // Reduce batch size to 5 and implement more aggressive memory management
+    const BATCH_SIZE = 5;
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
       const batch = items.slice(i, i + BATCH_SIZE);
       console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(items.length / BATCH_SIZE)}`);
       
-      // Process items sequentially within each batch to reduce memory usage
-      for (const item of batch) {
+      // Process items sequentially within each batch
+      for (let j = 0; j < batch.length; j++) {
+        const item = batch[j];
         const result = await processItem(item, supabaseAdmin);
         const title = extractCDATAContent(item.title) || 'Unknown';
         
@@ -297,20 +298,33 @@ serve(async (req) => {
           results.errors.push({ link: title, error: result.error || 'Unknown error' });
         }
         
+        // Clear item reference to help garbage collection
+        batch[j] = null;
+        
         // Add a small delay between individual items
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
+      
+      // Clear batch array references
+      batch.length = 0;
       
       // Longer delay between batches
       if (i + BATCH_SIZE < items.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Force garbage collection if available
-        if (typeof Deno.heap === 'object' && Deno.heap.collections) {
-          Deno.heap.collections();
+        // Try to force garbage collection
+        try {
+          if (typeof Deno.heap === 'object' && Deno.heap.collections) {
+            Deno.heap.collections();
+          }
+        } catch (e) {
+          console.log('GC not available');
         }
       }
     }
+
+    // Clear main items array
+    items = [];
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
