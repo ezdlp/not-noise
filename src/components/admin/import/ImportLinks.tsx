@@ -17,113 +17,56 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import type { ImportSummary } from "@/types/database";
 
-interface ImportSummary {
-  total: number;
-  success: number;
-  errors: { link: string; error: string }[];
-  unassigned: string[];
-}
-
-// Reduced chunk size and added delay between chunks
-const CHUNK_SIZE = 100 * 1024; // 100KB per chunk
-const CHUNK_DELAY = 1000; // 1 second delay between chunks
-const MAX_RETRIES = 3;
+const MAX_CHUNK_SIZE = 500 * 1024; // 500KB chunks
 
 export function ImportLinks() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [testMode, setTestMode] = useState(true);
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
 
-  const splitXmlContent = (content: string): string[] => {
-    // Extract the XML structure parts
-    const xmlStart = content.substring(0, content.indexOf('<item>'));
-    const xmlEnd = '</channel></rss>';
-    
-    // Extract items with a more memory-efficient approach
-    const chunks: string[] = [];
-    let currentPosition = content.indexOf('<item>');
-    let currentChunk = '';
-    let currentSize = 0;
-    
-    while (currentPosition !== -1) {
-      const nextItemStart = content.indexOf('<item>', currentPosition + 5);
-      const itemEndPosition = content.indexOf('</item>', currentPosition) + 7;
-      
-      const item = content.substring(
-        currentPosition,
-        nextItemStart !== -1 ? nextItemStart : itemEndPosition
-      );
-      
-      const itemSize = new TextEncoder().encode(item).length;
-      
-      if (currentSize + itemSize > CHUNK_SIZE && currentChunk) {
-        chunks.push(`${xmlStart}${currentChunk}${xmlEnd}`);
-        currentChunk = item;
-        currentSize = itemSize;
-      } else {
-        currentChunk += item;
-        currentSize += itemSize;
-      }
-      
-      currentPosition = nextItemStart;
-    }
-    
-    if (currentChunk) {
-      chunks.push(`${xmlStart}${currentChunk}${xmlEnd}`);
-    }
-    
-    return chunks.length ? chunks : [content];
-  };
-
-  const processChunk = async (
-    chunk: string, 
-    batchId: string, 
-    chunkIndex: number, 
-    totalChunks: number
-  ): Promise<void> => {
+  const processChunk = async (chunk: string, chunkIndex: number, totalChunks: number) => {
     const formData = new FormData();
     const blob = new Blob([chunk], { type: 'text/xml' });
     formData.append('file', blob, 'chunk.xml');
     formData.append('testMode', testMode.toString());
-    formData.append('batchId', batchId);
-    formData.append('chunkIndex', chunkIndex.toString());
-    formData.append('totalChunks', totalChunks.toString());
 
-    let retryCount = 0;
-    let success = false;
+    const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
+      body: formData,
+    });
 
-    while (!success && retryCount < MAX_RETRIES) {
-      try {
-        const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-          body: formData,
-        });
+    if (error) throw error;
+    setProgress(((chunkIndex + 1) / totalChunks) * 100);
+    return data as ImportSummary;
+  };
 
-        if (error) throw error;
-
-        const chunkProgress = ((chunkIndex + 1) / totalChunks) * 100;
-        setProgress(chunkProgress);
-
-        success = true;
-        
-        // Add delay between chunks to prevent resource exhaustion
-        await new Promise(resolve => setTimeout(resolve, CHUNK_DELAY));
-      } catch (error) {
-        console.error(`Error processing chunk ${chunkIndex + 1}/${totalChunks}:`, error);
-        retryCount++;
-        
-        if (retryCount === MAX_RETRIES) {
-          throw error;
+  const splitXmlContent = (content: string): string[] => {
+    const itemRegex = /<item[\s\S]*?<\/item>/g;
+    const xmlHeader = content.substring(0, content.indexOf('<item>'));
+    const xmlFooter = content.substring(content.lastIndexOf('</item>') + 7);
+    const items = content.match(itemRegex) || [];
+    
+    const chunks: string[] = [];
+    let currentChunk = '';
+    
+    items.forEach((item) => {
+      if ((currentChunk + item).length > MAX_CHUNK_SIZE) {
+        if (currentChunk) {
+          chunks.push(xmlHeader + currentChunk + xmlFooter);
         }
-        
-        // Exponential backoff with longer delays
-        await new Promise(resolve => 
-          setTimeout(resolve, Math.pow(2, retryCount) * 2000)
-        );
+        currentChunk = item;
+      } else {
+        currentChunk += item;
       }
+    });
+    
+    if (currentChunk) {
+      chunks.push(xmlHeader + currentChunk + xmlFooter);
     }
+    
+    return chunks;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,103 +76,56 @@ export function ImportLinks() {
     try {
       setIsImporting(true);
       setProgress(0);
-      setSummary(null);
 
-      const text = await file.text();
-      const chunks = splitXmlContent(text);
-      
-      // Create import batch
-      const { data: batchData, error: batchError } = await supabase
-        .from('import_batches')
-        .insert({
-          file_name: file.name,
-          total_items: chunks.length,
-          status: 'processing',
-          processed_items: 0
-        })
-        .select()
-        .single();
+      const content = await file.text();
+      const chunks = splitXmlContent(content);
+      console.log(`Processing file in ${chunks.length} chunks`);
 
-      if (batchError) throw batchError;
-      
-      const batchId = batchData.id;
-      setCurrentBatchId(batchId);
-
-      // Process chunks with delay between each
-      for (let i = 0; i < chunks.length; i++) {
-        await processChunk(chunks[i], batchId, i, chunks.length);
-      }
-
-      // Get final results
-      const { data: importResults, error: resultsError } = await supabase
-        .from('import_batches')
-        .select(`
-          *,
-          import_logs (
-            status,
-            error_message,
-            wp_post_id,
-            smart_link_id
-          )
-        `)
-        .eq('id', batchId)
-        .single();
-
-      if (resultsError) throw resultsError;
-
-      const logs = importResults.import_logs;
-      const summary: ImportSummary = {
-        total: logs.length,
-        success: logs.filter(log => log.status === 'completed').length,
-        errors: logs
-          .filter(log => log.status === 'failed')
-          .map(log => ({
-            link: log.wp_post_id || 'Unknown',
-            error: log.error_message || 'Unknown error'
-          })),
-        unassigned: logs
-          .filter(log => log.status === 'completed' && !log.smart_link_id)
-          .map(log => log.wp_post_id || 'Unknown')
+      let totalResults: ImportSummary = {
+        total: 0,
+        success: 0,
+        errors: [],
+        unassigned: []
       };
 
-      setSummary(summary);
+      for (let i = 0; i < chunks.length; i++) {
+        const result = await processChunk(chunks[i], i, chunks.length);
+        totalResults.total += result.total;
+        totalResults.success += result.success;
+        totalResults.errors.push(...result.errors);
+        totalResults.unassigned.push(...result.unassigned);
 
-      if (summary.success > 0) {
-        toast.success(`Successfully imported ${summary.success} smart links`);
+        // Add delay between chunks
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
 
-      if (summary.errors.length > 0) {
-        toast.error(`Failed to import ${summary.errors.length} smart links`);
+      setSummary(totalResults);
+
+      if (totalResults.success > 0) {
+        toast.success(`Successfully imported ${totalResults.success} smart links`);
       }
 
-      if (summary.unassigned.length > 0) {
-        toast.warning(`${summary.unassigned.length} smart links were unassigned`);
+      if (totalResults.errors.length > 0) {
+        toast.error(`Failed to import ${totalResults.errors.length} smart links`);
       }
 
+      if (totalResults.unassigned.length > 0) {
+        toast.warning(`${totalResults.unassigned.length} smart links were unassigned`);
+      }
     } catch (error) {
       console.error("Error importing smart links:", error);
       toast.error("Failed to import smart links");
-      
-      if (currentBatchId) {
-        await supabase
-          .from('import_batches')
-          .update({
-            status: 'failed',
-            error_message: error.message,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', currentBatchId);
-      }
     } finally {
       setIsImporting(false);
-      setCurrentBatchId(null);
       event.target.value = '';
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Input
             type="file"
