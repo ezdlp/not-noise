@@ -137,18 +137,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Get request parameters
     const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
     
-    // Get users with pagination, using a LEFT JOIN to check email status
+    // Get users with pagination
     const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
       .select(`
         id,
         email,
-        user_migration_status!left (
+        user_migration_status (
           status
         )
       `, { count: 'exact' })
       .not('email', 'is', null)
-      .or('user_migration_status.status.is.null,user_migration_status.status.neq.email_sent')
+      .or('user_migration_status.is.null,user_migration_status.status.neq.email_sent')
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
