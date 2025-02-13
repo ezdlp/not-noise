@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -291,25 +291,47 @@ serve(async (req) => {
   try {
     console.log('[Import] Starting WordPress import process');
     
-    const { content, testMode } = await req.json();
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+      console.log('[Import] Request body parsed successfully');
+    } catch (error) {
+      console.error('[Import] Failed to parse request body:', error);
+      throw new Error('Invalid request body format');
+    }
+
+    const { content, testMode } = body;
     
     if (!content) {
+      console.error('[Import] No content provided in request');
       throw new Error('No content provided');
+    }
+
+    if (typeof content !== 'string') {
+      console.error('[Import] Content must be a string');
+      throw new Error('Content must be a string');
     }
 
     console.log('[Import] Content received, length:', content.length);
 
+    // Initialize Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Parse XML content
+    console.log('[Import] Attempting to parse XML content');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(content, "text/xml");
     
     if (!xmlDoc) {
+      console.error('[Import] Failed to parse XML document');
       throw new Error('Failed to parse XML document');
     }
+
+    console.log('[Import] XML parsed successfully');
 
     const results = {
       total: 0,
