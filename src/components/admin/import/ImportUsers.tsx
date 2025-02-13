@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { AuthError, User } from "@supabase/supabase-js";
+import { AuthError } from "@supabase/supabase-js";
 
 interface ImportUsersProps {
   onComplete?: () => void;
@@ -147,95 +147,102 @@ export function ImportUsers({ onComplete }: ImportUsersProps) {
       return false;
     }
 
-    // Check if user already exists using admin API
-    const { data: existingUsers, error: existingUserError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 50
-    });
-
-    if (existingUserError) {
-      console.error("Error checking existing user:", existingUserError);
-      stats.errors.push({
-        row: index + 1,
-        error: `Error checking existing user: ${existingUserError.message}`,
+    try {
+      // Check if user exists using the new Edge Function
+      const { data, error } = await supabase.functions.invoke('check-existing-users', {
+        body: { emails: [email] }
       });
-      return false;
-    }
 
-    // Filter users after fetching
-    if (existingUsers?.users && existingUsers.users.some((u: User) => u.email === email)) {
-      stats.warnings.push({
-        row: index + 1,
-        warning: `User with email ${email} already exists, skipping`,
-      });
-      return false;
-    }
+      if (error) {
+        console.error("Error checking existing user:", error);
+        stats.errors.push({
+          row: index + 1,
+          error: `Error checking existing user: ${error.message}`,
+        });
+        return false;
+      }
 
-    while (retries > 0) {
-      try {
-        if (!isDryRun) {
-          const userData = {
-            email: email,
-            password: crypto.randomUUID(),
-            email_confirm: true,
-            user_metadata: {
-              name: user[fieldMapping.name]?.trim() || "-",
-              artist_name: user[fieldMapping.artistName]?.trim() || "-",
-              music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
-              country: user[fieldMapping.country]?.trim() || "-",
-            },
-          };
+      if (data.results[0].exists) {
+        stats.warnings.push({
+          row: index + 1,
+          warning: `User with email ${email} already exists, skipping`,
+        });
+        return false;
+      }
 
-          console.log(`Creating user: ${email}`);
-          const { data: authData, error: authError } = await supabase.auth.admin.createUser(userData);
+      while (retries > 0) {
+        try {
+          if (!isDryRun) {
+            const userData = {
+              email: email,
+              password: crypto.randomUUID(),
+              email_confirm: true,
+              user_metadata: {
+                name: user[fieldMapping.name]?.trim() || "-",
+                artist_name: user[fieldMapping.artistName]?.trim() || "-",
+                music_genre: user[fieldMapping.genre]?.trim() || "Unknown",
+                country: user[fieldMapping.country]?.trim() || "-",
+              },
+            };
 
-          if (authError) {
-            if (authError.status === 429) {
-              console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms... (${retries} retries left)`);
-              stats.retried++;
-              await delay(currentDelay);
-              currentDelay = Math.min(currentDelay * 2, 5000);
-              retries--;
-              continue;
+            console.log(`Creating user: ${email}`);
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser(userData);
+
+            if (authError) {
+              if (authError.status === 429) {
+                console.warn(`Rate limit reached for ${email}. Retrying in ${currentDelay}ms... (${retries} retries left)`);
+                stats.retried++;
+                await delay(currentDelay);
+                currentDelay = Math.min(currentDelay * 2, 5000);
+                retries--;
+                continue;
+              }
+
+              throw authError;
             }
 
-            throw authError;
+            if (authData.user) {
+              console.log(`Successfully created user: ${email}`);
+              const { error: roleError } = await supabase
+                .from("user_roles")
+                .insert({
+                  user_id: authData.user.id,
+                  role: "user",
+                });
+
+              if (roleError) throw roleError;
+
+              queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+
+              const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
+              stats.totalLinks += linkCount;
+            }
           }
-
-          if (authData.user) {
-            console.log(`Successfully created user: ${email}`);
-            const { error: roleError } = await supabase
-              .from("user_roles")
-              .insert({
-                user_id: authData.user.id,
-                role: "user",
-              });
-
-            if (roleError) throw roleError;
-
-            queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
-
-            const linkCount = parseInt(user[fieldMapping.links] || "0", 10);
-            stats.totalLinks += linkCount;
+          
+          processedEmails.add(email);
+          return true;
+        } catch (error) {
+          if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
+            console.error(`Error importing user ${email}:`, error);
+            stats.errors.push({
+              row: index + 1,
+              error: error instanceof Error ? error.message : "Unknown error occurred",
+            });
+            return false;
           }
+          retries--;
+          await delay(currentDelay);
+          currentDelay = Math.min(currentDelay * 2, 5000);
+          stats.retried++;
         }
-        
-        processedEmails.add(email);
-        return true;
-      } catch (error) {
-        if (retries === 1 || !(error instanceof AuthError) || error.status !== 429) {
-          console.error(`Error importing user ${email}:`, error);
-          stats.errors.push({
-            row: index + 1,
-            error: error instanceof Error ? error.message : "Unknown error occurred",
-          });
-          return false;
-        }
-        retries--;
-        await delay(currentDelay);
-        currentDelay = Math.min(currentDelay * 2, 5000);
-        stats.retried++;
       }
+    } catch (error) {
+      console.error(`Error processing user ${email}:`, error);
+      stats.errors.push({
+        row: index + 1,
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+      });
+      return false;
     }
     return false;
   };
