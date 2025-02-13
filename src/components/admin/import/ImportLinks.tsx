@@ -45,14 +45,21 @@ export function ImportLinks() {
       setIsImporting(true);
       setProgress(10);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('testMode', testMode.toString());
-
+      // Convert file to base64
+      const reader = new FileReader();
+      const filePromise = new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+      reader.readAsDataURL(file);
+      
+      const base64File = await filePromise;
+      
       const { data, error } = await supabase.functions.invoke('wordpress-smartlinks-import', {
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
+        body: {
+          fileContent: base64File,
+          testMode: testMode,
+          fileName: file.name
         }
       });
 

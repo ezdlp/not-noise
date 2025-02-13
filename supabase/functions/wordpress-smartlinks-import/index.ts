@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -113,12 +114,15 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const file = formData.get('file');
+    const { fileContent, testMode } = await req.json();
     
-    if (!file || !(file instanceof File)) {
-      throw new Error('No file uploaded');
+    if (!fileContent) {
+      throw new Error('No file content provided');
     }
+
+    // Extract the base64 content (remove data:application/xml;base64, prefix)
+    const base64Data = fileContent.split(',')[1];
+    const decodedContent = atob(base64Data);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') as string,
@@ -131,8 +135,7 @@ serve(async (req) => {
       heapTotal: startMemory.heapTotal / 1024 / 1024 + ' MB',
     });
 
-    const text = await file.text();
-    const xmlDoc = parse(text);
+    const xmlDoc = parse(decodedContent);
 
     if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
       throw new Error('Invalid XML file structure');
@@ -154,7 +157,10 @@ serve(async (req) => {
       }[]
     };
 
-    for (const item of items) {
+    // Process only first 10 items if in test mode
+    const itemsToProcess = testMode ? items.slice(0, 10) : items;
+
+    for (const item of itemsToProcess) {
       try {
         const title = extractCDATAContent(item.title) || '';
         const creatorEmail = extractCDATAContent(item['dc:creator']);
