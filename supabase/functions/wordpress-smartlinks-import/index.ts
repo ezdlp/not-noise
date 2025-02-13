@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
@@ -123,161 +122,6 @@ function parsePlatformLinks(serializedLinks: string): PlatformLink[] {
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const formData = await req.formData();
-    const file = formData.get('file');
-    
-    if (!file || !(file instanceof File)) {
-      throw new Error('No file uploaded');
-    }
-
-    const text = await file.text();
-    console.log('Parsing XML file...');
-    const xmlDoc = parse(text);
-
-    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
-      throw new Error('Invalid XML file structure');
-    }
-
-    const items = xmlDoc.rss.channel.item || [];
-    console.log(`Found ${items.length} items in XML`);
-
-    const results = {
-      total: items.length,
-      success: 0,
-      errors: [] as { link: string; error: string }[],
-      unassigned: [] as string[]
-    };
-
-    // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') as string,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
-    );
-
-    for (const item of items) {
-      try {
-        const title = extractCDATAContent(item.title) || '';
-        console.log(`Processing link: ${title}`);
-
-        const creatorEmail = extractCDATAContent(item['dc:creator']);
-        if (!creatorEmail) {
-          console.log('No creator email found, skipping');
-          results.unassigned.push(title);
-          continue;
-        }
-
-        console.log(`Looking for user with email: ${creatorEmail}`);
-        const { data: userData, error: userError } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('email', creatorEmail)
-          .single();
-
-        if (userError || !userData) {
-          console.log(`No matching user found for email: ${creatorEmail}`);
-          results.unassigned.push(title);
-          continue;
-        }
-
-        const metas = item['wp:postmeta'] || [];
-        let artistName = '';
-        let artworkUrl = '';
-        let platformLinksData = null;
-
-        for (const meta of metas) {
-          const key = extractCDATAContent(meta['wp:meta_key']);
-          const value = extractCDATAContent(meta['wp:meta_value']);
-
-          if (key === '_links' && value) {
-            console.log('Found platform links data:', value);
-            platformLinksData = value;
-          } else if (key === '_artist_name' && value) {
-            artistName = value;
-          } else if (key === '_default_image' && value) {
-            artworkUrl = value;
-          }
-        }
-
-        // Create smart link using admin client and get the inserted record
-        const { data: smartLink, error: insertError } = await supabaseAdmin
-          .from('smart_links')
-          .insert({
-            user_id: userData.id,
-            title,
-            artist_name: artistName || 'Unknown Artist',
-            artwork_url: artworkUrl || null,
-            slug: extractCDATAContent(item['wp:post_name']) || undefined
-          })
-          .select()
-          .single();
-
-        if (insertError || !smartLink) {
-          throw new Error(`Failed to insert smart link: ${insertError?.message}`);
-        }
-
-        console.log('Successfully created smart link:', smartLink);
-
-        if (platformLinksData) {
-          console.log('Processing platform links data:', platformLinksData);
-          const platformLinks = parsePlatformLinks(platformLinksData);
-          console.log('Parsed platform links:', platformLinks);
-
-          if (platformLinks.length > 0) {
-            const platformLinksWithId = platformLinks.map(pl => ({
-              ...pl,
-              smart_link_id: smartLink.id
-            }));
-
-            console.log('Attempting to insert platform links:', platformLinksWithId);
-
-            const { error: platformError } = await supabaseAdmin
-              .from('platform_links')
-              .insert(platformLinksWithId);
-
-            if (platformError) {
-              console.error('Error inserting platform links:', platformError);
-              throw new Error(`Failed to insert platform links: ${platformError.message}`);
-            }
-            console.log('Successfully inserted platform links');
-          } else {
-            console.log('No valid platform links found to insert');
-          }
-        }
-
-        results.success++;
-        console.log(`Successfully processed item: ${title}`);
-
-      } catch (error) {
-        console.error('Error processing item:', error);
-        results.errors.push({
-          link: extractCDATAContent(item.title) || 'Unknown',
-          error: error.message
-        });
-      }
-    }
-
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-  } catch (error) {
-    console.error('Error processing import:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
-
 function extractCDATAContent(value: any): string {
   if (!value) return '';
   
@@ -305,3 +149,175 @@ function extractCDATAContent(value: any): string {
   return '';
 }
 
+async function processItem(
+  item: any,
+  supabaseAdmin: any
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const title = extractCDATAContent(item.title) || '';
+    console.log(`Processing link: ${title}`);
+
+    const creatorEmail = extractCDATAContent(item['dc:creator']);
+    if (!creatorEmail) {
+      console.log('No creator email found, skipping');
+      return { success: false, error: 'No creator email found' };
+    }
+
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', creatorEmail)
+      .single();
+
+    if (userError || !userData) {
+      console.log(`No matching user found for email: ${creatorEmail}`);
+      return { success: false, error: 'No matching user found' };
+    }
+
+    const metas = item['wp:postmeta'] || [];
+    let artistName = '';
+    let artworkUrl = '';
+    let platformLinksData = null;
+
+    for (const meta of metas) {
+      const key = extractCDATAContent(meta['wp:meta_key']);
+      const value = extractCDATAContent(meta['wp:meta_value']);
+
+      if (key === '_links' && value) {
+        platformLinksData = value;
+      } else if (key === '_artist_name' && value) {
+        artistName = value;
+      } else if (key === '_default_image' && value) {
+        artworkUrl = value;
+      }
+    }
+
+    const { data: smartLink, error: insertError } = await supabaseAdmin
+      .from('smart_links')
+      .insert({
+        user_id: userData.id,
+        title,
+        artist_name: artistName || 'Unknown Artist',
+        artwork_url: artworkUrl || null,
+        slug: extractCDATAContent(item['wp:post_name']) || undefined
+      })
+      .select()
+      .single();
+
+    if (insertError || !smartLink) {
+      throw new Error(`Failed to insert smart link: ${insertError?.message}`);
+    }
+
+    if (platformLinksData) {
+      const platformLinks = parsePlatformLinks(platformLinksData);
+
+      if (platformLinks.length > 0) {
+        const platformLinksWithId = platformLinks.map(pl => ({
+          ...pl,
+          smart_link_id: smartLink.id
+        }));
+
+        const { error: platformError } = await supabaseAdmin
+          .from('platform_links')
+          .insert(platformLinksWithId);
+
+        if (platformError) {
+          throw new Error(`Failed to insert platform links: ${platformError.message}`);
+        }
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error processing item:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const formData = await req.formData();
+    const file = formData.get('file');
+    const testMode = formData.get('testMode') === 'true';
+    
+    if (!file || !(file instanceof File)) {
+      throw new Error('No file uploaded');
+    }
+
+    const text = await file.text();
+    console.log('Parsing XML file...');
+    const xmlDoc = parse(text);
+
+    if (!xmlDoc || !xmlDoc.rss || !xmlDoc.rss.channel) {
+      throw new Error('Invalid XML file structure');
+    }
+
+    let items = xmlDoc.rss.channel.item || [];
+    console.log(`Found ${items.length} items in XML`);
+
+    // In test mode, only process first 10 items
+    if (testMode) {
+      items = items.slice(0, 10);
+      console.log('Test mode: processing first 10 items only');
+    }
+
+    const results = {
+      total: items.length,
+      success: 0,
+      errors: [] as { link: string; error: string }[],
+      unassigned: [] as string[]
+    };
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') as string,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
+    );
+
+    // Process items in batches of 50
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      const batch = items.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(items.length / BATCH_SIZE)}`);
+      
+      const batchResults = await Promise.all(
+        batch.map(async (item) => {
+          const result = await processItem(item, supabaseAdmin);
+          const title = extractCDATAContent(item.title) || 'Unknown';
+          
+          if (result.success) {
+            results.success++;
+          } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
+            results.unassigned.push(title);
+          } else {
+            results.errors.push({ link: title, error: result.error || 'Unknown error' });
+          }
+          
+          return result;
+        })
+      );
+      
+      // Add a small delay between batches to prevent resource exhaustion
+      if (i + BATCH_SIZE < items.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    return new Response(JSON.stringify(results), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Error processing import:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});
