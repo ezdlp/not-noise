@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Feature = 'platform_reordering' | 'all_platforms' | 'email_capture' | 'social_assets';
 
-const FREE_PLATFORMS = ['spotify', 'youtubeMusic', 'appleMusic', 'amazonMusic', 'deezer'];
+const FREE_PLATFORMS = [
+  'spotify',
+  'appleMusic',
+  'youtubeMusic',
+  'amazonMusic',
+  'deezer',
+  'soundcloud',
+  'youtube',
+  'itunes'
+];
 
 export function useFeatureAccess() {
   const { data: subscription } = useQuery({
