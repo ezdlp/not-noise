@@ -17,28 +17,63 @@ interface ResetSummary {
   failed: number;
 }
 
+interface BatchProgress {
+  processed: number;
+  total: number;
+  complete: boolean;
+}
+
 export function SendPasswordResetEmails() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [summary, setSummary] = useState<ResetSummary | null>(null);
   const [results, setResults] = useState<ResetResult[]>([]);
+  const [progress, setProgress] = useState<BatchProgress | null>(null);
+
+  const processBatch = async (offset: number = 0) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { offset }
+      });
+
+      if (error) throw error;
+
+      // Accumulate results
+      setResults(prev => [...prev, ...data.results]);
+      
+      // Update summary
+      setSummary(prev => ({
+        total: (prev?.total || 0) + data.summary.total,
+        successful: (prev?.successful || 0) + data.summary.successful,
+        failed: (prev?.failed || 0) + data.summary.failed,
+      }));
+
+      // Update progress
+      setProgress(data.progress);
+
+      // If there are more users to process, continue with next batch
+      if (!data.progress.complete) {
+        await processBatch(data.nextOffset);
+      } else {
+        toast.success(`Successfully sent ${data.progress.processed} password reset emails`);
+        if (data.summary.failed > 0) {
+          toast.error(`Failed to send ${data.summary.failed} emails`);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing batch:', error);
+      toast.error('Error processing password reset emails');
+      setIsProcessing(false);
+    }
+  };
 
   const sendResetEmails = async () => {
     try {
       setIsProcessing(true);
       setSummary(null);
       setResults([]);
+      setProgress(null);
 
-      const { data, error } = await supabase.functions.invoke('send-password-reset');
-
-      if (error) throw error;
-
-      setSummary(data.summary);
-      setResults(data.results);
-
-      toast.success(`Successfully sent ${data.summary.successful} password reset emails`);
-      if (data.summary.failed > 0) {
-        toast.error(`Failed to send ${data.summary.failed} emails`);
-      }
+      await processBatch(0);
     } catch (error) {
       console.error('Error sending password reset emails:', error);
       toast.error('Failed to send password reset emails');
@@ -46,6 +81,10 @@ export function SendPasswordResetEmails() {
       setIsProcessing(false);
     }
   };
+
+  const progressPercent = progress 
+    ? Math.round((progress.processed / progress.total) * 100)
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -64,11 +103,11 @@ export function SendPasswordResetEmails() {
         </Button>
       </div>
 
-      {isProcessing && (
+      {isProcessing && progress && (
         <div className="space-y-2">
-          <Progress value={undefined} className="w-full" />
+          <Progress value={progressPercent} className="w-full" />
           <p className="text-sm text-muted-foreground">
-            Sending password reset emails...
+            Processing users: {progress.processed} of {progress.total} ({progressPercent}%)
           </p>
         </div>
       )}

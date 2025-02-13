@@ -1,2 +1,6 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
+
+[http]
+cors_allow_origin = ["https://soundraiser.io"]
+cors_max_age = 86400

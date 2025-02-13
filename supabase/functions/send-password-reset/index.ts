@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://soundraiser.io',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Max-Age': '86400', // 24 hours cache for preflight requests
+  'Access-Control-Max-Age': '86400',
 };
 
 // Create Supabase client with admin privileges
@@ -21,8 +21,8 @@ const supabaseAdmin = createClient(
   }
 );
 
-const BATCH_SIZE = 25; // Process users in batches
-const DELAY_BETWEEN_EMAILS = 200; // 200ms delay between emails to avoid rate limiting
+const BATCH_SIZE = 10; // Reduced batch size to avoid timeouts
+const DELAY_BETWEEN_EMAILS = 200;
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -45,7 +45,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
         console.error(`Error generating reset link for ${user.email}:`, error);
         results.push({ email: user.email, success: false, error: error.message });
         
-        // Update migration status
         await supabaseAdmin
           .from('user_migration_status')
           .upsert({
@@ -59,7 +58,6 @@ async function processUserBatch(users: { id: string; email: string }[]) {
         console.log(`Successfully generated reset link for ${user.email}`);
         results.push({ email: user.email, success: true });
         
-        // Update migration status
         await supabaseAdmin
           .from('user_migration_status')
           .upsert({
@@ -72,13 +70,11 @@ async function processUserBatch(users: { id: string; email: string }[]) {
           }, { onConflict: 'user_id' });
       }
 
-      // Add delay between emails
       await sleep(DELAY_BETWEEN_EMAILS);
     } catch (error) {
       console.error(`Unexpected error for ${user.email}:`, error);
       results.push({ email: user.email, success: false, error: error.message });
       
-      // Update migration status
       await supabaseAdmin
         .from('user_migration_status')
         .upsert({
@@ -99,16 +95,20 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { 
       headers: corsHeaders,
-      status: 204 // Successful preflight should return 204
+      status: 204
     });
   }
 
   try {
-    // Get all users with emails from profiles
-    const { data: users, error: fetchError } = await supabaseAdmin
+    // Get request parameters
+    const { offset = 0, limit = BATCH_SIZE } = await req.json().catch(() => ({}));
+    
+    // Get users with pagination
+    const { data: users, error: fetchError, count } = await supabaseAdmin
       .from('profiles')
-      .select('id, email')
-      .not('email', 'is', null);
+      .select('id, email', { count: 'exact' })
+      .not('email', 'is', null)
+      .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Error fetching users: ${fetchError.message}`);
@@ -116,17 +116,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!users || users.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No users found" }),
+        JSON.stringify({ 
+          message: "No more users to process",
+          complete: true
+        }),
         {
-          status: 404,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
-    console.log(`Found ${users.length} users to process`);
+    console.log(`Processing users ${offset + 1} to ${offset + users.length} of ${count}`);
 
-    // Initialize migration status for all users
+    // Initialize migration status for this batch
     const migrationStatusData = users.map(user => ({
       user_id: user.id,
       email: user.email,
@@ -137,14 +140,8 @@ const handler = async (req: Request): Promise<Response> => {
       .from('user_migration_status')
       .upsert(migrationStatusData, { onConflict: 'user_id' });
 
-    // Process users in batches
-    const results = [];
-    for (let i = 0; i < users.length; i += BATCH_SIZE) {
-      const batch = users.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(users.length / BATCH_SIZE)}`);
-      const batchResults = await processUserBatch(batch);
-      results.push(...batchResults);
-    }
+    // Process the current batch
+    const results = await processUserBatch(users);
 
     // Calculate summary
     const successful = results.filter(r => r.success).length;
@@ -152,12 +149,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        message: "Password reset process completed",
+        message: "Batch processing completed",
         summary: {
           total: results.length,
           successful,
           failed,
         },
+        progress: {
+          processed: offset + users.length,
+          total: count,
+          complete: offset + users.length >= count,
+        },
+        nextOffset: offset + users.length,
         results
       }),
       {
