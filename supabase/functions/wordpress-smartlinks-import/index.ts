@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -247,9 +246,10 @@ serve(async (req) => {
       unassigned: [] as string[]
     };
 
-    // Parse XML with DOM parser
+    // Parse XML as HTML since text/xml is not supported
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/xml");
+    console.log('[Import] Attempting to parse XML content');
+    const xmlDoc = parser.parseFromString(text, "text/html");
     
     if (!xmlDoc) {
       console.error('[Import] Failed to parse XML document');
@@ -258,9 +258,11 @@ serve(async (req) => {
 
     console.log('[Import] XML parsed successfully');
     
-    const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => 
-      item.querySelector('wp\\:post_type')?.textContent === 'smart-link'
-    );
+    const items = Array.from(xmlDoc.querySelectorAll('item')).filter(item => {
+      const postType = item.querySelector('wp\\:post_type');
+      console.log('[Import] Found item with post type:', postType?.textContent);
+      return postType?.textContent === 'smart-link';
+    });
 
     console.log(`[Import] Found ${items.length} smart link items`);
 
@@ -278,16 +280,20 @@ serve(async (req) => {
     for (const item of itemsToProcess) {
       results.total++;
       const title = item.querySelector('title')?.textContent || 'Untitled';
+      console.log(`[Import] Processing item: ${title}`);
       
       try {
         const result = await processItem(item, supabaseAdmin);
         
         if (result.success) {
           results.success++;
+          console.log(`[Import] Successfully processed: ${title}`);
         } else if (result.error === 'No matching user found' || result.error === 'No creator email found') {
           results.unassigned.push(title);
+          console.log(`[Import] Unassigned: ${title} - ${result.error}`);
         } else {
           results.errors.push({ link: title, error: result.error || 'Unknown error' });
+          console.log(`[Import] Error processing: ${title} - ${result.error}`);
         }
       } catch (error) {
         console.error('[Import] Error processing item:', error);
@@ -326,4 +332,3 @@ serve(async (req) => {
     );
   }
 });
-
