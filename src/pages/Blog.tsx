@@ -25,18 +25,24 @@ export default function Blog() {
   const { data, isLoading } = useQuery({
     queryKey: ["blog-posts", currentPage],
     queryFn: async () => {
-      const { data: blogCategory } = await supabase
+      // First, get the Blog category
+      const { data: blogCategory, error: categoryError } = await supabase
         .from("blog_categories")
         .select("id")
         .eq("name", "Blog")
-        .single();
+        .maybeSingle();
 
-      if (!blogCategory) {
-        console.error("Blog category not found");
+      if (categoryError) {
+        console.error("Error fetching blog category:", categoryError);
         return { posts: [], total: 0 };
       }
 
-      // First, get total count
+      if (!blogCategory) {
+        console.warn("Blog category not found");
+        return { posts: [], total: 0 };
+      }
+
+      // Get total count
       const { count } = await supabase
         .from("blog_posts")
         .select(`
@@ -82,6 +88,7 @@ export default function Blog() {
         total: count || 0
       };
     },
+    retry: 1,
   });
 
   const totalPages = data ? Math.ceil(data.total / postsPerPage) : 0;
