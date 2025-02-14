@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, User, CreditCard } from "lucide-react";
+import { Settings, User, CreditCard, CheckCircle, X, Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
+import { Progress } from "@/components/ui/progress";
 
 export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,20 @@ export default function AccountSettings() {
     new: "",
     confirm: "",
   });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+  });
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -124,6 +139,25 @@ export default function AccountSettings() {
     setLoading(false);
   };
 
+  const checkPasswordRequirements = (password: string) => {
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    };
+    setPasswordRequirements(requirements);
+
+    let strength = 0;
+    if (requirements.minLength) strength += 25;
+    if (requirements.hasUppercase) strength += 25;
+    if (requirements.hasLowercase) strength += 25;
+    if (requirements.hasNumber) strength += 25;
+    setPasswordStrength(strength);
+
+    return requirements;
+  };
+
   const updatePassword = async () => {
     if (passwords.new !== passwords.confirm) {
       toast({
@@ -134,25 +168,49 @@ export default function AccountSettings() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ 
-      password: passwords.new 
-    });
+    if (passwordStrength < 75) {
+      toast({
+        title: "Weak password",
+        description: "Please ensure your password meets all the requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (error) {
+    setUpdating(true);
+    setUpdateSuccess(false);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password: passwords.new 
+      });
+
+      if (error) throw error;
+
+      setUpdateSuccess(true);
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
+      });
+      
+      setPasswords({ current: "", new: "", confirm: "" });
+      setPasswordStrength(0);
+      setPasswordRequirements({
+        minLength: false,
+        hasUppercase: false,
+        hasLowercase: false,
+        hasNumber: false,
+      });
+      
+    } catch (error: any) {
       toast({
         title: "Error updating password",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Password updated",
-        description: "Your password has been updated successfully.",
-      });
-      setPasswords({ current: "", new: "", confirm: "" });
+    } finally {
+      setUpdating(false);
     }
-    setLoading(false);
   };
 
   const deleteAccount = async () => {
@@ -396,41 +454,139 @@ export default function AccountSettings() {
               <CardTitle>Password</CardTitle>
               <CardDescription>Change your password</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4">
+            <CardContent className="space-y-6">
+              {updateSuccess && (
+                <div className="flex items-center gap-2 p-4 bg-primary/10 text-primary rounded-lg mb-4">
+                  <CheckCircle className="h-5 w-5" />
+                  <span>Password successfully updated</span>
+                </div>
+              )}
+              
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
-                  <Input
-                    id="current-password"
-                    type="password"
-                    value={passwords.current}
-                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="current-password"
+                      type={showPasswords.current ? "text" : "password"}
+                      value={passwords.current}
+                      onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPasswords.current ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={passwords.new}
-                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPasswords.new ? "text" : "password"}
+                      value={passwords.new}
+                      onChange={(e) => {
+                        setPasswords({ ...passwords, new: e.target.value });
+                        checkPasswordRequirements(e.target.value);
+                      }}
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPasswords.new ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  <Progress 
+                    value={passwordStrength} 
+                    className="h-1" 
+                    style={{
+                      backgroundColor: '#ECE9FF',
+                      '--progress-background': '#6851FB'
+                    } as React.CSSProperties}
                   />
+                  <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                    {[
+                      { key: 'minLength', label: 'At least 8 characters' },
+                      { key: 'hasUppercase', label: 'One uppercase letter' },
+                      { key: 'hasLowercase', label: 'One lowercase letter' },
+                      { key: 'hasNumber', label: 'One number' },
+                    ].map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`flex items-center gap-2 ${
+                          passwordRequirements[key as keyof typeof passwordRequirements]
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {passwordRequirements[key as keyof typeof passwordRequirements] ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <X className="h-4 w-4" />
+                        )}
+                        <span>{label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={passwords.confirm}
-                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPasswords.confirm ? "text" : "password"}
+                      value={passwords.confirm}
+                      onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPasswords.confirm ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <Button onClick={updatePassword} disabled={loading} className="w-full md:w-auto">
-                {loading ? "Updating..." : "Update Password"}
+              <Button 
+                onClick={updatePassword} 
+                disabled={updating || !passwords.current || !passwords.new || !passwords.confirm}
+                className="w-full md:w-auto"
+              >
+                {updating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Password'
+                )}
               </Button>
             </CardContent>
           </Card>
