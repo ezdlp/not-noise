@@ -466,7 +466,7 @@ export default function Register() {
             href="https://policies.google.com/privacy" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-inherit hover:underline"
           >
             Privacy Policy
           </a>{" "}
@@ -475,7 +475,7 @@ export default function Register() {
             href="https://policies.google.com/terms" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-inherit hover:underline"
           >
             Terms of Service
           </a>{" "}
