@@ -30,7 +30,7 @@ interface ChunkProgress {
   total: number;
 }
 
-interface ImportStatsProps {
+export interface ImportStatsProps {
   onComplete?: () => void;
 }
 
