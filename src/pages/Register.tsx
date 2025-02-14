@@ -24,6 +24,7 @@ declare global {
     grecaptcha: {
       ready: (callback: () => void) => void;
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      render: (container: string | HTMLElement, options: any) => number;
     };
   }
 }
@@ -48,6 +49,7 @@ export default function Register() {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -56,29 +58,35 @@ export default function Register() {
   });
 
   useEffect(() => {
-    // Load reCAPTCHA script
-    const script = document.createElement('script');
-    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
-    script.async = true;
-    script.defer = true;
-    
-    script.onload = () => {
-      window.grecaptcha.ready(() => {
-        console.log('reCAPTCHA loaded');
-        setRecaptchaLoaded(true);
-      });
+    const initializeRecaptcha = () => {
+      if (typeof window.grecaptcha === 'undefined') {
+        console.log('reCAPTCHA not loaded yet, retrying...');
+        setTimeout(initializeRecaptcha, 100);
+        return;
+      }
+
+      try {
+        window.grecaptcha.ready(() => {
+          const widgetId = window.grecaptcha.render('recaptcha-container', {
+            sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+            size: 'invisible',
+            callback: () => setRecaptchaLoaded(true),
+            'error-callback': () => {
+              console.error('reCAPTCHA error');
+              setRecaptchaLoaded(false);
+            }
+          });
+          setRecaptchaWidgetId(widgetId);
+          setRecaptchaLoaded(true);
+          console.log('reCAPTCHA initialized successfully');
+        });
+      } catch (error) {
+        console.error('Error initializing reCAPTCHA:', error);
+        setRecaptchaLoaded(false);
+      }
     };
 
-    script.onerror = () => {
-      console.error('Error loading reCAPTCHA');
-      setError('Error loading security verification. Please try again.');
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
+    initializeRecaptcha();
   }, []);
 
   useEffect(() => {
@@ -129,13 +137,21 @@ export default function Register() {
 
   const verifyRecaptcha = async () => {
     try {
-      if (!recaptchaLoaded) {
+      if (!recaptchaLoaded || recaptchaWidgetId === null) {
         throw new Error('reCAPTCHA not loaded');
       }
 
       console.log('Executing reCAPTCHA...');
-      const token = await window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, {
-        action: 'register'
+      const token = await new Promise<string>((resolve, reject) => {
+        window.grecaptcha.ready(() => {
+          try {
+            window.grecaptcha.execute(recaptchaWidgetId)
+              .then(resolve)
+              .catch(reject);
+          } catch (error) {
+            reject(error);
+          }
+        });
       });
       
       console.log('Verifying token with edge function...');
@@ -505,6 +521,8 @@ export default function Register() {
               </button>
             </div>
           </div>
+
+          <div id="recaptcha-container"></div>
 
           <Button
             type="submit"
