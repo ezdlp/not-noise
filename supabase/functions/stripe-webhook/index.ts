@@ -102,20 +102,50 @@ async function updateSubscriptionWithRetry(
 ): Promise<void> {
   for (let i = 0; i < retries; i++) {
     try {
-      const { error: upsertError } = await supabaseClient
+      // First, try to find an existing subscription for this user
+      const { data: existingSub, error: fetchError } = await supabaseClient
         .from('subscriptions')
-        .upsert({
-          user_id: userId,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          tier,
-          status,
-          current_period_end: currentPeriodEnd,
-          cancel_at_period_end: cancelAtPeriodEnd
-        });
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-      if (upsertError) {
-        throw upsertError;
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw fetchError;
+      }
+
+      // Update or insert the subscription
+      const subscriptionData = {
+        user_id: userId,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        tier,
+        status,
+        current_period_end: currentPeriodEnd,
+        cancel_at_period_end: cancelAtPeriodEnd,
+        updated_at: new Date().toISOString()
+      };
+
+      let error;
+      if (existingSub) {
+        // Update existing subscription
+        const { error: updateError } = await supabaseClient
+          .from('subscriptions')
+          .update(subscriptionData)
+          .eq('user_id', userId);
+        error = updateError;
+      } else {
+        // Insert new subscription
+        const { error: insertError } = await supabaseClient
+          .from('subscriptions')
+          .insert({
+            ...subscriptionData,
+            created_at: new Date().toISOString()
+          });
+        error = insertError;
+      }
+
+      if (error) {
+        throw error;
       }
       
       logWebhookEvent('subscription_update', {
@@ -123,7 +153,8 @@ async function updateSubscriptionWithRetry(
         customerId,
         subscriptionId,
         tier,
-        status
+        status,
+        isNew: !existingSub
       });
       
       return;
@@ -317,12 +348,13 @@ serve(async (req) => {
           subscriptionId: subscription.id
         });
 
-        // Update subscription status with retry logic
+        // Update subscription status
         const { data: subData, error: updateError } = await supabaseClient
           .from('subscriptions')
           .update({
             status: 'canceled',
-            tier: 'free'
+            tier: 'free',
+            updated_at: new Date().toISOString()
           })
           .eq('stripe_customer_id', customerId)
           .select('user_id')
@@ -370,3 +402,4 @@ serve(async (req) => {
     );
   }
 });
+
