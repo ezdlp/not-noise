@@ -145,7 +145,7 @@ export default function Register() {
       const token = await new Promise<string>((resolve, reject) => {
         window.grecaptcha.ready(() => {
           try {
-            window.grecaptcha.execute(recaptchaWidgetId)
+            window.grecaptcha.execute(recaptchaWidgetId, { action: 'register' })
               .then(resolve)
               .catch(reject);
           } catch (error) {
