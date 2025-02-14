@@ -129,6 +129,18 @@ const Login = () => {
                 required
               />
             </div>
+            <div className="flex justify-end">
+              <Button
+                variant="link"
+                className="p-0 h-auto text-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/reset-password");
+                }}
+              >
+                Forgot your password?
+              </Button>
+            </div>
           </div>
 
           <Button
