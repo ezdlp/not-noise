@@ -4,14 +4,25 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock } from "lucide-react";
+import { Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 const UpdatePassword = () => {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,8 +45,36 @@ const UpdatePassword = () => {
     }
   }, [navigate]);
 
+  const checkPasswordRequirements = (password: string) => {
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    };
+    setPasswordRequirements(requirements);
+
+    let strength = 0;
+    if (requirements.minLength) strength += 25;
+    if (requirements.hasUppercase) strength += 25;
+    if (requirements.hasLowercase) strength += 25;
+    if (requirements.hasNumber) strength += 25;
+    setPasswordStrength(strength);
+
+    return requirements;
+  };
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (passwordStrength < 75) {
+      setError("Password is not strong enough");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -79,17 +118,90 @@ const UpdatePassword = () => {
         )}
 
         <form onSubmit={handleUpdatePassword} className="mt-8 space-y-6">
-          <div className="relative">
-            <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="password"
-              placeholder="New password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              required
-              minLength={6}
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="New password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    checkPasswordRequirements(e.target.value);
+                  }}
+                  className="pl-10 pr-10"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <Progress 
+                value={passwordStrength} 
+                className="h-1" 
+                style={{
+                  backgroundColor: '#ECE9FF',
+                  '--progress-background': '#6851FB'
+                } as React.CSSProperties} 
+              />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {[
+                  { key: 'minLength', label: 'At least 8 characters' },
+                  { key: 'hasUppercase', label: 'One uppercase letter' },
+                  { key: 'hasLowercase', label: 'One lowercase letter' },
+                  { key: 'hasNumber', label: 'One number' },
+                ].map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-2 ${
+                      passwordRequirements[key as keyof typeof passwordRequirements]
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {passwordRequirements[key as keyof typeof passwordRequirements] ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pl-10 pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <Button
@@ -97,7 +209,14 @@ const UpdatePassword = () => {
             className="w-full"
             disabled={loading}
           >
-            {loading ? "Updating..." : "Update Password"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Password'
+            )}
           </Button>
         </form>
       </div>
