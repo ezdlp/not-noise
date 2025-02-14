@@ -80,21 +80,21 @@ export default function SmartLinks() {
             email,
             artist_name
           ),
-          platform_links!inner (
+          platform_links (
             id,
             platform_id,
             platform_name,
             url,
-            platform_clicks!inner (
+            platform_clicks (
               id,
               clicked_at
             )
           ),
-          link_views!inner (
+          link_views (
             id,
             viewed_at
           ),
-          email_subscribers!inner (
+          email_subscribers (
             id
           )
         `)
