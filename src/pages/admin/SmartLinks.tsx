@@ -75,26 +75,26 @@ export default function SmartLinks() {
         .from("smart_links")
         .select(`
           *,
-          profiles (
+          profiles!inner (
             name,
             email,
             artist_name
           ),
-          platform_links (
+          platform_links!inner (
             id,
             platform_id,
             platform_name,
             url,
-            platform_clicks (
+            platform_clicks!inner (
               id,
               clicked_at
             )
           ),
-          link_views (
+          link_views!inner (
             id,
             viewed_at
           ),
-          email_subscribers (
+          email_subscribers!inner (
             id
           )
         `)
