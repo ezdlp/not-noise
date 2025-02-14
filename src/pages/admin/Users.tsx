@@ -96,9 +96,11 @@ export default function UsersPage() {
           .from("profiles")
           .select(`
             *,
-            user_roles (
-              id,
-              role
+            subscriptions (
+              tier,
+              is_lifetime,
+              is_early_adopter,
+              current_period_end
             ),
             smart_links (
               id,
@@ -122,13 +124,7 @@ export default function UsersPage() {
           throw profilesError;
         }
 
-        // Transform the data to ensure smart_links is always an array
-        const transformedProfiles = profiles?.map(profile => ({
-          ...profile,
-          smart_links: Array.isArray(profile.smart_links) ? profile.smart_links : []
-        })) as Profile[];
-
-        return transformedProfiles;
+        return profiles as Profile[];
       } catch (error) {
         console.error("Error in query function:", error);
         toast.error("Failed to load users");
@@ -234,7 +230,7 @@ export default function UsersPage() {
               <TableHead className="font-heading">Artist Name</TableHead>
               <TableHead className="font-heading">Genre</TableHead>
               <TableHead className="font-heading">Country</TableHead>
-              <TableHead className="font-heading">Role</TableHead>
+              <TableHead className="font-heading">Plan</TableHead>
               <TableHead className="font-heading">Smart Links</TableHead>
               <TableHead 
                 className="font-heading cursor-pointer"
@@ -254,11 +250,19 @@ export default function UsersPage() {
                 <TableCell>{user.artist_name}</TableCell>
                 <TableCell>{user.music_genre}</TableCell>
                 <TableCell>{user.country}</TableCell>
-                <TableCell>{user.user_roles?.[0]?.role || "user"}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    user.subscriptions?.[0]?.tier === 'pro' 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'bg-neutral text-muted-foreground'
+                  }`}>
+                    {user.subscriptions?.[0]?.tier === 'pro' ? 'Pro' : 'Free'}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Button 
                     variant="link" 
-                    onClick={() => navigate(`/admin/users/${user.id}/links`)}
+                    onClick={() => navigate(`/control-room/smart-links?userId=${user.id}`)}
                     className="text-primary hover:text-primary-medium transition-colors"
                   >
                     {user.smart_links?.length || 0} links

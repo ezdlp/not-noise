@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from 'react';
 import {
@@ -16,11 +17,12 @@ import {
   TrashIcon, 
   SearchIcon,
   Link2Icon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  ArrowLeft
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { SmartLink } from "@/types/database";
 import { Card } from "@/components/ui/card";
@@ -29,9 +31,28 @@ export default function SmartLinks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get('userId');
+
+  const { data: userData } = useQuery({
+    queryKey: ["adminUser", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId
+  });
 
   const { data: smartLinks, isLoading } = useQuery({
-    queryKey: ["adminSmartLinks"],
+    queryKey: ["adminSmartLinks", userId],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -50,7 +71,7 @@ export default function SmartLinks() {
         throw new Error("Not authorized");
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("smart_links")
         .select(`
           *,
@@ -78,6 +99,12 @@ export default function SmartLinks() {
           )
         `)
         .order('created_at', { ascending: false });
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching smart links:", error);
@@ -121,12 +148,26 @@ export default function SmartLinks() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-bold tracking-tight">
-            All Smart Links
-          </h1>
-          <p className="text-muted-foreground">
-            Overview of all smart links created on the platform
-          </p>
+          <div className="flex items-center gap-4">
+            {userId && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/control-room/users')}
+                className="mr-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Users
+              </Button>
+            )}
+            <div>
+              <h1 className="text-3xl font-heading font-bold tracking-tight">
+                {userData ? `Smart Links for ${userData.name}` : 'All Smart Links'}
+              </h1>
+              <p className="text-muted-foreground">
+                {userData ? `Viewing links created by ${userData.artist_name || userData.name}` : 'Overview of all smart links created on the platform'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -156,7 +197,7 @@ export default function SmartLinks() {
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Artist</TableHead>
-              <TableHead>Created By</TableHead>
+              {!userId && <TableHead>Created By</TableHead>}
               <TableHead>Created</TableHead>
               <TableHead>Views</TableHead>
               <TableHead>Clicks</TableHead>
@@ -177,14 +218,16 @@ export default function SmartLinks() {
                 <TableRow key={link.id}>
                   <TableCell className="font-medium">{link.title}</TableCell>
                   <TableCell>{link.artist_name}</TableCell>
-                  <TableCell>
-                    <div>
-                      <div>{link.profiles?.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {link.profiles?.email}
+                  {!userId && (
+                    <TableCell>
+                      <div>
+                        <div>{link.profiles?.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {link.profiles?.email}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
+                  )}
                   <TableCell>
                     {formatDistanceToNow(new Date(link.created_at), { addSuffix: true })}
                   </TableCell>
