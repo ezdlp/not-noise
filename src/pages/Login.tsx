@@ -139,16 +139,27 @@ const Login = () => {
             {loading ? "Signing in..." : "Sign in"}
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Button
-              variant="link"
-              className="p-0 h-auto font-normal"
-              onClick={() => navigate("/register")}
-            >
-              Register here
-            </Button>
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Button
+                variant="link"
+                className="p-0 h-auto font-normal"
+                onClick={() => navigate("/register")}
+              >
+                Register here
+              </Button>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <Button
+                variant="link"
+                className="p-0 h-auto font-normal"
+                onClick={() => navigate("/reset-password")}
+              >
+                Forgot your password?
+              </Button>
+            </p>
+          </div>
         </form>
       </div>
     </div>

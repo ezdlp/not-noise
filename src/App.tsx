@@ -13,10 +13,14 @@ function AppLayout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/control-room');
   const isSmartLinkRoute = location.pathname.startsWith('/link/');
+  const isAuthRoute = location.pathname === '/login' || 
+                     location.pathname === '/register' || 
+                     location.pathname === '/reset-password' ||
+                     location.pathname === '/update-password';
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
-      {!isAdminRoute && !isSmartLinkRoute && <Header />}
+      {!isAdminRoute && !isSmartLinkRoute && !isAuthRoute && <Header />}
       <AppContent />
       <CookieConsent />
     </div>

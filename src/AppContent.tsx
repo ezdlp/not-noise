@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import SmartLink from "@/pages/SmartLink";
@@ -29,14 +28,17 @@ import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminImport from "@/pages/admin/Import";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { UserMigration } from "@/pages/admin";
+import ResetPassword from "@/pages/ResetPassword";
+import UpdatePassword from "@/pages/UpdatePassword";
 
-const AppContent = () => {
+export default function AppContent() {
   return (
     <Routes>
-      {/* Public routes */}
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/blog" element={<Blog />} />
@@ -45,11 +47,9 @@ const AppContent = () => {
       <Route path="/spotify-royalty-calculator" element={<StreamingCalculator />} />
       <Route path="/streaming-royalty-calculator" element={<Navigate to="/spotify-royalty-calculator" replace />} />
       
-      {/* SEO-friendly redirects */}
       <Route path="/links-creator" element={<Navigate to="/create" replace />} />
       <Route path="/my-links" element={<Navigate to="/dashboard" replace />} />
       
-      {/* Spotify Playlist Promotion routes */}
       <Route path="/spotify-playlist-promotion">
         <Route index element={<SpotifyPlaylistPromotion />} />
         <Route path="pricing" element={<PricingSection />} />
@@ -58,17 +58,14 @@ const AppContent = () => {
       
       <Route path="/:slug" element={<PublicBlogPost />} />
       
-      {/* Smart Link public view */}
       <Route path="/link/:slug" element={<SmartLink />} />
-
-      {/* Authenticated routes */}
+      
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/create" element={<CreateSmartLink />} />
       <Route path="/links/:id/edit" element={<EditSmartLink />} />
       <Route path="/links/:id/analytics" element={<SmartLinkAnalytics />} />
       <Route path="/settings" element={<AccountSettings />} />
-
-      {/* Admin routes - protected and with new path */}
+      
       <Route path="/control-room" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminOverview />} />
         <Route path="analytics" element={<AdminAnalytics />} />
@@ -82,6 +79,4 @@ const AppContent = () => {
       </Route>
     </Routes>
   );
-};
-
-export default AppContent;
+}
