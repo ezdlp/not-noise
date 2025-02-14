@@ -68,10 +68,15 @@ export default function SmartLinks() {
   const { data: totalCount } = useQuery({
     queryKey: ["adminTotalSmartLinks", userId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from("smart_links")
-        .select('*', { count: 'exact', head: true })
-        .eq(userId ? 'user_id' : 'id', userId ?? 'id');
+        .select('*', { count: 'exact', head: true });
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { count, error } = await query;
 
       if (error) throw error;
       return count ?? 0;
