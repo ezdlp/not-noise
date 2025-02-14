@@ -6,16 +6,22 @@ export interface Profile {
   music_genre: string;
   country: string;
   email?: string;
-  created_at?: string; // Adding this field
+  created_at?: string;
   user_roles: { 
-    id?: string;  // Made optional since it's not always returned
+    id?: string;
     role: 'admin' | 'user';
   }[];
   smart_links?: SmartLink[];
+  subscriptions?: {
+    tier: 'free' | 'pro';
+    is_lifetime?: boolean;
+    is_early_adopter?: boolean;
+    current_period_end?: string;
+  }[];
 }
 
 export interface UserRole {
-  id?: string; // Made optional to match the actual data structure
+  id?: string;
   role: 'admin' | 'user';
 }
 
@@ -28,8 +34,8 @@ export interface SmartLink {
   created_at: string;
   user_id: string;
   profiles?: {
-    name?: string;  // Made optional
-    email?: string; // Made optional
+    name?: string;
+    email?: string;
   } | null;
   link_views?: LinkView[];
   platform_links?: PlatformLink[];
