@@ -1,8 +1,5 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
 
-[functions.wordpress-smartlinks-import]
-verify_jwt = false
-
-[functions.wordpress-smartlinks-stats-import]
+[sitemap]
 verify_jwt = false
