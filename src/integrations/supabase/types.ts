@@ -1472,6 +1472,13 @@ export type Database = {
             referencedRelation: "subscription_features"
             referencedColumns: ["tier"]
           },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey1"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_migration_status: {

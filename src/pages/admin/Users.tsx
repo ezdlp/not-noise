@@ -96,6 +96,10 @@ export default function UsersPage() {
           .from("profiles")
           .select(`
             *,
+            user_roles (
+              id,
+              role
+            ),
             subscriptions (
               tier,
               is_lifetime,
