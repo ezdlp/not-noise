@@ -18,8 +18,19 @@ import {
   SearchIcon,
   Link2Icon,
   ExternalLinkIcon,
-  ArrowLeft
+  ArrowLeft,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -33,6 +44,9 @@ export default function SmartLinks() {
   const [search, setSearch] = useState("");
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('userId');
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const { data: userData } = useQuery({
     queryKey: ["adminUser", userId],
@@ -51,8 +65,21 @@ export default function SmartLinks() {
     enabled: !!userId
   });
 
+  const { data: totalCount } = useQuery({
+    queryKey: ["adminTotalSmartLinks", userId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("smart_links")
+        .select('*', { count: 'exact', head: true })
+        .eq(userId ? 'user_id' : 'id', userId ?? 'id');
+
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const { data: smartLinks, isLoading } = useQuery({
-    queryKey: ["adminSmartLinks", userId],
+    queryKey: ["adminSmartLinks", userId, currentPage, pageSize, sortDirection],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -98,7 +125,8 @@ export default function SmartLinks() {
             id
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: sortDirection === 'asc' })
+        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
       if (userId) {
         query = query.eq('user_id', userId);
@@ -140,6 +168,8 @@ export default function SmartLinks() {
     link.profiles?.email?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPages = Math.ceil((totalCount ?? 0) / pageSize);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -174,7 +204,7 @@ export default function SmartLinks() {
       <Card className="p-6">
         <div className="flex items-center gap-2 text-2xl font-semibold">
           <Link2Icon className="h-5 w-5 text-primary" />
-          <span>{smartLinks?.length ?? 0}</span>
+          <span>{totalCount ?? 0}</span>
           <span className="text-muted-foreground text-base font-normal">total smart links</span>
         </div>
       </Card>
@@ -189,6 +219,26 @@ export default function SmartLinks() {
             className="pl-8"
           />
         </div>
+        <div className="flex items-center gap-4">
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(value) => {
+              setPageSize(parseInt(value));
+              setCurrentPage(0);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select page size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+                <SelectItem value="100">100 per page</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -198,7 +248,16 @@ export default function SmartLinks() {
               <TableHead>Title</TableHead>
               <TableHead>Artist</TableHead>
               {!userId && <TableHead>Created By</TableHead>}
-              <TableHead>Created</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="flex items-center gap-1"
+                >
+                  Created
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
               <TableHead>Views</TableHead>
               <TableHead>Clicks</TableHead>
               <TableHead>CTR</TableHead>
@@ -272,6 +331,32 @@ export default function SmartLinks() {
             })}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalCount ?? 0)} of {totalCount} results
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+            disabled={currentPage === 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+            disabled={currentPage >= totalPages - 1}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
