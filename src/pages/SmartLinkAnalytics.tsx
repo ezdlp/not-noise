@@ -17,6 +17,7 @@ import {
   LabelList,
 } from "recharts";
 import { StatCard } from "@/components/analytics/StatCard";
+import { StatCardsCarousel } from "@/components/analytics/StatCardsCarousel";
 import { formatDistanceToNow } from "date-fns";
 import { subDays } from "date-fns";
 
@@ -143,7 +144,7 @@ export default function SmartLinkAnalytics() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-4">
+      <div className="container mx-auto py-6 px-2 md:px-4">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-neutral-seasalt rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -165,6 +166,27 @@ export default function SmartLinkAnalytics() {
   ) || 0;
   const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
+  const stats = [
+    {
+      title: "Total Views",
+      value: totalViews,
+      type: 'views' as const,
+      trend: weeklyStats?.viewsTrend
+    },
+    {
+      title: "Total Clicks",
+      value: totalClicks,
+      type: 'clicks' as const,
+      trend: weeklyStats?.clicksTrend
+    },
+    {
+      title: "CTR",
+      value: `${ctr.toFixed(1)}%`,
+      type: 'ctr' as const,
+      trend: weeklyStats?.ctrTrend
+    }
+  ];
+
   const platformData = smartLink.platform_links?.map((pl) => ({
     name: pl.platform_name,
     clicks: pl.clicks?.length || 0,
@@ -180,7 +202,7 @@ export default function SmartLinkAnalytics() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6">
+    <div className="container mx-auto py-6 px-2 md:px-4 space-y-6">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 border-b border-neutral-border">
         <div className="flex items-center gap-4">
           <Button
@@ -195,34 +217,31 @@ export default function SmartLinkAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Total Views"
-          value={totalViews}
-          type="views"
-          trend={weeklyStats?.viewsTrend}
-        />
-        <StatCard
-          title="Total Clicks"
-          value={totalClicks}
-          type="clicks"
-          trend={weeklyStats?.clicksTrend}
-        />
-        <StatCard
-          title="CTR"
-          value={`${ctr.toFixed(1)}%`}
-          type="ctr"
-          trend={weeklyStats?.ctrTrend}
-        />
+      {/* Stats Cards - Mobile Carousel */}
+      <div className="block md:hidden">
+        <StatCardsCarousel stats={stats} />
       </div>
 
-      {id && <DailyStatsChart smartLinkId={id} />}
+      {/* Stats Cards - Desktop Grid */}
+      <div className="hidden md:grid md:grid-cols-3 gap-6">
+        {stats.map((stat, index) => (
+          <StatCard key={index} {...stat} />
+        ))}
+      </div>
 
-      <Card className="p-6">
+      <Card className="p-4 md:p-6">
+        {id && <DailyStatsChart smartLinkId={id} />}
+      </Card>
+
+      {/* Platform Performance */}
+      <Card className="p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4 text-neutral-night">Platform Performance</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={platformData}>
+            <BarChart 
+              data={platformData}
+              margin={{ left: -15, right: 10 }}
+            >
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#E6E6E6"
@@ -258,7 +277,8 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
-      <Card className="p-6">
+      {/* Recent Clicks */}
+      <Card className="p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-neutral-night">Recent Clicks</h2>
           <Button variant="outline" size="sm">View all</Button>

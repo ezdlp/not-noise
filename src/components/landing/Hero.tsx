@@ -16,13 +16,15 @@ export const Hero = () => {
           <p className="text-sm md:text-lg text-[#333333] mb-4 md:mb-8 max-w-xl leading-relaxed font-sans">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
-          <CTAButton 
-            onClick={() => navigate("/create")}
-            className="w-auto px-4 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
-          >
-            Get Started For Free
-          </CTAButton>
-          <p className="mt-2 md:mt-4 text-xs md:text-sm text-gray-600 font-medium">Used by 10,000+ artists worldwide</p>
+          <div className="text-center sm:text-left">
+            <CTAButton 
+              onClick={() => navigate("/create")}
+              className="w-auto px-4 md:px-8 py-3 md:py-4 shadow-md transition-all duration-200"
+            >
+              Get Started For Free
+            </CTAButton>
+          </div>
+          <p className="mt-2 md:mt-4 text-xs md:text-sm text-gray-600 font-medium text-center sm:text-left">Used by 10,000+ artists worldwide</p>
         </div>
 
         <div className="relative order-2 w-full h-[350px] sm:h-[500px] md:h-[700px] mt-8 md:mt-0">
