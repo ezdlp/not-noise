@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,20 +20,28 @@ const Login = () => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        const redirectPath = sessionStorage.getItem('redirectAfterAuth');
-        if (redirectPath) {
-          sessionStorage.removeItem('redirectAfterAuth');
-          navigate(redirectPath);
-        } else {
-          navigate("/dashboard");
-        }
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+        
+        // Add a small delay before redirect to ensure data is properly loaded
+        setTimeout(() => {
+          const redirectPath = sessionStorage.getItem('redirectAfterAuth');
+          if (redirectPath) {
+            sessionStorage.removeItem('redirectAfterAuth');
+            navigate(redirectPath);
+          } else {
+            navigate("/dashboard");
+          }
+        }, 100);
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
@@ -66,19 +75,7 @@ const Login = () => {
       });
 
       if (error) throw error;
-
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
       
-      const redirectPath = sessionStorage.getItem('redirectAfterAuth');
-      if (redirectPath) {
-        sessionStorage.removeItem('redirectAfterAuth');
-        navigate(redirectPath);
-      } else {
-        navigate("/dashboard");
-      }
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof AuthError) {

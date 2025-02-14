@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -19,11 +20,23 @@ const CreateSmartLink = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const savedData = sessionStorage.getItem('pendingSmartLink');
-    if (savedData) {
-      setData(JSON.parse(savedData));
-      setStep(6);
-      sessionStorage.removeItem('pendingSmartLink');
+    // Load saved data with error handling
+    try {
+      const savedData = sessionStorage.getItem('pendingSmartLink');
+      if (savedData) {
+        console.log('Found saved smart link data');
+        const parsedData = JSON.parse(savedData);
+        setData(parsedData);
+        setStep(6); // Go to review step
+        // Don't remove the data immediately to prevent race conditions
+        setTimeout(() => {
+          console.log('Removing saved smart link data');
+          sessionStorage.removeItem('pendingSmartLink');
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error loading saved smart link data:', error);
+      toast.error('Error loading saved data. Please try again.');
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
