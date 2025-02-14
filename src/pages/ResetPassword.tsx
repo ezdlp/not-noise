@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail } from "lucide-react";
+import { Mail, CheckCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -12,6 +12,7 @@ const ResetPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -27,13 +28,11 @@ const ResetPassword = () => {
 
       if (error) throw error;
 
+      setResetSent(true);
       toast({
         title: "Reset email sent",
         description: "Check your email for the password reset link.",
       });
-      
-      // Navigate back to login after showing the success message
-      setTimeout(() => navigate("/login"), 2000);
       
     } catch (error) {
       console.error("Reset password error:", error);
@@ -42,6 +41,52 @@ const ResetPassword = () => {
       setLoading(false);
     }
   };
+
+  if (resetSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-8 text-center">
+          <div className="flex justify-center">
+            <CheckCircle className="h-16 w-16 text-primary" />
+          </div>
+          
+          <div>
+            <h2 className="text-3xl font-bold">Check Your Email</h2>
+            <p className="mt-4 text-muted-foreground">
+              We've sent a password reset link to:
+              <br />
+              <span className="font-medium text-foreground">{email}</span>
+            </p>
+          </div>
+
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Didn't receive the email? Check your spam folder or try another email address.
+            </p>
+            
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setResetSent(false)}
+              >
+                Try another email
+              </Button>
+              
+              <Button
+                variant="link"
+                className="w-full"
+                onClick={() => navigate("/login")}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
