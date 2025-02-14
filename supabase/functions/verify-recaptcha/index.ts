@@ -60,8 +60,20 @@ const handler = async (req: Request) => {
       );
     }
 
+    // Add additional score check
+    if (result.score < 0.5) {
+      console.log('reCAPTCHA score too low:', result.score);
+      return new Response(
+        JSON.stringify({ error: 'reCAPTCHA verification failed', details: 'Score too low' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, score: result.score }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
