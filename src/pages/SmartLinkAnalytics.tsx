@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +114,6 @@ export default function SmartLinkAnalytics() {
         { views: 0, clicks: 0 }
       );
 
-      // Calculate percentage changes
       const viewsTrend = previousWeekTotals.views === 0 
         ? 100 
         : Math.round(((currentWeekTotals.views - previousWeekTotals.views) / previousWeekTotals.views) * 100);
@@ -229,18 +229,19 @@ export default function SmartLinkAnalytics() {
         ))}
       </div>
 
-      <Card className="p-4 md:p-6">
+      {/* Chart Section */}
+      <Card className="p-2 md:p-6">
         {id && <DailyStatsChart smartLinkId={id} />}
       </Card>
 
       {/* Platform Performance */}
-      <Card className="p-4 md:p-6">
+      <Card className="p-2 md:p-6">
         <h2 className="text-lg font-semibold mb-4 text-neutral-night">Platform Performance</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={platformData}
-              margin={{ left: -15, right: 10 }}
+              margin={{ left: -10, right: 10 }}
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
@@ -278,7 +279,7 @@ export default function SmartLinkAnalytics() {
       </Card>
 
       {/* Recent Clicks */}
-      <Card className="p-4 md:p-6">
+      <Card className="p-2 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-neutral-night">Recent Clicks</h2>
           <Button variant="outline" size="sm">View all</Button>
