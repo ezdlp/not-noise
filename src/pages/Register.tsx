@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -50,6 +51,7 @@ export default function Register() {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
+  const [termsAccepted] = useState(true);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -536,6 +538,23 @@ export default function Register() {
               )}
             </button>
           </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox id="terms" checked={termsAccepted} />
+          <label
+            htmlFor="terms"
+            className="text-sm text-muted-foreground"
+          >
+            I agree to the{" "}
+            <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
+              Terms of Service
+            </Button>{" "}
+            and{" "}
+            <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
+              Privacy Policy
+            </Button>
+          </label>
         </div>
 
         <Button
