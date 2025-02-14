@@ -5,20 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Mail, Lock, User, Music, Check, Eye, EyeOff, X, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { countries } from "@/lib/countries";
-import { genres } from "@/lib/genres";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 
 declare global {
@@ -34,11 +25,7 @@ export default function Register() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
     name: "",
-    artist_name: "",
-    music_genre: "",
-    country: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,18 +33,11 @@ export default function Register() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
   const [termsAccepted] = useState(true);
-  const [passwordRequirements, setPasswordRequirements] = useState({
-    minLength: false,
-    hasUppercase: false,
-    hasLowercase: false,
-    hasNumber: false,
-  });
 
   useEffect(() => {
     window.grecaptcha?.ready(() => {
@@ -86,19 +66,11 @@ export default function Register() {
     }
   }, [navigate, registrationComplete]);
 
-  const checkPasswordRequirements = (password: string) => {
-    setPasswordRequirements({
-      minLength: password.length >= 8,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-    });
-
+  const checkPasswordStrength = (password: string) => {
     let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (/[A-Z]/.test(password)) strength += 25;
-    if (/[a-z]/.test(password)) strength += 25;
-    if (/[0-9]/.test(password)) strength += 25;
+    if (password.length >= 8) strength += 33;
+    if (/[A-Z]/.test(password)) strength += 33;
+    if (/[0-9]/.test(password)) strength += 34;
     setPasswordStrength(strength);
   };
 
@@ -109,7 +81,7 @@ export default function Register() {
     setFormData((prev) => ({ ...prev, [name]: value }));
     
     if (name === "password") {
-      checkPasswordRequirements(value);
+      checkPasswordStrength(value);
     }
 
     if (name === "email" && value) {
@@ -184,12 +156,8 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (passwordStrength < 75) {
-      setError("Password is not strong enough");
+    if (passwordStrength < 66) {
+      setError("Please use a stronger password");
       return;
     }
 
@@ -210,10 +178,7 @@ export default function Register() {
         password: formData.password,
         options: {
           data: {
-            name: formData.name,
-            artist_name: formData.artist_name,
-            music_genre: formData.music_genre,
-            country: formData.country,
+            name: formData.name
           }
         }
       });
@@ -384,62 +349,6 @@ export default function Register() {
           </div>
 
           <div className="relative">
-            <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              name="artist_name"
-              type="text"
-              placeholder="Artist Name"
-              value={formData.artist_name}
-              onChange={handleInputChange}
-              className="pl-10"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <Select
-            name="music_genre"
-            value={formData.music_genre}
-            onValueChange={(value) =>
-              handleInputChange({ target: { name: "music_genre", value } })
-            }
-            required
-            disabled={loading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Music Genre" />
-            </SelectTrigger>
-            <SelectContent>
-              {genres.map((genre) => (
-                <SelectItem key={genre} value={genre}>
-                  {genre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            name="country"
-            value={formData.country}
-            onValueChange={(value) =>
-              handleInputChange({ target: { name: "country", value } })
-            }
-            required
-            disabled={loading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country.code} value={country.code}>
-                  {country.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="relative">
             <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
             <Input
               name="email"
@@ -487,56 +396,6 @@ export default function Register() {
                 '--progress-background': '#6851FB'
               } as React.CSSProperties} 
             />
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              {[
-                { key: 'minLength', label: 'At least 8 characters' },
-                { key: 'hasUppercase', label: 'One uppercase letter' },
-                { key: 'hasLowercase', label: 'One lowercase letter' },
-                { key: 'hasNumber', label: 'One number' },
-              ].map(({ key, label }) => (
-                <div
-                  key={key}
-                  className={`flex items-center gap-2 ${
-                    passwordRequirements[key as keyof typeof passwordRequirements]
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {passwordRequirements[key as keyof typeof passwordRequirements] ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              className="pl-10 pr-10"
-              required
-              disabled={loading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-              disabled={loading}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
-            </button>
           </div>
         </div>
 
