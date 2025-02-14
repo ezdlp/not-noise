@@ -25,42 +25,33 @@ export default function Blog() {
   const { data, isLoading } = useQuery({
     queryKey: ["blog-posts", currentPage],
     queryFn: async () => {
-      // First, get the Blog category
-      const { data: blogCategory, error: categoryError } = await supabase
-        .from("blog_categories")
-        .select("id")
-        .eq("name", "Blog")
-        .maybeSingle();
-
-      if (categoryError) {
-        console.error("Error fetching blog category:", categoryError);
-        return { posts: [], total: 0 };
-      }
-
-      if (!blogCategory) {
-        console.warn("Blog category not found");
-        return { posts: [], total: 0 };
-      }
-
-      // Get total count
-      const { count } = await supabase
+      // Get total count of blog posts (only Blog category)
+      const { count, error: countError } = await supabase
         .from("blog_posts")
         .select(`
           id,
           blog_post_categories!inner (
-            category_id
+            category:blog_categories!inner (
+              name
+            )
           )
         `, { 
           count: "exact",
           head: true 
         })
         .eq("status", "published")
-        .eq("blog_post_categories.category_id", blogCategory.id);
+        .eq("blog_post_categories.category.name", "Blog");
 
-      // Then get paginated data
+      if (countError) {
+        console.error("Error fetching blog posts count:", countError);
+        throw countError;
+      }
+
+      // Calculate pagination
       const from = (currentPage - 1) * postsPerPage;
       const to = from + postsPerPage - 1;
 
+      // Fetch paginated blog posts
       const { data: posts, error } = await supabase
         .from("blog_posts")
         .select(`
@@ -70,11 +61,13 @@ export default function Blog() {
           featured_image,
           published_at,
           blog_post_categories!inner (
-            category_id
+            category:blog_categories!inner (
+              name
+            )
           )
         `)
         .eq("status", "published")
-        .eq("blog_post_categories.category_id", blogCategory.id)
+        .eq("blog_post_categories.category.name", "Blog")
         .order("published_at", { ascending: false })
         .range(from, to);
 
