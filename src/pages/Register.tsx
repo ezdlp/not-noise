@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -48,6 +47,7 @@ export default function Register() {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -98,13 +98,54 @@ export default function Register() {
     setPasswordStrength(strength);
   };
 
-  const handleInputChange = (
+  const handleInputChange = async (
     e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
     if (name === "password") {
       checkPasswordRequirements(value);
+    }
+
+    if (name === "email" && value) {
+      setEmailChecking(true);
+      const exists = await checkEmailExists(value);
+      setEmailChecking(false);
+      if (exists) {
+        toast({
+          title: "Account exists",
+          description: "Please sign in to your existing account instead.",
+          duration: 5000,
+        });
+      }
+    }
+  };
+
+  const checkEmailExists = async (email: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+
+      if (!error) {
+        setError(`An account with this email already exists. Please sign in instead.`);
+        return true;
+      }
+      
+      if (error.status === 400 && error.message.includes("not found")) {
+        setError(null);
+        return false;
+      }
+
+      console.log("Error checking email:", error);
+      return false;
+    } catch (err) {
+      console.error("Error checking email:", err);
+      return false;
     }
   };
 
@@ -152,7 +193,12 @@ export default function Register() {
     setError(null);
 
     try {
-      // Verify reCAPTCHA first
+      const emailExists = await checkEmailExists(formData.email);
+      if (emailExists) {
+        setLoading(false);
+        return;
+      }
+
       await verifyRecaptcha();
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -173,7 +219,11 @@ export default function Register() {
         if (authError instanceof AuthApiError) {
           switch (authError.status) {
             case 400:
-              setError("Invalid email format or password requirements not met");
+              if (authError.message.includes("already exists")) {
+                setError("This email is already registered. Please sign in instead.");
+              } else {
+                setError("Invalid email format or password requirements not met");
+              }
               break;
             case 422:
               setError("Invalid email format. Please enter a valid email address.");
@@ -301,7 +351,7 @@ export default function Register() {
           <Alert variant="destructive">
             <AlertDescription>
               {error}
-              {error.includes("already exists") && (
+              {error.includes("already registered") || error.includes("already exists") ? (
                 <Button
                   variant="link"
                   className="p-0 h-auto font-normal ml-2"
@@ -309,7 +359,7 @@ export default function Register() {
                 >
                   Click here to login
                 </Button>
-              )}
+              ) : null}
             </AlertDescription>
           </Alert>
         )}
@@ -490,12 +540,17 @@ export default function Register() {
           <Button
             type="submit"
             className="w-full"
-            disabled={loading || !recaptchaLoaded}
+            disabled={loading || !recaptchaLoaded || emailChecking}
           >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating account...
+              </>
+            ) : emailChecking ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking email...
               </>
             ) : (
               'Create account'
