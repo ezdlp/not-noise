@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { countries } from "@/lib/countries";
 import { genres } from "@/lib/genres";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 
 declare global {
   interface Window {
@@ -294,8 +296,8 @@ export default function Register() {
 
   if (registrationComplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
-        <div className="max-w-md w-full space-y-8 text-center">
+      <AuthLayout>
+        <div className="space-y-8 text-center">
           <div className="bg-green-50 p-8 rounded-lg">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
               <Check className="h-6 w-6 text-green-600" />
@@ -333,190 +335,130 @@ export default function Register() {
             </div>
           </div>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Create an account</h2>
-          <p className="mt-2 text-muted-foreground">
-            Sign up to start creating smart links
-          </p>
-        </div>
+    <AuthLayout>
+      <div className="flex flex-col space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
+        <p className="text-sm text-muted-foreground">
+          Sign up to start creating smart links
+        </p>
+      </div>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              {error}
-              {error.includes("already registered") || error.includes("already exists") ? (
-                <Button
-                  variant="link"
-                  className="p-0 h-auto font-normal ml-2"
-                  onClick={() => navigate("/login")}
-                >
-                  Click here to login
-                </Button>
-              ) : null}
-            </AlertDescription>
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error}
+            {error.includes("already registered") || error.includes("already exists") ? (
+              <Button
+                variant="link"
+                className="p-0 h-auto font-normal ml-2"
+                onClick={() => navigate("/login")}
+              >
+                Click here to login
+              </Button>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      )}
 
-        <form onSubmit={handleRegister} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                name="name"
-                type="text"
-                placeholder="Full Name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="pl-10"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="relative">
-              <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                name="artist_name"
-                type="text"
-                placeholder="Artist Name"
-                value={formData.artist_name}
-                onChange={handleInputChange}
-                className="pl-10"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <Select
-              name="music_genre"
-              value={formData.music_genre}
-              onValueChange={(value) =>
-                handleInputChange({ target: { name: "music_genre", value } })
-              }
+      <form onSubmit={handleRegister} className="space-y-6">
+        <div className="space-y-4">
+          <div className="relative">
+            <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              name="name"
+              type="text"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="pl-10"
               required
               disabled={loading}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Music Genre" />
-              </SelectTrigger>
-              <SelectContent>
-                {genres.map((genre) => (
-                  <SelectItem key={genre} value={genre}>
-                    {genre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
+          </div>
 
-            <Select
-              name="country"
-              value={formData.country}
-              onValueChange={(value) =>
-                handleInputChange({ target: { name: "country", value } })
-              }
+          <div className="relative">
+            <Music className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              name="artist_name"
+              type="text"
+              placeholder="Artist Name"
+              value={formData.artist_name}
+              onChange={handleInputChange}
+              className="pl-10"
               required
               disabled={loading}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    {country.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
+          </div>
 
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                name="email"
-                type="email"
-                placeholder="Email address"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="pl-10"
-                required
-                disabled={loading}
-              />
-            </div>
+          <Select
+            name="music_genre"
+            value={formData.music_genre}
+            onValueChange={(value) =>
+              handleInputChange({ target: { name: "music_genre", value } })
+            }
+            required
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Music Genre" />
+            </SelectTrigger>
+            <SelectContent>
+              {genres.map((genre) => (
+                <SelectItem key={genre} value={genre}>
+                  {genre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="pl-10 pr-10"
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              <Progress 
-                value={passwordStrength} 
-                className="h-1" 
-                style={{
-                  backgroundColor: '#ECE9FF',
-                  '--progress-background': '#6851FB'
-                } as React.CSSProperties} 
-              />
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                {[
-                  { key: 'minLength', label: 'At least 8 characters' },
-                  { key: 'hasUppercase', label: 'One uppercase letter' },
-                  { key: 'hasLowercase', label: 'One lowercase letter' },
-                  { key: 'hasNumber', label: 'One number' },
-                ].map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className={`flex items-center gap-2 ${
-                      passwordRequirements[key as keyof typeof passwordRequirements]
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {passwordRequirements[key as keyof typeof passwordRequirements] ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <Select
+            name="country"
+            value={formData.country}
+            onValueChange={(value) =>
+              handleInputChange({ target: { name: "country", value } })
+            }
+            required
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Country" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((country) => (
+                <SelectItem key={country.code} value={country.code}>
+                  {country.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
+          <div className="relative">
+            <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email address"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="pl-10"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={formData.password}
                 onChange={handleInputChange}
                 className="pl-10 pr-10"
                 required
@@ -524,74 +466,132 @@ export default function Register() {
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                 disabled={loading}
               >
-                {showConfirmPassword ? (
+                {showPassword ? (
                   <EyeOff className="h-5 w-5" />
                 ) : (
                   <Eye className="h-5 w-5" />
                 )}
               </button>
             </div>
+            <Progress 
+              value={passwordStrength} 
+              className="h-1" 
+              style={{
+                backgroundColor: '#ECE9FF',
+                '--progress-background': '#6851FB'
+              } as React.CSSProperties} 
+            />
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {[
+                { key: 'minLength', label: 'At least 8 characters' },
+                { key: 'hasUppercase', label: 'One uppercase letter' },
+                { key: 'hasLowercase', label: 'One lowercase letter' },
+                { key: 'hasNumber', label: 'One number' },
+              ].map(({ key, label }) => (
+                <div
+                  key={key}
+                  className={`flex items-center gap-2 ${
+                    passwordRequirements[key as keyof typeof passwordRequirements]
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {passwordRequirements[key as keyof typeof passwordRequirements] ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading || !recaptchaLoaded || emailChecking}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
-              </>
-            ) : emailChecking ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Checking email...
-              </>
-            ) : (
-              'Create account'
-            )}
-          </Button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Button
-              variant="link"
-              className="p-0 h-auto font-normal"
-              onClick={() => navigate("/login")}
+          <div className="relative">
+            <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              className="pl-10 pr-10"
+              required
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
               disabled={loading}
             >
-              Sign in here
-            </Button>
-          </p>
+              {showConfirmPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+        </div>
 
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            This site is protected by reCAPTCHA and the Google{" "}
-            <a 
-              href="https://policies.google.com/privacy" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Privacy Policy
-            </a>{" "}
-            and{" "}
-            <a 
-              href="https://policies.google.com/terms" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Terms of Service
-            </a>{" "}
-            apply.
-          </p>
-        </form>
-      </div>
-    </div>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={loading || !recaptchaLoaded || emailChecking}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : emailChecking ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Checking email...
+            </>
+          ) : (
+            'Create account'
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Button
+            variant="link"
+            className="p-0 h-auto font-normal"
+            onClick={() => navigate("/login")}
+            disabled={loading}
+          >
+            Sign in here
+          </Button>
+        </p>
+
+        <p className="text-xs text-muted-foreground text-center mt-4">
+          This site is protected by reCAPTCHA and the Google{" "}
+          <a 
+            href="https://policies.google.com/privacy" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Privacy Policy
+          </a>{" "}
+          and{" "}
+          <a 
+            href="https://policies.google.com/terms" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Terms of Service
+          </a>{" "}
+          apply.
+        </p>
+      </form>
+    </AuthLayout>
   );
 }
