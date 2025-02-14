@@ -24,7 +24,6 @@ declare global {
     grecaptcha: {
       ready: (callback: () => void) => void;
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
-      render: (container: string | HTMLElement, options: any) => number;
     };
   }
 }
@@ -49,7 +48,6 @@ export default function Register() {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
-  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -58,35 +56,10 @@ export default function Register() {
   });
 
   useEffect(() => {
-    const initializeRecaptcha = () => {
-      if (typeof window.grecaptcha === 'undefined') {
-        console.log('reCAPTCHA not loaded yet, retrying...');
-        setTimeout(initializeRecaptcha, 100);
-        return;
-      }
-
-      try {
-        window.grecaptcha.ready(() => {
-          const widgetId = window.grecaptcha.render('recaptcha-container', {
-            sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
-            size: 'invisible',
-            callback: () => setRecaptchaLoaded(true),
-            'error-callback': () => {
-              console.error('reCAPTCHA error');
-              setRecaptchaLoaded(false);
-            }
-          });
-          setRecaptchaWidgetId(widgetId);
-          setRecaptchaLoaded(true);
-          console.log('reCAPTCHA initialized successfully');
-        });
-      } catch (error) {
-        console.error('Error initializing reCAPTCHA:', error);
-        setRecaptchaLoaded(false);
-      }
-    };
-
-    initializeRecaptcha();
+    window.grecaptcha?.ready(() => {
+      setRecaptchaLoaded(true);
+      console.log('reCAPTCHA ready');
+    });
   }, []);
 
   useEffect(() => {
@@ -137,21 +110,13 @@ export default function Register() {
 
   const verifyRecaptcha = async () => {
     try {
-      if (!recaptchaLoaded || recaptchaWidgetId === null) {
+      if (!recaptchaLoaded) {
         throw new Error('reCAPTCHA not loaded');
       }
 
       console.log('Executing reCAPTCHA...');
-      const token = await new Promise<string>((resolve, reject) => {
-        window.grecaptcha.ready(() => {
-          try {
-            window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'register' })
-              .then(resolve)
-              .catch(reject);
-          } catch (error) {
-            reject(error);
-          }
-        });
+      const token = await window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { 
+        action: 'register' 
       });
       
       console.log('Verifying token with edge function...');
@@ -521,8 +486,6 @@ export default function Register() {
               </button>
             </div>
           </div>
-
-          <div id="recaptcha-container"></div>
 
           <Button
             type="submit"
