@@ -192,7 +192,6 @@ export default function SmartLinkAnalytics() {
     clicks: pl.clicks?.length || 0,
   })) || [];
 
-  // Sort platform data by clicks in descending order
   platformData.sort((a, b) => b.clicks - a.clicks);
 
   // Add total bar
@@ -213,7 +212,9 @@ export default function SmartLinkAnalytics() {
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-neutral-night">{smartLink.title} Analytics</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-neutral-night truncate">
+            {smartLink.title} Analytics
+          </h1>
         </div>
       </div>
 
@@ -231,17 +232,19 @@ export default function SmartLinkAnalytics() {
 
       {/* Chart Section */}
       <Card className="p-2 md:p-6">
-        {id && <DailyStatsChart smartLinkId={id} />}
+        <div className="overflow-hidden">
+          {id && <DailyStatsChart smartLinkId={id} />}
+        </div>
       </Card>
 
       {/* Platform Performance */}
       <Card className="p-2 md:p-6">
         <h2 className="text-lg font-semibold mb-4 text-neutral-night">Platform Performance</h2>
-        <div className="h-[400px]">
+        <div className="h-[300px] md:h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={platformData}
-              margin={{ left: -10, right: 10 }}
+              margin={{ left: -10, right: 10, top: 20, bottom: 5 }}
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
@@ -253,6 +256,9 @@ export default function SmartLinkAnalytics() {
                 stroke="#666666"
                 fontSize={12}
                 tickLine={false}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis 
                 stroke="#666666"
@@ -284,7 +290,7 @@ export default function SmartLinkAnalytics() {
           <h2 className="text-lg font-semibold text-neutral-night">Recent Clicks</h2>
           <Button variant="outline" size="sm">View all</Button>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 -mx-2">
           {smartLink.platform_links
             ?.flatMap((pl) =>
               (pl.clicks || []).map((click) => ({
@@ -302,7 +308,7 @@ export default function SmartLinkAnalytics() {
             .map((click) => (
               <div
                 key={click.id}
-                className="flex items-center justify-between border-b border-neutral-border pb-2 hover:bg-neutral-seasalt/5 transition-colors duration-200 -mx-2 px-2"
+                className="flex items-center justify-between border-b border-neutral-border pb-2 hover:bg-neutral-seasalt/5 transition-colors duration-200 px-2"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -313,11 +319,11 @@ export default function SmartLinkAnalytics() {
                     />
                     <p className="text-sm font-medium text-neutral-night">{click.platform_name}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(click.clicked_at), { addSuffix: true })}
                   </p>
                 </div>
-                <div className="text-sm text-neutral-night">
+                <div className="text-xs md:text-sm text-neutral-night">
                   {click.country || "Unknown location"}
                 </div>
               </div>

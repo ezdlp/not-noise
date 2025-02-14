@@ -11,23 +11,10 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Card } from "@/components/ui/card";
 import { format, subDays } from "date-fns";
 
 interface DailyStatsProps {
   smartLinkId: string;
-}
-
-interface DailyStats {
-  day: string;
-  views: number;
-  clicks: number;
-}
-
-interface RPCResponse {
-  day: string;
-  views: number;
-  clicks: number;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -50,7 +37,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
-  const { data: stats, isLoading } = useQuery<RPCResponse[]>({
+  const { data: stats, isLoading } = useQuery({
     queryKey: ["dailyStats", smartLinkId],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
@@ -71,33 +58,29 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
-        <div className="h-[400px] animate-pulse bg-neutral-seasalt rounded" />
-      </Card>
+      <div className="h-[300px] md:h-[400px] animate-pulse bg-neutral-seasalt rounded" />
     );
   }
 
   if (!stats) {
     return (
-      <Card className="p-6">
-        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-          No data available
-        </div>
-      </Card>
+      <div className="h-[300px] md:h-[400px] flex items-center justify-center text-muted-foreground">
+        No data available
+      </div>
     );
   }
 
   return (
-    <Card className="p-6">
+    <div>
       <h2 className="text-lg font-semibold mb-4 text-neutral-night">Daily Performance</h2>
-      <div className="h-[400px]">
+      <div className="h-[300px] md:h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={stats}
             margin={{
-              top: 10,
-              right: 30,
-              left: 0,
+              top: 20,
+              right: 5,
+              left: -15,
               bottom: 0,
             }}
           >
@@ -121,6 +104,10 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
               stroke="#666666"
               fontSize={12}
               tickLine={false}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+              interval="preserveStartEnd"
             />
             <YAxis 
               stroke="#666666"
@@ -156,6 +143,6 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </div>
   );
 }

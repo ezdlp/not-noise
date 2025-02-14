@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { StatCard } from './StatCard';
 
@@ -27,6 +27,17 @@ export const StatCardsCarousel = ({ stats }: StatCardsCarouselProps) => {
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    emblaApi.on('select', onSelect);
+    onSelect(); // Initialize with current slide
+    
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
   return (
     <div className="relative">
       <div className="overflow-hidden" ref={emblaRef}>
@@ -49,6 +60,7 @@ export const StatCardsCarousel = ({ stats }: StatCardsCarouselProps) => {
               index === selectedIndex ? 'bg-primary' : 'bg-neutral-200'
             }`}
             onClick={() => emblaApi?.scrollTo(index)}
+            aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>
