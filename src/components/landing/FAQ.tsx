@@ -1,4 +1,3 @@
-
 import {
   Accordion,
   AccordionContent,
@@ -6,7 +5,34 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const faqs = [
+export function FAQ() {
+  return (
+    <section className="py-12 md:py-20" id="faq">
+      <div className="container px-6 md:px-4 mx-auto">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl md:text-4xl font-bold text-center mb-12">
+            Frequently Asked Questions
+          </h2>
+
+          <Accordion type="single" collapsible>
+            {faqItems.map((item, index) => (
+              <AccordionItem key={index} value={`item-${index}`}>
+                <AccordionTrigger className="text-base md:text-lg font-medium text-left">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const faqItems = [
   {
     question: "What makes Soundraiser's Smart Links special?",
     answer: "Our Smart Links combine powerful marketing tools with beautiful, customizable designs. They feature Meta Pixel integration for retargeting, email capture, detailed analytics, and automatic social media card generation - all while maintaining a sleek, professional look that matches your brand."
@@ -44,31 +70,3 @@ const faqs = [
     answer: "Yes! Besides Smart Links, we offer Spotify Playlist Promotion services to help get your music in front of genuine listeners. Our promotion service connects you with verified playlist curators, provides detailed curator feedback, and ensures your music reaches authentic, engaged audiences."
   }
 ];
-
-export const FAQ = () => {
-  return (
-    <section className="py-24 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-night text-center font-heading">
-          Frequently Asked Questions
-        </h2>
-        <Accordion type="single" collapsible>
-          {faqs.map((faq, index) => (
-            <AccordionItem 
-              key={index} 
-              value={`item-${index}`}
-              className="border-b border-neutral-200"
-            >
-              <AccordionTrigger className="text-left hover:underline hover:no-underline py-6 font-heading text-lg">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent className="pb-6 text-neutral-600 text-base leading-relaxed">
-                {faq.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
-    </section>
-  );
-};
