@@ -20,7 +20,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         {/* Base Image Layer */}
         <div className="absolute inset-0">
           <img 
-            src="/lovable-uploads/concert.jpg" 
+            src="https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/concert.jpg" 
             alt="Concert background" 
             className="object-cover w-full h-full animate-fade-in transition-transform duration-[2s] hover:scale-105"
           />
@@ -30,7 +30,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         
         {/* Gradient Overlay */}
         <div 
-          className="absolute inset-0 opacity-80 mix-blend-soft-light"
+          className="absolute inset-0 opacity-70 mix-blend-soft-light"
           style={{
             background: "linear-gradient(135deg, rgba(104, 81, 251, 0.8), rgba(55, 210, 153, 0.4))"
           }}
@@ -38,7 +38,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         
         {/* Texture Overlay */}
         <div 
-          className="absolute inset-0 bg-cover opacity-15 mix-blend-soft-light"
+          className="absolute inset-0 bg-cover opacity-25 mix-blend-overlay"
           style={{
             backgroundImage: `url(/lovable-uploads/hero-gradient.svg)`
           }}
