@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -175,7 +174,7 @@ export default function Pricing() {
       return (
         <Button 
           className="w-full bg-primary hover:bg-primary/90"
-          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1Qs5B3Fx6uwYcH3Stuus8Kkg')}
+          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1QsQGrFx6uwYcH3SCT6RJsSI')}
           disabled={isLoading}
         >
           {isLoading ? "Preparing..." : "Upgrade to Pro"}
