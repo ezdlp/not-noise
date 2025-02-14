@@ -513,6 +513,28 @@ export default function Register() {
               Sign in here
             </Button>
           </p>
+
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            This site is protected by reCAPTCHA and the Google{" "}
+            <a 
+              href="https://policies.google.com/privacy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a 
+              href="https://policies.google.com/terms" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Terms of Service
+            </a>{" "}
+            apply.
+          </p>
         </form>
       </div>
     </div>
