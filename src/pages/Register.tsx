@@ -5,12 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Lock, User, Eye, EyeOff, Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  terms: z.boolean().refine((val) => val === true, "You must accept the terms"),
+});
 
 declare global {
   interface Window {
@@ -22,22 +39,25 @@ declare global {
 }
 
 export default function Register() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    name: "",
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
-  const [termsAccepted] = useState(true);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      terms: true,
+    },
+  });
 
   useEffect(() => {
     window.grecaptcha?.ready(() => {
@@ -72,30 +92,6 @@ export default function Register() {
     if (/[A-Z]/.test(password)) strength += 33;
     if (/[0-9]/.test(password)) strength += 34;
     setPasswordStrength(strength);
-  };
-
-  const handleInputChange = async (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    if (name === "password") {
-      checkPasswordStrength(value);
-    }
-
-    if (name === "email" && value) {
-      setEmailChecking(true);
-      const exists = await checkEmailExists(value);
-      setEmailChecking(false);
-      if (exists) {
-        toast({
-          title: "Account exists",
-          description: "Please sign in to your existing account instead.",
-          duration: 5000,
-        });
-      }
-    }
   };
 
   const checkEmailExists = async (email: string) => {
@@ -154,8 +150,7 @@ export default function Register() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (passwordStrength < 66) {
       setError("Please use a stronger password");
       return;
@@ -165,7 +160,7 @@ export default function Register() {
     setError(null);
 
     try {
-      const emailExists = await checkEmailExists(formData.email);
+      const emailExists = await checkEmailExists(values.email);
       if (emailExists) {
         setLoading(false);
         return;
@@ -174,11 +169,11 @@ export default function Register() {
       await verifyRecaptcha();
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+        email: values.email,
+        password: values.password,
         options: {
           data: {
-            name: formData.name
+            name: values.name
           }
         }
       });
@@ -236,7 +231,7 @@ export default function Register() {
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: formData.email,
+        email: form.getValues("email"),
       });
       
       if (error) {
@@ -264,11 +259,8 @@ export default function Register() {
   if (registrationComplete) {
     return (
       <AuthLayout>
-        <div className="space-y-8 text-center">
+        <div className="space-y-8">
           <div className="bg-green-50 p-8 rounded-lg">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Check your email</h2>
             <p className="text-gray-600 mb-4">
               We've sent you an email with a confirmation link. Please check your inbox and click the link to activate your account.
@@ -308,147 +300,167 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <div className="flex flex-col space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign up to start creating smart links
-        </p>
-      </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {error}
-            {error.includes("already registered") || error.includes("already exists") ? (
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal ml-2"
-                onClick={() => navigate("/login")}
-              >
-                Click here to login
-              </Button>
-            ) : null}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <form onSubmit={handleRegister} className="space-y-6">
-        <div className="space-y-4">
-          <div className="relative">
-            <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              name="name"
-              type="text"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="pl-10"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              name="email"
-              type="email"
-              placeholder="Email address"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="pl-10"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="pl-10 pr-10"
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                disabled={loading}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-            <Progress 
-              value={passwordStrength} 
-              className="h-1" 
-              style={{
-                backgroundColor: '#ECE9FF',
-                '--progress-background': '#6851FB'
-              } as React.CSSProperties} 
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox id="terms" checked={termsAccepted} />
-          <label
-            htmlFor="terms"
-            className="text-sm text-muted-foreground"
-          >
-            I agree to the{" "}
-            <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
-              Terms of Service
-            </Button>{" "}
-            and{" "}
-            <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
-              Privacy Policy
+      <div className="flex flex-col items-start space-y-6 w-full">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">Create an account</h1>
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Button
+              variant="link"
+              className="p-0 h-auto font-normal"
+              onClick={() => navigate("/login")}
+            >
+              Sign in
             </Button>
-          </label>
+          </p>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading || !recaptchaLoaded || emailChecking}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating account...
-            </>
-          ) : emailChecking ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Checking email...
-            </>
-          ) : (
-            'Create account'
-          )}
-        </Button>
+        {error && (
+          <Alert variant="destructive" className="w-full">
+            <AlertDescription>
+              {error}
+              {error.includes("already registered") || error.includes("already exists") ? (
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal ml-2"
+                  onClick={() => navigate("/login")}
+                >
+                  Click here to login
+                </Button>
+              ) : null}
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Button
-            variant="link"
-            className="p-0 h-auto font-normal"
-            onClick={() => navigate("/login")}
-            disabled={loading}
-          >
-            Sign in here
-          </Button>
-        </p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      placeholder="Full Name"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                      }}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <p className="text-xs text-muted-foreground text-center mt-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      placeholder="Email"
+                      type="email"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (e.target.value) {
+                          setEmailChecking(true);
+                          checkEmailExists(e.target.value).finally(() => {
+                            setEmailChecking(false);
+                          });
+                        }
+                      }}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormControl>
+                    <Input
+                      placeholder="Password"
+                      type="password"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        checkPasswordStrength(e.target.value);
+                      }}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <Progress 
+                    value={passwordStrength} 
+                    className="h-1" 
+                    style={{
+                      backgroundColor: '#ECE9FF',
+                      '--progress-background': '#6851FB'
+                    } as React.CSSProperties} 
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="terms"
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <label className="text-sm text-muted-foreground">
+                    I agree to the{" "}
+                    <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
+                      Terms of Service
+                    </Button>{" "}
+                    and{" "}
+                    <Button variant="link" className="p-0 h-auto font-normal" onClick={(e) => e.preventDefault()}>
+                      Privacy Policy
+                    </Button>
+                  </label>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !recaptchaLoaded || emailChecking}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : emailChecking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Checking email...
+                </>
+              ) : (
+                'Create account'
+              )}
+            </Button>
+          </form>
+        </Form>
+
+        <p className="text-xs text-muted-foreground/70 mt-4">
           This site is protected by reCAPTCHA and the Google{" "}
           <a 
             href="https://policies.google.com/privacy" 
@@ -469,7 +481,7 @@ export default function Register() {
           </a>{" "}
           apply.
         </p>
-      </form>
+      </div>
     </AuthLayout>
   );
 }
