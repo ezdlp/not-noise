@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,7 @@ declare global {
   interface Window {
     grecaptcha: {
       ready: (callback: () => void) => void;
-      render: (container: string | HTMLElement, options: any) => number;
-      reset: (widgetId: number) => void;
-      execute: (widgetId: number) => Promise<string>;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
     };
   }
 }
@@ -48,7 +47,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
-  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | null>(null);
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
     hasUppercase: false,
@@ -59,25 +58,26 @@ export default function Register() {
   useEffect(() => {
     // Load reCAPTCHA script
     const script = document.createElement('script');
-    script.src = `https://www.google.com/recaptcha/api.js?render=explicit`;
+    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
     script.async = true;
-    document.body.appendChild(script);
-
+    script.defer = true;
+    
     script.onload = () => {
       window.grecaptcha.ready(() => {
-        const widgetId = window.grecaptcha.render('recaptcha-container', {
-          sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
-          size: 'normal',
-          callback: (token: string) => {
-            console.log('reCAPTCHA verified');
-          }
-        });
-        setRecaptchaWidgetId(widgetId);
+        console.log('reCAPTCHA loaded');
+        setRecaptchaLoaded(true);
       });
     };
 
+    script.onerror = () => {
+      console.error('Error loading reCAPTCHA');
+      setError('Error loading security verification. Please try again.');
+    };
+
+    document.head.appendChild(script);
+
     return () => {
-      document.body.removeChild(script);
+      document.head.removeChild(script);
     };
   }, []);
 
@@ -129,21 +129,30 @@ export default function Register() {
 
   const verifyRecaptcha = async () => {
     try {
-      if (!recaptchaWidgetId) {
-        throw new Error('reCAPTCHA not initialized');
+      if (!recaptchaLoaded) {
+        throw new Error('reCAPTCHA not loaded');
       }
 
-      const token = await window.grecaptcha.execute(recaptchaWidgetId);
+      console.log('Executing reCAPTCHA...');
+      const token = await window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, {
+        action: 'register'
+      });
       
+      console.log('Verifying token with edge function...');
       const { error } = await supabase.functions.invoke('verify-recaptcha', {
         body: { token }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('reCAPTCHA verification failed:', error);
+        throw error;
+      }
+
+      console.log('reCAPTCHA verification successful');
       return true;
     } catch (error) {
-      console.error('reCAPTCHA verification failed:', error);
-      return false;
+      console.error('reCAPTCHA verification error:', error);
+      throw new Error('Security verification failed. Please try again.');
     }
   };
 
@@ -163,10 +172,7 @@ export default function Register() {
 
     try {
       // Verify reCAPTCHA first
-      const isHuman = await verifyRecaptcha();
-      if (!isHuman) {
-        throw new Error('Please complete the reCAPTCHA verification');
-      }
+      await verifyRecaptcha();
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -222,9 +228,6 @@ export default function Register() {
       }
     } finally {
       setLoading(false);
-      if (recaptchaWidgetId) {
-        window.grecaptcha.reset(recaptchaWidgetId);
-      }
     }
   };
 
@@ -503,14 +506,19 @@ export default function Register() {
             </div>
           </div>
 
-          <div id="recaptcha-container" className="flex justify-center"></div>
-
           <Button
             type="submit"
             className="w-full"
-            disabled={loading}
+            disabled={loading || !recaptchaLoaded}
           >
-            {loading ? "Creating account..." : "Create account"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              'Create account'
+            )}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
