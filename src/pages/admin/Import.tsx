@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { ImportMedia } from "@/components/admin/import/ImportMedia";
 import { ImportPosts } from "@/components/admin/import/ImportPosts";
 import { ImportUsers } from "@/components/admin/import/ImportUsers";
 import { ImportLinks } from "@/components/admin/import/ImportLinks";
+import { ImportStats } from "@/components/admin/import/ImportStats";
 
 export default function Import() {
   const [activeTab, setActiveTab] = useState("media");
@@ -22,16 +24,17 @@ export default function Import() {
         <CardHeader>
           <CardTitle>WordPress Import</CardTitle>
           <CardDescription>
-            Import your WordPress content step by step. Start with media files, then proceed with posts, users, and custom links.
+            Import your WordPress content step by step. Start with media files, then proceed with posts, users, custom links, and stats.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="media">Media</TabsTrigger>
               <TabsTrigger value="posts">Posts</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="links">Custom Links</TabsTrigger>
+              <TabsTrigger value="stats">Stats</TabsTrigger>
             </TabsList>
             <TabsContent value="media" className="mt-6">
               <ImportMedia onComplete={() => setActiveTab("posts")} />
@@ -43,7 +46,10 @@ export default function Import() {
               <ImportUsers onComplete={() => setActiveTab("links")} />
             </TabsContent>
             <TabsContent value="links" className="mt-6">
-              <ImportLinks />
+              <ImportLinks onComplete={() => setActiveTab("stats")} />
+            </TabsContent>
+            <TabsContent value="stats" className="mt-6">
+              <ImportStats />
             </TabsContent>
           </Tabs>
         </CardContent>
