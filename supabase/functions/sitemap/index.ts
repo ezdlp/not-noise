@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://not-noise.vercel.app' // Default to development URL
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io' // Updated default to production URL
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing environment variables')

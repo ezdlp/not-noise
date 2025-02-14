@@ -37,7 +37,7 @@ export default async function handler(request: Request) {
       `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://not-noise.vercel.app</loc>
+    <loc>https://soundraiser.io</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </url>
 </urlset>`,
