@@ -1,10 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { PostgrestError } from "@supabase/supabase-js";
+import { AuthRequiredModal } from "@/components/auth/AuthRequiredModal";
 
 interface ReviewStepProps {
   data: any;
@@ -16,16 +16,18 @@ interface ReviewStepProps {
 
 const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }: ReviewStepProps) => {
   const navigate = useNavigate();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handlePublish = async () => {
     try {
-      console.info("Publishing smart link:", data);
-
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user?.id) {
-        toast.error("You must be logged in to create a smart link");
+        sessionStorage.setItem('pendingSmartLink', JSON.stringify(data));
+        setShowAuthModal(true);
         return;
       }
+
+      console.info("Publishing smart link:", data);
 
       if (isEditing) {
         // Update existing smart link
@@ -229,6 +231,11 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep, isEditing = false }:
           {isEditing ? "Save Changes" : "Publish Smart Link"}
         </Button>
       </div>
+      <AuthRequiredModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectPath="/create"
+      />
     </div>
   );
 };

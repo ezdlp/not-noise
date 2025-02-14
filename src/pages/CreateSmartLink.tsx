@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import SearchStep from "@/components/create-smart-link/SearchStep";
@@ -8,13 +7,35 @@ import PlatformsStep from "@/components/create-smart-link/PlatformsStep";
 import MetaPixelStep from "@/components/create-smart-link/MetaPixelStep";
 import EmailCaptureStep from "@/components/create-smart-link/EmailCaptureStep";
 import ReviewStep from "@/components/create-smart-link/ReviewStep";
+import { PreviewBanner } from "@/components/create-smart-link/PreviewBanner";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreateSmartLink = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<any>({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const savedData = sessionStorage.getItem('pendingSmartLink');
+    if (savedData) {
+      setData(JSON.parse(savedData));
+      setStep(6);
+      sessionStorage.removeItem('pendingSmartLink');
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSearchComplete = (trackData: any) => {
     setData(trackData);
@@ -48,7 +69,6 @@ const CreateSmartLink = () => {
   };
 
   const handleComplete = () => {
-    // Here we would typically save the data to a backend
     console.log("Final smart link data:", data);
     toast.success("Smart link created successfully!");
     navigate("/dashboard");
@@ -59,60 +79,63 @@ const CreateSmartLink = () => {
   };
 
   return (
-    <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
-      <Card className="max-w-2xl mx-auto p-4 sm:p-6">
-        <div className="mb-6 sm:mb-8">
-          <div className="flex justify-between items-center mb-3 sm:mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold">Create Your Smart Link</h1>
-            <span className="text-xs sm:text-sm text-muted-foreground">
-              Step {step} of 6
-            </span>
+    <>
+      {!isAuthenticated && <PreviewBanner />}
+      <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
+        <Card className="max-w-2xl mx-auto p-4 sm:p-6">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h1 className="text-xl sm:text-2xl font-bold">Create Your Smart Link</h1>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Step {step} of 6
+              </span>
+            </div>
+            <Progress 
+              value={(step / 6) * 100} 
+              className="h-2 [&>div]:bg-primary [&:not([data-state='complete'])]:bg-primary/10"
+            />
           </div>
-          <Progress 
-            value={(step / 6) * 100} 
-            className="h-2 [&>div]:bg-primary [&:not([data-state='complete'])]:bg-primary/10"
-          />
-        </div>
 
-        {step === 1 && <SearchStep onNext={handleSearchComplete} />}
-        {step === 2 && (
-          <DetailsStep
-            initialData={data}
-            onNext={handleDetailsComplete}
-            onBack={handleBack}
-          />
-        )}
-        {step === 3 && (
-          <PlatformsStep
-            initialData={data}
-            onNext={handlePlatformsComplete}
-            onBack={handleBack}
-          />
-        )}
-        {step === 4 && (
-          <MetaPixelStep
-            initialData={data}
-            onNext={handleMetaPixelComplete}
-            onBack={handleBack}
-          />
-        )}
-        {step === 5 && (
-          <EmailCaptureStep
-            initialData={data}
-            onNext={handleEmailCaptureComplete}
-            onBack={handleBack}
-          />
-        )}
-        {step === 6 && (
-          <ReviewStep
-            data={data}
-            onBack={handleBack}
-            onComplete={handleComplete}
-            onEditStep={handleEditStep}
-          />
-        )}
-      </Card>
-    </div>
+          {step === 1 && <SearchStep onNext={handleSearchComplete} />}
+          {step === 2 && (
+            <DetailsStep
+              initialData={data}
+              onNext={handleDetailsComplete}
+              onBack={handleBack}
+            />
+          )}
+          {step === 3 && (
+            <PlatformsStep
+              initialData={data}
+              onNext={handlePlatformsComplete}
+              onBack={handleBack}
+            />
+          )}
+          {step === 4 && (
+            <MetaPixelStep
+              initialData={data}
+              onNext={handleMetaPixelComplete}
+              onBack={handleBack}
+            />
+          )}
+          {step === 5 && (
+            <EmailCaptureStep
+              initialData={data}
+              onNext={handleEmailCaptureComplete}
+              onBack={handleBack}
+            />
+          )}
+          {step === 6 && (
+            <ReviewStep
+              data={data}
+              onBack={handleBack}
+              onComplete={handleComplete}
+              onEditStep={handleEditStep}
+            />
+          )}
+        </Card>
+      </div>
+    </>
   );
 };
 

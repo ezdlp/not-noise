@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,13 @@ export default function Register() {
     if (!registrationComplete) {
       const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user && event === 'SIGNED_IN') {
-          navigate("/dashboard");
+          const redirectPath = sessionStorage.getItem('redirectAfterAuth');
+          if (redirectPath) {
+            sessionStorage.removeItem('redirectAfterAuth');
+            navigate(redirectPath);
+          } else {
+            navigate("/dashboard");
+          }
         }
       });
 

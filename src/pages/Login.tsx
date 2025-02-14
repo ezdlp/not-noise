@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,13 @@ export default function Login() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/dashboard");
+        const redirectPath = sessionStorage.getItem('redirectAfterAuth');
+        if (redirectPath) {
+          sessionStorage.removeItem('redirectAfterAuth');
+          navigate(redirectPath);
+        } else {
+          navigate("/dashboard");
+        }
       }
     });
 
@@ -66,7 +72,13 @@ export default function Login() {
         description: "You have successfully logged in.",
       });
       
-      navigate("/dashboard");
+      const redirectPath = sessionStorage.getItem('redirectAfterAuth');
+      if (redirectPath) {
+        sessionStorage.removeItem('redirectAfterAuth');
+        navigate(redirectPath);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof AuthError) {
@@ -144,4 +156,6 @@ export default function Login() {
       </div>
     </div>
   );
-}
+};
+
+export default Login;
