@@ -4,25 +4,45 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, CheckCircle, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const formSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+});
 
 const ResetPassword = () => {
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const handleResetPassword = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
         redirectTo: `${window.location.origin}/update-password`,
       });
 
@@ -44,22 +64,18 @@ const ResetPassword = () => {
 
   if (resetSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md space-y-8 text-center">
-          <div className="flex justify-center">
-            <CheckCircle className="h-16 w-16 text-primary" />
-          </div>
-          
-          <div>
-            <h2 className="text-3xl font-bold">Check Your Email</h2>
-            <p className="mt-4 text-muted-foreground">
+      <AuthLayout>
+        <div className="w-full space-y-8">
+          <div className="space-y-4 text-left">
+            <h2 className="text-2xl font-semibold">Check Your Email</h2>
+            <p className="text-muted-foreground">
               We've sent a password reset link to:
               <br />
-              <span className="font-medium text-foreground">{email}</span>
+              <span className="font-medium text-foreground">{form.getValues("email")}</span>
             </p>
           </div>
 
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Didn't receive the email? Check your spam folder or try another email address.
             </p>
@@ -84,16 +100,16 @@ const ResetPassword = () => {
             </div>
           </div>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Reset Password</h2>
-          <p className="mt-2 text-muted-foreground">
+    <AuthLayout>
+      <div className="w-full space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">Reset Password</h2>
+          <p className="text-sm text-muted-foreground">
             Enter your email to receive a password reset link
           </p>
         </div>
@@ -104,39 +120,53 @@ const ResetPassword = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleResetPassword} className="mt-8 space-y-6">
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10"
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleResetPassword)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Email address"
+                      {...field}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? "Sending..." : "Send Reset Link"}
-          </Button>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Reset Link'
+              )}
+            </Button>
 
-          <div className="text-center">
             <Button
               variant="link"
-              className="p-0 h-auto font-normal"
+              className="w-full"
               onClick={() => navigate("/login")}
             >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Login
             </Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

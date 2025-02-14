@@ -4,18 +4,33 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const formSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
 const UpdatePassword = () => {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordRequirements, setPasswordRequirements] = useState({
     minLength: false,
@@ -25,6 +40,14 @@ const UpdatePassword = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
   useEffect(() => {
     // Check if we have the access token in the URL (password reset flow)
@@ -64,12 +87,7 @@ const UpdatePassword = () => {
     return requirements;
   };
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     if (passwordStrength < 75) {
       setError("Password is not strong enough");
       return;
@@ -80,7 +98,7 @@ const UpdatePassword = () => {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: values.password
       });
 
       if (error) throw error;
@@ -102,11 +120,11 @@ const UpdatePassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Update Password</h2>
-          <p className="mt-2 text-muted-foreground">
+    <AuthLayout>
+      <div className="w-full space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">Update Password</h2>
+          <p className="text-sm text-muted-foreground">
             Enter your new password
           </p>
         </div>
@@ -117,110 +135,98 @@ const UpdatePassword = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleUpdatePassword} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="New password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    checkPasswordRequirements(e.target.value);
-                  }}
-                  className="pl-10 pr-10"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              <Progress 
-                value={passwordStrength} 
-                className="h-1" 
-                style={{
-                  backgroundColor: '#ECE9FF',
-                  '--progress-background': '#6851FB'
-                } as React.CSSProperties} 
-              />
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                {[
-                  { key: 'minLength', label: 'At least 8 characters' },
-                  { key: 'hasUppercase', label: 'One uppercase letter' },
-                  { key: 'hasLowercase', label: 'One lowercase letter' },
-                  { key: 'hasNumber', label: 'One number' },
-                ].map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className={`flex items-center gap-2 ${
-                      passwordRequirements[key as keyof typeof passwordRequirements]
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {passwordRequirements[key as keyof typeof passwordRequirements] ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                    <span>{label}</span>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="New password"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        checkPasswordRequirements(e.target.value);
+                      }}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <Progress 
+                    value={passwordStrength} 
+                    className="h-1" 
+                    style={{
+                      backgroundColor: '#ECE9FF',
+                      '--progress-background': '#6851FB'
+                    } as React.CSSProperties} 
+                  />
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    {[
+                      { key: 'minLength', label: 'At least 8 characters' },
+                      { key: 'hasUppercase', label: 'One uppercase letter' },
+                      { key: 'hasLowercase', label: 'One lowercase letter' },
+                      { key: 'hasNumber', label: 'One number' },
+                    ].map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`flex items-center gap-2 ${
+                          passwordRequirements[key as keyof typeof passwordRequirements]
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {passwordRequirements[key as keyof typeof passwordRequirements] ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <X className="h-4 w-4" />
+                        )}
+                        <span>{label}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10 pr-10"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Confirm new password"
+                      {...field}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              'Update Password'
-            )}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
+            </Button>
+          </form>
+        </Form>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

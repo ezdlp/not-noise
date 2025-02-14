@@ -4,18 +4,40 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const formSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -25,7 +47,6 @@ const Login = () => {
           description: "You have successfully logged in.",
         });
         
-        // Add a small delay before redirect to ensure data is properly loaded
         setTimeout(() => {
           const redirectPath = sessionStorage.getItem('redirectAfterAuth');
           if (redirectPath) {
@@ -63,15 +84,14 @@ const Login = () => {
     return "An unexpected error occurred. Please try again.";
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setError(null);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
       });
 
       if (error) throw error;
@@ -89,12 +109,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Welcome back</h2>
-          <p className="mt-2 text-muted-foreground">
-            Sign in to your account to continue
+    <AuthLayout>
+      <div className="flex flex-col items-start space-y-6 w-full">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">Welcome back</h1>
+          <p className="text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Button
+              variant="link"
+              className="p-0 h-auto font-normal"
+              onClick={() => navigate("/register")}
+            >
+              Sign up
+            </Button>
           </p>
         </div>
 
@@ -104,65 +131,72 @@ const Login = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleLogin} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="w-full space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      placeholder="Email"
+                      type="email"
+                      {...field}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      placeholder="Password"
+                      type="password"
+                      {...field}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
+        </Form>
+
+        <div className="text-center w-full">
           <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
+            variant="link"
+            className="p-0 h-auto font-normal text-sm text-muted-foreground"
+            onClick={() => navigate("/reset-password")}
           >
-            {loading ? "Signing in..." : "Sign in"}
+            Forgot your password?
           </Button>
-
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal"
-                onClick={() => navigate("/register")}
-              >
-                Register here
-              </Button>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal"
-                onClick={() => navigate("/reset-password")}
-              >
-                Forgot your password?
-              </Button>
-            </p>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 
