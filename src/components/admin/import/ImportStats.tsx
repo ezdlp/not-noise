@@ -30,7 +30,11 @@ interface ChunkProgress {
   total: number;
 }
 
-const ImportStats = () => {
+interface ImportStatsProps {
+  onComplete?: () => void;
+}
+
+const ImportStats = ({ onComplete }: ImportStatsProps) => {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -60,6 +64,7 @@ const ImportStats = () => {
 
       if (data.success > 0) {
         toast.success(`Successfully imported stats for ${data.success} smart links`);
+        onComplete?.();
       }
 
       if (data.errors.length > 0) {

@@ -6,7 +6,7 @@ import { ImportMedia } from "@/components/admin/import/ImportMedia";
 import { ImportPosts } from "@/components/admin/import/ImportPosts";
 import { ImportUsers } from "@/components/admin/import/ImportUsers";
 import { ImportLinks } from "@/components/admin/import/ImportLinks";
-import { ImportStats } from "@/components/admin/import/ImportStats";
+import ImportStats from "@/components/admin/import/ImportStats";
 
 export default function Import() {
   const [activeTab, setActiveTab] = useState("media");
