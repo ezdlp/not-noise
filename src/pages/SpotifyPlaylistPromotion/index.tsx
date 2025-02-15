@@ -9,7 +9,6 @@ import FAQ from "./components/FAQ";
 import { useEffect } from "react";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
-  // Add scroll handling for hash links
   useEffect(() => {
     const hash = window.location.hash;
     if (hash) {
@@ -20,6 +19,40 @@ const SpotifyPlaylistPromotion: React.FC = () => {
     }
   }, []);
 
+  const spotifyServiceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Spotify Playlist Promotion",
+    "provider": {
+      "@type": "Organization",
+      "name": "Soundraiser"
+    },
+    "description": "Boost your music with our Spotify playlist promotion services. Get featured on curated playlists and reach new audiences.",
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://soundraiser.io"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Spotify Playlist Promotion",
+        "item": "https://soundraiser.io/spotify-playlist-promotion"
+      }
+    ]
+  };
+
   return (
     <>
       <Helmet>
@@ -28,6 +61,13 @@ const SpotifyPlaylistPromotion: React.FC = () => {
           name="description" 
           content="Boost your music with our Spotify playlist promotion services. Get featured on curated playlists and reach new audiences." 
         />
+        <link rel="canonical" href="https://soundraiser.io/spotify-playlist-promotion" />
+        <script type="application/ld+json">
+          {JSON.stringify(spotifyServiceSchema)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
       </Helmet>
 
       <main className="min-h-screen">
