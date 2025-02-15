@@ -150,24 +150,6 @@ export default function SmartLink() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !smartLink) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-red-500">
-          {error ? 'Error loading smart link' : 'Smart link not found'}
-        </p>
-      </div>
-    );
-  }
-
   const platformIcons: { [key: string]: string } = {
     spotify: "/lovable-uploads/spotify.png",
     apple_music: "/lovable-uploads/applemusic.png",
@@ -185,16 +167,37 @@ export default function SmartLink() {
     beatport: "/lovable-uploads/beatport.png",
     bandcamp: "/lovable-uploads/bandcamp.png",
     audius: "/lovable-uploads/audius.png",
-    // Add exact matches for platform IDs
     youtubeMusic: "/lovable-uploads/youtubemusic.png",
     appleMusic: "/lovable-uploads/applemusic.png",
     amazonMusic: "/lovable-uploads/amazonmusic.png",
+  };
+
+  const getActionText = (platformId: string): string => {
+    return ['itunes', 'beatport'].includes(platformId) ? 'Buy' : 'Play';
   };
 
   const streamingPlatforms = smartLink.platform_links?.map(pl => ({
     name: pl.platform_name,
     url: pl.url
   })) || [];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !smartLink) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg text-red-500">
+          {error ? 'Error loading smart link' : 'Smart link not found'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
@@ -238,7 +241,7 @@ export default function SmartLink() {
                   key={platformLink.id}
                   name={platformLink.platform_name}
                   icon={icon}
-                  action="Play"
+                  action={getActionText(platformLink.platform_id)}
                   url={platformLink.url}
                   onClick={() => handlePlatformClick(platformLink.id)}
                 />
