@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { DefaultSEO } from "@/components/seo/DefaultSEO";
 import WebsiteSEO from "@/components/seo/WebsiteSEO";
+import { Helmet } from "react-helmet";
 
 const Index = () => {
   useEffect(() => {
@@ -21,10 +22,26 @@ const Index = () => {
     }
   }, []);
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://soundraiser.io"
+    }]
+  };
+
   return (
     <div className="min-h-screen">
       <DefaultSEO />
       <WebsiteSEO />
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+      </Helmet>
       <Hero />
       <TrustedLabels />
       <Features />

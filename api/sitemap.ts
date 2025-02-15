@@ -39,6 +39,23 @@ export default async function handler(request: Request) {
   <url>
     <loc>https://soundraiser.io</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/features</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/pricing</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/streaming-calculator</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/blog</loc>
+    <priority>0.8</priority>
   </url>
 </urlset>`,
       {
@@ -53,4 +70,3 @@ export default async function handler(request: Request) {
     );
   }
 }
-

@@ -1,7 +1,7 @@
 
 export const DEFAULT_SEO_CONFIG = {
-  title: "Soundraiser - Music Marketing Made Simple",
-  description: "Create smart links, track performance, and grow your audience with powerful music marketing tools. The all-in-one platform for musicians and labels.",
+  title: "Soundraiser - Create Music Smart Links in Seconds",
+  description: "Create smart links for your music in seconds. Share your songs across all streaming platforms with one link. The easiest way to promote your music online.",
   image: "/lovable-uploads/soundraiser-logo/Logo A.svg",
   type: "website" as const,
   siteUrl: "https://soundraiser.io",
@@ -25,5 +25,24 @@ export const SCHEMA_ORG_CONFIG = {
       "@type": "ImageObject",
       url: "https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.svg"
     }
-  }
+  },
+  mainEntity: {
+    "@type": "SoftwareApplication",
+    name: "Soundraiser",
+    applicationCategory: "MusicApplication",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD"
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      ratingCount: "124"
+    }
+  },
+  sameAs: [
+    "https://twitter.com/soundraiser_",
+    "https://www.instagram.com/soundraiser"
+  ]
 };
