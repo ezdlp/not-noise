@@ -1,176 +1,76 @@
 import { Helmet } from "react-helmet";
-import { DEFAULT_SEO_CONFIG } from "./config";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "@reach/router";
+import { useStaticQuery, graphql } from "gatsby";
 
-// Define FAQ type for better type safety
-type FAQItem = {
-  question: string;
-  answer: string;
-};
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: boolean;
+}
 
-export function WebsiteSEO() {
-  const location = useLocation();
-  const pathSegments = location.pathname.split('/').filter(Boolean);
+export default function WebsiteSEO({
+  title,
+  description,
+  image,
+  article,
+}: Props) {
+  const { pathname } = useLocation();
+  const { site } = useStaticQuery(query);
 
-  // Generate breadcrumb items based on current path
-  const breadcrumbItems = pathSegments.map((segment, index) => {
-    const path = `/${pathSegments.slice(0, index + 1).join('/')}`;
-    return {
-      "@type": "ListItem",
-      "position": index + 1,
-      "name": segment.charAt(0).toUpperCase() + segment.slice(1),
-      "item": `${DEFAULT_SEO_CONFIG.siteUrl}${path}`
-    };
-  });
+  const {
+    defaultTitle,
+    defaultDescription,
+    siteUrl,
+    defaultImage,
+    twitterUsername,
+  } = site?.siteMetadata;
 
-  // Add home page as first item if we're not on home page
-  if (pathSegments.length > 0) {
-    breadcrumbItems.unshift({
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": DEFAULT_SEO_CONFIG.siteUrl
-    });
-  }
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": breadcrumbItems
-  };
-
-  // FAQ data from our FAQ component
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What makes Soundraiser's Smart Links special?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Our Smart Links combine powerful marketing tools with beautiful, customizable designs. They feature Meta Pixel integration for retargeting, email capture, detailed analytics, and automatic social media card generation - all while maintaining a sleek, professional look that matches your brand."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How can I promote my music effectively using Smart Links?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Our Smart Links offer multiple promotion tools: automatically generated social media cards for platforms like Instagram and TikTok, built-in Meta Pixel for retargeting campaigns, email capture for building your fan base, and detailed analytics to understand your audience's behavior across all streaming platforms."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What analytics and insights do I get?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "You get comprehensive analytics including real-time views, clicks, geographic data, device types, platform preferences, and conversion rates. Our dashboard shows you detailed performance metrics, helping you understand where your fans are coming from and how they interact with your music."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How do the social media features work?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Our platform automatically generates eye-catching social cards for your music, optimized for Instagram, X (Twitter), TikTok, Facebook, and Snapchat. These visually appealing cards help your links stand out in social media feeds, increasing engagement and click-through rates."
-        }
-      }
-    ]
-  };
-
-  const websiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Soundraiser",
-    url: DEFAULT_SEO_CONFIG.siteUrl,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${DEFAULT_SEO_CONFIG.siteUrl}/search?q={search_term_string}`,
-      "query-input": "required name=search_term_string"
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Soundraiser",
-      logo: {
-        "@type": "ImageObject",
-        url: `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.svg`
-      }
-    }
-  };
-
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Soundraiser Pro",
-    "applicationCategory": "MusicApplication",
-    "offers": [
-      {
-        "@type": "Offer",
-        "name": "Pro Plan",
-        "description": "Unlimited Smart Links, advanced analytics, email capture, and custom branding",
-        "price": "9.99",
-        "priceCurrency": "USD",
-        "frequency": "monthly"
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro Plan Annual",
-        "description": "Pro plan with annual billing - save 20%",
-        "price": "95.88",
-        "priceCurrency": "USD",
-        "frequency": "yearly"
-      }
-    ],
-    "featureList": [
-      "Unlimited Smart Links",
-      "All Music Platforms",
-      "Advanced Analytics",
-      "Email Collection",
-      "Platform Reordering",
-      "Remove Branding",
-      "Meta Pixel Integration",
-      "Social Media Cards"
-    ],
-    "operatingSystem": "Web-based",
-    "url": `${DEFAULT_SEO_CONFIG.siteUrl}/pricing`
+  const seo = {
+    title: title || defaultTitle,
+    description: description || defaultDescription,
+    image: `${siteUrl}${image || defaultImage}`,
+    url: `${siteUrl}${pathname}`,
   };
 
   return (
-    <Helmet>
-      {/* Technical SEO */}
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
-      <meta httpEquiv="Content-Language" content="en" />
-      <meta name="language" content="English" />
-      
-      {/* Resource hints */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-      <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-      
-      {/* Image optimization */}
-      <meta name="image-rendering" content="optimizeQuality" />
-      
-      {/* Social media image dimensions */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:type" content="image/png" />
+    <Helmet title={seo.title}>
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#6851FB" />
+      <meta name="description" content={seo.description} />
+      <meta name="image" content={seo.image} />
+      {/* OG (Open Graph) tags */}
+      {article ? (
+        <meta property="og:type" content="article" />
+      ) : (
+        <meta property="og:type" content="website" />
+      )}
+      <meta property="og:url" content={seo.url} />
+      <meta property="og:title" content={seo.title} />
+      <meta property="og:description" content={seo.description} />
+      <meta property="og:image" content={seo.image} />
+      <meta property="og:image:alt" content={seo.description} />
+      {/* Twitter Card tags */}
       <meta name="twitter:card" content="summary_large_image" />
-      
-      {/* Schema.org markup */}
-      <script type="application/ld+json">
-        {JSON.stringify(websiteSchema)}
-      </script>
-      <script type="application/ld+json">
-        {JSON.stringify(faqSchema)}
-      </script>
-      <script type="application/ld+json">
-        {JSON.stringify(productSchema)}
-      </script>
-      <script type="application/ld+json">
-        {JSON.stringify(breadcrumbSchema)}
-      </script>
+      <meta name="twitter:creator" content={twitterUsername} />
+      <meta name="twitter:title" content={seo.title} />
+      <meta name="twitter:description" content={seo.description} />
+      <meta name="twitter:image" content={seo.image} />
+      <meta name="twitter:image:alt" content={seo.description} />
     </Helmet>
   );
 }
+
+const query = graphql`
+  query SEO {
+    site {
+      siteMetadata {
+        defaultTitle: title
+        defaultDescription: description
+        siteUrl
+        defaultImage: image
+        twitterUsername
+      }
+    }
+  }
+`;

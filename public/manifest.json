@@ -1,0 +1,27 @@
+
+{
+  "name": "SoundRaiser",
+  "short_name": "SoundRaiser",
+  "description": "Smart Links and Music Marketing Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#6851FB",
+  "icons": [
+    {
+      "src": "/lovable-uploads/soundraiser-logo/Iso A fav.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lovable-uploads/soundraiser-logo/Iso A.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "portrait",
+  "categories": ["music", "marketing", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

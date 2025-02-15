@@ -1,0 +1,19 @@
+
+User-agent: *
+Allow: /
+
+# Prevent crawling of admin and private areas
+Disallow: /control-room/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /links/*/edit
+Disallow: /links/*/analytics
+
+# Allow crawling of public pages
+Allow: /blog/
+Allow: /link/
+Allow: /spotify-playlist-promotion
+Allow: /streaming-calculator
+
+# Sitemap location
+Sitemap: https://soundraiser.io/sitemap.xml
