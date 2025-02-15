@@ -8,7 +8,7 @@ import { Footer } from "@/components/landing/Footer";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { DefaultSEO } from "@/components/seo/DefaultSEO";
-import { WebsiteSEO } from "@/components/seo/WebsiteSEO";
+import WebsiteSEO from "@/components/seo/WebsiteSEO";
 
 const Index = () => {
   useEffect(() => {

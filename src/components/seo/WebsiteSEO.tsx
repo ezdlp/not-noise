@@ -1,6 +1,6 @@
+
 import { Helmet } from "react-helmet";
-import { useLocation } from "@reach/router";
-import { useStaticQuery, graphql } from "gatsby";
+import { useLocation } from "react-router-dom";
 
 interface Props {
   title?: string;
@@ -16,15 +16,12 @@ export default function WebsiteSEO({
   article,
 }: Props) {
   const { pathname } = useLocation();
-  const { site } = useStaticQuery(query);
 
-  const {
-    defaultTitle,
-    defaultDescription,
-    siteUrl,
-    defaultImage,
-    twitterUsername,
-  } = site?.siteMetadata;
+  const defaultTitle = "SoundRaiser";
+  const defaultDescription = "Smart Links and Music Marketing Platform";
+  const siteUrl = "https://soundraiser.io";
+  const defaultImage = "/lovable-uploads/soundraiser-logo/Iso A.png";
+  const twitterUsername = "@soundraiser";
 
   const seo = {
     title: title || defaultTitle,
@@ -60,17 +57,3 @@ export default function WebsiteSEO({
     </Helmet>
   );
 }
-
-const query = graphql`
-  query SEO {
-    site {
-      siteMetadata {
-        defaultTitle: title
-        defaultDescription: description
-        siteUrl
-        defaultImage: image
-        twitterUsername
-      }
-    }
-  }
-`;
