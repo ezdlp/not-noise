@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -150,6 +151,24 @@ export default function SmartLink() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !smartLink) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg text-red-500">
+          {error ? 'Error loading smart link' : 'Smart link not found'}
+        </p>
+      </div>
+    );
+  }
+
   const platformIcons: { [key: string]: string } = {
     spotify: "/lovable-uploads/spotify.png",
     apple_music: "/lovable-uploads/applemusic.png",
@@ -180,24 +199,6 @@ export default function SmartLink() {
     name: pl.platform_name,
     url: pl.url
   })) || [];
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !smartLink) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-red-500">
-          {error ? 'Error loading smart link' : 'Smart link not found'}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
