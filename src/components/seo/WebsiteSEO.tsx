@@ -38,6 +38,17 @@ export default function WebsiteSEO({
       <meta name="description" content={seo.description} />
       <meta name="image" content={seo.image} />
       
+      {/* Technical SEO */}
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+      <meta name="robots" content="index, follow" />
+      <link rel="canonical" href={seo.url} />
+      <meta httpEquiv="content-language" content="en" />
+      
+      {/* Resource hints */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://i.scdn.co" crossOrigin="anonymous" />
+      
       {/* OG (Open Graph) tags */}
       {article ? (
         <meta property="og:type" content="article" />
@@ -49,6 +60,10 @@ export default function WebsiteSEO({
       <meta property="og:description" content={seo.description} />
       <meta property="og:image" content={seo.image} />
       <meta property="og:image:alt" content={seo.description} />
+      <meta property="og:site_name" content="Soundraiser" />
+      <meta property="og:locale" content="en_US" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
       
       {/* Twitter Card tags */}
       <meta name="twitter:card" content="summary_large_image" />
