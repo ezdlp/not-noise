@@ -39,7 +39,6 @@ export type Database = {
       analytics_page_views: {
         Row: {
           country: string | null
-          country_code: string | null
           created_at: string | null
           id: string
           ip_hash: string | null
@@ -49,7 +48,6 @@ export type Database = {
         }
         Insert: {
           country?: string | null
-          country_code?: string | null
           created_at?: string | null
           id?: string
           ip_hash?: string | null
@@ -59,7 +57,6 @@ export type Database = {
         }
         Update: {
           country?: string | null
-          country_code?: string | null
           created_at?: string | null
           id?: string
           ip_hash?: string | null
@@ -773,30 +770,24 @@ export type Database = {
         Row: {
           clicked_at: string | null
           country: string | null
-          country_code: string | null
           id: string
           ip_address: string | null
-          ip_hash: string | null
           platform_link_id: string | null
           user_agent: string | null
         }
         Insert: {
           clicked_at?: string | null
           country?: string | null
-          country_code?: string | null
           id?: string
           ip_address?: string | null
-          ip_hash?: string | null
           platform_link_id?: string | null
           user_agent?: string | null
         }
         Update: {
           clicked_at?: string | null
           country?: string | null
-          country_code?: string | null
           id?: string
           ip_address?: string | null
-          ip_hash?: string | null
           platform_link_id?: string | null
           user_agent?: string | null
         }

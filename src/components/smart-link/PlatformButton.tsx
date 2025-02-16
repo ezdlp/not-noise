@@ -1,56 +1,54 @@
-
 import React from 'react';
-import { analyticsService } from '@/services/analyticsService';
+import { Button } from "@/components/ui/button";
 
 interface PlatformButtonProps {
-  platformId: string;
-  platformName: string;
+  name: string;
+  icon: string;
+  action: string;
   url: string;
-  iconUrl?: string;
   onClick?: () => Promise<void>;
-  actionText?: string;
 }
 
-export const PlatformButton: React.FC<PlatformButtonProps> = ({ 
-  platformId, 
-  platformName, 
-  url, 
-  iconUrl,
-  onClick,
-  actionText = 'Play'
-}) => {
-  const handleClick = async () => {
-    if (onClick) {
-      await onClick();
-    } else {
-      try {
-        await analyticsService.trackPlatformClick(platformId);
-        window.open(url, '_blank');
-      } catch (error) {
-        console.error('Error tracking platform click:', error);
-        window.open(url, '_blank');
+const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProps) => {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('Platform button clicked:', { name, url });
+    
+    try {
+      if (onClick) {
+        console.log('Executing click handler for platform:', name);
+        await onClick();
+        console.log('Click handler completed for platform:', name);
       }
+      
+      console.log('Opening URL for platform:', name);
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error in platform button click handler:', error);
+      // Only open URL if explicitly requested, even if tracking fails
+      window.open(url, '_blank');
     }
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-black/5 transition-colors"
-    >
-      <div className="flex items-center gap-4">
-        {iconUrl && (
-          <img 
-            src={iconUrl} 
-            alt={platformName} 
-            className="w-5 h-5 object-contain"
-          />
-        )}
-        <span className="text-sm font-medium">{platformName}</span>
+    <div className="flex items-center justify-between p-3 border-b last:border-b-0">
+      <div className="flex items-center gap-3">
+        <img 
+          src={icon} 
+          alt={`${name} logo`}
+          className="w-8 h-8 object-contain"
+        />
+        <span className="font-medium text-gray-900">{name}</span>
       </div>
-      <div className="bg-black text-white px-6 py-2 rounded-full">
-        <span className="text-sm font-medium">{actionText}</span>
-      </div>
-    </button>
+      <Button
+        variant="default"
+        className="bg-black hover:bg-black/90 text-white min-w-[100px]"
+        onClick={handleClick}
+      >
+        {action}
+      </Button>
+    </div>
   );
 };
+
+export default PlatformButton;

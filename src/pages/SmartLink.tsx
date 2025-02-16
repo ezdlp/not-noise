@@ -2,7 +2,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlatformButton } from "@/components/smart-link/PlatformButton";
+import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
@@ -240,12 +240,11 @@ export default function SmartLink() {
               return (
                 <PlatformButton
                   key={platformLink.id}
-                  platformId={platformLink.id}
-                  platformName={platformLink.platform_name}
-                  iconUrl={icon}
+                  name={platformLink.platform_name}
+                  icon={icon}
+                  action={getActionText(platformLink.platform_id)}
                   url={platformLink.url}
                   onClick={() => handlePlatformClick(platformLink.id)}
-                  actionText={getActionText(platformLink.platform_id)}
                 />
               );
             })}
