@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -249,8 +250,24 @@ export default function Pricing() {
                     <div className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-muted-foreground" />
                       <div className="flex items-center gap-2">
+                        Basic Streaming Platforms
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2">
                         Basic Analytics
-                        <TooltipProvider>
+                        <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger>
                               <Info className="h-4 w-4 text-muted-foreground" />
@@ -264,24 +281,10 @@ export default function Pricing() {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex items-center gap-2">
-                        Basic Streaming Platforms
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
                       Custom URL Slugs
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-muted-foreground" />
                       Meta Pixel Integration
                     </div>
                   </div>
@@ -321,6 +324,9 @@ export default function Pricing() {
                       <div className="text-sm text-primary mt-1">
                         billed annually (Save 17%)
                       </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        $60 total per year
+                      </div>
                     </>
                   )}
                   <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
@@ -339,7 +345,7 @@ export default function Pricing() {
                       <Check className="h-4 w-4 text-primary" />
                       <div className="flex items-center gap-2">
                         All Streaming Platforms + Reordering
-                        <TooltipProvider>
+                        <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger>
                               <Info className="h-4 w-4 text-muted-foreground" />
@@ -355,7 +361,7 @@ export default function Pricing() {
                       <Check className="h-4 w-4 text-primary" />
                       <div className="flex items-center gap-2">
                         Advanced Analytics
-                        <TooltipProvider>
+                        <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger>
                               <Info className="h-4 w-4 text-muted-foreground" />
@@ -376,15 +382,31 @@ export default function Pricing() {
                       Remove Soundraiser Branding
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Priority Support (24/7 response within 12 hours)
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Bulk Analytics Export
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      Smart Link Social Media Cards
+                      <Check className="h-4 w-4 text-primary" />
+                      <div className="flex items-center gap-2">
+                        Smart Link Social Media Cards
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Early Access to New Features
                     </div>
                   </div>
