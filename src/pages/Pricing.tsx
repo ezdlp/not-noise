@@ -404,6 +404,21 @@ export default function Pricing() {
           </Card>
         </div>
 
+        <div className="mt-8 text-center">
+          <Button 
+            variant="link" 
+            className="text-muted-foreground hover:text-primary transition-colors"
+            onClick={() => {
+              document.getElementById('compare-plans')?.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }}
+          >
+            Need help choosing? Compare plans in detail ↓
+          </Button>
+        </div>
+
         <div className="mt-16">
           <TrustedLabels isPricingPage={true} />
         </div>

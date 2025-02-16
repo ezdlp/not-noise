@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, Share2, Link2, Palette, HeadphonesIcon, Zap } from "lucide-react";
+import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, ArrowUpDown, Mail, Instagram, Palette, HeadphonesIcon, Zap } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,13 +20,13 @@ const ComparisonTable = () => {
     {
       name: "Music Platforms",
       icon: <HeadphonesIcon className="h-4 w-4" />,
-      free: "8 essential platforms",
-      pro: "All platforms (15+)",
-      info: "Connect with major streaming platforms like Spotify, Apple Music, and more",
+      free: "Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store",
+      pro: "All from Free plus Tidal, Beatport, Bandcamp, Napster, Anghami, Boomplay, Yandex Music, Audius",
+      info: "Connect with major streaming platforms",
     },
     {
       name: "Platform Reordering",
-      icon: <Share2 className="h-4 w-4" />,
+      icon: <ArrowUpDown className="h-4 w-4" />,
       free: false,
       pro: true,
       info: "Arrange platforms in any order to prioritize specific services",
@@ -34,9 +34,9 @@ const ComparisonTable = () => {
     {
       name: "Analytics Dashboard",
       icon: <BarChart3 className="h-4 w-4" />,
-      free: "Basic stats",
-      pro: "Advanced insights",
-      info: "Track views, clicks, and engagement metrics",
+      free: "Views, Clicks, CTR tracking",
+      pro: "Everything in Free plus Platform-specific clicks, Daily performance, Fan locations, Performance trends",
+      info: "Track and analyze your smart link performance",
     },
     {
       name: "Analytics Export",
@@ -54,14 +54,14 @@ const ComparisonTable = () => {
     },
     {
       name: "Fan Email Collection",
-      icon: <Link2 className="h-4 w-4" />,
+      icon: <Mail className="h-4 w-4" />,
       free: false,
       pro: true,
       info: "Build your mailing list directly through your smart links",
     },
     {
       name: "Social Media Cards",
-      icon: <Share2 className="h-4 w-4" />,
+      icon: <Instagram className="h-4 w-4" />,
       free: false,
       pro: true,
       info: "Your links will display beautifully when shared on social media",
@@ -74,7 +74,7 @@ const ComparisonTable = () => {
       info: "Customize your link URLs",
     },
     {
-      name: "White Labeling",
+      name: "Branding",
       icon: <Palette className="h-4 w-4" />,
       free: false,
       pro: true,
@@ -97,7 +97,7 @@ const ComparisonTable = () => {
   ];
 
   return (
-    <div className="mt-24 mb-16 px-4">
+    <div className="mt-24 mb-16 px-4" id="compare-plans">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold mb-4">Compare Plans in Detail</h2>
         <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -115,12 +115,14 @@ const ComparisonTable = () => {
                   <div className="font-bold text-lg">Free</div>
                   <div className="text-sm text-muted-foreground">For emerging artists</div>
                 </th>
-                <th className="p-4 min-w-[140px] bg-primary/5 rounded-t-lg relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full text-white text-xs">
-                    Most Popular
+                <th className="p-4 min-w-[140px] bg-primary/5 rounded-t-lg">
+                  <div className="relative">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full text-white text-xs whitespace-nowrap">
+                      Most Popular
+                    </div>
+                    <div className="font-bold text-lg">Pro</div>
+                    <div className="text-sm text-muted-foreground">For artists who want more</div>
                   </div>
-                  <div className="font-bold text-lg">Pro</div>
-                  <div className="text-sm text-muted-foreground">For artists who want more</div>
                 </th>
               </tr>
             </thead>
