@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, ArrowUpDown, Mail, Instagram, Palette, HeadphonesIcon, Zap } from "lucide-react";
 import {
@@ -115,14 +114,12 @@ const ComparisonTable = () => {
                   <div className="font-bold text-lg">Free</div>
                   <div className="text-sm text-muted-foreground">For emerging artists</div>
                 </th>
-                <th className="p-4 min-w-[140px] bg-primary/5 rounded-t-lg">
-                  <div className="relative">
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full text-white text-xs whitespace-nowrap">
-                      Most Popular
-                    </div>
-                    <div className="font-bold text-lg">Pro</div>
-                    <div className="text-sm text-muted-foreground">For artists who want more</div>
+                <th className="p-4 pt-8 min-w-[140px] bg-primary/5 rounded-t-lg relative">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full text-white text-xs whitespace-nowrap z-10">
+                    Most Popular
                   </div>
+                  <div className="font-bold text-lg">Pro</div>
+                  <div className="text-sm text-muted-foreground">For artists who want more</div>
                 </th>
               </tr>
             </thead>
