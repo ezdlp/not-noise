@@ -1,4 +1,6 @@
 
+import { Link } from "react-router-dom";
+
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
@@ -8,11 +10,13 @@ export function AuthLayout({ children }: AuthLayoutProps) {
     <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative flex-col h-full flex items-center justify-center p-8">
         <div className="w-full flex flex-col items-start space-y-6 sm:w-[350px] lg:w-[400px]">
-          <img 
-            src="/lovable-uploads/soundraiser-logo/Logo A.svg" 
-            alt="Soundraiser" 
-            className="h-8 w-auto mb-4" 
-          />
+          <Link to="/" className="block mb-4">
+            <img 
+              src="/lovable-uploads/soundraiser-logo/Logo A.svg" 
+              alt="Soundraiser" 
+              className="h-8 w-auto" 
+            />
+          </Link>
           {children}
         </div>
       </div>
