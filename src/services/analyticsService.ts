@@ -36,6 +36,26 @@ class AnalyticsService {
     }
   }
 
+  async trackPlatformClick(platformLinkId: string) {
+    try {
+      console.log('Tracking platform click for:', platformLinkId);
+      const { country, country_code, ip_hash } = await this.getLocationInfo();
+      
+      await supabase.from('platform_clicks').insert({
+        platform_link_id: platformLinkId,
+        user_agent: navigator.userAgent,
+        country,
+        country_code,
+        ip_hash
+      });
+      
+      console.log('Platform click tracked successfully with location:', { country, country_code });
+    } catch (error) {
+      console.error('Error tracking platform click:', error);
+      throw error;
+    }
+  }
+
   async trackEvent(event: AnalyticsEvent) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,7 +72,7 @@ class AnalyticsService {
 
   private async getLocationInfo() {
     try {
-      const { data, error } = await supabase.functions.invoke('get-location')
+      const { data, error } = await supabase.functions.invoke('get-location');
       
       if (error) throw error;
       

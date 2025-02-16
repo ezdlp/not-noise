@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { analyticsService } from '@/services/analyticsService';
 
 interface PlatformButtonProps {
   name: string;
