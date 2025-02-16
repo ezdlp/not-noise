@@ -36,9 +36,9 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
   return (
     <button
       onClick={handleClick}
-      className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-neutral-border hover:bg-neutral-seasalt transition-colors duration-200"
+      className="w-full flex items-center justify-between px-6 py-4 hover:bg-black/5 transition-colors"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {iconUrl && (
           <img 
             src={iconUrl} 
@@ -48,7 +48,9 @@ export const PlatformButton: React.FC<PlatformButtonProps> = ({
         )}
         <span className="text-sm font-medium">{platformName}</span>
       </div>
-      <span className="text-sm font-medium">{actionText}</span>
+      <div className="bg-black text-white px-6 py-2 rounded-full">
+        <span className="text-sm font-medium">{actionText}</span>
+      </div>
     </button>
   );
 };
