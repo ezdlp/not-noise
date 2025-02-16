@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -316,20 +315,17 @@ export default function Pricing() {
                     <>
                       <span className="text-4xl font-bold">$6</span>
                       <span className="text-muted-foreground">/month</span>
+                      <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
                     </>
                   ) : (
                     <>
                       <span className="text-4xl font-bold">$5</span>
                       <span className="text-muted-foreground">/mo</span>
-                      <div className="text-sm text-primary mt-1">
-                        billed annually (Save 17%)
-                      </div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        $60 total per year
+                        <span className="text-primary">Save 17%</span> • $60/year • Cancel anytime
                       </div>
                     </>
                   )}
-                  <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
                 </div>
               </div>
 
