@@ -12,75 +12,80 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
 import { useQuery } from "@tanstack/react-query";
 import ComparisonTable from "@/components/pricing/ComparisonTable";
-
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
-
-  const { data: session, isLoading: isSessionLoading } = useQuery({
+  const {
+    data: session,
+    isLoading: isSessionLoading
+  } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        },
+        error
+      } = await supabase.auth.getSession();
       if (error) {
         console.error("Session fetch error:", error);
         throw error;
       }
       return session;
-    },
+    }
   });
-
-  const { data: subscription, isLoading: isSubscriptionLoading, error: subscriptionError } = useQuery({
+  const {
+    data: subscription,
+    isLoading: isSubscriptionLoading,
+    error: subscriptionError
+  } = useQuery({
     queryKey: ["subscription", session?.user?.id],
     queryFn: async () => {
       if (!session?.user) return null;
-
       try {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select("*, tier")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
+        const {
+          data,
+          error
+        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).maybeSingle();
         if (error) throw error;
-        return data || { tier: 'free' }; // Default to free tier if no subscription found
+        return data || {
+          tier: 'free'
+        }; // Default to free tier if no subscription found
       } catch (error) {
         console.error("Subscription fetch error:", error);
         throw error;
       }
     },
     enabled: !!session?.user,
-    retry: 2,
+    retry: 2
   });
-
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading(true);
-      
       if (!session) {
         navigate("/login");
         return;
       }
-
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { 
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
           priceId,
           isSubscription: true
-        },
+        }
       });
-
       if (error) {
         console.error('Checkout error:', error);
         toast.error("Failed to start checkout process. Please try again.");
         return;
       }
-
       if (!data?.url) {
         console.error('No checkout URL received:', data);
         toast.error("Unable to create checkout session. Please try again.");
         return;
       }
-
       window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
@@ -89,27 +94,25 @@ export default function Pricing() {
       setIsLoading(false);
     }
   };
-
   const handleCustomerPortal = async () => {
     try {
       setIsLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke('create-portal-link', {
-        body: {},
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-portal-link', {
+        body: {}
       });
-
       if (error) {
         console.error('Portal error:', error);
         toast.error("Failed to access customer portal. Please try again.");
         return;
       }
-
       if (!data?.url) {
         console.error('No portal URL received:', data);
         toast.error("Unable to access customer portal. Please try again.");
         return;
       }
-
       window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
@@ -118,80 +121,41 @@ export default function Pricing() {
       setIsLoading(false);
     }
   };
-
   const renderActionButton = (tier: 'free' | 'pro') => {
     if (isSessionLoading || isSubscriptionLoading) {
-      return (
-        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
+      return <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
           Loading...
-        </div>
-      );
+        </div>;
     }
-
     if (subscriptionError) {
-      return (
-        <Button 
-          variant="outline" 
-          className="w-full"
-          onClick={() => window.location.reload()}
-        >
+      return <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
           Retry
-        </Button>
-      );
+        </Button>;
     }
-
     if (!session) {
-      return (
-        <Button 
-          variant={tier === 'free' ? "outline" : "default"}
-          className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"}
-          onClick={() => navigate("/login")}
-        >
+      return <Button variant={tier === 'free' ? "outline" : "default"} className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"} onClick={() => navigate("/login")}>
           {tier === 'free' ? "Get Started with Free" : "Get Started with Pro"}
-        </Button>
-      );
+        </Button>;
     }
-
     const userTier = subscription?.tier || 'free';
-
     if (userTier === tier) {
-      return (
-        <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
+      return <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
           Current Plan
-        </div>
-      );
+        </div>;
     }
-
     if (userTier === 'free' && tier === 'pro') {
-      return (
-        <Button 
-          className="w-full bg-primary hover:bg-primary/90"
-          onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1QsQGrFx6uwYcH3SCT6RJsSI')}
-          disabled={isLoading}
-        >
+      return <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1QsQGrFx6uwYcH3SCT6RJsSI')} disabled={isLoading}>
           {isLoading ? "Preparing..." : "Upgrade to Pro"}
-        </Button>
-      );
+        </Button>;
     }
-
     if (userTier === 'pro' && tier === 'free') {
-      return (
-        <Button 
-          variant="outline"
-          onClick={handleCustomerPortal}
-          className="w-full"
-          disabled={isLoading}
-        >
+      return <Button variant="outline" onClick={handleCustomerPortal} className="w-full" disabled={isLoading}>
           {isLoading ? "Preparing..." : "Downgrade to Free"}
-        </Button>
-      );
+        </Button>;
     }
-
     return null;
   };
-
-  return (
-    <div className="container mx-auto py-12 px-4">
+  return <div className="container mx-auto py-12 px-4">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
         <p className="text-lg text-muted-foreground mb-8">
@@ -202,10 +166,7 @@ export default function Pricing() {
           <span className={billingPeriod === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>
             Monthly billing
           </span>
-          <Switch
-            checked={billingPeriod === 'yearly'}
-            onCheckedChange={(checked) => setBillingPeriod(checked ? 'yearly' : 'monthly')}
-          />
+          <Switch checked={billingPeriod === 'yearly'} onCheckedChange={checked => setBillingPeriod(checked ? 'yearly' : 'monthly')} />
           <span className={billingPeriod === 'yearly' ? 'text-foreground' : 'text-muted-foreground'}>
             Annual billing <span className="text-primary text-sm">(Save 17%)</span>
           </span>
@@ -299,21 +260,17 @@ export default function Pricing() {
                   For artists who want more
                 </p>
                 <div className="mt-4">
-                  {billingPeriod === 'monthly' ? (
-                    <>
+                  {billingPeriod === 'monthly' ? <>
                       <span className="text-4xl font-bold">$6</span>
                       <span className="text-muted-foreground">/month</span>
                       <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <span className="text-4xl font-bold">$5</span>
                       <span className="text-muted-foreground">/mo</span>
                       <div className="text-sm text-muted-foreground mt-1">
                         <span className="text-primary">Save 17%</span> • $60/year • Cancel anytime
                       </div>
-                    </>
-                  )}
+                    </>}
                 </div>
               </div>
 
@@ -405,18 +362,12 @@ export default function Pricing() {
         </div>
 
         <div className="mt-8 text-center">
-          <Button 
-            variant="link" 
-            className="text-muted-foreground hover:text-primary transition-colors"
-            onClick={() => {
-              document.getElementById('compare-plans')?.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'start'
-              });
-            }}
-          >
-            Need help choosing? Compare plans in detail ↓
-          </Button>
+          <Button variant="link" className="text-muted-foreground hover:text-primary transition-colors" onClick={() => {
+          document.getElementById('compare-plans')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }}>Need help choosing? Compare plans in detail</Button>
         </div>
 
         <div className="mt-16">
@@ -445,18 +396,9 @@ export default function Pricing() {
 
         <div className="mt-12 flex flex-col items-center space-y-8">
           <div className="flex items-center gap-6">
-            <FontAwesomeIcon 
-              icon={faCcVisa} 
-              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
-            />
-            <FontAwesomeIcon 
-              icon={faCcMastercard} 
-              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
-            />
-            <FontAwesomeIcon 
-              icon={faCcAmex} 
-              className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" 
-            />
+            <FontAwesomeIcon icon={faCcVisa} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
+            <FontAwesomeIcon icon={faCcMastercard} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
+            <FontAwesomeIcon icon={faCcAmex} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
           </div>
 
           <div className="flex items-center gap-8">
@@ -478,6 +420,5 @@ export default function Pricing() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
