@@ -18,23 +18,22 @@ export const Footer = () => {
       links: [
         { text: "Smart Links", to: "/" },
         { text: "Spotify Playlist Promotion", to: "/spotify-playlist-promotion" },
-        { text: "News", to: "/" },
       ],
     },
     {
       title: "Resources",
       links: [
         { text: "Blog", to: "/blog" },
-        { text: "Help Center", to: "/" },
+        { text: "Help Center", to: "/help" },
         { text: "Contact Us", to: "/contact" },
       ],
     },
     {
       title: "Legal",
       links: [
-        { text: "Privacy Policy", to: "https://not-noise.vercel.app/privacy-policy", external: true },
-        { text: "Terms & Conditions", to: "https://not-noise.vercel.app/terms-of-use", external: true },
-        { text: "Cookies", to: "https://not-noise.vercel.app/cookies-policy", external: true },
+        { text: "Privacy Policy", to: "/privacy-policy" },
+        { text: "Terms & Conditions", to: "/terms-of-use" },
+        { text: "Cookies", to: "/cookies-policy" },
       ],
     },
   ];
@@ -80,23 +79,12 @@ export const Footer = () => {
                 <ul className="space-y-3">
                   {column.links.map((link) => (
                     <li key={link.text}>
-                      {link.external ? (
-                        <a
-                          href={link.to}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-white/60 hover:text-primary transition-colors duration-200"
-                        >
-                          {link.text}
-                        </a>
-                      ) : (
-                        <Link
-                          to={link.to}
-                          className="text-sm text-white/60 hover:text-primary transition-colors duration-200"
-                        >
-                          {link.text}
-                        </Link>
-                      )}
+                      <Link
+                        to={link.to}
+                        className="text-sm text-white/60 hover:text-primary transition-colors duration-200"
+                      >
+                        {link.text}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -113,4 +101,4 @@ export const Footer = () => {
       </div>
     </footer>
   );
-}
+};
