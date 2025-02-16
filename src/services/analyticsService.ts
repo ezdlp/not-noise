@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -20,12 +21,13 @@ class AnalyticsService {
 
   async trackPageView(url: string) {
     try {
-      const { country, ip_hash } = await this.getLocationInfo();
+      const { country, country_code, ip_hash } = await this.getLocationInfo();
       
       await supabase.from('analytics_page_views').insert({
         url,
         user_agent: navigator.userAgent,
         country,
+        country_code,
         ip_hash,
         session_id: this.sessionId
       });
@@ -58,12 +60,14 @@ class AnalyticsService {
       
       return {
         country: data.country,
+        country_code: data.country_code,
         ip_hash: ipHash
       };
     } catch (error) {
       console.error('Error getting location info:', error);
       return {
         country: null,
+        country_code: null,
         ip_hash: null
       };
     }

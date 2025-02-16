@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -15,14 +16,15 @@ serve(async (req) => {
     // Get IP from request headers
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1'
     
-    // Call ipapi.co service
-    const response = await fetch(`https://ipapi.co/${clientIP}/json/`)
+    // Call GeoJS service
+    const response = await fetch(`https://get.geojs.io/v1/ip/geo/${clientIP}.json`)
     const data = await response.json()
 
     return new Response(
       JSON.stringify({
         ip: clientIP,
-        country: data.country_name,
+        country: data.country,
+        country_code: data.country_code,
       }),
       { 
         headers: {
