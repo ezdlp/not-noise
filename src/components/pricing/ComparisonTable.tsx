@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, ArrowUpDown, Mail, Instagram, Palette, HeadphonesIcon, Zap } from "lucide-react";
+import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, ArrowUpDown, Mail, Instagram, Palette, HeadphonesIcon, Zap, DollarSign } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,6 +10,18 @@ import {
 
 const ComparisonTable = () => {
   const features = [
+    {
+      name: "Price",
+      icon: <DollarSign className="h-4 w-4" />,
+      free: "$0/forever",
+      pro: <div className="space-y-1">
+        <div>$6/mo billed monthly</div>
+        <div className="text-sm">or</div>
+        <div>$5/mo billed yearly <span className="text-primary">(-17%)</span></div>
+        <div className="text-xs text-muted-foreground">$60 per year</div>
+      </div>,
+      info: "Save 17% with annual billing",
+    },
     {
       name: "Smart Link Creation",
       icon: <Link className="h-4 w-4" />,
@@ -115,11 +127,8 @@ const ComparisonTable = () => {
                   <div className="font-bold text-lg">Free</div>
                   <div className="text-sm text-muted-foreground">For emerging artists</div>
                 </th>
-                <th className="p-4 min-w-[140px] bg-primary/5 rounded-t-lg relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full text-white text-xs whitespace-nowrap">
-                    Most Popular
-                  </div>
-                  <div className="mt-2 font-bold text-lg">Pro</div>
+                <th className="p-4 min-w-[140px] bg-primary/5 rounded-t-lg">
+                  <div className="font-bold text-lg">Pro</div>
                   <div className="text-sm text-muted-foreground">For artists who want more</div>
                 </th>
               </tr>
@@ -167,7 +176,7 @@ const ComparisonTable = () => {
                         <X className="h-5 w-5 text-muted-foreground mx-auto" />
                       )
                     ) : (
-                      <span className="text-sm font-medium">{feature.pro}</span>
+                      <div className="text-sm font-medium">{feature.pro}</div>
                     )}
                   </td>
                 </tr>
