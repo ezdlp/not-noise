@@ -9,6 +9,7 @@ interface AnalyticsEvent {
 }
 
 class AnalyticsService {
+  private static instance: AnalyticsService;
   private sessionId: string;
   private locationCache: {
     timestamp: number;
@@ -16,8 +17,15 @@ class AnalyticsService {
   } | null = null;
   private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-  constructor() {
+  private constructor() {
     this.sessionId = this.generateSessionId();
+  }
+
+  public static getInstance(): AnalyticsService {
+    if (!AnalyticsService.instance) {
+      AnalyticsService.instance = new AnalyticsService();
+    }
+    return AnalyticsService.instance;
   }
 
   private generateSessionId(): string {
