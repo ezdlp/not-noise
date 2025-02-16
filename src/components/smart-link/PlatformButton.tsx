@@ -1,54 +1,48 @@
+
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { analyticsService } from '@/services/analyticsService';
 
 interface PlatformButtonProps {
-  name: string;
-  icon: string;
-  action: string;
+  platformId: string;
+  platformName: string;
   url: string;
-  onClick?: () => Promise<void>;
+  className?: string;
+  iconUrl?: string;
 }
 
-const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProps) => {
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    console.log('Platform button clicked:', { name, url });
-    
+export const PlatformButton: React.FC<PlatformButtonProps> = ({ 
+  platformId, 
+  platformName, 
+  url, 
+  className = '',
+  iconUrl
+}) => {
+  const handleClick = async () => {
     try {
-      if (onClick) {
-        console.log('Executing click handler for platform:', name);
-        await onClick();
-        console.log('Click handler completed for platform:', name);
-      }
-      
-      console.log('Opening URL for platform:', name);
+      // Track the click before redirecting
+      await analyticsService.trackPlatformClick(platformId);
+      // Open the platform URL in a new tab
       window.open(url, '_blank');
     } catch (error) {
-      console.error('Error in platform button click handler:', error);
-      // Only open URL if explicitly requested, even if tracking fails
+      console.error('Error tracking platform click:', error);
+      // Still open the URL even if tracking fails
       window.open(url, '_blank');
     }
   };
 
   return (
-    <div className="flex items-center justify-between p-3 border-b last:border-b-0">
-      <div className="flex items-center gap-3">
+    <button
+      onClick={handleClick}
+      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-neutral-border hover:bg-neutral-seasalt transition-colors duration-200 ${className}`}
+    >
+      {iconUrl && (
         <img 
-          src={icon} 
-          alt={`${name} logo`}
-          className="w-8 h-8 object-contain"
+          src={iconUrl} 
+          alt={platformName} 
+          className="w-5 h-5 object-contain"
         />
-        <span className="font-medium text-gray-900">{name}</span>
-      </div>
-      <Button
-        variant="default"
-        className="bg-black hover:bg-black/90 text-white min-w-[100px]"
-        onClick={handleClick}
-      >
-        {action}
-      </Button>
-    </div>
+      )}
+      <span className="text-sm font-medium">{platformName}</span>
+    </button>
   );
 };
-
-export default PlatformButton;
