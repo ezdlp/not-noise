@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface GeoJSResponse {
+  country: string;      // Full country name
+  country_code: string; // Two-letter ISO code
+  ip: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -15,16 +21,29 @@ serve(async (req) => {
   try {
     // Get IP from request headers
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1'
+    console.log('Processing request for IP:', clientIP)
     
     // Call GeoJS service
     const response = await fetch(`https://get.geojs.io/v1/ip/geo/${clientIP}.json`)
-    const data = await response.json()
+    const data = await response.json() as GeoJSResponse
+
+    // Validate response
+    if (!data.country || !data.country_code) {
+      console.error('Invalid GeoJS response:', data)
+      throw new Error('Invalid location data received')
+    }
+
+    console.log('Location data received:', {
+      country: data.country,
+      country_code: data.country_code,
+      ip: clientIP
+    })
 
     return new Response(
       JSON.stringify({
         ip: clientIP,
-        country: data.country_name, // Use country_name for full country name
-        country_code: data.country, // Use country for the two-letter code
+        country: data.country,     // Full country name from GeoJS
+        country_code: data.country_code, // Two-letter code from GeoJS
       }),
       { 
         headers: {
@@ -36,7 +55,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error getting location:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to get location info' }),
+      JSON.stringify({ 
+        error: 'Failed to get location info',
+        details: error.message 
+      }),
       { 
         headers: {
           ...corsHeaders,
@@ -47,3 +69,4 @@ serve(async (req) => {
     )
   }
 })
+

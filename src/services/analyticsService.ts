@@ -8,6 +8,12 @@ interface AnalyticsEvent {
   session_id?: string;
 }
 
+interface LocationInfo {
+  country: string;
+  country_code: string;
+  ip_hash: string;
+}
+
 class AnalyticsService {
   private sessionId: string;
 
@@ -21,35 +27,49 @@ class AnalyticsService {
 
   async trackPageView(url: string) {
     try {
-      const { country, country_code, ip_hash } = await this.getLocationInfo();
+      console.log('Tracking page view for:', url);
+      const locationInfo = await this.getLocationInfo();
+      
+      if (!locationInfo) {
+        console.warn('Location info not available for page view');
+        return;
+      }
       
       await supabase.from('analytics_page_views').insert({
         url,
         user_agent: navigator.userAgent,
-        country,
-        country_code,
-        ip_hash,
+        country: locationInfo.country,
+        country_code: locationInfo.country_code,
+        ip_hash: locationInfo.ip_hash,
         session_id: this.sessionId
       });
+
+      console.log('Page view tracked successfully with location:', locationInfo);
     } catch (error) {
       console.error('Error tracking page view:', error);
+      throw error; // Let the caller handle the error
     }
   }
 
   async trackPlatformClick(platformLinkId: string) {
     try {
       console.log('Tracking platform click for:', platformLinkId);
-      const { country, country_code, ip_hash } = await this.getLocationInfo();
+      const locationInfo = await this.getLocationInfo();
+      
+      if (!locationInfo) {
+        console.warn('Location info not available for platform click');
+        return;
+      }
       
       await supabase.from('platform_clicks').insert({
         platform_link_id: platformLinkId,
         user_agent: navigator.userAgent,
-        country,
-        country_code,
-        ip_hash
+        country: locationInfo.country,
+        country_code: locationInfo.country_code,
+        ip_hash: locationInfo.ip_hash
       });
       
-      console.log('Platform click tracked successfully with location:', { country, country_code });
+      console.log('Platform click tracked successfully with location:', locationInfo);
     } catch (error) {
       console.error('Error tracking platform click:', error);
       throw error;
@@ -67,29 +87,42 @@ class AnalyticsService {
       });
     } catch (error) {
       console.error('Error tracking event:', error);
+      throw error;
     }
   }
 
-  private async getLocationInfo() {
+  private async getLocationInfo(): Promise<LocationInfo | null> {
     try {
+      console.log('Fetching location info...');
       const { data, error } = await supabase.functions.invoke('get-location');
       
-      if (error) throw error;
-      
+      if (error) {
+        console.error('Error invoking get-location function:', error);
+        throw error;
+      }
+
+      if (!data.country || !data.country_code) {
+        console.error('Invalid location data received:', data);
+        return null;
+      }
+
       const ipHash = await this.hashIP(data.ip);
       
-      return {
+      const locationInfo = {
         country: data.country,
         country_code: data.country_code,
         ip_hash: ipHash
       };
+
+      console.log('Location info retrieved successfully:', {
+        country: locationInfo.country,
+        country_code: locationInfo.country_code
+      });
+
+      return locationInfo;
     } catch (error) {
       console.error('Error getting location info:', error);
-      return {
-        country: null,
-        country_code: null,
-        ip_hash: null
-      };
+      return null;
     }
   }
 
@@ -103,3 +136,4 @@ class AnalyticsService {
 }
 
 export const analyticsService = new AnalyticsService();
+
