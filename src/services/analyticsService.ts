@@ -115,4 +115,4 @@ class AnalyticsService {
   }
 }
 
-export const analyticsService = new AnalyticsService();
+export const analyticsService = AnalyticsService.getInstance();
