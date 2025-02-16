@@ -23,8 +23,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         ip: clientIP,
-        country: data.country,
-        country_code: data.country_code,
+        country: data.country_name, // Use country_name for full country name
+        country_code: data.country, // Use country for the two-letter code
       }),
       { 
         headers: {
