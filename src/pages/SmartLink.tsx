@@ -240,9 +240,9 @@ export default function SmartLink() {
               return (
                 <PlatformButton
                   key={platformLink.id}
-                  name={platformLink.platform_name}
-                  icon={icon}
-                  action={getActionText(platformLink.platform_id)}
+                  platformId={platformLink.id}
+                  platformName={platformLink.platform_name}
+                  iconUrl={icon}
                   url={platformLink.url}
                   onClick={() => handlePlatformClick(platformLink.id)}
                 />
