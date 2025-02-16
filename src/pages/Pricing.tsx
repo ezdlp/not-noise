@@ -12,10 +12,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
 import { useQuery } from "@tanstack/react-query";
 import ComparisonTable from "@/components/pricing/ComparisonTable";
+
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
+
   const {
     data: session,
     isLoading: isSessionLoading
@@ -35,6 +37,7 @@ export default function Pricing() {
       return session;
     }
   });
+
   const {
     data: subscription,
     isLoading: isSubscriptionLoading,
@@ -60,6 +63,7 @@ export default function Pricing() {
     enabled: !!session?.user,
     retry: 2
   });
+
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading(true);
@@ -94,6 +98,7 @@ export default function Pricing() {
       setIsLoading(false);
     }
   };
+
   const handleCustomerPortal = async () => {
     try {
       setIsLoading(true);
@@ -121,6 +126,7 @@ export default function Pricing() {
       setIsLoading(false);
     }
   };
+
   const renderActionButton = (tier: 'free' | 'pro') => {
     if (isSessionLoading || isSubscriptionLoading) {
       return <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
@@ -155,6 +161,7 @@ export default function Pricing() {
     }
     return null;
   };
+
   return <div className="container mx-auto py-12 px-4">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
@@ -207,7 +214,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
+                              8 essential platforms: Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -292,7 +299,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store, Tidal, Beatport, Bandcamp, Napster, Anghami, Boomplay, Yandex Music, Audius
+                              All included in Free plus: Tidal, Beatport, Bandcamp, Napster, Anghami, Boomplay, Yandex Music, Audius
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
