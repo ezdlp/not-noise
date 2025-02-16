@@ -11,13 +11,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
 import { useQuery } from "@tanstack/react-query";
+import ComparisonTable from "@/components/pricing/ComparisonTable";
 
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Query the user's current session with proper error handling
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -30,7 +30,6 @@ export default function Pricing() {
     },
   });
 
-  // First query subscription data
   const { data: subscription, isLoading: isSubscriptionLoading, error: subscriptionError } = useQuery({
     queryKey: ["subscription", session?.user?.id],
     queryFn: async () => {
@@ -54,7 +53,6 @@ export default function Pricing() {
     retry: 2,
   });
 
-  // Handle subscription operations
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading(true);
@@ -121,9 +119,7 @@ export default function Pricing() {
     }
   };
 
-  // Function to render the appropriate button or label based on subscription status
   const renderActionButton = (tier: 'free' | 'pro') => {
-    // Show loading state while data is being fetched
     if (isSessionLoading || isSubscriptionLoading) {
       return (
         <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
@@ -132,7 +128,6 @@ export default function Pricing() {
       );
     }
 
-    // Handle subscription error state
     if (subscriptionError) {
       return (
         <Button 
@@ -145,7 +140,6 @@ export default function Pricing() {
       );
     }
 
-    // User is not logged in
     if (!session) {
       return (
         <Button 
@@ -160,7 +154,6 @@ export default function Pricing() {
 
     const userTier = subscription?.tier || 'free';
 
-    // User is on current tier
     if (userTier === tier) {
       return (
         <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
@@ -169,7 +162,6 @@ export default function Pricing() {
       );
     }
 
-    // User can upgrade from free to pro
     if (userTier === 'free' && tier === 'pro') {
       return (
         <Button 
@@ -182,7 +174,6 @@ export default function Pricing() {
       );
     }
 
-    // User can downgrade from pro to free
     if (userTier === 'pro' && tier === 'free') {
       return (
         <Button 
@@ -221,7 +212,6 @@ export default function Pricing() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Free Plan */}
           <Card className="p-8 relative flex flex-col">
             <div className="flex-1">
               <div className="mb-8">
@@ -283,7 +273,6 @@ export default function Pricing() {
                       Custom URL Slugs
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
                       Meta Pixel Integration
                     </div>
                   </div>
@@ -296,7 +285,6 @@ export default function Pricing() {
             </div>
           </Card>
 
-          {/* Pro Plan */}
           <Card className="p-8 border-primary relative flex flex-col">
             <div className="absolute -top-3 right-4 bg-primary px-3 py-1 rounded-full text-white text-sm">
               Most Popular
@@ -419,6 +407,8 @@ export default function Pricing() {
         <div className="mt-16">
           <TrustedLabels isPricingPage={true} />
         </div>
+
+        <ComparisonTable />
 
         <div className="mt-16 max-w-2xl mx-auto">
           <h3 className="text-xl font-semibold mb-6">Frequently Asked Questions</h3>
