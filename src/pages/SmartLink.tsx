@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -243,6 +244,8 @@ export default function SmartLink() {
                   platformName={platformLink.platform_name}
                   iconUrl={icon}
                   url={platformLink.url}
+                  onClick={() => handlePlatformClick(platformLink.id)}
+                  actionText={getActionText(platformLink.platform_id)}
                 />
               );
             })}
