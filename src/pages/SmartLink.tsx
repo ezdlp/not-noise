@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { toast } from "sonner";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
+import { analyticsService } from "@/services/analyticsService";
 
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,17 +16,20 @@ export default function SmartLink() {
   // Separate mutation for recording views
   const recordViewMutation = useMutation({
     mutationFn: async (smartLinkId: string) => {
-      const { error } = await supabase.from('link_views').insert({
-        smart_link_id: smartLinkId,
-        user_agent: navigator.userAgent,
-      });
+      try {
+        await analyticsService.trackPageView(`/link/${slug}`);
+        
+        await supabase.from('link_views').insert({
+          smart_link_id: smartLinkId,
+          user_agent: navigator.userAgent,
+        });
 
-      if (error) {
+        console.log('View recorded successfully');
+      } catch (error) {
         console.error('Error recording view:', error);
         toast.error("Failed to record view");
         throw error;
       }
-      console.log('View recorded successfully');
     }
   });
 
@@ -128,17 +132,7 @@ export default function SmartLink() {
     try {
       console.log('Recording platform click for ID:', platformLinkId);
       
-      const { error } = await supabase.from('platform_clicks').insert({
-        platform_link_id: platformLinkId,
-        user_agent: navigator.userAgent,
-      });
-
-      if (error) {
-        console.error('Error recording platform click:', error);
-        toast.error("Failed to record click");
-        throw error;
-      }
-
+      await analyticsService.trackPlatformClick(platformLinkId);
       console.log('Platform click recorded successfully');
 
       // Track click event with Meta Pixel if enabled
