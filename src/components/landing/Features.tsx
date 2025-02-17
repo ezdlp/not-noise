@@ -12,6 +12,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
 const generateMockData = () => {
   const baseViews = 80;
   const baseClicks = 20;
@@ -33,7 +34,9 @@ const generateMockData = () => {
   }
   return data;
 };
+
 const mockData = generateMockData();
+
 const mockSubscribers = [{
   id: 1,
   email: "john.smith@example.com",
@@ -60,6 +63,7 @@ const mockSubscribers = [{
   date: "2024-03-23",
   platform: "Amazon Music"
 }];
+
 const CustomTooltip = ({
   active,
   payload,
@@ -80,6 +84,7 @@ const CustomTooltip = ({
   }
   return null;
 };
+
 const SmartLinkShowcase = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [api, setApi] = React.useState<CarouselApi>();
@@ -149,6 +154,7 @@ const SmartLinkShowcase = () => {
       </div>
     </div>;
 };
+
 const SocialAssetsShowcase = () => {
   const [activeFormat, setActiveFormat] = useState<'post' | 'story'>('post');
   return <div className="flex-1 w-full">
@@ -172,6 +178,7 @@ const SocialAssetsShowcase = () => {
       </div>
     </div>;
 };
+
 const MetaPixelSection = () => {
   const COLORS = ['#6851FB', '#37D299', '#271153'];
   const deviceData = [{
@@ -356,6 +363,7 @@ const MetaPixelSection = () => {
       </div>
     </div>;
 };
+
 const AnalyticsSection = () => {
   const [timeframe, setTimeframe] = useState('7d');
   return <div className="mt-12 md:mt-16">
@@ -454,85 +462,130 @@ const AnalyticsSection = () => {
       </div>
     </div>;
 };
+
 const Features: React.FC = () => {
-  return <section className="py-16 md:py-20 bg-white">
-      <div className="max-w-6xl mx-auto px-4 md:px-8">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
-          Break Through The Noise With Smart Links
-        </h2>
+  return (
+    <div className="relative">
+      <section className="py-16 md:py-20 bg-gradient-to-b from-white to-[#F1F0FB]">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1] text-center mb-4 text-night font-heading">
+            Break Through The Noise With Smart Links
+          </h2>
 
-        <div id="release-pages" className="mt-12 md:mt-16" data-scroll="parallax">
-          <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
-            <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
-              <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
-                <Link2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+          <div id="release-pages" className="mt-12 md:mt-16 relative" data-scroll="parallax">
+            <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.03] pointer-events-none" />
+            <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+                <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                  <Link2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                </div>
+                <span className="text-sm md:text-base font-medium text-neutral-500">Release Pages</span>
               </div>
-              <span className="text-sm md:text-base font-medium text-neutral-500">Release Pages</span>
+              <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">One Link for All Platforms</h3>
+              <p className="text-base md:text-lg text-neutral-600/90">
+                Connect your fans to their preferred streaming service instantly. No more juggling multiple links or losing potential listeners.
+              </p>
             </div>
-            <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">One Link for All Platforms</h3>
-            <p className="text-base md:text-lg text-neutral-600/90">
-              Connect your fans to their preferred streaming service instantly. No more juggling multiple links or losing potential listeners.
-            </p>
+
+            <SmartLinkShowcase />
           </div>
-
-          <SmartLinkShowcase />
         </div>
+      </section>
 
-        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
-
-        <div id="analytics">
-          <AnalyticsSection />
-        </div>
-
-        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
-
-        <div id="meta-pixel">
-          <MetaPixelSection />
-        </div>
-
-        <div className="w-full h-px bg-neutral-100/50 my-12 md:my-16" />
-
-        <div id="social-media" className="mt-8 relative flex flex-col lg:flex-row items-start gap-8 md:gap-12">
-          <div className="flex-1 lg:max-w-md">
-            <div className="flex items-center gap-2 mb-3 md:mb-4">
-              <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
-                <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+      <section className="relative py-16 md:py-20 bg-[#FAFAFA]">
+        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.02] pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 md:px-8 relative">
+          <div id="analytics">
+            <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+                <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                  <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                </div>
+                <span className="text-sm md:text-base font-medium text-neutral-500">Analytics Dashboard</span>
               </div>
-              <span className="text-sm md:text-base font-medium text-neutral-500">Social Media Tools</span>
+              <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Track Your Performance</h3>
+              <p className="text-base md:text-lg text-neutral-600/90">
+                Get detailed insights into your smart link performance. Monitor views, clicks, and conversion rates in real-time.
+              </p>
             </div>
-            <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Stand Out on Social Media</h3>
-            <p className="text-base md:text-lg text-neutral-600/90">
-              Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
-            </p>
-
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 md:gap-6 mt-6 md:mt-8">
-              {[{
-              icon: faInstagram,
-              label: "Instagram"
-            }, {
-              icon: faTiktok,
-              label: "TikTok"
-            }, {
-              icon: faXTwitter,
-              label: "X"
-            }, {
-              icon: faSnapchat,
-              label: "Snapchat"
-            }, {
-              icon: faFacebookF,
-              label: "Facebook"
-            }].map(platform => <div key={platform.label} className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
-                    <FontAwesomeIcon icon={platform.icon} className="w-4 h-4 md:w-5 md:h-5 text-neutral-500" />
-                  </div>
-                  <span className="text-xs md:text-sm font-medium text-neutral-600">{platform.label}</span>
-                </div>)}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-100/60 shadow-lg">
+              <AnalyticsSection />
             </div>
           </div>
-
-          <SocialAssetsShowcase />
         </div>
-      </div>
-    </section>;
+      </section>
+
+      <section className="relative py-16 md:py-20 bg-gradient-to-b from-[#F1F0FB] to-white">
+        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.02] pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 md:px-8 relative">
+          <div id="meta-pixel">
+            <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
+                <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                  <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                </div>
+                <span className="text-sm md:text-base font-medium text-neutral-500">Meta Pixel Integration</span>
+              </div>
+              <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Target Your True Fans</h3>
+              <p className="text-base md:text-lg text-neutral-600/90">
+                Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
+              </p>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-100/60 shadow-lg">
+              <MetaPixelSection />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative py-16 md:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+          <div id="social-media" className="mt-8 relative flex flex-col lg:flex-row items-start gap-8 md:gap-12">
+            <div className="flex-1 lg:max-w-md">
+              <div className="flex items-center gap-2 mb-3 md:mb-4">
+                <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
+                  <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                </div>
+                <span className="text-sm md:text-base font-medium text-neutral-500">Social Media Tools</span>
+              </div>
+              <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Stand Out on Social Media</h3>
+              <p className="text-base md:text-lg text-neutral-600/90">
+                Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
+              </p>
+
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 md:gap-6 mt-6 md:mt-8">
+                {[{
+                  icon: faInstagram,
+                  label: "Instagram"
+                }, {
+                  icon: faTiktok,
+                  label: "TikTok"
+                }, {
+                  icon: faXTwitter,
+                  label: "X"
+                }, {
+                  icon: faSnapchat,
+                  label: "Snapchat"
+                }, {
+                  icon: faFacebookF,
+                  label: "Facebook"
+                }].map(platform => <div key={platform.label} className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-50 flex items-center justify-center transition-colors hover:bg-neutral-100">
+                      <FontAwesomeIcon icon={platform.icon} className="w-4 h-4 md:w-5 md:h-5 text-neutral-500" />
+                    </div>
+                    <span className="text-xs md:text-sm font-medium text-neutral-600">{platform.label}</span>
+                  </div>)}
+              </div>
+            </div>
+
+            <div className="flex-1 w-full bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-100/60 shadow-lg p-6">
+              <SocialAssetsShowcase />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 };
+
 export default Features;
