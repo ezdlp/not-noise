@@ -498,18 +498,7 @@ const Features: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.02] pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 md:px-8 relative">
           <div id="meta-pixel">
-            <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
-              <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
-                <div className="p-1.5 md:p-2 rounded-lg bg-primary/5">
-                  <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
-                </div>
-                <span className="text-sm md:text-base font-medium text-neutral-500">Meta Pixel Integration</span>
-              </div>
-              <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3 md:mb-4">Target Your True Fans</h3>
-              <p className="text-base md:text-lg text-neutral-600/90">
-                Track conversions and retarget your audience with built-in Meta Pixel support. Understand your audience better and optimize your marketing efforts.
-              </p>
-            </div>
+            
             <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-100/60 shadow-lg">
               <MetaPixelSection />
             </div>
