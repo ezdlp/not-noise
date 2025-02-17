@@ -35,13 +35,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-neutral-border bg-white p-4 shadow-md animate-fade-in">
-        <p className="mb-2 text-sm font-medium text-neutral-night font-poppins">{label}</p>
+        <p className="mb-2 text-sm font-medium text-[#111827] font-poppins">{label}</p>
         {payload.map((pld: any, index: number) => (
           <div key={index} className="text-sm font-dm-sans">
             <span className="font-medium" style={{ color: pld.color }}>
               {pld.name}:
             </span>{" "}
-            <span className="text-muted-foreground">{pld.value}</span>
+            <span className="text-[#6B7280]">{pld.value}</span>
           </div>
         ))}
       </div>
@@ -72,10 +72,10 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Card className="p-6 border border-neutral-border">
         <div className="space-y-4">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full animate-pulse" />
         </div>
       </Card>
     );
@@ -83,8 +83,8 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
 
   if (!stats) {
     return (
-      <Card className="p-6">
-        <div className="h-[400px] flex items-center justify-center text-muted-foreground font-dm-sans">
+      <Card className="p-6 border border-neutral-border">
+        <div className="h-[400px] flex items-center justify-center text-[#6B7280] font-dm-sans">
           No data available
         </div>
       </Card>
@@ -92,8 +92,8 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   }
 
   return (
-    <Card className="p-6 transition-all duration-300 hover:shadow-md">
-      <h2 className="text-xl font-semibold mb-6 text-neutral-night font-poppins">Daily Performance</h2>
+    <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
+      <h2 className="text-xl font-semibold text-[#111827] font-poppins mb-6">Daily Performance</h2>
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
@@ -118,7 +118,7 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="#E6E6E6"
-              opacity={0.5}
+              opacity={0.4}
               vertical={false}
             />
             <XAxis 

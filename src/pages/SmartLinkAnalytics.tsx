@@ -26,12 +26,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-neutral-border bg-white p-4 shadow-md animate-fade-in">
-        <p className="mb-2 text-sm font-medium text-neutral-night font-poppins">{label}</p>
+        <p className="mb-2 text-sm font-medium text-[#111827] font-poppins">{label}</p>
         <div className="text-sm font-dm-sans">
           <span className="font-medium text-primary">
             Clicks:
           </span>{" "}
-          <span className="text-muted-foreground">{payload[0].value}</span>
+          <span className="text-[#6B7280]">{payload[0].value}</span>
         </div>
       </div>
     );
@@ -145,7 +145,7 @@ export default function SmartLinkAnalytics() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-4">
+      <div className="container mx-auto py-6 px-4 bg-[#FAFAFA]">
         <div className="space-y-6 animate-fade-in">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10" />
@@ -153,11 +153,11 @@ export default function SmartLinkAnalytics() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-32" />
+              <Skeleton key={i} className="h-32 animate-pulse" />
             ))}
           </div>
-          <Skeleton className="h-[400px]" />
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[400px] animate-pulse" />
+          <Skeleton className="h-[400px] animate-pulse" />
         </div>
       </div>
     );
@@ -185,7 +185,7 @@ export default function SmartLinkAnalytics() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6 animate-fade-in">
+    <div className="container mx-auto py-6 px-4 space-y-6 animate-fade-in bg-[#FAFAFA] min-h-screen">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
         <div className="flex items-center gap-4">
           <Button
@@ -196,7 +196,7 @@ export default function SmartLinkAnalytics() {
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-semibold text-neutral-night font-poppins">{smartLink.title} Analytics</h1>
+          <h1 className="text-2xl font-semibold text-[#111827] font-poppins">{smartLink.title} Analytics</h1>
         </div>
       </div>
 
@@ -223,8 +223,8 @@ export default function SmartLinkAnalytics() {
 
       {id && <DailyStatsChart smartLinkId={id} />}
 
-      <Card className="p-6 transition-all duration-300 hover:shadow-md">
-        <h2 className="text-xl font-semibold mb-6 text-neutral-night font-poppins">Platform Performance</h2>
+      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
+        <h2 className="text-xl font-semibold mb-6 text-[#111827] font-poppins">Platform Performance</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={platformData}>
@@ -279,9 +279,9 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
-      <Card className="p-6 transition-all duration-300 hover:shadow-md">
+      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-neutral-night font-poppins">Recent Clicks</h2>
+          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Recent Clicks</h2>
           <Button variant="outline" size="sm">View all</Button>
         </div>
         <div className="space-y-4">
@@ -311,13 +311,13 @@ export default function SmartLinkAnalytics() {
                       alt={click.platform_name}
                       className="w-4 h-4 object-contain"
                     />
-                    <p className="text-sm font-medium text-neutral-night font-dm-sans">{click.platform_name}</p>
+                    <p className="text-sm font-medium text-[#111827] font-dm-sans">{click.platform_name}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground font-dm-sans mt-1">
+                  <p className="text-sm text-[#6B7280] font-dm-sans mt-1">
                     {formatDistanceToNow(new Date(click.clicked_at), { addSuffix: true })}
                   </p>
                 </div>
-                <div className="text-sm text-neutral-night font-dm-sans">
+                <div className="text-sm text-[#374151] font-dm-sans">
                   {click.country || "Unknown location"}
                 </div>
               </div>
