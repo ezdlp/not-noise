@@ -125,12 +125,12 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         {isConfigured ? (
           <Badge variant="secondary" className="ml-2 bg-[#ECFDF5] text-[#059669]">
             <Check className="w-3 h-3 mr-1" />
-            Configured
+            Enabled
           </Badge>
         ) : (
-          <Badge variant="secondary" className="ml-2 bg-[#FEF2F2] text-[#DC2626]">
+          <Badge variant="secondary" className="ml-2 bg-[#F5F5F5] text-[#6B7280]">
             <X className="w-3 h-3 mr-1" />
-            Not configured
+            Not Enabled
           </Badge>
         )}
       </div>
@@ -221,7 +221,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         {/* Platforms Card */}
         <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <SectionHeader 
-            title="Distribution Platforms" 
+            title="Streaming Platforms" 
             icon={Share2}
             stepNumber={3}
             isConfigured={enabledPlatforms.length > 0}

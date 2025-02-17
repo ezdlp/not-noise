@@ -20,15 +20,13 @@ const CreateSmartLink = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Load saved data with error handling
     try {
       const savedData = sessionStorage.getItem('pendingSmartLink');
       if (savedData) {
         console.log('Found saved smart link data');
         const parsedData = JSON.parse(savedData);
         setData(parsedData);
-        setStep(6); // Go to review step
-        // Don't remove the data immediately to prevent race conditions
+        setStep(6);
         setTimeout(() => {
           console.log('Removing saved smart link data');
           sessionStorage.removeItem('pendingSmartLink');
@@ -50,28 +48,33 @@ const CreateSmartLink = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const updateData = (newData: any) => {
+    console.log('Updating data:', { current: data, new: newData });
+    setData(prevData => ({ ...prevData, ...newData }));
+  };
+
   const handleSearchComplete = (trackData: any) => {
-    setData(trackData);
+    updateData(trackData);
     setStep(2);
   };
 
   const handleDetailsComplete = (detailsData: any) => {
-    setData({ ...data, ...detailsData });
+    updateData(detailsData);
     setStep(3);
   };
 
   const handlePlatformsComplete = (platformsData: any) => {
-    setData({ ...data, ...platformsData });
+    updateData(platformsData);
     setStep(4);
   };
 
   const handleMetaPixelComplete = (metaPixelData: any) => {
-    setData({ ...data, ...metaPixelData });
+    updateData(metaPixelData);
     setStep(5);
   };
 
   const handleEmailCaptureComplete = (emailCaptureData: any) => {
-    setData({ ...data, ...emailCaptureData });
+    updateData(emailCaptureData);
     setStep(6);
   };
 
