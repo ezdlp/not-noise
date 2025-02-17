@@ -109,36 +109,40 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-lg sm:text-xl font-semibold">Find Your Music</h2>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Find Your Music
+        </h1>
+        <p className="font-sans text-base text-[#374151]">
           Search for your music or paste a Spotify URL
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="search-input">Search or paste Spotify URL</Label>
-          <div className="space-y-2">
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <Label htmlFor="search-input" className="font-sans font-medium">
+            Search or paste Spotify URL
+          </Label>
+          <div className="space-y-3">
             <Input
               id="search-input"
               placeholder="Search by title/artist or paste Spotify URL..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="h-10"
+              className="h-10 font-sans"
             />
             {contentType && (
               <Badge 
                 variant="secondary" 
-                className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                className="bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] transition-colors font-sans"
               >
                 {contentType === 'playlist' ? (
-                  <ListMusic className="w-3 h-3 mr-1" />
+                  <ListMusic className="w-3 h-3 mr-1.5" />
                 ) : contentType === 'album' ? (
-                  <Disc className="w-3 h-3 mr-1" />
+                  <Disc className="w-3 h-3 mr-1.5" />
                 ) : (
-                  <Music className="w-3 h-3 mr-1" />
+                  <Music className="w-3 h-3 mr-1.5" />
                 )}
                 {contentType.charAt(0).toUpperCase() + contentType.slice(1)}
               </Badge>
@@ -147,24 +151,36 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         </div>
 
         {!isUrlMode && searchResults && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {searchResults.tracks.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Tracks</h3>
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <h3 className="font-heading text-lg font-medium">Tracks</h3>
+                <div className="space-y-3">
                   {searchResults.tracks.slice(0, 5).map((track) => (
-                    <Card key={track.id} className="p-4 hover:bg-accent/50 transition-colors">
+                    <Card 
+                      key={track.id} 
+                      className="p-4 transition-all duration-200 hover:shadow-md border border-[#E6E6E6] hover:border-[#6851FB]/20"
+                    >
                       <div className="flex items-center gap-4">
-                        <img src={track.artworkUrl} alt={track.title} className="w-16 h-16 rounded-md object-cover" />
+                        <img 
+                          src={track.artworkUrl} 
+                          alt={track.title} 
+                          className="w-16 h-16 rounded-md object-cover shadow-sm"
+                        />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{track.title}</p>
-                          <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
-                          <p className="text-xs text-muted-foreground truncate">{track.albumName}</p>
+                          <p className="font-sans font-medium text-[#111827] truncate">
+                            {track.title}
+                          </p>
+                          <p className="font-sans text-sm text-[#6B7280] truncate">
+                            {track.artist}
+                          </p>
+                          <p className="font-sans text-xs text-[#9CA3AF] truncate">
+                            {track.albumName}
+                          </p>
                         </div>
                         <Button 
-                          variant="secondary" 
-                          size="sm"
                           onClick={() => handleResultSelect(track)}
+                          className="bg-white text-[#0F0F0F] hover:bg-[#F3F3F3] active:bg-[#E6E6E6] h-8 px-3 shadow-sm border border-[#E6E6E6]"
                         >
                           Select
                         </Button>
@@ -176,24 +192,34 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
             )}
 
             {searchResults.albums.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Albums & EPs</h3>
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <h3 className="font-heading text-lg font-medium">Albums & EPs</h3>
+                <div className="space-y-3">
                   {searchResults.albums.slice(0, 5).map((album) => (
-                    <Card key={album.id} className="p-4 hover:bg-accent/50 transition-colors">
+                    <Card 
+                      key={album.id} 
+                      className="p-4 transition-all duration-200 hover:shadow-md border border-[#E6E6E6] hover:border-[#6851FB]/20"
+                    >
                       <div className="flex items-center gap-4">
-                        <img src={album.artworkUrl} alt={album.title} className="w-16 h-16 rounded-md object-cover" />
+                        <img 
+                          src={album.artworkUrl} 
+                          alt={album.title} 
+                          className="w-16 h-16 rounded-md object-cover shadow-sm"
+                        />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{album.title}</p>
-                          <p className="text-sm text-muted-foreground truncate">{album.artist}</p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="font-sans font-medium text-[#111827] truncate">
+                            {album.title}
+                          </p>
+                          <p className="font-sans text-sm text-[#6B7280] truncate">
+                            {album.artist}
+                          </p>
+                          <p className="font-sans text-xs text-[#9CA3AF] truncate">
                             {album.albumType === 'single' ? 'EP/Single' : 'Album'} • {album.totalTracks} tracks
                           </p>
                         </div>
                         <Button 
-                          variant="secondary" 
-                          size="sm"
                           onClick={() => handleResultSelect(album)}
+                          className="bg-white text-[#0F0F0F] hover:bg-[#F3F3F3] active:bg-[#E6E6E6] h-8 px-3 shadow-sm border border-[#E6E6E6]"
                         >
                           Select
                         </Button>
@@ -210,7 +236,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           <Button
             onClick={handleUrlSubmit}
             disabled={isLoading || !contentType}
-            className="w-full"
+            className="w-full bg-[#6851FB] hover:bg-[#4A47A5] active:bg-[#271153] disabled:bg-[#ECE9FF] h-10 px-4 text-white font-sans font-medium"
           >
             {isLoading ? "Loading..." : "Continue"}
           </Button>

@@ -82,22 +82,24 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-lg sm:text-xl font-semibold">Review Your Smart Link</h2>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Review Your Smart Link
+        </h1>
+        <p className="font-sans text-base text-[#374151]">
           Review the details before creating your {isPlaylist ? 'playlist' : 'release'} smart link
         </p>
       </div>
 
       <div className="space-y-6">
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="flex-shrink-0">
               <img
                 src={data.artworkUrl || "/placeholder.svg"}
                 alt={isPlaylist ? "Playlist artwork" : "Release artwork"}
-                className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover"
+                className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-[#E6E6E6]"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.src = "/placeholder.svg";
@@ -108,61 +110,71 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
               <div>
                 <Badge 
                   variant="secondary"
-                  className="mb-2 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  className="mb-3 bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] font-sans"
                 >
                   {isPlaylist ? (
-                    <ListMusic className="w-3 h-3 mr-1" />
+                    <ListMusic className="w-3 h-3 mr-1.5" />
                   ) : (
-                    <Music className="w-3 h-3 mr-1" />
+                    <Music className="w-3 h-3 mr-1.5" />
                   )}
                   {data.content_type?.charAt(0).toUpperCase() + data.content_type?.slice(1)}
                 </Badge>
-                <h3 className="text-xl font-semibold">{data.title}</h3>
-                {!isPlaylist && <p className="text-muted-foreground">{data.artist}</p>}
+                <h2 className="font-heading text-xl font-semibold text-[#111827]">
+                  {data.title}
+                </h2>
+                {!isPlaylist && (
+                  <p className="font-sans text-base text-[#6B7280] mt-1">
+                    {data.artist}
+                  </p>
+                )}
               </div>
               {data.description && (
-                <p className="text-sm text-muted-foreground">{data.description}</p>
+                <p className="font-sans text-base text-[#6B7280]">
+                  {data.description}
+                </p>
               )}
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
+        <Card className="p-6 shadow-sm border border-[#E6E6E6]">
+          <h3 className="font-heading text-lg font-semibold text-[#111827] flex items-center gap-2 mb-4">
             <Share2 className="w-5 h-5" />
             Platforms
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {data.platforms.filter(p => p.enabled).map((platform) => (
-              <div key={platform.id} className="flex items-center gap-2 text-sm">
+              <div key={platform.id} className="flex items-center gap-3">
                 <img
                   src={`/lovable-uploads/${platform.id}.png`}
                   alt={platform.name}
                   className="w-5 h-5"
                 />
-                <span>{platform.name}</span>
+                <span className="font-sans text-base text-[#374151]">
+                  {platform.name}
+                </span>
               </div>
             ))}
           </div>
         </Card>
 
         {data.meta_pixel_id && (
-          <Card className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Card className="p-6 shadow-sm border border-[#E6E6E6]">
+            <h3 className="font-heading text-lg font-semibold text-[#111827] flex items-center gap-2 mb-4">
               <BarChart className="w-5 h-5" />
               Meta Pixel Integration
             </h3>
-            <div className="space-y-2">
-              <p className="text-sm">
+            <div className="space-y-3">
+              <p className="font-sans text-base text-[#374151]">
                 <span className="font-medium">Pixel ID:</span> {data.meta_pixel_id}
               </p>
               {data.meta_view_event && (
-                <p className="text-sm">
+                <p className="font-sans text-base text-[#374151]">
                   <span className="font-medium">View Event:</span> {data.meta_view_event}
                 </p>
               )}
               {data.meta_click_event && (
-                <p className="text-sm">
+                <p className="font-sans text-base text-[#374151]">
                   <span className="font-medium">Click Event:</span> {data.meta_click_event}
                 </p>
               )}
@@ -171,14 +183,16 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         )}
 
         {data.email_capture_enabled && (
-          <Card className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Card className="p-6 shadow-sm border border-[#E6E6E6]">
+            <h3 className="font-heading text-lg font-semibold text-[#111827] flex items-center gap-2 mb-4">
               <Mail className="w-5 h-5" />
               Email Capture
             </h3>
-            <div className="space-y-2">
-              <p className="font-medium">{data.email_capture_title}</p>
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-3">
+              <p className="font-sans font-medium text-[#111827]">
+                {data.email_capture_title}
+              </p>
+              <p className="font-sans text-base text-[#6B7280]">
                 {data.email_capture_description}
               </p>
             </div>
@@ -186,11 +200,19 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         )}
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack}>
+      <div className="flex justify-between pt-6">
+        <Button 
+          variant="outline" 
+          onClick={onBack}
+          className="bg-white text-[#0F0F0F] hover:bg-[#F3F3F3] active:bg-[#E6E6E6] h-10 px-4 shadow-sm border border-[#E6E6E6]"
+        >
           Back
         </Button>
-        <Button onClick={handleCreate} disabled={isCreating}>
+        <Button 
+          onClick={handleCreate} 
+          disabled={isCreating}
+          className="bg-[#6851FB] hover:bg-[#4A47A5] active:bg-[#271153] disabled:bg-[#ECE9FF] h-10 px-4 text-white font-sans font-medium"
+        >
           {isCreating ? "Creating..." : "Create Smart Link"}
         </Button>
       </div>
