@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -573,7 +574,7 @@ const Features: React.FC = () => {
                     Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
                   </p>
 
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mt-6">
+                  <div className="grid grid-cols-5 gap-2 sm:gap-4 mt-6">
                     {[
                       { icon: faInstagram, label: "Instagram" },
                       { icon: faTiktok, label: "TikTok" },
