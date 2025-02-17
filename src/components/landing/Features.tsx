@@ -527,88 +527,7 @@ const Features: React.FC = () => {
 
               <div className="bg-white rounded-lg border border-[#eaeaea] shadow-sm">
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <Users className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Total Views</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+12.5%</Badge>
-                        </div>
-                        <p className="text-xl font-bold text-neutral-900">2,847</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <Activity className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Total Clicks</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+8.3%</Badge>
-                        </div>
-                        <p className="text-xl font-bold text-neutral-900">1,249</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <Percent className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Click Rate</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+5.2%</Badge>
-                        </div>
-                        <p className="text-xl font-bold text-neutral-900">43.9%</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="h-[250px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={mockData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200/40" />
-                        <XAxis 
-                          dataKey="date" 
-                          className="text-xs text-neutral-600" 
-                          tick={{fontSize: 12}} 
-                          tickMargin={8} 
-                        />
-                        <YAxis 
-                          className="text-xs text-neutral-600" 
-                          tick={{fontSize: 12}} 
-                          tickMargin={8} 
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="views" 
-                          stroke="#6851FB" 
-                          strokeWidth={2} 
-                          dot={false} 
-                          activeDot={{r: 4, fill: "#6851FB"}} 
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="clicks" 
-                          stroke="#37D299" 
-                          strokeWidth={2} 
-                          dot={false} 
-                          activeDot={{r: 4, fill: "#37D299"}} 
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <AnalyticsSection />
                 </div>
               </div>
             </div>
@@ -632,44 +551,54 @@ const Features: React.FC = () => {
 
               <div className="bg-white rounded-lg border border-[#eaeaea] shadow-sm">
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <Users className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Ad Clicks</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+12.5%</Badge>
-                        </div>
-                        <p className="text-xl font-bold text-neutral-900">860</p>
-                      </CardContent>
-                    </Card>
+                  <MetaPixelSection />
+                </div>
+              </div>
+            </div>
+          </section>
 
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <Percent className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Conversion Rate</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+8.3%</Badge>
-                        </div>
-                        <p className="text-xl font-bold text-neutral-900">24.2%</p>
-                      </CardContent>
-                    </Card>
+          {/* Social Media Section */}
+          <section className="rounded-xl border border-[#eaeaea] bg-[#fafafa] overflow-hidden">
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col lg:flex-row items-start gap-6">
+                <div className="flex-1 lg:max-w-md">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 rounded-lg bg-primary/5">
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-neutral-500">Social Media Tools</span>
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-semibold tracking-tight mb-3">Stand Out on Social Media</h3>
+                  <p className="text-base text-neutral-600/90">
+                    Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
+                  </p>
 
-                    <Card className="border-none bg-[#fafafa] shadow-none">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              <DollarSign className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium text-sm text-neutral-600">Cost per Conversion</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mt-6">
+                    {[
+                      { icon: faInstagram, label: "Instagram" },
+                      { icon: faTiktok, label: "TikTok" },
+                      { icon: faXTwitter, label: "X" },
+                      { icon: faSnapchat, label: "Snapchat" },
+                      { icon: faFacebookF, label: "Facebook" }
+                    ].map(platform => (
+                      <div key={platform.label} className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#fafafa] hover:bg-neutral-100 flex items-center justify-center transition-colors">
+                          <FontAwesomeIcon icon={platform.icon} className="w-4 h-4 text-neutral-500" />
+                        </div>
+                        <span className="text-xs font-medium text-neutral-600">{platform.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <SocialAssetsShowcase />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Features;
