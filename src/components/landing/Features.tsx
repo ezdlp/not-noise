@@ -1,15 +1,20 @@
-
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInstagram, faTiktok, faXTwitter, faSnapchat, faFacebookF } from "@fortawesome/free-brands-svg-icons";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const generateMockData = () => {
   const baseViews = 80;
@@ -78,14 +83,6 @@ const SmartLinkShowcase = () => {
     return rotations[index];
   };
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % smartLinks.length);
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + smartLinks.length) % smartLinks.length);
-  };
-
   return (
     <div className="mt-8 md:mt-12 relative">
       {/* Mobile Layout */}
@@ -94,22 +91,38 @@ const SmartLinkShowcase = () => {
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
         
         <div className="overflow-hidden px-4">
-          <div className="relative py-6">
-            <img
-              src={smartLinks[currentIndex].image}
-              alt={`Smart Link Example ${currentIndex + 1}`}
-              className="w-full shadow-[0_2px_4px_rgba(0,0,0,0.02)] rounded-xl mx-auto max-w-[280px]"
-            />
-          </div>
+          <Carousel
+            opts={{
+              align: 'center',
+              loop: true,
+            }}
+            className="w-full"
+            onSelect={setCurrentIndex}
+          >
+            <CarouselContent>
+              {smartLinks.map((link, index) => (
+                <CarouselItem key={index}>
+                  <div className="relative py-6">
+                    <img
+                      src={link.image}
+                      alt={`Smart Link Example ${index + 1}`}
+                      className="w-full shadow-[0_2px_4px_rgba(0,0,0,0.02)] rounded-xl mx-auto max-w-[280px]"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
           
           <div className="flex justify-center gap-2 mt-4">
             {smartLinks.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
+                className={cn(
+                  "w-2 h-2 rounded-full transition-colors",
                   index === currentIndex ? 'bg-primary' : 'bg-neutral-200'
-                }`}
+                )}
               />
             ))}
           </div>
