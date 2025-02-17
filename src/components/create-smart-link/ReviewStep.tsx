@@ -77,19 +77,16 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         throw new Error("Not authenticated");
       }
 
-      // Get current user's profile for artist name fallback
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('artist_name')
         .eq('id', session.session.user.id)
         .single();
 
-      // For playlists, use the user's artist name or a default as curator
       const artistName = isPlaylist 
         ? (userProfile?.artist_name || 'Playlist Curator')
         : data.artist;
 
-      // Create base smart link data
       const smartLinkData = {
         title: data.title,
         artist_name: artistName,
@@ -103,14 +100,12 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         user_id: session.session.user.id,
       };
 
-      // Add Meta Pixel data if it exists
       if (data.metaPixel?.enabled) {
         smartLinkData['meta_pixel_id'] = data.metaPixel.pixelId;
         smartLinkData['meta_view_event'] = data.metaPixel.viewEventName;
         smartLinkData['meta_click_event'] = data.metaPixel.clickEventName;
       }
 
-      // Add playlist metadata if it's a playlist
       if (isPlaylist) {
         smartLinkData['playlist_metadata'] = {
           curator: artistName,
@@ -121,7 +116,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         };
       }
 
-      // First, insert the smart link and get back the ID
       const { data: smartLink, error: createError } = await supabase
         .from("smart_links")
         .insert(smartLinkData)
@@ -131,7 +125,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       if (createError) throw createError;
       if (!smartLink) throw new Error("Failed to create smart link");
 
-      // Then, insert platform links if there are any enabled platforms
       if (enabledPlatforms.length > 0) {
         const platformLinksData = enabledPlatforms.map(platform => ({
           smart_link_id: smartLink.id,
@@ -303,21 +296,21 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
             title="Meta Pixel Integration" 
             icon={BarChart}
             stepNumber={4}
-            isConfigured={!!data.meta_pixel_id}
+            isConfigured={!!data.metaPixel?.enabled}
           />
-          {data.meta_pixel_id ? (
+          {data.metaPixel?.enabled ? (
             <div className="space-y-3">
               <p className="font-sans text-base text-[#374151]">
-                <span className="font-medium">Pixel ID:</span> {data.meta_pixel_id}
+                <span className="font-medium">Pixel ID:</span> {data.metaPixel.pixelId}
               </p>
-              {data.meta_view_event && (
+              {data.metaPixel.viewEventName && (
                 <p className="font-sans text-base text-[#374151]">
-                  <span className="font-medium">View Event:</span> {data.meta_view_event}
+                  <span className="font-medium">View Event:</span> {data.metaPixel.viewEventName}
                 </p>
               )}
-              {data.meta_click_event && (
+              {data.metaPixel.clickEventName && (
                 <p className="font-sans text-base text-[#374151]">
-                  <span className="font-medium">Click Event:</span> {data.meta_click_event}
+                  <span className="font-medium">Click Event:</span> {data.metaPixel.clickEventName}
                 </p>
               )}
             </div>
