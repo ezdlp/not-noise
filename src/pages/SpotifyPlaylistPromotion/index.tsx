@@ -70,8 +70,8 @@ const SpotifyPlaylistPromotion: React.FC = () => {
         </script>
       </Helmet>
 
-      <main className="min-h-screen">
-        <div id="content">
+      <main className="min-h-screen bg-[#FAFAFA]">
+        <div id="content" className="space-y-16 md:space-y-24">
           <div id="hero-search">
             <Hero />
           </div>
@@ -79,12 +79,12 @@ const SpotifyPlaylistPromotion: React.FC = () => {
           <SuccessStories />
           <HowItWorks />
           <GuaranteedBotFree />
-          <div id="faq-section">
+          <div id="faq-section" className="pb-16">
             <FAQ />
-            <div className="flex justify-center pb-12">
+            <div className="flex justify-center mt-8">
               <a 
                 href="#hero-search"
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-lg"
+                className="inline-flex items-center justify-center h-12 px-8 font-medium text-white transition-all duration-300 rounded-full bg-primary hover:bg-primary/90 hover:scale-105 shadow-sm"
               >
                 Start Your Promotion Now
               </a>
