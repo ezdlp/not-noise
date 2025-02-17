@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from "react";
+
+import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInstagram, faTiktok, faXTwitter, faSnapchat, faFacebookF } from "@fortawesome/free-brands-svg-icons";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import type { CarouselApi } from "@/components/ui/carousel";
 import {
   Carousel,
   CarouselContent,
@@ -70,6 +72,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const SmartLinkShowcase = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [api, setApi] = React.useState<CarouselApi>();
+
   const smartLinks = [
     { image: "/lovable-uploads/9209e373-783a-4f5b-8b40-569168616f6a.png" },
     { image: "/lovable-uploads/1db201b2-4a78-4703-ac5d-3dde30fc2b65.png" },
@@ -82,6 +86,16 @@ const SmartLinkShowcase = () => {
     const rotations = [-10, -5, 0, 5, 10];
     return rotations[index];
   };
+
+  React.useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    api.on("select", () => {
+      setCurrentIndex(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   return (
     <div className="mt-8 md:mt-12 relative">
@@ -96,8 +110,8 @@ const SmartLinkShowcase = () => {
               align: 'center',
               loop: true,
             }}
+            setApi={setApi}
             className="w-full"
-            onSelect={setCurrentIndex}
           >
             <CarouselContent>
               {smartLinks.map((link, index) => (
@@ -118,7 +132,7 @@ const SmartLinkShowcase = () => {
             {smartLinks.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => api?.scrollTo(index)}
                 className={cn(
                   "w-2 h-2 rounded-full transition-colors",
                   index === currentIndex ? 'bg-primary' : 'bg-neutral-200'
