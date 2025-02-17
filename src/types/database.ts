@@ -33,6 +33,19 @@ export interface SmartLink {
   description?: string;
   created_at: string;
   user_id: string;
+  content_type: 'track' | 'album' | 'playlist';
+  playlist_metadata?: {
+    track_count: number;
+    playlist_owner: string;
+    owner_id: string;
+    is_collaborative: boolean;
+    last_updated_at: string;
+    tracks_preview: Array<{
+      name: string;
+      artist: string;
+      preview_url?: string;
+    }>;
+  };
   profiles?: {
     name?: string;
     email?: string;

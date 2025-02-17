@@ -1025,6 +1025,7 @@ export type Database = {
         Row: {
           artist_name: string
           artwork_url: string | null
+          content_type: Database["public"]["Enums"]["content_type"]
           created_at: string | null
           description: string | null
           duration_seconds: number | null
@@ -1039,6 +1040,7 @@ export type Database = {
           meta_click_event: string | null
           meta_pixel_id: string | null
           meta_view_event: string | null
+          playlist_metadata: Json | null
           release_date: string | null
           slug: string | null
           title: string
@@ -1051,6 +1053,7 @@ export type Database = {
         Insert: {
           artist_name: string
           artwork_url?: string | null
+          content_type?: Database["public"]["Enums"]["content_type"]
           created_at?: string | null
           description?: string | null
           duration_seconds?: number | null
@@ -1065,6 +1068,7 @@ export type Database = {
           meta_click_event?: string | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
+          playlist_metadata?: Json | null
           release_date?: string | null
           slug?: string | null
           title: string
@@ -1077,6 +1081,7 @@ export type Database = {
         Update: {
           artist_name?: string
           artwork_url?: string | null
+          content_type?: Database["public"]["Enums"]["content_type"]
           created_at?: string | null
           description?: string | null
           duration_seconds?: number | null
@@ -1091,6 +1096,7 @@ export type Database = {
           meta_click_event?: string | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
+          playlist_metadata?: Json | null
           release_date?: string | null
           slug?: string | null
           title?: string
@@ -1668,6 +1674,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       billing_period: "monthly" | "annual"
+      content_type: "track" | "album" | "playlist"
       import_status: "pending" | "processing" | "completed" | "failed"
       playlist_category: "curated" | "algorithmic" | "editorial" | "independent"
       promotion_status: "pending" | "active" | "completed" | "rejected"
