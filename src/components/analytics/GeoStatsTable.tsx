@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from 'react';
-import { CaretSortIcon, CaretUpIcon, CaretDownIcon } from "@radix-ui/react-icons";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -54,11 +54,11 @@ export function GeoStatsTable({ data }: GeoStatsTableProps) {
   };
 
   const getSortIcon = (column: SortColumn) => {
-    if (sortColumn !== column) return <CaretSortIcon className="ml-2 h-4 w-4" />;
+    if (sortColumn !== column) return <ArrowUpDown className="ml-2 h-4 w-4" />;
     return sortDirection === 'asc' ? (
-      <CaretUpIcon className="ml-2 h-4 w-4" />
+      <ArrowUp className="ml-2 h-4 w-4" />
     ) : (
-      <CaretDownIcon className="ml-2 h-4 w-4" />
+      <ArrowDown className="ml-2 h-4 w-4" />
     );
   };
 
