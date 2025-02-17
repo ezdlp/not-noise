@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from 'react';
 import {
@@ -144,21 +145,8 @@ export default function SmartLinks() {
         throw error;
       }
 
-      const transformedData = data.map(link => ({
-        ...link,
-        content_type: link.content_type || 'track' as const,
-        playlist_metadata: link.playlist_metadata ? {
-          track_count: link.playlist_metadata.track_count || 0,
-          playlist_owner: link.playlist_metadata.playlist_owner || '',
-          owner_id: link.playlist_metadata.owner_id || '',
-          is_collaborative: link.playlist_metadata.is_collaborative || false,
-          last_updated_at: link.playlist_metadata.last_updated_at || new Date().toISOString(),
-          tracks_preview: link.playlist_metadata.tracks_preview || []
-        } : null
-      })) as SmartLink[];
-
-      return transformedData;
-    },
+      return data as SmartLink[];
+    }
   });
 
   const deleteMutation = useMutation({
