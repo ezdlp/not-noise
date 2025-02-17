@@ -1,4 +1,3 @@
-
 import { Helmet } from "react-helmet";
 import Hero from "./components/Hero";
 import { TrustedLabels } from "@/components/landing/TrustedLabels";
@@ -11,10 +10,8 @@ import { Footer } from "@/components/landing/Footer";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   useEffect(() => {
-    // Reset scroll position on mount
     window.scrollTo(0, 0);
     
-    // Handle hash navigation after initial load
     const hash = window.location.hash;
     if (hash) {
       setTimeout(() => {
@@ -77,14 +74,12 @@ const SpotifyPlaylistPromotion: React.FC = () => {
         </script>
       </Helmet>
 
-      <main className="min-h-screen bg-[#FAFAFA]">
-        <div id="content" className="space-y-8 md:space-y-12">
+      <main className="min-h-screen bg-white">
+        <div id="content">
           <div id="hero-search">
             <Hero />
           </div>
-          <div className="py-12">
-            <TrustedLabels isPricingPage={true} />
-          </div>
+          <TrustedLabels isPricingPage={true} />
           <SuccessStories />
           <HowItWorks />
           <GuaranteedBotFree />
