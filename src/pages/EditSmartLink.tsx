@@ -1,4 +1,3 @@
-
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +15,7 @@ import PlatformsSection from "@/components/create-smart-link/PlatformsSection";
 import { arrayMove } from '@dnd-kit/sortable';
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { Textarea } from "@/components/ui/textarea";
+import { ArtworkUploader } from "@/components/smart-link/ArtworkUploader";
 
 const EditSmartLink = () => {
   const { id } = useParams();
@@ -27,6 +27,7 @@ const EditSmartLink = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [artistName, setArtistName] = useState("");
+  const [artworkUrl, setArtworkUrl] = useState("");
   const [slug, setSlug] = useState("");
   const [emailCaptureEnabled, setEmailCaptureEnabled] = useState(false);
   const [emailCaptureTitle, setEmailCaptureTitle] = useState("");
@@ -65,10 +66,10 @@ const EditSmartLink = () => {
       if (error) throw error;
       if (!smartLink) throw new Error("Smart link not found");
 
-      // Initialize form state
       setTitle(smartLink.title);
       setDescription(smartLink.description || "");
       setArtistName(smartLink.artist_name);
+      setArtworkUrl(smartLink.artwork_url || "");
       setSlug(smartLink.slug || "");
       setEmailCaptureEnabled(smartLink.email_capture_enabled || false);
       setEmailCaptureTitle(smartLink.email_capture_title || "");
@@ -78,7 +79,6 @@ const EditSmartLink = () => {
       setMetaViewEvent(smartLink.meta_view_event || "");
       setMetaClickEvent(smartLink.meta_click_event || "");
 
-      // Initialize platforms
       setPlatforms(prevPlatforms => 
         prevPlatforms.map(platform => {
           const matchingLink = smartLink.platform_links?.find(
@@ -122,7 +122,6 @@ const EditSmartLink = () => {
 
   const handleSave = async () => {
     try {
-      // Check if slug exists (excluding current smart link)
       const { data: existingSlug } = await supabase
         .from("smart_links")
         .select("id")
@@ -135,7 +134,6 @@ const EditSmartLink = () => {
         return;
       }
 
-      // Update smart link
       const { error: smartLinkError } = await supabase
         .from("smart_links")
         .update({
@@ -154,7 +152,6 @@ const EditSmartLink = () => {
 
       if (smartLinkError) throw smartLinkError;
 
-      // Delete existing platform links
       const { error: deleteError } = await supabase
         .from("platform_links")
         .delete()
@@ -162,7 +159,6 @@ const EditSmartLink = () => {
 
       if (deleteError) throw deleteError;
 
-      // Insert new platform links
       const platformLinksToInsert = platforms
         .filter(platform => platform.enabled)
         .map(platform => ({
@@ -222,10 +218,10 @@ const EditSmartLink = () => {
         <div className="space-y-6">
           <Card className="p-4">
             <div className="flex items-center gap-4">
-              <img
-                src={smartLink?.artwork_url}
-                alt={`${title} artwork`}
-                className="w-24 h-24 object-cover rounded-lg"
+              <ArtworkUploader
+                currentArtwork={artworkUrl}
+                onArtworkChange={setArtworkUrl}
+                smartLinkId={smartLink.id}
               />
               <div className="space-y-4 flex-1">
                 <div className="space-y-2">
