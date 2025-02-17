@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,9 +60,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const isPlaylist = data.content_type === 'playlist';
-  const enabledPlatforms = data.platforms.filter(p => p.enabled);
+  const enabledPlatforms = data.platforms?.filter(p => p.enabled) || [];
 
   const handleCreate = async () => {
+    console.log("Creating smart link with data:", data);
     setIsCreating(true);
 
     try {
@@ -72,7 +72,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         throw new Error("Not authenticated");
       }
 
-      const { error: createError } = await supabase
+      const { data: smartLink, error: createError } = await supabase
         .from("smart_links")
         .insert({
           title: data.title,
@@ -88,9 +88,27 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           email_capture_description: data.email_capture_description,
           slug: data.slug,
           user_id: session.session.user.id
-        });
+        })
+        .select()
+        .single();
 
       if (createError) throw createError;
+      if (!smartLink) throw new Error("Failed to create smart link");
+
+      if (enabledPlatforms.length > 0) {
+        const platformLinksData = enabledPlatforms.map(platform => ({
+          smart_link_id: smartLink.id,
+          platform_id: platform.id,
+          platform_name: platform.name,
+          url: platform.url
+        }));
+
+        const { error: platformError } = await supabase
+          .from("platform_links")
+          .insert(platformLinksData);
+
+        if (platformError) throw platformError;
+      }
 
       toast.success("Smart link created successfully!");
       if (onComplete) {
@@ -160,7 +178,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       </div>
 
       <div className="space-y-6">
-        {/* Content Details Card */}
         <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <SectionHeader 
             title="Basic Information" 
@@ -218,7 +235,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           </div>
         </Card>
 
-        {/* Platforms Card */}
         <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <SectionHeader 
             title="Streaming Platforms" 
@@ -247,7 +263,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           </div>
         </Card>
 
-        {/* Meta Pixel Card */}
         <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <SectionHeader 
             title="Meta Pixel Integration" 
@@ -278,7 +293,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           )}
         </Card>
 
-        {/* Email Capture Card */}
         <Card className="p-6 shadow-sm border border-[#E6E6E6]">
           <SectionHeader 
             title="Email Capture" 
