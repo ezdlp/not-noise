@@ -85,24 +85,38 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         ? (userProfile?.artist_name || 'Playlist Curator')
         : data.artist;
 
+      // Create base smart link data
+      const smartLinkData = {
+        title: data.title,
+        artist_name: artistName,
+        artwork_url: data.artworkUrl,
+        description: data.description,
+        content_type: data.content_type || 'track',
+        meta_pixel_id: data.meta_pixel_id,
+        meta_view_event: data.meta_view_event,
+        meta_click_event: data.meta_click_event,
+        email_capture_enabled: data.email_capture_enabled,
+        email_capture_title: data.email_capture_title,
+        email_capture_description: data.email_capture_description,
+        slug: data.slug,
+        user_id: session.session.user.id,
+      };
+
+      // Add playlist metadata if it's a playlist
+      if (isPlaylist) {
+        smartLinkData['playlist_metadata'] = {
+          curator: artistName,
+          platform_data: enabledPlatforms.map(p => ({
+            platform: p.name,
+            url: p.url
+          }))
+        };
+      }
+
       // First, insert the smart link and get back the ID
       const { data: smartLink, error: createError } = await supabase
         .from("smart_links")
-        .insert({
-          title: data.title,
-          artist_name: artistName,
-          artwork_url: data.artwork_url,
-          description: data.description,
-          content_type: data.content_type || 'track',
-          meta_pixel_id: data.meta_pixel_id,
-          meta_view_event: data.meta_view_event,
-          meta_click_event: data.meta_click_event,
-          email_capture_enabled: data.email_capture_enabled,
-          email_capture_title: data.email_capture_title,
-          email_capture_description: data.email_capture_description,
-          slug: data.slug,
-          user_id: session.session.user.id
-        })
+        .insert(smartLinkData)
         .select()
         .single();
 
