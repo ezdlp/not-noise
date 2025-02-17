@@ -54,12 +54,12 @@ export default function UsersPage() {
           throw new Error("Not authorized");
         }
 
-        const { count, error } = await supabase
+        const { count, error: countError } = await supabase
           .from("profiles")
           .select('*', { count: 'exact', head: true });
 
-        if (error) {
-          throw error;
+        if (countError) {
+          throw countError;
         }
 
         return count;
@@ -70,7 +70,7 @@ export default function UsersPage() {
     },
   });
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error: queryError } = useQuery({
     queryKey: ["adminUsers", currentPage, pageSize],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -90,7 +90,7 @@ export default function UsersPage() {
         throw new Error("Not authorized");
       }
 
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("profiles")
         .select(`
           *,
@@ -110,47 +110,30 @@ export default function UsersPage() {
             artist_name,
             created_at,
             user_id,
-            content_type,
-            playlist_metadata
+            content_type
           )
         `)
         .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
-      if (error) {
-        console.error("Error fetching users:", error);
+      if (fetchError) {
+        console.error("Error fetching users:", fetchError);
         toast.error("Failed to load users");
-        throw error;
+        throw fetchError;
       }
 
-      const transformedData = data.map(profile => ({
-        ...profile,
-        smart_links: profile.smart_links?.map(link => ({
-          ...link,
-          content_type: link.content_type || 'track' as const,
-          playlist_metadata: link.playlist_metadata ? {
-            track_count: link.playlist_metadata.track_count || 0,
-            playlist_owner: link.playlist_metadata.playlist_owner || '',
-            owner_id: link.playlist_metadata.owner_id || '',
-            is_collaborative: link.playlist_metadata.is_collaborative || false,
-            last_updated_at: link.playlist_metadata.last_updated_at || new Date().toISOString(),
-            tracks_preview: link.playlist_metadata.tracks_preview || []
-          } : null
-        }))
-      })) as Profile[];
-
-      return transformedData;
+      return data as Profile[];
     }
   });
 
   const handleEditUser = async (updatedProfile: Partial<Profile>) => {
     if (!selectedUser) return;
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
       .update(updatedProfile)
       .eq('id', selectedUser.id);
 
-    if (error) {
+    if (updateError) {
       toast.error("Failed to update user");
       return;
     }
@@ -171,8 +154,8 @@ export default function UsersPage() {
 
   if (isLoading) return <div>Loading...</div>;
 
-  if (error) {
-    console.error("Error loading users:", error);
+  if (queryError) {
+    console.error("Error loading users:", queryError);
     return <div>Error loading users. Please try again.</div>;
   }
 
