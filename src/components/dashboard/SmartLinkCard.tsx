@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -44,6 +43,7 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
   const [previewOpen, setPreviewOpen] = useState(false);
   const { isFeatureEnabled } = useFeatureAccess();
   const canUseSocialAssets = isFeatureEnabled('social_assets');
+  const isPlaylist = link.content_type === 'playlist';
 
   const handleDelete = async () => {
     try {
@@ -102,7 +102,9 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="font-semibold text-lg font-dm-sans text-[#0F0F0F] truncate max-w-[200px]">{link.title}</h3>
-                <p className="text-xs font-poppins text-muted-foreground">{link.artist_name}</p>
+                <p className="text-xs font-poppins text-muted-foreground">
+                  {isPlaylist ? 'Playlist' : link.artist_name}
+                </p>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -117,7 +119,7 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={handleDelete}
+                    onClick={() => handleDelete()}
                   >
                     <TrashIcon className="mr-2 h-4 w-4" />
                     Delete

@@ -30,9 +30,9 @@ const SmartLinkHeader = ({ title, artistName, artworkUrl, description, contentTy
         onError={handleImageError}
       />
       <h1 className="text-2xl font-bold mb-1 text-gray-900">{title}</h1>
-      {artistName && contentType !== 'playlist' && (
-        <p className="text-lg text-gray-600 mb-2">{artistName}</p>
-      )}
+      <p className="text-lg text-gray-600 mb-2">
+        {contentType === 'playlist' ? 'Playlist' : artistName}
+      </p>
       {description && (
         <p className="text-sm text-gray-500 max-w-md mx-auto mt-3 px-4">
           {description}
