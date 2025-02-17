@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +20,7 @@ import { StatCard } from "@/components/analytics/StatCard";
 import { formatDistanceToNow } from "date-fns";
 import { subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -94,7 +94,6 @@ export default function SmartLinkAnalytics() {
 
       if (error) throw error;
 
-      // Calculate totals for current week and previous week
       const currentWeek = data.slice(-7);
       const previousWeek = data.slice(-14, -7);
 
@@ -114,7 +113,6 @@ export default function SmartLinkAnalytics() {
         { views: 0, clicks: 0 }
       );
 
-      // Calculate percentage changes
       const viewsTrend = previousWeekTotals.views === 0 
         ? 100 
         : Math.round(((currentWeekTotals.views - previousWeekTotals.views) / previousWeekTotals.views) * 100);
@@ -141,6 +139,56 @@ export default function SmartLinkAnalytics() {
         ctrTrend
       };
     },
+  });
+
+  const { data: geoStats } = useQuery({
+    queryKey: ["geoStats", id],
+    queryFn: async () => {
+      const { data: linkViews } = await supabase
+        .from('link_views')
+        .select('country_code')
+        .eq('smart_link_id', id);
+
+      const { data: platformLinks } = await supabase
+        .from('platform_links')
+        .select(`
+          id,
+          platform_clicks (
+            country_code
+          )
+        `)
+        .eq('smart_link_id', id);
+
+      const viewsByCountry = new Map<string, number>();
+      const clicksByCountry = new Map<string, number>();
+
+      linkViews?.forEach(view => {
+        const countryCode = view.country_code || 'unknown';
+        viewsByCountry.set(countryCode, (viewsByCountry.get(countryCode) || 0) + 1);
+      });
+
+      platformLinks?.forEach(link => {
+        link.platform_clicks?.forEach(click => {
+          const countryCode = click.country_code || 'unknown';
+          clicksByCountry.set(countryCode, (clicksByCountry.get(countryCode) || 0) + 1);
+        });
+      });
+
+      const allCountryCodes = new Set([
+        ...Array.from(viewsByCountry.keys()),
+        ...Array.from(clicksByCountry.keys())
+      ]);
+
+      return Array.from(allCountryCodes).map(countryCode => ({
+        countryCode,
+        views: viewsByCountry.get(countryCode) || 0,
+        clicks: clicksByCountry.get(countryCode) || 0,
+        ctr: viewsByCountry.get(countryCode) 
+          ? (clicksByCountry.get(countryCode) || 0) / viewsByCountry.get(countryCode)!
+          : 0
+      }));
+    },
+    enabled: !!id
   });
 
   if (isLoading) {
@@ -278,6 +326,11 @@ export default function SmartLinkAnalytics() {
           </ResponsiveContainer>
         </div>
       </Card>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-6 text-[#111827] font-poppins">Geographic Breakdown</h2>
+        <GeoStatsTable data={geoStats || []} />
+      </div>
 
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
