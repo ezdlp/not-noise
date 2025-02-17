@@ -6,13 +6,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from '@/components/ui/button';
 
-type FAQItem = {
-  question: string;
-  answer: React.ReactNode;
-};
-
-const faqItems: FAQItem[] = [
+const faqItems = [
   {
     question: "Is this service safe for my Spotify account?",
     answer: "Absolutely. We adhere 100% to Spotify's guidelines, ensuring that your artist account remains safe and compliant. Our promotion methods focus on organic engagement and real listeners only."
@@ -55,39 +51,48 @@ const faqItems: FAQItem[] = [
   },
   {
     question: "How do I get started?",
-    answer: <>Simply <a href="#" className="text-primary hover:underline">Submit Your Music</a> on our website, choose your campaign size, and let us handle the rest. Our team is here to support you every step of the way.</>
+    answer: "Simply search for your track above, choose your campaign size, and let us handle the rest. Our team is here to support you every step of the way."
   }
 ];
 
 const FAQ: React.FC = () => {
   return (
-    <section className="py-20 px-4 md:px-8 lg:px-12 bg-[#F1F0FB]">
-      <div className="max-w-4xl mx-auto">
+    <section className="py-16 md:py-24 bg-white">
+      <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4 font-heading">
             Frequently Asked Questions
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We understand that navigating music promotion can be challenging, especially in an industry full of uncertainty. Below are answers to some of the most common questions about our service, ensuring you have all the information you need to make an informed decision.
+            We understand that navigating music promotion can be challenging, especially in an industry full of uncertainty. Below are answers to some of the most common questions about our service.
           </p>
         </div>
 
-        <Accordion type="single" collapsible className="space-y-4">
+        <Accordion type="single" collapsible className="space-y-2">
           {faqItems.map((item, index) => (
             <AccordionItem 
               key={index} 
               value={`item-${index}`}
-              className="bg-white rounded-lg p-6 shadow-sm data-[state=open]:shadow-md transition-shadow"
+              className="border-b border-neutral-200"
             >
-              <AccordionTrigger className="text-left hover:text-primary data-[state=open]:text-primary font-heading">
+              <AccordionTrigger className="text-left hover:text-primary data-[state=open]:text-primary py-4 font-heading">
                 {item.question}
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed pt-4">
+              <AccordionContent className="text-gray-600 leading-relaxed pb-4">
                 {item.answer}
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
+
+        <div className="mt-12 text-center">
+          <Button
+            asChild
+            className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 hover:scale-105"
+          >
+            <a href="#hero-search">Start Your Promotion Now</a>
+          </Button>
+        </div>
       </div>
     </section>
   );

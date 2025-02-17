@@ -7,15 +7,22 @@ import HowItWorks from "./components/HowItWorks";
 import GuaranteedBotFree from "./components/GuaranteedBotFree";
 import FAQ from "./components/FAQ";
 import { useEffect } from "react";
+import { Footer } from "@/components/landing/Footer";
 
 const SpotifyPlaylistPromotion: React.FC = () => {
   useEffect(() => {
+    // Reset scroll position on mount
+    window.scrollTo(0, 0);
+    
+    // Handle hash navigation after initial load
     const hash = window.location.hash;
     if (hash) {
-      const element = document.querySelector(hash);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      setTimeout(() => {
+        const element = document.querySelector(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
     }
   }, []);
 
@@ -71,26 +78,21 @@ const SpotifyPlaylistPromotion: React.FC = () => {
       </Helmet>
 
       <main className="min-h-screen bg-[#FAFAFA]">
-        <div id="content" className="space-y-16 md:space-y-24">
+        <div id="content" className="space-y-8 md:space-y-12">
           <div id="hero-search">
             <Hero />
           </div>
-          <TrustedLabels isPricingPage={true} />
+          <div className="py-12">
+            <TrustedLabels isPricingPage={true} />
+          </div>
           <SuccessStories />
           <HowItWorks />
           <GuaranteedBotFree />
-          <div id="faq-section" className="pb-16">
+          <div id="faq-section">
             <FAQ />
-            <div className="flex justify-center mt-8">
-              <a 
-                href="#hero-search"
-                className="inline-flex items-center justify-center h-12 px-8 font-medium text-white transition-all duration-300 rounded-full bg-primary hover:bg-primary/90 hover:scale-105 shadow-sm"
-              >
-                Start Your Promotion Now
-              </a>
-            </div>
           </div>
         </div>
+        <Footer />
       </main>
     </>
   );
