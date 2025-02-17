@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { format, subDays } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DailyStatsProps {
   smartLinkId: string;
@@ -33,10 +34,10 @@ interface RPCResponse {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-neutral-border bg-white p-3 shadow-sm">
-        <p className="mb-1 text-sm font-medium text-neutral-night">{label}</p>
+      <div className="rounded-lg border border-neutral-border bg-white p-4 shadow-md animate-fade-in">
+        <p className="mb-2 text-sm font-medium text-neutral-night font-poppins">{label}</p>
         {payload.map((pld: any, index: number) => (
-          <div key={index} className="text-sm">
+          <div key={index} className="text-sm font-dm-sans">
             <span className="font-medium" style={{ color: pld.color }}>
               {pld.name}:
             </span>{" "}
@@ -72,7 +73,10 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   if (isLoading) {
     return (
       <Card className="p-6">
-        <div className="h-[400px] animate-pulse bg-neutral-seasalt rounded" />
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
       </Card>
     );
   }
@@ -80,7 +84,7 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   if (!stats) {
     return (
       <Card className="p-6">
-        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+        <div className="h-[400px] flex items-center justify-center text-muted-foreground font-dm-sans">
           No data available
         </div>
       </Card>
@@ -88,8 +92,8 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4 text-neutral-night">Daily Performance</h2>
+    <Card className="p-6 transition-all duration-300 hover:shadow-md">
+      <h2 className="text-xl font-semibold mb-6 text-neutral-night font-poppins">Daily Performance</h2>
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
@@ -103,11 +107,11 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
           >
             <defs>
               <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6851FB" stopOpacity={0.3}/>
+                <stop offset="5%" stopColor="#6851FB" stopOpacity={0.2}/>
                 <stop offset="95%" stopColor="#6851FB" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#37D299" stopOpacity={0.3}/>
+                <stop offset="5%" stopColor="#37D299" stopOpacity={0.2}/>
                 <stop offset="95%" stopColor="#37D299" stopOpacity={0}/>
               </linearGradient>
             </defs>
@@ -115,23 +119,33 @@ export function DailyStatsChart({ smartLinkId }: DailyStatsProps) {
               strokeDasharray="3 3" 
               stroke="#E6E6E6"
               opacity={0.5}
+              vertical={false}
             />
             <XAxis 
               dataKey="day" 
-              stroke="#666666"
+              stroke="#374151"
               fontSize={12}
               tickLine={false}
+              axisLine={false}
+              dy={10}
+              tick={{ fill: '#374151' }}
+              className="font-dm-sans"
             />
             <YAxis 
-              stroke="#666666"
+              stroke="#374151"
               fontSize={12}
               tickLine={false}
+              axisLine={false}
+              dx={-10}
+              tick={{ fill: '#374151' }}
+              className="font-dm-sans"
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
               verticalAlign="top" 
               height={36}
               iconType="circle"
+              className="font-dm-sans"
             />
             <Area
               type="monotone"
