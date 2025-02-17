@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,8 @@ import { formatDistanceToNow } from "date-fns";
 import { subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
+import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
+import { useState, useMemo } from "react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -42,6 +45,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function SmartLinkAnalytics() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>('28d');
+
+  const startDate = useMemo(() => {
+    const range = timeRanges.find(r => r.value === timeRange);
+    return subDays(new Date(), range?.days || 28).toISOString();
+  }, [timeRange]);
 
   const { data: smartLink, isLoading } = useQuery({
     queryKey: ["smartLink", id],
@@ -83,21 +92,19 @@ export default function SmartLinkAnalytics() {
   });
 
   const { data: weeklyStats } = useQuery({
-    queryKey: ["weeklyStats", id],
+    queryKey: ["weeklyStats", id, startDate],
     queryFn: async () => {
-      const twoWeeksAgo = subDays(new Date(), 14).toISOString();
-
       const { data, error } = await supabase.rpc("get_daily_stats", {
         p_smart_link_id: id,
-        p_start_date: twoWeeksAgo,
+        p_start_date: startDate,
       });
 
       if (error) throw error;
 
-      const currentWeek = data.slice(-7);
-      const previousWeek = data.slice(-14, -7);
+      const currentPeriod = data.slice(-timeRanges.find(r => r.value === timeRange)?.days || -28);
+      const previousPeriod = data.slice(-2 * (timeRanges.find(r => r.value === timeRange)?.days || 28), -(timeRanges.find(r => r.value === timeRange)?.days || 28));
 
-      const currentWeekTotals = currentWeek.reduce(
+      const currentTotals = currentPeriod.reduce(
         (acc, day) => ({
           views: acc.views + day.views,
           clicks: acc.clicks + day.clicks,
@@ -105,7 +112,7 @@ export default function SmartLinkAnalytics() {
         { views: 0, clicks: 0 }
       );
 
-      const previousWeekTotals = previousWeek.reduce(
+      const previousTotals = previousPeriod.reduce(
         (acc, day) => ({
           views: acc.views + day.views,
           clicks: acc.clicks + day.clicks,
@@ -113,21 +120,21 @@ export default function SmartLinkAnalytics() {
         { views: 0, clicks: 0 }
       );
 
-      const viewsTrend = previousWeekTotals.views === 0 
+      const viewsTrend = previousTotals.views === 0 
         ? 100 
-        : Math.round(((currentWeekTotals.views - previousWeekTotals.views) / previousWeekTotals.views) * 100);
+        : Math.round(((currentTotals.views - previousTotals.views) / previousTotals.views) * 100);
       
-      const clicksTrend = previousWeekTotals.clicks === 0 
+      const clicksTrend = previousTotals.clicks === 0 
         ? 100 
-        : Math.round(((currentWeekTotals.clicks - previousWeekTotals.clicks) / previousWeekTotals.clicks) * 100);
+        : Math.round(((currentTotals.clicks - previousTotals.clicks) / previousTotals.clicks) * 100);
       
-      const currentCTR = currentWeekTotals.views === 0 
+      const currentCTR = currentTotals.views === 0 
         ? 0 
-        : (currentWeekTotals.clicks / currentWeekTotals.views) * 100;
+        : (currentTotals.clicks / currentTotals.views) * 100;
       
-      const previousCTR = previousWeekTotals.views === 0 
+      const previousCTR = previousTotals.views === 0 
         ? 0 
-        : (previousWeekTotals.clicks / previousWeekTotals.views) * 100;
+        : (previousTotals.clicks / previousTotals.views) * 100;
       
       const ctrTrend = previousCTR === 0 
         ? 100 
@@ -142,19 +149,21 @@ export default function SmartLinkAnalytics() {
   });
 
   const { data: geoStats } = useQuery({
-    queryKey: ["geoStats", id],
+    queryKey: ["geoStats", id, startDate],
     queryFn: async () => {
       const { data: linkViews } = await supabase
         .from('link_views')
         .select('country_code')
-        .eq('smart_link_id', id);
+        .eq('smart_link_id', id)
+        .gte('viewed_at', startDate);
 
       const { data: platformLinks } = await supabase
         .from('platform_links')
         .select(`
           id,
           platform_clicks (
-            country_code
+            country_code,
+            clicked_at
           )
         `)
         .eq('smart_link_id', id);
@@ -169,8 +178,10 @@ export default function SmartLinkAnalytics() {
 
       platformLinks?.forEach(link => {
         link.platform_clicks?.forEach(click => {
-          const countryCode = click.country_code || 'unknown';
-          clicksByCountry.set(countryCode, (clicksByCountry.get(countryCode) || 0) + 1);
+          if (new Date(click.clicked_at) >= new Date(startDate)) {
+            const countryCode = click.country_code || 'unknown';
+            clicksByCountry.set(countryCode, (clicksByCountry.get(countryCode) || 0) + 1);
+          }
         });
       });
 
@@ -213,16 +224,24 @@ export default function SmartLinkAnalytics() {
 
   if (!smartLink) return null;
 
-  const totalViews = smartLink.link_views?.length || 0;
+  const totalViews = smartLink.link_views?.filter(
+    view => new Date(view.viewed_at) >= new Date(startDate)
+  ).length || 0;
+
   const totalClicks = smartLink.platform_links?.reduce(
-    (acc, pl) => acc + (pl.clicks?.length || 0),
+    (acc, pl) => acc + (pl.clicks?.filter(
+      click => new Date(click.clicked_at) >= new Date(startDate)
+    ).length || 0),
     0
   ) || 0;
+
   const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
   const platformData = smartLink.platform_links?.map((pl) => ({
     name: pl.platform_name,
-    clicks: pl.clicks?.length || 0,
+    clicks: pl.clicks?.filter(
+      click => new Date(click.clicked_at) >= new Date(startDate)
+    ).length || 0,
   })) || [];
 
   platformData.sort((a, b) => b.clicks - a.clicks);
@@ -264,10 +283,19 @@ export default function SmartLinkAnalytics() {
         />
       </div>
 
-      {id && <DailyStatsChart smartLinkId={id} />}
+      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Daily Performance</h2>
+          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        </div>
+        {id && <DailyStatsChart smartLinkId={id} startDate={startDate} />}
+      </Card>
 
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-        <h2 className="text-xl font-semibold mb-6 text-[#111827] font-poppins">Platform Performance</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Platform Performance</h2>
+          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        </div>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={platformData}>
@@ -322,7 +350,13 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
-      <GeoStatsTable data={geoStats || []} />
+      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Geographic Breakdown</h2>
+          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        </div>
+        <GeoStatsTable data={geoStats || []} />
+      </Card>
 
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
@@ -332,11 +366,13 @@ export default function SmartLinkAnalytics() {
         <div className="space-y-4">
           {smartLink.platform_links
             ?.flatMap((pl) =>
-              (pl.clicks || []).map((click) => ({
-                ...click,
-                platform_name: pl.platform_name,
-                platform_id: pl.platform_id,
-              }))
+              (pl.clicks || [])
+                .filter(click => new Date(click.clicked_at) >= new Date(startDate))
+                .map((click) => ({
+                  ...click,
+                  platform_name: pl.platform_name,
+                  platform_id: pl.platform_id,
+                }))
             )
             .sort(
               (a, b) =>
