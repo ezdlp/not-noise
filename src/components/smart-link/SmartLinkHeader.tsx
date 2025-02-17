@@ -6,9 +6,10 @@ interface SmartLinkHeaderProps {
   artistName?: string;
   artworkUrl: string;
   description?: string;
+  contentType?: 'track' | 'album' | 'playlist';
 }
 
-const SmartLinkHeader = ({ title, artistName, artworkUrl, description }: SmartLinkHeaderProps) => {
+const SmartLinkHeader = ({ title, artistName, artworkUrl, description, contentType }: SmartLinkHeaderProps) => {
   useEffect(() => {
     console.log("Artwork URL received:", artworkUrl);
   }, [artworkUrl]);
@@ -29,7 +30,9 @@ const SmartLinkHeader = ({ title, artistName, artworkUrl, description }: SmartLi
         onError={handleImageError}
       />
       <h1 className="text-2xl font-bold mb-1 text-gray-900">{title}</h1>
-      {artistName && <p className="text-lg text-gray-600 mb-2">{artistName}</p>}
+      {artistName && contentType !== 'playlist' && (
+        <p className="text-lg text-gray-600 mb-2">{artistName}</p>
+      )}
       {description && (
         <p className="text-sm text-gray-500 max-w-md mx-auto mt-3 px-4">
           {description}

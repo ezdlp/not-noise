@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ListMusic, Music, Mail, Share2, BarChart, Edit, Check, X } from "lucide-react";
+import { ListMusic, Music, Mail, Share2, BarChart, Edit } from "lucide-react";
 
 interface ReviewStepProps {
   data: {
@@ -20,7 +19,12 @@ interface ReviewStepProps {
       url: string;
       enabled: boolean;
     }>;
-    meta_pixel_id?: string;
+    metaPixel?: {
+      enabled: boolean;
+      pixelId: string;
+      viewEventName: string;
+      clickEventName: string;
+    };
     meta_view_event?: string;
     meta_click_event?: string;
     email_capture_enabled?: boolean;
@@ -80,7 +84,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         .eq('id', session.session.user.id)
         .single();
 
-      // For playlists, use the user's artist name or a default
+      // For playlists, use the user's artist name or a default as curator
       const artistName = isPlaylist 
         ? (userProfile?.artist_name || 'Playlist Curator')
         : data.artist;
@@ -92,15 +96,19 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         artwork_url: data.artworkUrl,
         description: data.description,
         content_type: data.content_type || 'track',
-        meta_pixel_id: data.meta_pixel_id,
-        meta_view_event: data.meta_view_event,
-        meta_click_event: data.meta_click_event,
         email_capture_enabled: data.email_capture_enabled,
         email_capture_title: data.email_capture_title,
         email_capture_description: data.email_capture_description,
         slug: data.slug,
         user_id: session.session.user.id,
       };
+
+      // Add Meta Pixel data if it exists
+      if (data.metaPixel?.enabled) {
+        smartLinkData['meta_pixel_id'] = data.metaPixel.pixelId;
+        smartLinkData['meta_view_event'] = data.metaPixel.viewEventName;
+        smartLinkData['meta_click_event'] = data.metaPixel.clickEventName;
+      }
 
       // Add playlist metadata if it's a playlist
       if (isPlaylist) {
@@ -171,12 +179,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         </h3>
         {isConfigured ? (
           <Badge variant="secondary" className="ml-2 bg-[#ECFDF5] text-[#059669]">
-            <Check className="w-3 h-3 mr-1" />
             Enabled
           </Badge>
         ) : (
           <Badge variant="secondary" className="ml-2 bg-[#F5F5F5] text-[#6B7280]">
-            <X className="w-3 h-3 mr-1" />
             Not Enabled
           </Badge>
         )}
