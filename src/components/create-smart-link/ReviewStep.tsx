@@ -30,9 +30,11 @@ interface ReviewStepProps {
     slug?: string;
   };
   onBack: () => void;
+  onComplete?: () => void;
+  onEditStep?: (step: number) => void;
 }
 
-const ReviewStep = ({ data, onBack }: ReviewStepProps) => {
+const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const isPlaylist = data.content_type === 'playlist';
@@ -48,26 +50,28 @@ const ReviewStep = ({ data, onBack }: ReviewStepProps) => {
 
       const { error: createError } = await supabase
         .from("smart_links")
-        .insert([
-          {
-            title: data.title,
-            artist_name: data.artist,
-            artwork_url: data.artworkUrl,
-            description: data.description,
-            content_type: data.content_type || 'track',
-            meta_pixel_id: data.meta_pixel_id,
-            meta_view_event: data.meta_view_event,
-            meta_click_event: data.meta_click_event,
-            email_capture_enabled: data.email_capture_enabled,
-            email_capture_title: data.email_capture_title,
-            email_capture_description: data.email_capture_description,
-            slug: data.slug,
-          },
-        ]);
+        .insert({
+          title: data.title,
+          artist_name: data.artist,
+          artwork_url: data.artworkUrl,
+          description: data.description,
+          content_type: data.content_type || 'track',
+          meta_pixel_id: data.meta_pixel_id,
+          meta_view_event: data.meta_view_event,
+          meta_click_event: data.meta_click_event,
+          email_capture_enabled: data.email_capture_enabled,
+          email_capture_title: data.email_capture_title,
+          email_capture_description: data.email_capture_description,
+          slug: data.slug,
+          user_id: session.session.user.id
+        });
 
       if (createError) throw createError;
 
       toast.success("Smart link created successfully!");
+      if (onComplete) {
+        onComplete();
+      }
       navigate("/dashboard");
     } catch (error) {
       console.error("Error creating smart link:", error);
