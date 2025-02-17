@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ListMusic, Music, Mail, Share2 } from "lucide-react";
+import { ListMusic, Music, Mail, Share2, BarChart } from "lucide-react";
 
 interface ReviewStepProps {
   data: {
@@ -98,6 +98,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
                 src={data.artworkUrl || "/placeholder.svg"}
                 alt={isPlaylist ? "Playlist artwork" : "Release artwork"}
                 className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  img.src = "/placeholder.svg";
+                }}
               />
             </div>
             <div className="space-y-4 flex-1">
@@ -114,7 +118,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
                   {data.content_type?.charAt(0).toUpperCase() + data.content_type?.slice(1)}
                 </Badge>
                 <h3 className="text-xl font-semibold">{data.title}</h3>
-                <p className="text-muted-foreground">{data.artist}</p>
+                {!isPlaylist && <p className="text-muted-foreground">{data.artist}</p>}
               </div>
               {data.description && (
                 <p className="text-sm text-muted-foreground">{data.description}</p>
@@ -141,6 +145,30 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
             ))}
           </div>
         </Card>
+
+        {data.meta_pixel_id && (
+          <Card className="p-6 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart className="w-5 h-5" />
+              Meta Pixel Integration
+            </h3>
+            <div className="space-y-2">
+              <p className="text-sm">
+                <span className="font-medium">Pixel ID:</span> {data.meta_pixel_id}
+              </p>
+              {data.meta_view_event && (
+                <p className="text-sm">
+                  <span className="font-medium">View Event:</span> {data.meta_view_event}
+                </p>
+              )}
+              {data.meta_click_event && (
+                <p className="text-sm">
+                  <span className="font-medium">Click Event:</span> {data.meta_click_event}
+                </p>
+              )}
+            </div>
+          </Card>
+        )}
 
         {data.email_capture_enabled && (
           <Card className="p-6 space-y-4">

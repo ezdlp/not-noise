@@ -28,20 +28,27 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const isPlaylist = initialData.content_type === 'playlist';
 
   useEffect(() => {
-    // Generate slug from artist name and title
-    if (artistName && title) {
-      const generatedSlug = `${artistName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-      setSlug(generatedSlug);
+    // Generate slug based on content type
+    if (isPlaylist) {
+      if (title) {
+        const generatedSlug = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        setSlug(generatedSlug);
+      }
+    } else {
+      if (artistName && title) {
+        const generatedSlug = `${artistName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        setSlug(generatedSlug);
+      }
     }
-  }, [artistName, title]);
+  }, [artistName, title, isPlaylist]);
 
   const handleNext = async () => {
     if (!title.trim()) {
-      toast.error(`Please enter a ${isPlaylist ? 'playlist name' : 'title'}`);
+      toast.error(isPlaylist ? "Please enter a playlist name" : "Please enter a title");
       return;
     }
 
-    if (!artistName.trim()) {
+    if (!isPlaylist && !artistName.trim()) {
       toast.error("Please enter an artist name");
       return;
     }
@@ -51,7 +58,6 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       return;
     }
 
-    // Check if slug exists
     if (slug) {
       const { data: existingSlug } = await supabase
         .from("smart_links")
@@ -68,7 +74,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
     onNext({
       ...initialData,
       title,
-      artist: artistName,
+      artist: isPlaylist ? undefined : artistName,
       slug: slug || undefined,
       description: description || undefined,
     });
@@ -101,15 +107,17 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           />
         </div>
         <div className="flex-1 space-y-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Artist Name</Label>
-            <Input
-              value={artistName}
-              onChange={(e) => setArtistName(e.target.value)}
-              placeholder="Enter artist name..."
-              className="h-10"
-            />
-          </div>
+          {!isPlaylist && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Artist Name</Label>
+              <Input
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                placeholder="Enter artist name..."
+                className="h-10"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">

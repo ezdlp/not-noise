@@ -152,16 +152,22 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Tracks</h3>
                 <div className="space-y-2">
-                  {searchResults.tracks.map((track) => (
-                    <Card key={track.id} className="p-4 hover:bg-accent transition-colors cursor-pointer" onClick={() => handleResultSelect(track)}>
+                  {searchResults.tracks.slice(0, 5).map((track) => (
+                    <Card key={track.id} className="p-4 hover:bg-accent/50 transition-colors">
                       <div className="flex items-center gap-4">
-                        <img src={track.artworkUrl} alt={track.title} className="w-12 h-12 rounded-md object-cover" />
+                        <img src={track.artworkUrl} alt={track.title} className="w-16 h-16 rounded-md object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{track.title}</p>
                           <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
                           <p className="text-xs text-muted-foreground truncate">{track.albumName}</p>
                         </div>
-                        <Music className="w-4 h-4 text-muted-foreground" />
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => handleResultSelect(track)}
+                        >
+                          Select
+                        </Button>
                       </div>
                     </Card>
                   ))}
@@ -173,10 +179,10 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Albums & EPs</h3>
                 <div className="space-y-2">
-                  {searchResults.albums.map((album) => (
-                    <Card key={album.id} className="p-4 hover:bg-accent transition-colors cursor-pointer" onClick={() => handleResultSelect(album)}>
+                  {searchResults.albums.slice(0, 5).map((album) => (
+                    <Card key={album.id} className="p-4 hover:bg-accent/50 transition-colors">
                       <div className="flex items-center gap-4">
-                        <img src={album.artworkUrl} alt={album.title} className="w-12 h-12 rounded-md object-cover" />
+                        <img src={album.artworkUrl} alt={album.title} className="w-16 h-16 rounded-md object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{album.title}</p>
                           <p className="text-sm text-muted-foreground truncate">{album.artist}</p>
@@ -184,7 +190,13 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
                             {album.albumType === 'single' ? 'EP/Single' : 'Album'} • {album.totalTracks} tracks
                           </p>
                         </div>
-                        <Disc className="w-4 h-4 text-muted-foreground" />
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => handleResultSelect(album)}
+                        >
+                          Select
+                        </Button>
                       </div>
                     </Card>
                   ))}
@@ -209,4 +221,3 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 };
 
 export default SearchStep;
-
