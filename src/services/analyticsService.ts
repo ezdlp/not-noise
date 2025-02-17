@@ -16,6 +16,7 @@ interface LocationInfo {
 
 class AnalyticsService {
   private sessionId: string;
+  private locationInfo: LocationInfo | null = null;
 
   constructor() {
     this.sessionId = this.generateSessionId();
@@ -23,6 +24,45 @@ class AnalyticsService {
 
   private generateSessionId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+
+  async getLocationInfo(): Promise<LocationInfo | null> {
+    if (this.locationInfo) {
+      return this.locationInfo;
+    }
+
+    try {
+      console.log('Fetching location info...');
+      const { data, error } = await supabase.functions.invoke('get-location');
+      
+      if (error) {
+        console.error('Error invoking get-location function:', error);
+        throw error;
+      }
+
+      if (!data.country || !data.country_code) {
+        console.error('Invalid location data received:', data);
+        return null;
+      }
+
+      const ipHash = await this.hashIP(data.ip);
+      
+      this.locationInfo = {
+        country: data.country,
+        country_code: data.country_code,
+        ip_hash: ipHash
+      };
+
+      console.log('Location info retrieved successfully:', {
+        country: this.locationInfo.country,
+        country_code: this.locationInfo.country_code
+      });
+
+      return this.locationInfo;
+    } catch (error) {
+      console.error('Error getting location info:', error);
+      return null;
+    }
   }
 
   async trackPageView(url: string) {
@@ -47,7 +87,7 @@ class AnalyticsService {
       console.log('Page view tracked successfully with location:', locationInfo);
     } catch (error) {
       console.error('Error tracking page view:', error);
-      throw error; // Let the caller handle the error
+      throw error;
     }
   }
 
@@ -88,41 +128,6 @@ class AnalyticsService {
     } catch (error) {
       console.error('Error tracking event:', error);
       throw error;
-    }
-  }
-
-  private async getLocationInfo(): Promise<LocationInfo | null> {
-    try {
-      console.log('Fetching location info...');
-      const { data, error } = await supabase.functions.invoke('get-location');
-      
-      if (error) {
-        console.error('Error invoking get-location function:', error);
-        throw error;
-      }
-
-      if (!data.country || !data.country_code) {
-        console.error('Invalid location data received:', data);
-        return null;
-      }
-
-      const ipHash = await this.hashIP(data.ip);
-      
-      const locationInfo = {
-        country: data.country,
-        country_code: data.country_code,
-        ip_hash: ipHash
-      };
-
-      console.log('Location info retrieved successfully:', {
-        country: locationInfo.country,
-        country_code: locationInfo.country_code
-      });
-
-      return locationInfo;
-    } catch (error) {
-      console.error('Error getting location info:', error);
-      return null;
     }
   }
 

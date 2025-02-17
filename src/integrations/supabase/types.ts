@@ -620,24 +620,30 @@ export type Database = {
       link_views: {
         Row: {
           country: string | null
+          country_code: string | null
           id: string
           ip_address: string | null
+          ip_hash: string | null
           smart_link_id: string | null
           user_agent: string | null
           viewed_at: string | null
         }
         Insert: {
           country?: string | null
+          country_code?: string | null
           id?: string
           ip_address?: string | null
+          ip_hash?: string | null
           smart_link_id?: string | null
           user_agent?: string | null
           viewed_at?: string | null
         }
         Update: {
           country?: string | null
+          country_code?: string | null
           id?: string
           ip_address?: string | null
+          ip_hash?: string | null
           smart_link_id?: string | null
           user_agent?: string | null
           viewed_at?: string | null

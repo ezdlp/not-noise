@@ -19,12 +19,17 @@ export default function SmartLink() {
       try {
         await analyticsService.trackPageView(`/link/${slug}`);
         
+        // Get location info from analytics service
+        const locationInfo = await analyticsService.getLocationInfo();
+        
         await supabase.from('link_views').insert({
           smart_link_id: smartLinkId,
           user_agent: navigator.userAgent,
+          country_code: locationInfo?.country_code,
+          ip_hash: locationInfo?.ip_hash
         });
 
-        console.log('View recorded successfully');
+        console.log('View recorded successfully with location:', locationInfo?.country_code);
       } catch (error) {
         console.error('Error recording view:', error);
         toast.error("Failed to record view");
@@ -274,3 +279,4 @@ export default function SmartLink() {
     </div>
   );
 }
+
