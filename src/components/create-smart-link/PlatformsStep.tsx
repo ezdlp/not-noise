@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { arrayMove } from '@dnd-kit/sortable';
@@ -8,10 +9,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeModal } from "../subscription/UpgradeModal";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 interface PlatformsStepProps {
   initialData: {
     spotifyUrl: string;
+    content_type?: 'track' | 'album' | 'playlist';
     [key: string]: any;
   };
   onNext: (data: any) => void;
@@ -24,6 +28,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { isFeatureEnabled } = useFeatureAccess();
   const canReorderPlatforms = isFeatureEnabled('platform_reordering');
+  const isPlaylist = initialData.content_type === 'playlist';
 
   const {
     platforms,
@@ -39,6 +44,19 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     
     const fetchLinks = async () => {
       try {
+        // For playlists, we don't need to fetch Odesli links
+        if (isPlaylist) {
+          setPlatforms(prevPlatforms => 
+            prevPlatforms.map(platform => ({
+              ...platform,
+              url: platform.id === "spotify" ? initialData.spotifyUrl : "",
+              enabled: platform.id === "spotify"
+            }))
+          );
+          setIsLoading(false);
+          return;
+        }
+
         progressInterval = setInterval(() => {
           setProgress(prev => Math.min(prev + 10, 90));
         }, 500);
@@ -83,7 +101,7 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
     return () => {
       if (progressInterval) clearInterval(progressInterval);
     };
-  }, [initialData.spotifyUrl, setPlatforms]);
+  }, [initialData.spotifyUrl, setPlatforms, isPlaylist]);
 
   const handleDragEnd = (event: any) => {
     if (!canReorderPlatforms) {
@@ -127,13 +145,24 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Manage Platforms</h2>
         <p className="text-sm text-muted-foreground">
-          {canReorderPlatforms 
-            ? "Drag to reorder platforms and enable the ones you want to include."
-            : "Enable the platforms you want to include in your smart link."}
+          {isPlaylist 
+            ? "Add platform links where your playlist can be accessed."
+            : canReorderPlatforms 
+              ? "Drag to reorder platforms and enable the ones you want to include."
+              : "Enable the platforms you want to include in your smart link."}
         </p>
       </div>
 
-      {isLoading ? (
+      {isPlaylist && (
+        <Alert>
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            Most playlists are Spotify-only. You can add other platforms if your playlist is available elsewhere.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isLoading && !isPlaylist ? (
         <PlatformsLoading progress={progress} />
       ) : (
         <>
@@ -143,18 +172,20 @@ const PlatformsStep = ({ initialData, onNext, onBack }: PlatformsStepProps) => {
             onToggle={handlePlatformToggle}
             onUrlChange={updateUrl}
             onDragEnd={handleDragEnd}
-            isDraggable={canReorderPlatforms}
+            isDraggable={canReorderPlatforms && !isPlaylist}
           />
 
-          <PlatformsSection
-            title="Additional Platforms"
-            description={!isPro ? "Premium platforms to expand your reach" : undefined}
-            platforms={additionalPlatforms}
-            onToggle={handlePlatformToggle}
-            onUrlChange={updateUrl}
-            isDraggable={false}
-            isBlurred={!isPro}
-          />
+          {!isPlaylist && (
+            <PlatformsSection
+              title="Additional Platforms"
+              description={!isPro ? "Premium platforms to expand your reach" : undefined}
+              platforms={additionalPlatforms}
+              onToggle={handlePlatformToggle}
+              onUrlChange={updateUrl}
+              isDraggable={false}
+              isBlurred={!isPro}
+            />
+          )}
         </>
       )}
 

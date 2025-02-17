@@ -14,6 +14,7 @@ interface DetailsStepProps {
     artworkUrl: string;
     spotifyUrl: string;
     description?: string;
+    content_type?: 'track' | 'album' | 'playlist';
   };
   onNext: (data: any) => void;
   onBack: () => void;
@@ -24,6 +25,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [artistName, setArtistName] = useState(initialData.artist || "");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState(initialData.description || "");
+  const isPlaylist = initialData.content_type === 'playlist';
 
   useEffect(() => {
     // Generate slug from artist name and title
@@ -35,7 +37,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 
   const handleNext = async () => {
     if (!title.trim()) {
-      toast.error("Please enter a title");
+      toast.error(`Please enter a ${isPlaylist ? 'playlist name' : 'title'}`);
       return;
     }
 
@@ -75,9 +77,13 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-lg sm:text-xl font-semibold">Release Details</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">
+          {isPlaylist ? 'Playlist Details' : 'Release Details'}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Enter the details for your release
+          {isPlaylist 
+            ? 'Enter the details for your playlist'
+            : 'Enter the details for your release'}
         </p>
       </div>
 
@@ -85,7 +91,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
         <div className="flex justify-center sm:block">
           <img
             src={initialData.artworkUrl || "/placeholder.svg"}
-            alt="Release artwork"
+            alt={isPlaylist ? "Playlist artwork" : "Release artwork"}
             className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover"
             onError={(e) => {
               const img = e.target as HTMLImageElement;
@@ -106,11 +112,13 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Release Title</Label>
+            <Label className="text-sm font-medium">
+              {isPlaylist ? 'Playlist Name' : 'Release Title'}
+            </Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter release title..."
+              placeholder={isPlaylist ? "Enter playlist name..." : "Enter release title..."}
               className="h-10"
             />
           </div>
@@ -129,7 +137,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
               />
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Your track will be available at soundraiser.io/link/your-custom-url
+              Your {isPlaylist ? 'playlist' : 'track'} will be available at soundraiser.io/link/your-custom-url
             </p>
           </div>
 
@@ -138,7 +146,10 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a short description about your release..."
+              placeholder={isPlaylist 
+                ? "Add a short description about your playlist..."
+                : "Add a short description about your release..."
+              }
               className="resize-none"
               maxLength={120}
             />
