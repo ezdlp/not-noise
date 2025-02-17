@@ -6,71 +6,106 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Music, ListMusic } from "lucide-react";
+import { Music, ListMusic, Disc } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import debounce from 'lodash/debounce';
 
 interface SearchStepProps {
   onNext: (data: any) => void;
 }
 
+interface SearchResult {
+  id: string;
+  title: string;
+  artist: string;
+  artworkUrl: string;
+  content_type: 'track' | 'album' | 'playlist';
+  spotifyUrl: string;
+  albumName?: string;
+  releaseDate?: string;
+  totalTracks?: number;
+  albumType?: string;
+}
+
 const SearchStep = ({ onNext }: SearchStepProps) => {
-  const [url, setUrl] = useState("");
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [contentType, setContentType] = useState<'track' | 'album' | 'playlist' | null>(null);
+  const [searchResults, setSearchResults] = useState<{ tracks: SearchResult[], albums: SearchResult[] } | null>(null);
+  const [isUrlMode, setIsUrlMode] = useState(false);
 
   useEffect(() => {
-    // Detect content type from URL
-    if (url.includes("spotify.com")) {
-      if (url.includes("/playlist/")) {
+    if (input.includes("spotify.com")) {
+      setIsUrlMode(true);
+      if (input.includes("/playlist/")) {
         setContentType('playlist');
-      } else if (url.includes("/album/")) {
+      } else if (input.includes("/album/")) {
         setContentType('album');
-      } else if (url.includes("/track/")) {
+      } else if (input.includes("/track/")) {
         setContentType('track');
       } else {
         setContentType(null);
       }
+      setSearchResults(null);
     } else {
+      setIsUrlMode(false);
       setContentType(null);
+      if (input.trim()) {
+        handleSearch(input);
+      } else {
+        setSearchResults(null);
+      }
     }
-  }, [url]);
+  }, [input]);
 
-  const handleSearch = async () => {
-    if (!url.trim()) {
-      toast.error("Please enter a Spotify URL");
-      return;
+  const handleSearch = debounce(async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("spotify-search", {
+        body: { query: searchQuery }
+      });
+
+      if (error) throw error;
+      setSearchResults(data);
+    } catch (error) {
+      console.error("Error searching:", error);
+      toast.error("Failed to search. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
+  }, 500);
 
-    if (!url.includes("spotify.com")) {
+  const handleUrlSubmit = async () => {
+    if (!input.includes("spotify.com")) {
       toast.error("Please enter a valid Spotify URL");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const { data, error } = await supabase.functions.invoke("spotify-search", {
-        body: { url }
+        body: { url: input }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      if (!data) throw new Error("No data returned from Spotify");
 
-      if (!data) {
-        throw new Error("No data returned from Spotify");
-      }
-
-      onNext({
-        ...data,
-        spotifyUrl: url,
-        content_type: contentType || 'track'
-      });
+      onNext(data);
     } catch (error) {
-      console.error("Error searching Spotify:", error);
-      toast.error("Failed to fetch track information. Please try again.");
+      console.error("Error fetching from URL:", error);
+      toast.error("Failed to fetch content information. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResultSelect = (result: SearchResult) => {
+    onNext({
+      ...result,
+      content_type: result.content_type
+    });
   };
 
   return (
@@ -78,19 +113,19 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
       <div className="space-y-2">
         <h2 className="text-lg sm:text-xl font-semibold">Find Your Music</h2>
         <p className="text-sm text-muted-foreground">
-          Enter a Spotify URL to get started
+          Search for your music or paste a Spotify URL
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="spotify-url">Spotify URL</Label>
+          <Label htmlFor="search-input">Search or paste Spotify URL</Label>
           <div className="space-y-2">
             <Input
-              id="spotify-url"
-              placeholder="https://open.spotify.com/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              id="search-input"
+              placeholder="Search by title/artist or paste Spotify URL..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               className="h-10"
             />
             {contentType && (
@@ -100,6 +135,8 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
               >
                 {contentType === 'playlist' ? (
                   <ListMusic className="w-3 h-3 mr-1" />
+                ) : contentType === 'album' ? (
+                  <Disc className="w-3 h-3 mr-1" />
                 ) : (
                   <Music className="w-3 h-3 mr-1" />
                 )}
@@ -107,21 +144,69 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
               </Badge>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Paste your Spotify track, album, or playlist URL
-          </p>
         </div>
 
-        <Button
-          onClick={handleSearch}
-          disabled={isLoading || !url.trim()}
-          className="w-full"
-        >
-          {isLoading ? "Searching..." : "Continue"}
-        </Button>
+        {!isUrlMode && searchResults && (
+          <div className="space-y-4">
+            {searchResults.tracks.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Tracks</h3>
+                <div className="space-y-2">
+                  {searchResults.tracks.map((track) => (
+                    <Card key={track.id} className="p-4 hover:bg-accent transition-colors cursor-pointer" onClick={() => handleResultSelect(track)}>
+                      <div className="flex items-center gap-4">
+                        <img src={track.artworkUrl} alt={track.title} className="w-12 h-12 rounded-md object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{track.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
+                          <p className="text-xs text-muted-foreground truncate">{track.albumName}</p>
+                        </div>
+                        <Music className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {searchResults.albums.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Albums & EPs</h3>
+                <div className="space-y-2">
+                  {searchResults.albums.map((album) => (
+                    <Card key={album.id} className="p-4 hover:bg-accent transition-colors cursor-pointer" onClick={() => handleResultSelect(album)}>
+                      <div className="flex items-center gap-4">
+                        <img src={album.artworkUrl} alt={album.title} className="w-12 h-12 rounded-md object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{album.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">{album.artist}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {album.albumType === 'single' ? 'EP/Single' : 'Album'} • {album.totalTracks} tracks
+                          </p>
+                        </div>
+                        <Disc className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isUrlMode && (
+          <Button
+            onClick={handleUrlSubmit}
+            disabled={isLoading || !contentType}
+            className="w-full"
+          >
+            {isLoading ? "Loading..." : "Continue"}
+          </Button>
+        )}
       </div>
     </div>
   );
 };
 
 export default SearchStep;
+
