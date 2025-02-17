@@ -227,11 +227,6 @@ export default function SmartLinkAnalytics() {
 
   platformData.sort((a, b) => b.clicks - a.clicks);
 
-  const totalClicks2 = platformData.reduce((sum, item) => sum + item.clicks, 0);
-  if (totalClicks2 > 0) {
-    platformData.push({ name: 'Total', clicks: totalClicks2 });
-  }
-
   return (
     <div className="container mx-auto py-6 px-4 space-y-6 animate-fade-in bg-[#FAFAFA] min-h-screen">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
