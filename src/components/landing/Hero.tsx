@@ -8,12 +8,12 @@ export const Hero = () => {
   return (
     <div className="min-h-[85vh] flex items-center px-4 md:px-8 py-8 md:py-20 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-4 md:gap-12 items-center">
-        <div className="text-left relative z-10 order-1">
+        <div className="relative z-10 order-1 text-center md:text-left">
           <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-[72px] leading-tight font-bold mb-3 md:mb-6 font-heading text-night">
             Elevate Your Music With{" "}
             <span className="text-primary">Smart Links</span>
           </h1>
-          <p className="text-sm md:text-lg text-[#333333] mb-4 md:mb-8 max-w-xl leading-relaxed font-sans">
+          <p className="text-sm md:text-lg text-[#333333] mb-4 md:mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed font-sans">
             Create powerful smart links that connect your fans to your music across all platforms. Built-in Meta Pixel integration and email capture to grow your audience faster.
           </p>
           <CTAButton 
