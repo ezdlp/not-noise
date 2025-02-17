@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,12 +73,25 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         throw new Error("Not authenticated");
       }
 
+      // Get current user's profile for artist name fallback
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('artist_name')
+        .eq('id', session.session.user.id)
+        .single();
+
+      // For playlists, use the user's artist name or a default
+      const artistName = isPlaylist 
+        ? (userProfile?.artist_name || 'Playlist Curator')
+        : data.artist;
+
+      // First, insert the smart link and get back the ID
       const { data: smartLink, error: createError } = await supabase
         .from("smart_links")
         .insert({
           title: data.title,
-          artist_name: data.artist,
-          artwork_url: data.artworkUrl,
+          artist_name: artistName,
+          artwork_url: data.artwork_url,
           description: data.description,
           content_type: data.content_type || 'track',
           meta_pixel_id: data.meta_pixel_id,
@@ -95,6 +109,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       if (createError) throw createError;
       if (!smartLink) throw new Error("Failed to create smart link");
 
+      // Then, insert platform links if there are any enabled platforms
       if (enabledPlatforms.length > 0) {
         const platformLinksData = enabledPlatforms.map(platform => ({
           smart_link_id: smartLink.id,
