@@ -327,10 +327,7 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-6 text-[#111827] font-poppins">Geographic Breakdown</h2>
-        <GeoStatsTable data={geoStats || []} />
-      </div>
+      <GeoStatsTable data={geoStats || []} />
 
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">

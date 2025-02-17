@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { countries } from "@/lib/countries";
+import { cn } from "@/lib/utils";
 
 interface GeoStats {
   countryCode: string;
@@ -54,12 +55,14 @@ export function GeoStatsTable({ data }: GeoStatsTableProps) {
   };
 
   const getSortIcon = (column: SortColumn) => {
-    if (sortColumn !== column) return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    if (column === sortColumn) {
+      return sortDirection === 'asc' ? (
+        <ArrowUp className="ml-2 h-4 w-4 text-primary" />
+      ) : (
+        <ArrowDown className="ml-2 h-4 w-4 text-primary" />
+      );
+    }
+    return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />;
   };
 
   const formatNumber = (num: number) => {
@@ -68,37 +71,58 @@ export function GeoStatsTable({ data }: GeoStatsTableProps) {
 
   return (
     <Card className="p-6">
+      <h2 className="text-xl font-semibold mb-6 text-[#111827] font-poppins">Geographic Breakdown</h2>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead 
-                className="cursor-pointer hover:bg-neutral-50 transition-colors"
+                className={cn(
+                  "group cursor-pointer hover:bg-neutral-50 transition-colors w-[200px]",
+                  sortColumn === 'country' && "text-primary"
+                )}
                 onClick={() => handleSort('country')}
               >
-                Country
-                {getSortIcon('country')}
+                <div className="flex items-center">
+                  Country
+                  {getSortIcon('country')}
+                </div>
               </TableHead>
               <TableHead 
-                className="text-right cursor-pointer hover:bg-neutral-50 transition-colors"
+                className={cn(
+                  "group cursor-pointer hover:bg-neutral-50 transition-colors text-right",
+                  sortColumn === 'views' && "text-primary"
+                )}
                 onClick={() => handleSort('views')}
               >
-                Views
-                {getSortIcon('views')}
+                <div className="flex items-center justify-end">
+                  Views
+                  {getSortIcon('views')}
+                </div>
               </TableHead>
               <TableHead 
-                className="text-right cursor-pointer hover:bg-neutral-50 transition-colors"
+                className={cn(
+                  "group cursor-pointer hover:bg-neutral-50 transition-colors text-right",
+                  sortColumn === 'clicks' && "text-primary"
+                )}
                 onClick={() => handleSort('clicks')}
               >
-                Clicks
-                {getSortIcon('clicks')}
+                <div className="flex items-center justify-end">
+                  Clicks
+                  {getSortIcon('clicks')}
+                </div>
               </TableHead>
               <TableHead 
-                className="text-right cursor-pointer hover:bg-neutral-50 transition-colors"
+                className={cn(
+                  "group cursor-pointer hover:bg-neutral-50 transition-colors text-right",
+                  sortColumn === 'ctr' && "text-primary"
+                )}
                 onClick={() => handleSort('ctr')}
               >
-                CTR
-                {getSortIcon('ctr')}
+                <div className="flex items-center justify-end">
+                  CTR
+                  {getSortIcon('ctr')}
+                </div>
               </TableHead>
             </TableRow>
           </TableHeader>
