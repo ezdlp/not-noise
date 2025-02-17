@@ -45,7 +45,7 @@ export interface SmartLink {
       artist: string;
       preview_url?: string;
     }>;
-  };
+  } | null;
   profiles?: {
     name?: string;
     email?: string;

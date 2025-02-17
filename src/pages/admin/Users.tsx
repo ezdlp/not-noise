@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,71 +70,76 @@ export default function UsersPage() {
     },
   });
 
-  const { data: users, isLoading, error } = useQuery({
-    queryKey: ["adminUsers", pageSize, currentPage, searchQuery, sortDirection],
+  const { data: users, isLoading } = useQuery({
+    queryKey: ["adminUsers", currentPage, pageSize],
     queryFn: async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.error("Not authenticated");
-          throw new Error("Not authenticated");
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("Not authenticated");
+        throw new Error("Not authenticated");
+      }
 
-        const { data: userRoles, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin');
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin');
 
-        if (roleError || !userRoles?.length) {
-          console.error("Not authorized");
-          throw new Error("Not authorized");
-        }
+      if (roleError || !userRoles?.length) {
+        console.error("Not authorized");
+        throw new Error("Not authorized");
+      }
 
-        let query = supabase
-          .from("profiles")
-          .select(`
-            *,
-            user_roles (
-              id,
-              role
-            ),
-            subscriptions (
-              tier,
-              is_lifetime,
-              is_early_adopter,
-              current_period_end
-            ),
-            smart_links (
-              id,
-              title,
-              artist_name,
-              created_at,
-              user_id
-            )
-          `)
-          .order('created_at', { ascending: sortDirection === 'asc' })
-          .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          user_roles (
+            id,
+            role
+          ),
+          subscriptions (
+            tier,
+            is_lifetime,
+            is_early_adopter,
+            current_period_end
+          ),
+          smart_links (
+            id,
+            title,
+            artist_name,
+            created_at,
+            user_id,
+            content_type,
+            playlist_metadata
+          )
+        `)
+        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
-        if (searchQuery) {
-          query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
-        }
-
-        const { data: profiles, error: profilesError } = await query;
-
-        if (profilesError) {
-          console.error("Error fetching profiles:", profilesError);
-          throw profilesError;
-        }
-
-        return profiles as Profile[];
-      } catch (error) {
-        console.error("Error in query function:", error);
+      if (error) {
+        console.error("Error fetching users:", error);
         toast.error("Failed to load users");
         throw error;
       }
-    },
-    refetchInterval: 5000,
+
+      const transformedData = data.map(profile => ({
+        ...profile,
+        smart_links: profile.smart_links?.map(link => ({
+          ...link,
+          content_type: link.content_type || 'track' as const,
+          playlist_metadata: link.playlist_metadata ? {
+            track_count: link.playlist_metadata.track_count || 0,
+            playlist_owner: link.playlist_metadata.playlist_owner || '',
+            owner_id: link.playlist_metadata.owner_id || '',
+            is_collaborative: link.playlist_metadata.is_collaborative || false,
+            last_updated_at: link.playlist_metadata.last_updated_at || new Date().toISOString(),
+            tracks_preview: link.playlist_metadata.tracks_preview || []
+          } : null
+        }))
+      })) as Profile[];
+
+      return transformedData;
+    }
   });
 
   const handleEditUser = async (updatedProfile: Partial<Profile>) => {
