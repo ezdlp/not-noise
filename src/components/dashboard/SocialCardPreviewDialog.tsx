@@ -20,6 +20,7 @@ interface SocialCardPreviewDialogProps {
     artist_name: string;
     artwork_url: string;
     id: string;
+    content_type?: 'track' | 'album' | 'playlist';
   };
   onGenerate: () => void;
   canUseSocialAssets: boolean;
@@ -174,7 +175,7 @@ export function SocialCardPreviewDialog({
                   className="text-white/90 font-medium"
                   style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
-                  {smartLink.artist_name}
+                  {smartLink.content_type === 'playlist' ? 'Playlist' : smartLink.artist_name}
                 </p>
               </div>
             </div>
@@ -230,7 +231,7 @@ export function SocialCardPreviewDialog({
                   className="text-white/90 font-medium"
                   style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
-                  {smartLink.artist_name}
+                  {smartLink.content_type === 'playlist' ? 'Playlist' : smartLink.artist_name}
                 </p>
               </div>
             </div>
