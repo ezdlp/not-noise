@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,7 @@ interface ReviewStepProps {
   data: {
     title: string;
     artist: string;
-    artworkUrl: string;
+    artwork_url?: string; // Changed from artworkUrl to match database field
     description?: string;
     platforms: Array<{
       id: string;
@@ -90,7 +91,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       const smartLinkData = {
         title: data.title,
         artist_name: artistName,
-        artwork_url: data.artworkUrl,
+        artwork_url: data.artwork_url, // Using consistent snake_case
         description: data.description,
         content_type: data.content_type || 'track',
         email_capture_enabled: data.email_capture_enabled,
@@ -138,6 +139,39 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           .insert(platformLinksData);
 
         if (platformError) throw platformError;
+      }
+
+      // Move artwork from temp to permanent location if it exists and starts with temp/
+      if (data.artwork_url && data.artwork_url.includes('temp/')) {
+        const oldPath = data.artwork_url.split('artworks/')[1];
+        const newPath = `${smartLink.id}/${oldPath.split('/').pop()}`;
+        
+        // Copy the file to the new location
+        const { error: moveError } = await supabase
+          .storage
+          .from('artworks')
+          .copy(oldPath, newPath);
+
+        if (moveError) {
+          console.error('Error moving artwork:', moveError);
+        } else {
+          // Update the smart link with the new artwork URL
+          const { data: { publicUrl: newArtworkUrl } } = supabase
+            .storage
+            .from('artworks')
+            .getPublicUrl(newPath);
+
+          await supabase
+            .from('smart_links')
+            .update({ artwork_url: newArtworkUrl })
+            .eq('id', smartLink.id);
+
+          // Delete the temp file
+          await supabase
+            .storage
+            .from('artworks')
+            .remove([oldPath]);
+        }
       }
 
       toast.success("Smart link created successfully!");
@@ -216,7 +250,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="flex-shrink-0">
               <img
-                src={data.artworkUrl || "/placeholder.svg"}
+                src={data.artwork_url || "/placeholder.svg"}
                 alt={isPlaylist ? "Playlist artwork" : "Release artwork"}
                 className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-[#E6E6E6]"
                 onError={(e) => {
