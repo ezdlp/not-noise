@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,7 @@ const CreateSmartLink = () => {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<any>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [startTime] = useState(performance.now());
 
   useEffect(() => {
     try {
@@ -35,18 +37,34 @@ const CreateSmartLink = () => {
     } catch (error) {
       console.error('Error loading saved smart link data:', error);
       toast.error('Error loading saved data. Please try again.');
+      analytics.trackEvent({
+        action: 'smart_link_load_error',
+        category: 'Error',
+        metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
+      });
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
+      if (session?.user) {
+        analytics.setUserProperties({
+          userId: session.user.id,
+          userType: 'free' // You might want to fetch this from your subscription data
+        });
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setIsAuthenticated(!!session);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+      // Track total time spent creating smart link
+      const duration = performance.now() - startTime;
+      analytics.trackFeatureEngagement('smart_link_creation', duration);
+    };
+  }, [startTime]);
 
   const updateData = (newData: any) => {
     console.log('Updating data:', { current: data, new: newData });
@@ -54,20 +72,29 @@ const CreateSmartLink = () => {
   };
 
   const handleSearchComplete = (trackData: any) => {
-    analytics.trackSmartLinkCreationStep(1, true, { content_type: trackData.content_type });
+    analytics.trackSmartLinkCreationStep(1, true, { 
+      content_type: trackData.content_type,
+      time_spent: performance.now() - startTime 
+    });
     updateData(trackData);
     setStep(2);
   };
 
   const handleDetailsComplete = (detailsData: any) => {
-    analytics.trackSmartLinkCreationStep(2, true, { has_custom_url: !!detailsData.slug });
+    analytics.trackSmartLinkCreationStep(2, true, { 
+      has_custom_url: !!detailsData.slug,
+      time_spent: performance.now() - startTime 
+    });
     updateData(detailsData);
     setStep(3);
   };
 
   const handlePlatformsComplete = (platformsData: any) => {
+    const enabledPlatforms = platformsData.platforms?.filter((p: any) => p.enabled) || [];
     analytics.trackSmartLinkCreationStep(3, true, { 
-      platform_count: platformsData.platforms?.filter((p: any) => p.enabled).length 
+      platform_count: enabledPlatforms.length,
+      platforms: enabledPlatforms.map((p: any) => p.platform_id),
+      time_spent: performance.now() - startTime 
     });
     updateData(platformsData);
     setStep(4);
@@ -75,7 +102,8 @@ const CreateSmartLink = () => {
 
   const handleMetaPixelComplete = (metaPixelData: any) => {
     analytics.trackSmartLinkCreationStep(4, true, { 
-      pixel_enabled: metaPixelData.metaPixel?.enabled 
+      pixel_enabled: metaPixelData.metaPixel?.enabled,
+      time_spent: performance.now() - startTime 
     });
     updateData(metaPixelData);
     setStep(5);
@@ -83,7 +111,8 @@ const CreateSmartLink = () => {
 
   const handleEmailCaptureComplete = (emailCaptureData: any) => {
     analytics.trackSmartLinkCreationStep(5, true, { 
-      email_capture_enabled: emailCaptureData.email_capture_enabled 
+      email_capture_enabled: emailCaptureData.email_capture_enabled,
+      time_spent: performance.now() - startTime 
     });
     updateData(emailCaptureData);
     setStep(6);
@@ -91,17 +120,24 @@ const CreateSmartLink = () => {
 
   const handleBack = () => {
     if (step > 1) {
-      analytics.trackSmartLinkCreationStep(step - 1, true, { direction: 'back' });
+      analytics.trackSmartLinkCreationStep(step - 1, true, { 
+        direction: 'back',
+        time_spent: performance.now() - startTime 
+      });
       setStep(step - 1);
     }
   };
 
   const handleComplete = () => {
     const enabledPlatforms = data.platforms?.filter((p: any) => p.enabled) || [];
+    const totalTime = performance.now() - startTime;
+    
     analytics.trackSmartLinkCreationComplete(enabledPlatforms.length, {
       content_type: data.content_type,
       has_meta_pixel: !!data.metaPixel?.enabled,
-      has_email_capture: !!data.email_capture_enabled
+      has_email_capture: !!data.email_capture_enabled,
+      total_time: totalTime,
+      average_step_time: totalTime / 6
     });
     
     console.log("Final smart link data:", data);
@@ -112,7 +148,8 @@ const CreateSmartLink = () => {
   const handleEditStep = (stepNumber: number) => {
     analytics.trackSmartLinkCreationStep(stepNumber, true, { 
       edit_from_step: step,
-      direction: 'edit' 
+      direction: 'edit',
+      time_spent: performance.now() - startTime 
     });
     setStep(stepNumber);
   };

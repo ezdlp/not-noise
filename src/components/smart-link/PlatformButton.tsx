@@ -17,6 +17,7 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
     console.log('Platform button clicked:', { name, url });
     
     try {
+      const startTime = performance.now();
       // Track the click event before executing the custom handler
       const smartLinkId = new URL(url).pathname.split('/').pop() || 'unknown';
       analytics.trackPlatformClick(name, smartLinkId);
@@ -25,12 +26,22 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
         console.log('Executing click handler for platform:', name);
         await onClick();
         console.log('Click handler completed for platform:', name);
+        
+        // Track successful interaction time
+        const duration = performance.now() - startTime;
+        analytics.trackFeatureEngagement(`platform_${name.toLowerCase()}`, duration, {
+          success: true
+        });
       }
       
       console.log('Opening URL for platform:', name);
       window.location.href = url;
     } catch (error) {
       console.error('Error in platform button click handler:', error);
+      analytics.trackFeatureEngagement(`platform_${name.toLowerCase()}`, 0, {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       // Only navigate if explicitly requested, even if tracking fails
       window.location.href = url;
     }

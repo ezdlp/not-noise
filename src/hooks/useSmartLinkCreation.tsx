@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { analytics } from "@/services/analytics";
 
 export function useSmartLinkCreation() {
   const navigate = useNavigate();
@@ -12,6 +13,11 @@ export function useSmartLinkCreation() {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) {
       toast.error("Please log in to create a smart link");
+      analytics.trackEvent({
+        action: 'smart_link_create_attempt',
+        category: 'Smart Link',
+        label: 'unauthenticated'
+      });
       return;
     }
 
@@ -23,13 +29,18 @@ export function useSmartLinkCreation() {
 
       if (!canCreate) {
         setShowUpgradeModal(true);
+        analytics.trackProFeatureAttempt('create_smart_link', false);
         return;
       }
 
+      analytics.trackFeatureUsage('create_smart_link', true);
       navigate("/create");
     } catch (error) {
       console.error("Error checking smart link limit:", error);
       toast.error("Failed to check link limit");
+      analytics.trackFeatureUsage('create_smart_link', false, {
+        error: 'limit_check_failed'
+      });
     }
   };
 
