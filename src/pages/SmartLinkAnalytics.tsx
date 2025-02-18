@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +22,7 @@ import { subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -201,6 +200,13 @@ export default function SmartLinkAnalytics() {
     },
     enabled: !!id
   });
+
+  useEffect(() => {
+    // Track analytics page view
+    if (id) {
+      analyticsService.trackPageView(`/links/${id}/analytics`);
+    }
+  }, [id]);
 
   if (isLoading) {
     return (
