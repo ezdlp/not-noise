@@ -141,7 +141,7 @@ const SearchStep = ({
             </div>
           </div>
 
-          <div className="mt-4 space-y-2 border-t border-[#E6E6E6] pt-4 my-[32px]">
+          <div className="mt-4 space-y-2 border-t border-[#E6E6E6] pt-4 my-[28px]">
             <p className="text-sm font-medium text-[#374151] mb-3 my-[6px]">Supported formats:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <ContentTypeInfo icon={Music} title="Tracks" methods="Search + URL" />
