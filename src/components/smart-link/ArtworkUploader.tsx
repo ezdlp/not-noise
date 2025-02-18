@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,11 @@ interface ArtworkUploaderProps {
 
 export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }: ArtworkUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -86,28 +91,29 @@ export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }
         className="w-32 h-32 rounded-lg object-cover shadow-sm border border-[#E6E6E6] group-hover:opacity-75 transition-opacity"
       />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={isUploading}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            className="bg-white/90 hover:bg-white"
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ImageIcon className="h-4 w-4" />
-            )}
-            <span className="ml-2">{isUploading ? 'Uploading...' : 'Change'}</span>
-          </Button>
-        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*"
+          onChange={handleFileChange}
+          disabled={isUploading}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="bg-white/90 hover:bg-white"
+          disabled={isUploading}
+          onClick={handleClick}
+        >
+          {isUploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImageIcon className="h-4 w-4" />
+          )}
+          <span className="ml-2">{isUploading ? 'Uploading...' : 'Change'}</span>
+        </Button>
       </div>
     </div>
   );
