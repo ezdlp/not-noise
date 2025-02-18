@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 import { useState, useMemo, useEffect } from "react";
+import { analyticsService } from "@/services/analyticsService";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
