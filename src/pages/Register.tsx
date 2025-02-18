@@ -147,13 +147,15 @@ export default function Register() {
       if (authError) {
         console.error("Auth error:", authError);
         if (authError instanceof AuthApiError) {
+          // The key change is here - properly handling the email exists error
+          if (authError.message.includes("User already registered")) {
+            setError("This email is already registered. Please sign in instead.");
+            return;
+          }
+          
           switch (authError.status) {
             case 400:
-              if (authError.message.includes("already exists")) {
-                setError("This email is already registered. Please sign in instead.");
-              } else {
-                setError("Invalid email format or password requirements not met");
-              }
+              setError("Invalid email format or password requirements not met");
               break;
             case 422:
               setError("Invalid email format. Please enter a valid email address.");
@@ -167,6 +169,12 @@ export default function Register() {
         } else {
           throw authError;
         }
+        return;
+      }
+
+      // Only show success state if we actually created a new user
+      if (authData.user && !authData.user.identities?.length) {
+        setError("This email is already registered. Please sign in instead.");
         return;
       }
 
