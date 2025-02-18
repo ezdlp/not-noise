@@ -47,7 +47,6 @@ export default function Register() {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
-  const [emailChecking, setEmailChecking] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,33 +93,6 @@ export default function Register() {
     setPasswordStrength(strength);
   };
 
-  const checkEmailExists = async (email: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        }
-      });
-
-      if (!error) {
-        setError(`An account with this email already exists. Please sign in instead.`);
-        return true;
-      }
-      
-      if (error.status === 400 && error.message.includes("not found")) {
-        setError(null);
-        return false;
-      }
-
-      console.log("Error checking email:", error);
-      return false;
-    } catch (err) {
-      console.error("Error checking email:", err);
-      return false;
-    }
-  };
-
   const verifyRecaptcha = async () => {
     try {
       if (!recaptchaLoaded) {
@@ -160,12 +132,6 @@ export default function Register() {
     setError(null);
 
     try {
-      const emailExists = await checkEmailExists(values.email);
-      if (emailExists) {
-        setLoading(false);
-        return;
-      }
-
       await verifyRecaptcha();
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -343,9 +309,6 @@ export default function Register() {
                     <Input
                       placeholder="Full Name"
                       {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                      }}
                       disabled={loading}
                     />
                   </FormControl>
@@ -364,15 +327,6 @@ export default function Register() {
                       placeholder="Email"
                       type="email"
                       {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        if (e.target.value) {
-                          setEmailChecking(true);
-                          checkEmailExists(e.target.value).finally(() => {
-                            setEmailChecking(false);
-                          });
-                        }
-                      }}
                       disabled={loading}
                     />
                   </FormControl>
@@ -441,17 +395,12 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || !recaptchaLoaded || emailChecking}
+              disabled={loading || !recaptchaLoaded}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
-                </>
-              ) : emailChecking ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Checking email...
                 </>
               ) : (
                 'Create account'
