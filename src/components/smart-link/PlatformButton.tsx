@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { analyticsService } from '@/services/analyticsService';
+import { analytics } from '@/services/analytics';
 
 interface PlatformButtonProps {
   name: string;
@@ -17,6 +17,10 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
     console.log('Platform button clicked:', { name, url });
     
     try {
+      // Track the click event before executing the custom handler
+      const smartLinkId = new URL(url).pathname.split('/').pop() || 'unknown';
+      analytics.trackPlatformClick(name, smartLinkId);
+      
       if (onClick) {
         console.log('Executing click handler for platform:', name);
         await onClick();
@@ -54,4 +58,3 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
 };
 
 export default PlatformButton;
-

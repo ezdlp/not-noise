@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { PreviewBanner } from "@/components/create-smart-link/PreviewBanner";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/services/analytics";
 
 const CreateSmartLink = () => {
   const navigate = useNavigate();
@@ -54,43 +54,66 @@ const CreateSmartLink = () => {
   };
 
   const handleSearchComplete = (trackData: any) => {
+    analytics.trackSmartLinkCreationStep(1, true, { content_type: trackData.content_type });
     updateData(trackData);
     setStep(2);
   };
 
   const handleDetailsComplete = (detailsData: any) => {
+    analytics.trackSmartLinkCreationStep(2, true, { has_custom_url: !!detailsData.slug });
     updateData(detailsData);
     setStep(3);
   };
 
   const handlePlatformsComplete = (platformsData: any) => {
+    analytics.trackSmartLinkCreationStep(3, true, { 
+      platform_count: platformsData.platforms?.filter((p: any) => p.enabled).length 
+    });
     updateData(platformsData);
     setStep(4);
   };
 
   const handleMetaPixelComplete = (metaPixelData: any) => {
+    analytics.trackSmartLinkCreationStep(4, true, { 
+      pixel_enabled: metaPixelData.metaPixel?.enabled 
+    });
     updateData(metaPixelData);
     setStep(5);
   };
 
   const handleEmailCaptureComplete = (emailCaptureData: any) => {
+    analytics.trackSmartLinkCreationStep(5, true, { 
+      email_capture_enabled: emailCaptureData.email_capture_enabled 
+    });
     updateData(emailCaptureData);
     setStep(6);
   };
 
   const handleBack = () => {
     if (step > 1) {
+      analytics.trackSmartLinkCreationStep(step - 1, true, { direction: 'back' });
       setStep(step - 1);
     }
   };
 
   const handleComplete = () => {
+    const enabledPlatforms = data.platforms?.filter((p: any) => p.enabled) || [];
+    analytics.trackSmartLinkCreationComplete(enabledPlatforms.length, {
+      content_type: data.content_type,
+      has_meta_pixel: !!data.metaPixel?.enabled,
+      has_email_capture: !!data.email_capture_enabled
+    });
+    
     console.log("Final smart link data:", data);
     toast.success("Smart link created successfully!");
     navigate("/dashboard");
   };
 
   const handleEditStep = (stepNumber: number) => {
+    analytics.trackSmartLinkCreationStep(stepNumber, true, { 
+      edit_from_step: step,
+      direction: 'edit' 
+    });
     setStep(stepNumber);
   };
 
