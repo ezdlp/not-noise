@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +25,22 @@ interface SearchResult {
   totalTracks?: number;
   albumType?: string;
 }
+
+const ContentTypeCard = ({ 
+  icon: Icon, 
+  title, 
+  methods 
+}: { 
+  icon: typeof Music; 
+  title: string; 
+  methods: string;
+}) => (
+  <div className="flex flex-col items-center p-4 border border-[#E6E6E6] rounded-lg bg-white">
+    <Icon className="w-6 h-6 text-[#6851FB] mb-2" />
+    <h3 className="font-medium text-sm mb-1">{title}</h3>
+    <span className="text-xs text-[#6B7280]">{methods}</span>
+  </div>
+);
 
 const SearchStep = ({ onNext }: SearchStepProps) => {
   const [input, setInput] = useState("");
@@ -114,28 +129,44 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           Find Your Music
         </h1>
-        <p className="font-sans text-base text-[#374151]">
-          Search for your music or paste a Spotify URL
-        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <ContentTypeCard 
+          icon={Music} 
+          title="Tracks" 
+          methods="Search + URL"
+        />
+        <ContentTypeCard 
+          icon={Disc} 
+          title="Albums" 
+          methods="Search + URL"
+        />
+        <ContentTypeCard 
+          icon={Disc} 
+          title="EPs/Singles" 
+          methods="Search + URL"
+        />
+        <ContentTypeCard 
+          icon={ListMusic} 
+          title="Playlists" 
+          methods="URL only"
+        />
       </div>
 
       <div className="space-y-6">
         <div className="space-y-3">
-          <Label htmlFor="search-input" className="font-sans font-medium">
-            Search or paste Spotify URL
-          </Label>
-          <div className="space-y-3">
+          <div className="relative">
             <Input
-              id="search-input"
-              placeholder="Search by title/artist or paste Spotify URL..."
+              placeholder="Search or paste Spotify URL"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="h-10 font-sans"
+              className="h-10 font-sans pr-24"
             />
             {contentType && (
               <Badge 
                 variant="secondary" 
-                className="bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] transition-colors font-sans"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] transition-colors font-sans"
               >
                 {contentType === 'playlist' ? (
                   <ListMusic className="w-3 h-3 mr-1.5" />
@@ -247,3 +278,4 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 };
 
 export default SearchStep;
+
