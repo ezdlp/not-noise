@@ -207,7 +207,7 @@ export function SocialCardPreviewDialog({
                 className="text-white/70 uppercase tracking-widest font-medium mb-6"
                 style={{ fontSize: `${isExport ? 13 : Math.max(10, width * 0.012)}px` }}
               >
-                NOW AVAILABLE ON
+                STREAM ON
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
@@ -267,7 +267,7 @@ export function SocialCardPreviewDialog({
                 className="text-white/70 uppercase tracking-widest font-medium mb-6"
                 style={{ fontSize: `${isExport ? 22 : Math.max(12, width * 0.02)}px` }}
               >
-                NOW AVAILABLE ON
+                STREAM ON
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
