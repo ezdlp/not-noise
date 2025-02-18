@@ -33,6 +33,7 @@ export interface SmartLink {
   description?: string;
   created_at: string;
   user_id: string;
+  content_type: 'track' | 'album' | 'playlist';
   profiles?: {
     name?: string;
     email?: string;

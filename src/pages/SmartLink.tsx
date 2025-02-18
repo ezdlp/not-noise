@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +12,11 @@ import { analyticsService } from "@/services/analyticsService";
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
 
-  // Separate mutation for recording views
   const recordViewMutation = useMutation({
     mutationFn: async (smartLinkId: string) => {
       try {
         await analyticsService.trackPageView(`/link/${slug}`);
         
-        // Get location info from analytics service
         const locationInfo = await analyticsService.getLocationInfo();
         
         await supabase.from('link_views').insert({
@@ -43,7 +40,6 @@ export default function SmartLink() {
     queryFn: async () => {
       console.log("Fetching smart link:", slug);
       
-      // Try to fetch by slug first
       let { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
@@ -99,11 +95,10 @@ export default function SmartLink() {
       console.log("Found smart link:", smartLinkData);
       return smartLinkData;
     },
-    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
-    gcTime: 30 * 60 * 1000, // Cache garbage collection time (formerly cacheTime)
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
-  // Record view on initial load only
   useEffect(() => {
     if (smartLink?.id) {
       recordViewMutation.mutate(smartLink.id);
@@ -112,7 +107,6 @@ export default function SmartLink() {
 
   useEffect(() => {
     if (smartLink?.meta_pixel_id) {
-      // Initialize Meta Pixel
       const initPixel = () => {
         (function(f,b,e,v,n,t,s) {
           if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -140,7 +134,6 @@ export default function SmartLink() {
       await analyticsService.trackPlatformClick(platformLinkId);
       console.log('Platform click recorded successfully');
 
-      // Track click event with Meta Pixel if enabled
       if (smartLink.meta_pixel_id) {
         fbq('track', smartLink.meta_click_event || 'SmartLinkClick');
       }
@@ -226,6 +219,7 @@ export default function SmartLink() {
             artistName={smartLink.artist_name}
             artworkUrl={smartLink.artwork_url}
             description={smartLink.description}
+            contentType={smartLink.content_type}
           />
           
           <div className="space-y-4">
@@ -279,4 +273,3 @@ export default function SmartLink() {
     </div>
   );
 }
-

@@ -146,7 +146,7 @@ export default function SmartLinks() {
       }
 
       return data as SmartLink[];
-    },
+    }
   });
 
   const deleteMutation = useMutation({

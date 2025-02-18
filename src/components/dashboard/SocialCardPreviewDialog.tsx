@@ -20,6 +20,12 @@ interface SocialCardPreviewDialogProps {
     artist_name: string;
     artwork_url: string;
     id: string;
+    content_type?: 'track' | 'album' | 'playlist';
+    platform_links?: Array<{
+      platform_id: string;
+      platform_name: string;
+      url: string;
+    }>;
   };
   onGenerate: () => void;
   canUseSocialAssets: boolean;
@@ -74,15 +80,30 @@ export function SocialCardPreviewDialog({
   };
 
   useEffect(() => {
-    const icons = [
-      { id: 'spotify', icon: '/lovable-uploads/spotify.png' },
-      { id: 'appleMusic', icon: '/lovable-uploads/applemusic.png' },
-      { id: 'youtubeMusic', icon: '/lovable-uploads/youtubemusic.png' },
-      { id: 'amazonMusic', icon: '/lovable-uploads/amazonmusic.png' },
-      { id: 'deezer', icon: '/lovable-uploads/deezer.png' },
-    ];
-    setPlatformIcons(icons);
+    const platformIconMap: { [key: string]: string } = {
+      'spotify': '/lovable-uploads/spotify.png',
+      'appleMusic': '/lovable-uploads/applemusic.png',
+      'youtubeMusic': '/lovable-uploads/youtubemusic.png',
+      'amazonMusic': '/lovable-uploads/amazonmusic.png',
+      'deezer': '/lovable-uploads/deezer.png',
+      'soundcloud': '/lovable-uploads/soundcloud.png',
+      'tidal': '/lovable-uploads/tidal.png',
+      'youtube': '/lovable-uploads/youtube.png',
+      'bandcamp': '/lovable-uploads/bandcamp.png',
+      'beatport': '/lovable-uploads/beatport.png'
+    };
 
+    // Get enabled platform icons, limited to 5
+    const enabledPlatformIcons = (smartLink.platform_links || [])
+      .slice(0, 5)
+      .map(pl => ({
+        id: pl.platform_id,
+        icon: platformIconMap[pl.platform_id] || platformIconMap['spotify']
+      }));
+
+    setPlatformIcons(enabledPlatformIcons);
+
+    // Preload images
     const preloadImage = (src: string): Promise<boolean> => {
       return new Promise((resolve) => {
         const img = new Image();
@@ -94,7 +115,10 @@ export function SocialCardPreviewDialog({
 
     const preloadImages = async () => {
       setImagesLoaded(false);
-      const imageUrls = [...icons.map(icon => icon.icon), smartLink.artwork_url];
+      const imageUrls = [
+        ...enabledPlatformIcons.map(icon => icon.icon),
+        smartLink.artwork_url
+      ];
       const loadPromises = imageUrls.map(url => preloadImage(url));
       await Promise.all(loadPromises);
       setImagesLoaded(true);
@@ -103,7 +127,7 @@ export function SocialCardPreviewDialog({
     if (open) {
       preloadImages();
     }
-  }, [smartLink.artwork_url, open]);
+  }, [smartLink.platform_links, smartLink.artwork_url, open]);
 
   const dimensions = getPreviewDimensions();
 
@@ -174,7 +198,7 @@ export function SocialCardPreviewDialog({
                   className="text-white/90 font-medium"
                   style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
-                  {smartLink.artist_name}
+                  {smartLink.content_type === 'playlist' ? 'Playlist' : smartLink.artist_name}
                 </p>
               </div>
             </div>
@@ -183,7 +207,7 @@ export function SocialCardPreviewDialog({
                 className="text-white/70 uppercase tracking-widest font-medium mb-6"
                 style={{ fontSize: `${isExport ? 13 : Math.max(10, width * 0.012)}px` }}
               >
-                NOW AVAILABLE ON
+                STREAM ON
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"
@@ -230,7 +254,7 @@ export function SocialCardPreviewDialog({
                   className="text-white/90 font-medium"
                   style={{ fontSize: `${artistNameSize}px`, lineHeight: 1.2 }}
                 >
-                  {smartLink.artist_name}
+                  {smartLink.content_type === 'playlist' ? 'Playlist' : smartLink.artist_name}
                 </p>
               </div>
             </div>
@@ -243,7 +267,7 @@ export function SocialCardPreviewDialog({
                 className="text-white/70 uppercase tracking-widest font-medium mb-6"
                 style={{ fontSize: `${isExport ? 22 : Math.max(12, width * 0.02)}px` }}
               >
-                NOW AVAILABLE ON
+                STREAM ON
               </p>
               <div 
                 className="grid grid-flow-col auto-cols-max place-content-center"

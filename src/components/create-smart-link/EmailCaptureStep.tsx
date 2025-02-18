@@ -23,22 +23,20 @@ const EmailCaptureStep = ({
   const { isFeatureEnabled } = useFeatureAccess();
   const canUseEmailCapture = isFeatureEnabled('email_capture');
   
-  const [enabled, setEnabled] = useState(false);
-  const [title, setTitle] = useState("Subscribe to my newsletter");
+  const [enabled, setEnabled] = useState(initialData.email_capture_enabled || false);
+  const [title, setTitle] = useState(initialData.email_capture_title || "Subscribe to my newsletter");
   const [description, setDescription] = useState(
-    "Stay updated with my latest releases"
+    initialData.email_capture_description || "Stay updated with my latest releases"
   );
   const [buttonText, setButtonText] = useState("Subscribe");
 
   const handleNext = () => {
     onNext({
       ...initialData,
-      emailCapture: {
-        enabled: canUseEmailCapture && enabled,
-        title,
-        description,
-        buttonText,
-      },
+      email_capture_enabled: canUseEmailCapture && enabled,
+      email_capture_title: title,
+      email_capture_description: description,
+      email_capture_button_text: buttonText,
     });
   };
 

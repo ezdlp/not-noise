@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,12 +54,12 @@ export default function UsersPage() {
           throw new Error("Not authorized");
         }
 
-        const { count, error } = await supabase
+        const { count, error: countError } = await supabase
           .from("profiles")
           .select('*', { count: 'exact', head: true });
 
-        if (error) {
-          throw error;
+        if (countError) {
+          throw countError;
         }
 
         return count;
@@ -71,82 +70,70 @@ export default function UsersPage() {
     },
   });
 
-  const { data: users, isLoading, error } = useQuery({
-    queryKey: ["adminUsers", pageSize, currentPage, searchQuery, sortDirection],
+  const { data: users, isLoading, error: queryError } = useQuery({
+    queryKey: ["adminUsers", currentPage, pageSize],
     queryFn: async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.error("Not authenticated");
-          throw new Error("Not authenticated");
-        }
-
-        const { data: userRoles, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin');
-
-        if (roleError || !userRoles?.length) {
-          console.error("Not authorized");
-          throw new Error("Not authorized");
-        }
-
-        let query = supabase
-          .from("profiles")
-          .select(`
-            *,
-            user_roles (
-              id,
-              role
-            ),
-            subscriptions (
-              tier,
-              is_lifetime,
-              is_early_adopter,
-              current_period_end
-            ),
-            smart_links (
-              id,
-              title,
-              artist_name,
-              created_at,
-              user_id
-            )
-          `)
-          .order('created_at', { ascending: sortDirection === 'asc' })
-          .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
-
-        if (searchQuery) {
-          query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
-        }
-
-        const { data: profiles, error: profilesError } = await query;
-
-        if (profilesError) {
-          console.error("Error fetching profiles:", profilesError);
-          throw profilesError;
-        }
-
-        return profiles as Profile[];
-      } catch (error) {
-        console.error("Error in query function:", error);
-        toast.error("Failed to load users");
-        throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("Not authenticated");
+        throw new Error("Not authenticated");
       }
-    },
-    refetchInterval: 5000,
+
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin');
+
+      if (roleError || !userRoles?.length) {
+        console.error("Not authorized");
+        throw new Error("Not authorized");
+      }
+
+      const { data, error: fetchError } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          user_roles (
+            id,
+            role
+          ),
+          subscriptions (
+            tier,
+            is_lifetime,
+            is_early_adopter,
+            current_period_end
+          ),
+          smart_links (
+            id,
+            title,
+            artist_name,
+            created_at,
+            user_id,
+            content_type
+          )
+        `)
+        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+
+      if (fetchError) {
+        console.error("Error fetching users:", fetchError);
+        toast.error("Failed to load users");
+        throw fetchError;
+      }
+
+      return data as Profile[];
+    }
   });
 
   const handleEditUser = async (updatedProfile: Partial<Profile>) => {
     if (!selectedUser) return;
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
       .update(updatedProfile)
       .eq('id', selectedUser.id);
 
-    if (error) {
+    if (updateError) {
       toast.error("Failed to update user");
       return;
     }
@@ -167,8 +154,8 @@ export default function UsersPage() {
 
   if (isLoading) return <div>Loading...</div>;
 
-  if (error) {
-    console.error("Error loading users:", error);
+  if (queryError) {
+    console.error("Error loading users:", queryError);
     return <div>Error loading users. Please try again.</div>;
   }
 
