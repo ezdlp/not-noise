@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ArtworkUploaderProps {
   currentArtwork: string;
   onArtworkChange: (url: string) => void;
-  smartLinkId: string;
+  smartLinkId?: string; // Make this optional
 }
 
 export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }: ArtworkUploaderProps) {
@@ -48,7 +48,8 @@ export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }
 
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${smartLinkId}/${crypto.randomUUID()}.${fileExt}`;
+      const basePath = smartLinkId ? `${smartLinkId}/` : 'temp/';
+      const fileName = `${basePath}${crypto.randomUUID()}.${fileExt}`;
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
@@ -65,13 +66,15 @@ export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }
         .from('artworks')
         .getPublicUrl(fileName);
 
-      // Update smart link with new artwork URL
-      const { error: updateError } = await supabase
-        .from('smart_links')
-        .update({ artwork_url: publicUrl })
-        .eq('id', smartLinkId);
+      // If we have a smartLinkId, update the record
+      if (smartLinkId) {
+        const { error: updateError } = await supabase
+          .from('smart_links')
+          .update({ artwork_url: publicUrl })
+          .eq('id', smartLinkId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      }
 
       onArtworkChange(publicUrl);
       toast.success('Artwork updated successfully');
@@ -118,3 +121,4 @@ export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }
     </div>
   );
 }
+

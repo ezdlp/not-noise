@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ArtworkUploader } from "../smart-link/ArtworkUploader";
 
 interface DetailsStepProps {
   initialData: {
@@ -25,6 +25,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
   const [artistName, setArtistName] = useState(initialData.artist || "");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState(initialData.description || "");
+  const [artworkUrl, setArtworkUrl] = useState(initialData.artworkUrl || "");
   const isPlaylist = initialData.content_type === 'playlist';
 
   useEffect(() => {
@@ -77,6 +78,7 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
       artist: isPlaylist ? undefined : artistName,
       slug: slug || undefined,
       description: description || undefined,
+      artwork_url: artworkUrl,
     });
   };
 
@@ -95,15 +97,9 @@ const DetailsStep = ({ initialData, onNext, onBack }: DetailsStepProps) => {
 
       <div className="flex flex-col sm:flex-row sm:items-start gap-6">
         <div className="flex justify-center sm:block">
-          <img
-            src={initialData.artworkUrl || "/placeholder.svg"}
-            alt={isPlaylist ? "Playlist artwork" : "Release artwork"}
-            className="w-40 h-40 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-[#E6E6E6]"
-            onError={(e) => {
-              const img = e.target as HTMLImageElement;
-              console.error("Failed to load artwork:", initialData.artworkUrl);
-              img.src = "/placeholder.svg";
-            }}
+          <ArtworkUploader
+            currentArtwork={artworkUrl}
+            onArtworkChange={setArtworkUrl}
           />
         </div>
         <div className="flex-1 space-y-6">
