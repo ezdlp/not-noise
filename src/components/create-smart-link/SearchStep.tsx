@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Music, ListMusic, Disc } from "lucide-react";
+import { Music, ListMusic, Disc, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import debounce from 'lodash/debounce';
 
@@ -26,7 +26,7 @@ interface SearchResult {
   albumType?: string;
 }
 
-const ContentTypeCard = ({ 
+const ContentTypeInfo = ({ 
   icon: Icon, 
   title, 
   methods 
@@ -35,10 +35,10 @@ const ContentTypeCard = ({
   title: string; 
   methods: string;
 }) => (
-  <div className="flex flex-col items-center p-4 border border-[#E6E6E6] rounded-lg bg-white">
-    <Icon className="w-6 h-6 text-[#6851FB] mb-2" />
-    <h3 className="font-medium text-sm mb-1">{title}</h3>
-    <span className="text-xs text-[#6B7280]">{methods}</span>
+  <div className="flex items-center gap-2">
+    <Icon className="w-4 h-4 text-[#6851FB]" />
+    <span className="font-medium text-sm text-[#374151]">{title}</span>
+    <span className="text-xs text-[#6B7280] ml-1">({methods})</span>
   </div>
 );
 
@@ -131,53 +131,59 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         </h1>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <ContentTypeCard 
-          icon={Music} 
-          title="Tracks" 
-          methods="Search + URL"
-        />
-        <ContentTypeCard 
-          icon={Disc} 
-          title="Albums" 
-          methods="Search + URL"
-        />
-        <ContentTypeCard 
-          icon={Disc} 
-          title="EPs/Singles" 
-          methods="Search + URL"
-        />
-        <ContentTypeCard 
-          icon={ListMusic} 
-          title="Playlists" 
-          methods="URL only"
-        />
-      </div>
-
       <div className="space-y-6">
         <div className="space-y-3">
           <div className="relative">
-            <Input
-              placeholder="Search or paste Spotify URL"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="h-10 font-sans pr-24"
-            />
-            {contentType && (
-              <Badge 
-                variant="secondary" 
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] transition-colors font-sans"
-              >
-                {contentType === 'playlist' ? (
-                  <ListMusic className="w-3 h-3 mr-1.5" />
-                ) : contentType === 'album' ? (
-                  <Disc className="w-3 h-3 mr-1.5" />
-                ) : (
-                  <Music className="w-3 h-3 mr-1.5" />
-                )}
-                {contentType.charAt(0).toUpperCase() + contentType.slice(1)}
-              </Badge>
-            )}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+              <Input
+                placeholder="Search by title/artist or paste Spotify URL"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="h-12 pl-10 pr-24 text-base shadow-sm border-[#E6E6E6] focus:border-[#6851FB] focus:ring-[#6851FB]/20"
+              />
+              {contentType && (
+                <Badge 
+                  variant="secondary" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#ECE9FF] text-[#6851FB] hover:bg-[#D0C7FF] transition-colors font-sans"
+                >
+                  {contentType === 'playlist' ? (
+                    <ListMusic className="w-3 h-3 mr-1.5" />
+                  ) : contentType === 'album' ? (
+                    <Disc className="w-3 h-3 mr-1.5" />
+                  ) : (
+                    <Music className="w-3 h-3 mr-1.5" />
+                  )}
+                  {contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 border-t border-[#E6E6E6] pt-4">
+            <p className="text-sm font-medium text-[#374151] mb-3">Supported formats:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ContentTypeInfo 
+                icon={Music} 
+                title="Tracks" 
+                methods="Search + URL"
+              />
+              <ContentTypeInfo 
+                icon={Disc} 
+                title="Albums" 
+                methods="Search + URL"
+              />
+              <ContentTypeInfo 
+                icon={Disc} 
+                title="EPs/Singles" 
+                methods="Search + URL"
+              />
+              <ContentTypeInfo 
+                icon={ListMusic} 
+                title="Playlists" 
+                methods="URL only"
+              />
+            </div>
           </div>
         </div>
 
