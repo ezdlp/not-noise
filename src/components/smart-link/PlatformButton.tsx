@@ -24,11 +24,11 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
       }
       
       console.log('Opening URL for platform:', name);
-      window.open(url, '_blank');
+      window.location.href = url;
     } catch (error) {
       console.error('Error in platform button click handler:', error);
-      // Only open URL if explicitly requested, even if tracking fails
-      window.open(url, '_blank');
+      // Only navigate if explicitly requested, even if tracking fails
+      window.location.href = url;
     }
   };
 
@@ -54,3 +54,4 @@ const PlatformButton = ({ name, icon, action, url, onClick }: PlatformButtonProp
 };
 
 export default PlatformButton;
+
