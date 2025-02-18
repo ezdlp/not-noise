@@ -2,9 +2,11 @@
 import { BrowserRouter as Router, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useEffect } from "react";
 import AppContent from "./AppContent";
 import Header from "@/components/layout/Header";
 import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
+import { analytics } from "@/services/analytics";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -17,6 +19,14 @@ function AppLayout() {
                      location.pathname === '/register' || 
                      location.pathname === '/reset-password' ||
                      location.pathname === '/update-password';
+
+  useEffect(() => {
+    // Initialize analytics with correct configuration
+    analytics.initialize(isSmartLinkRoute);
+    
+    // Track page view
+    analytics.trackPageView(location.pathname, isSmartLinkRoute);
+  }, [location.pathname, isSmartLinkRoute]);
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
@@ -40,3 +50,4 @@ function App() {
 }
 
 export default App;
+
