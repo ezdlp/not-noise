@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getUserLocation } from "@/utils/geolocation";
-import { analyticsService } from "@/services/analytics";
+import { analytics } from "@/services/analytics";
 import { Cookie } from "lucide-react";
 
 interface CookieSettings {
@@ -34,18 +35,21 @@ export function CookieConsent() {
 
   useEffect(() => {
     const initAnalytics = async () => {
-      await analyticsService.initialize();
+      // Initialize analytics based on current route
+      const isSmartLinkRoute = location.pathname.startsWith('/link/');
+      await analytics.initialize(isSmartLinkRoute);
       const hasConsent = localStorage.getItem("cookieConsent");
       if (hasConsent) {
         const savedSettings = JSON.parse(hasConsent);
         if (savedSettings.analytics || savedSettings.marketing) {
-          analyticsService.enableAnalytics();
+          // If we have consent, track the page view
+          analytics.trackPageView(location.pathname, isSmartLinkRoute);
         }
       }
     };
 
     initAnalytics();
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     const checkConsent = async () => {
@@ -98,10 +102,9 @@ export function CookieConsent() {
 
   const saveConsent = (settings: CookieSettings) => {
     localStorage.setItem("cookieConsent", JSON.stringify(settings));
+    const isSmartLinkRoute = location.pathname.startsWith('/link/');
     if (settings.analytics || settings.marketing) {
-      analyticsService.enableAnalytics();
-    } else {
-      analyticsService.disableAnalytics();
+      analytics.trackPageView(location.pathname, isSmartLinkRoute);
     }
   };
 
