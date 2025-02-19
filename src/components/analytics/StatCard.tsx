@@ -1,6 +1,7 @@
 
-import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import React from 'react';
+import { Eye, MousePointer, Target, TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import {
   Tooltip,
   TooltipContent,
@@ -10,45 +11,54 @@ import {
 
 interface StatCardProps {
   title: string;
-  value: number | string;
-  previousValue?: number;
-  type?: string;
-  description?: string;
+  value: string | number;
+  type: 'views' | 'clicks' | 'ctr';
   trend?: number;
 }
 
-export function StatCard({ title, value, previousValue = 0, description, type, trend }: StatCardProps) {
-  const percentChange = trend ?? (previousValue > 0 
-    ? ((typeof value === 'number' ? value : 0) - previousValue) / previousValue * 100
-    : 0);
+const iconMap = {
+  views: Eye,
+  clicks: MousePointer,
+  ctr: Target,
+};
 
-  const formattedValue = typeof value === 'number' ? value.toLocaleString() : value;
-
+export function StatCard({ title, value, type, trend }: StatCardProps) {
+  const Icon = iconMap[type];
+  
   return (
-    <Card className="p-6 space-y-2">
-      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-      <p className="text-2xl font-bold">{formattedValue}</p>
-      {(previousValue > 0 || trend !== undefined) && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger className="flex items-center gap-1 text-sm">
-              {percentChange >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-500" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-500" />
-              )}
-              <span className={percentChange >= 0 ? "text-green-500" : "text-red-500"}>
-                {Math.abs(percentChange).toFixed(1)}%
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Compared to previous period</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <Card className="p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md bg-white border border-neutral-border">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-[#6B7280] font-dm-sans">{title}</h3>
+        <Icon size={16} className="text-primary" />
+      </div>
+      <p className="text-2xl font-semibold text-[#111827] font-poppins mb-2">{value}</p>
+      {trend !== undefined && (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {trend >= 0 ? (
+              <TrendingUp size={14} className="text-success animate-fade-in" />
+            ) : (
+              <TrendingDown size={14} className="text-destructive animate-fade-in" />
+            )}
+            <span 
+              className={`text-sm font-medium ${
+                trend >= 0 ? 'text-success' : 'text-destructive'
+              } animate-fade-in font-dm-sans`}
+            >
+              {Math.abs(trend)}%
+            </span>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={14} className="text-[#6B7280] hover:text-primary transition-colors" />
+              </TooltipTrigger>
+              <TooltipContent className="bg-white border border-neutral-border shadow-md">
+                <p className="text-sm font-dm-sans">Compared to previous week (last 7 days vs 7-14 days ago)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       )}
     </Card>
   );

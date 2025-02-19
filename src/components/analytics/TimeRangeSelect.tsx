@@ -7,19 +7,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type TimeRangeValue = 'today' | '7d' | '28d' | 'all';
+export type TimeRangeValue = '7d' | '28d' | '12m';
 
 interface TimeRange {
   value: TimeRangeValue;
   label: string;
-  days?: number;
+  days: number;
 }
 
 export const timeRanges: TimeRange[] = [
-  { value: 'today', label: 'Today' },
-  { value: '7d', label: 'Last 7 days', days: 7 },
-  { value: '28d', label: 'Last 28 days', days: 28 },
-  { value: 'all', label: 'All Time' }
+  { value: '7d', label: '7 days', days: 7 },
+  { value: '28d', label: '28 days', days: 28 },
+  { value: '12m', label: '12 months', days: 365 }
 ];
 
 interface TimeRangeSelectProps {
@@ -30,8 +29,8 @@ interface TimeRangeSelectProps {
 export function TimeRangeSelect({ value, onChange }: TimeRangeSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[180px] h-8">
-        <SelectValue/>
+      <SelectTrigger className="w-[120px] h-8 text-sm">
+        <SelectValue />
       </SelectTrigger>
       <SelectContent>
         {timeRanges.map((range) => (
