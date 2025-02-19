@@ -75,13 +75,9 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true
   },
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom'
-    ],
     esbuildOptions: {
-      target: 'esnext'
-    }
+      target: 'es2020'
+    },
+    force: true
   }
 }));
