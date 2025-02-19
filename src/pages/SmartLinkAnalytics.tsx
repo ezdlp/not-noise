@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,23 +269,23 @@ export default function SmartLinkAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
-          title="Total Views"
+          title="Views"
           value={totalViews}
-          type="views"
+          previousValue={0}
           trend={weeklyStats?.viewsTrend}
         />
         <StatCard
-          title="Total Clicks"
+          title="Clicks"
           value={totalClicks}
-          type="clicks"
+          previousValue={0}
           trend={weeklyStats?.clicksTrend}
         />
         <StatCard
           title="CTR"
           value={`${ctr.toFixed(1)}%`}
-          type="ctr"
+          previousValue={0}
           trend={weeklyStats?.ctrTrend}
         />
       </div>
