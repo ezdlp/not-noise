@@ -60,7 +60,7 @@ function Analytics() {
       const endDate = endOfDay(new Date()).toISOString();
 
       const { data, error } = await supabase.rpc(
-        'get_detailed_analytics_stats',
+        'get_detailed_analytics_stats' as any,
         {
           p_start_date: startDate,
           p_end_date: endDate
@@ -75,7 +75,7 @@ function Analytics() {
   const { data: mauStats, isLoading: isMauLoading } = useQuery({
     queryKey: ["mau"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_mau');
+      const { data, error } = await supabase.rpc('get_mau' as any);
       if (error) throw error;
       return data as MAUStats[];
     },

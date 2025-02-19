@@ -1655,6 +1655,33 @@ export type Database = {
           clicks: number
         }[]
       }
+      get_detailed_analytics_stats: {
+        Args: {
+          p_start_date: string
+          p_end_date?: string
+        }
+        Returns: {
+          day: string
+          total_views: number
+          unique_visitors: number
+          registered_users: number
+          pro_users: number
+          returning_visitors: number
+          active_users: number
+          feature_usage: Json
+        }[]
+      }
+      get_mau: {
+        Args: {
+          p_date?: string
+        }
+        Returns: {
+          month: string
+          active_users: number
+          pro_users: number
+          total_users: number
+        }[]
+      }
       get_sitemap_urls: {
         Args: Record<PropertyKey, never>
         Returns: {

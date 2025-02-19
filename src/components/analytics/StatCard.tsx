@@ -12,19 +12,21 @@ interface StatCardProps {
   title: string;
   value: number;
   previousValue: number;
+  type?: string;
   description?: string;
+  trend?: number;
 }
 
-export function StatCard({ title, value, previousValue, description }: StatCardProps) {
-  const percentChange = previousValue > 0 
+export function StatCard({ title, value, previousValue, description, type, trend }: StatCardProps) {
+  const percentChange = trend ?? (previousValue > 0 
     ? ((value - previousValue) / previousValue) * 100
-    : 0;
+    : 0);
 
   return (
     <Card className="p-6 space-y-2">
       <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
       <p className="text-2xl font-bold">{value.toLocaleString()}</p>
-      {previousValue > 0 && (
+      {(previousValue > 0 || trend !== undefined) && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger className="flex items-center gap-1 text-sm">
