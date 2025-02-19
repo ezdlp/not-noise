@@ -1,6 +1,7 @@
 
 import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { Metric } from 'web-vitals';
 import './index.css';
 
 // Lazy load the main App component
@@ -54,18 +55,17 @@ if ('serviceWorker' in navigator) {
 // Add performance monitoring
 if (process.env.NODE_ENV === 'production') {
   // Report performance metrics
-  const reportWebVitals = async (metric: any) => {
+  const reportWebVitals = async (metric: Metric) => {
     // You can send metrics to your analytics service here
     console.log(metric);
   };
 
   // Monitor Core Web Vitals
-  import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-    getCLS(reportWebVitals);
-    getFID(reportWebVitals);
-    getFCP(reportWebVitals);
-    getLCP(reportWebVitals);
-    getTTFB(reportWebVitals);
+  import('web-vitals').then((webVitals) => {
+    webVitals.onCLS(reportWebVitals);
+    webVitals.onFID(reportWebVitals);
+    webVitals.onFCP(reportWebVitals);
+    webVitals.onLCP(reportWebVitals);
+    webVitals.onTTFB(reportWebVitals);
   });
 }
-
