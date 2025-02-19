@@ -34,7 +34,7 @@ export function EmailSubscribersList() {
           id,
           email,
           subscribed_at,
-          smart_links!inner (
+          smart_link:smart_links (
             title
           )
         `)
@@ -45,15 +45,7 @@ export function EmailSubscribersList() {
         throw error;
       }
 
-      // Transform the data to match our interface
-      const formattedData = data?.map(item => ({
-        ...item,
-        smart_link: {
-          title: item.smart_links.title
-        }
-      }));
-
-      return formattedData as EmailSubscriber[];
+      return data as EmailSubscriber[];
     },
     retry: 1,
     meta: {

@@ -1,10 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
-/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -28,52 +28,28 @@
     --ring: 252 94% 67%;
     --radius: 0.5rem;
   }
+}
 
+@layer base {
   * {
-    @apply border-border scroll-smooth;
+    @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground font-sans;
   }
-
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading font-semibold tracking-tight;
   }
 }
 
-/* Utility classes */
-@layer utilities {
-  .transition-base {
-    @apply transition-all duration-200 ease-out;
-  }
-
-  .hover-scale {
-    @apply hover:scale-[1.02] transition-base;
-  }
-
-  .shadow-modern {
-    @apply shadow-sm hover:shadow-md transition-base;
-  }
+.transition-base {
+  @apply transition-all duration-200 ease-out;
 }
 
-/* Performance optimizations */
-/* Add content-visibility to optimize rendering */
-.render-optimize {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 500px;
+.hover-scale {
+  @apply hover:scale-[1.02] transition-base;
 }
 
-/* Add will-change hints for animations */
-.will-animate {
-  will-change: transform, opacity;
+.shadow-modern {
+  @apply shadow-sm hover:shadow-md transition-base;
 }
-
-/* Optimize animations */
-@media (prefers-reduced-motion: no-preference) {
-  .animate-optimized {
-    animation-duration: 200ms;
-    animation-timing-function: ease-out;
-  }
-}
-

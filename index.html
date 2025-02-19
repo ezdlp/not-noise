@@ -9,73 +9,25 @@
     <meta name="description" content="Soundraiser - Smart Links for Musicians" />
     <meta name="author" content="Soundraiser" />
     <meta property="og:image" content="/og-image.png" />
-    
-    <!-- Preload critical fonts -->
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap"
-        rel="stylesheet"
-        type="text/css"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
-        rel="stylesheet"
-        type="text/css"
-      />
-    </noscript>
-
-    <!-- Preconnect to critical domains -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-    
-    <!-- Defer non-critical third-party scripts -->
-    <script defer src="https://www.googletagmanager.com/gtag/js"></script>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
     </script>
-    <script defer src="https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F&badge=bottomright"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F&badge=bottomright"></script>
     <style>
       .grecaptcha-badge {
         visibility: hidden;
-      }
-      /* Critical CSS inline */
-      :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --primary: 252 94% 67%;
-      }
-      body {
-        margin: 0;
-        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      /* Prevent content shift while fonts load */
-      .font-loading {
-        font-display: swap;
       }
     </style>
   </head>
 
   <body>
     <div id="root"></div>
-    <!-- Load scripts with modern loading strategy -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
-    <script async src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
   </body>
 </html>
 
