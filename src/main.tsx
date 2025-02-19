@@ -1,25 +1,16 @@
-import { createRoot } from 'react-dom/client';
-import { SpeedInsights } from '@vercel/speed-insights/react';
-import { Analytics } from '@vercel/analytics/react';
-import App from './App.tsx';
-import './index.css';
-import { useLocation, BrowserRouter as Router } from 'react-router-dom';
+import { createRoot } from 'react-dom/client'
+import { SpeedInsights } from '@vercel/speed-insights/react'
+import { Analytics } from '@vercel/analytics/react'
+import App from './App.tsx'
+import './index.css'
 
-const Root = () => {
-  const location = useLocation();
-  const shouldTrack = !location.pathname.includes('/link/');
+// Check if the current pathname starts with "/link/"
+const shouldTrackAnalytics = !window.location.pathname.startsWith('/link/');
 
-  return (
-    <>
-      <App />
-      <SpeedInsights />
-      {shouldTrack && <Analytics />}
-    </>
-  );
-};
-
-createRoot(document.getElementById('root')!).render(
-  <Router>
-    <Root />
-  </Router>
+createRoot(document.getElementById("root")!).render(
+  <>
+    <App />
+    <SpeedInsights />
+    {shouldTrackAnalytics && <Analytics />}
+  </>
 );
