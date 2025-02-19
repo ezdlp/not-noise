@@ -32,8 +32,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")
-    },
-    mainFields: ['module', 'jsnext:main', 'jsnext']
+    }
   },
   build: {
     target: 'esnext',
@@ -60,14 +59,15 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true
   },
   optimizeDeps: {
-    include: ['@supabase/supabase-js'],
-    exclude: [],
+    exclude: [
+      '@supabase/supabase-js',
+      '@supabase/postgrest-js',
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      '@supabase/functions-js'
+    ],
     esbuildOptions: {
-      target: 'esnext',
-      supported: {
-        'import-meta': true
-      },
-      format: 'esm'
+      target: 'esnext'
     }
   }
 }));
