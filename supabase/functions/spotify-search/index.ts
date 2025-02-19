@@ -9,20 +9,18 @@ const corsHeaders = {
 const SPOTIFY_CLIENT_ID = Deno.env.get('SPOTIFY_CLIENT_ID')
 const SPOTIFY_CLIENT_SECRET = Deno.env.get('SPOTIFY_CLIENT_SECRET')
 
-// Detect if input is a Spotify URL and extract ID and type
-const parseSpotifyUrl = (url: string) => {
-  const urlObj = new URL(url);
-  if (!urlObj.hostname.includes('spotify.com')) return null;
+async function getSpotifyAccessToken() {
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`,
+    },
+    body: 'grant_type=client_credentials',
+  })
 
-  const pathParts = urlObj.pathname.split('/');
-  if (pathParts.length < 3) return null;
-
-  const contentType = pathParts[1]; // 'track', 'album', or 'playlist'
-  const id = pathParts[2];
-
-  if (!['track', 'album', 'playlist'].includes(contentType)) return null;
-
-  return { type: contentType, id };
+  const data = await response.json()
+  return data.access_token
 }
 
 serve(async (req) => {
@@ -32,107 +30,59 @@ serve(async (req) => {
   }
 
   try {
-    const { url, query } = await req.json()
+    // Parse request body
+    const requestData = await req.json()
+    console.log('Request data:', requestData)
 
-    // Get Spotify access token
-    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
+    // Handle both formats: direct query and body.query
+    const searchQuery = requestData.query || (requestData.body && requestData.body.query)
+    const spotifyUrl = requestData.url || (requestData.body && requestData.body.url)
+
+    // Validate input
+    if (!searchQuery && !spotifyUrl) {
+      console.error('No query or URL provided')
+      return new Response(
+        JSON.stringify({ error: 'No query or URL provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Processing search query: ${searchQuery || spotifyUrl}\n`)
+
+    const accessToken = await getSpotifyAccessToken()
+
+    let endpoint
+    let params = new URLSearchParams()
+
+    if (spotifyUrl) {
+      const id = spotifyUrl.split('/').pop()?.split('?')[0]
+      endpoint = `https://api.spotify.com/v1/tracks/${id}`
+    } else {
+      endpoint = 'https://api.spotify.com/v1/search'
+      params.append('q', searchQuery)
+      params.append('type', 'track,album')
+      params.append('limit', '10')
+    }
+
+    const searchResponse = await fetch(`${endpoint}${params.toString() ? '?' + params.toString() : ''}`, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`,
+        Authorization: `Bearer ${accessToken}`,
       },
-      body: 'grant_type=client_credentials',
     })
 
-    const { access_token } = await tokenResponse.json()
+    const searchData = await searchResponse.json()
+    console.log('Search successful')
 
-    // Handle URL input
-    if (url) {
-      console.log('Processing URL:', url)
-      const urlInfo = parseSpotifyUrl(url)
-      
-      if (!urlInfo) {
-        throw new Error('Invalid Spotify URL')
-      }
-
-      const endpoint = `https://api.spotify.com/v1/${urlInfo.type}s/${urlInfo.id}`
-      const response = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      })
-
-      const data = await response.json()
-      if (data.error) {
-        throw new Error(data.error.message)
-      }
-
-      // Format response based on content type
-      const result = {
-        title: data.name,
-        artist: urlInfo.type === 'playlist' ? data.owner.display_name : data.artists[0].name,
-        artworkUrl: data.images[0]?.url,
-        content_type: urlInfo.type,
-        spotifyUrl: url
-      }
-
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Handle search query
-    if (query) {
-      console.log('Processing search query:', query)
-      const searchResponse = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,album&limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        }
-      )
-
-      const searchData = await searchResponse.json()
-
-      // Format search results
-      const results = {
-        tracks: searchData.tracks.items.map((track: any) => ({
-          id: track.id,
-          title: track.name,
-          artist: track.artists[0].name,
-          artworkUrl: track.album.images[0]?.url,
-          content_type: 'track',
-          albumName: track.album.name,
-          spotifyUrl: track.external_urls.spotify
-        })),
-        albums: searchData.albums.items.map((album: any) => ({
-          id: album.id,
-          title: album.name,
-          artist: album.artists[0].name,
-          artworkUrl: album.images[0]?.url,
-          content_type: 'album',
-          releaseDate: album.release_date,
-          totalTracks: album.total_tracks,
-          albumType: album.album_type,
-          spotifyUrl: album.external_urls.spotify
-        }))
-      }
-
-      return new Response(JSON.stringify(results), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    throw new Error('Either url or query parameter is required')
+    return new Response(
+      JSON.stringify(searchData),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
-
