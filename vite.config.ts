@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
+    }
   },
   build: {
     target: 'esnext',
@@ -75,8 +75,18 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: ['@supabase/supabase-js']
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@supabase/supabase-js',
+      '@supabase/postgrest-js',
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      '@supabase/functions-js'
+    ],
+    esbuildOptions: {
+      target: 'esnext'
+    }
   }
 }));
-
