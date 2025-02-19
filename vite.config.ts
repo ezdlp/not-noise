@@ -20,23 +20,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}']
       }
     }),
     mode === 'production' && visualizer({
@@ -47,8 +31,9 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-    }
+      "@": path.resolve(__dirname, "./src")
+    },
+    mainFields: ['module', 'jsnext:main', 'jsnext']
   },
   build: {
     target: 'esnext',
@@ -75,9 +60,14 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true
   },
   optimizeDeps: {
+    include: ['@supabase/supabase-js'],
+    exclude: [],
     esbuildOptions: {
-      target: 'es2020'
-    },
-    force: true
+      target: 'esnext',
+      supported: {
+        'import-meta': true
+      },
+      format: 'esm'
+    }
   }
 }));
