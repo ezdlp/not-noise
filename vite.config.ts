@@ -48,7 +48,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    }
+    },
+    dedupe: ['@supabase/supabase-js', '@supabase/postgrest-js']
   },
   build: {
     target: 'esnext',
@@ -80,13 +81,12 @@ export default defineConfig(({ mode }) => ({
       'react-dom',
       'react-router-dom',
       '@supabase/supabase-js',
-      '@supabase/postgrest-js',
-      '@supabase/realtime-js',
-      '@supabase/storage-js',
-      '@supabase/functions-js'
+      '@supabase/postgrest-js'
     ],
+    exclude: [],
     esbuildOptions: {
-      target: 'esnext'
+      target: 'esnext',
+      format: 'esm'
     }
   }
 }));
