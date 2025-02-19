@@ -33,9 +33,14 @@ export default defineConfig({
   },
   build: {
     target: 'es2015',
-    sourcemap: true
+    sourcemap: true,
+    commonjsOptions: {
+      transformMixedEsModules: true
+    }
   },
   optimizeDeps: {
-    include: ['@supabase/supabase-js']
+    esbuildOptions: {
+      target: 'es2020'
+    }
   }
 });

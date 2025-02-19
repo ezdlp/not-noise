@@ -9,8 +9,8 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { data: isAdmin, isLoading } = useQuery({
     queryKey: ["adminCheck"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return false;
 
       const { data, error } = await supabase.rpc('has_role', {
         _role: 'admin'
@@ -39,4 +39,3 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-
