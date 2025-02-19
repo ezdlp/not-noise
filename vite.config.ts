@@ -28,17 +28,21 @@ export default defineConfig(({ mode }) => ({
       '@supabase/postgrest-js',
       '@supabase/realtime-js',
       '@supabase/storage-js',
-      '@supabase/functions-js'
+      '@supabase/functions-js',
+      '@supabase/auth-helpers-react'
     ],
     esbuildOptions: {
-      target: 'es2020'
+      target: 'es2020',
+      platform: 'browser',
+      format: 'esm'
     }
   },
   build: {
     target: 'es2020',
-    commonjsOptions: {
-      transformMixedEsModules: true
+    rollupOptions: {
+      output: {
+        format: 'es'
+      }
     }
   }
 }));
-
