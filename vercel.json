@@ -8,31 +8,16 @@
     "dangerouslyAllowSVG": true,
     "contentSecurityPolicy": "default-src 'self'; script-src 'none'; sandbox;"
   },
-  "routes": [
-    {
-      "src": "^/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "^/lovable-uploads/(.*)",
-      "dest": "/lovable-uploads/$1"
-    },
-    {
-      "src": "^/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "^/_vercel/image(.*)",
-      "dest": "/_vercel/image$1"
-    },
-    {
-      "src": ".*",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/static/:path*", "destination": "/static/:path*" },
+    { "source": "/lovable-uploads/:path*", "destination": "/lovable-uploads/:path*" },
+    { "source": "/assets/:path*", "destination": "/assets/:path*" },
+    { "source": "/_vercel/image/:path*", "destination": "/_vercel/image/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
-      "source": "/(.*)\\.(jpg|jpeg|png|webp|avif|svg)",
+      "source": "/:path*\\.(jpg|jpeg|png|webp|avif|svg)",
       "headers": [
         {
           "key": "Cache-Control",
