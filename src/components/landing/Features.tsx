@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link2, Image as ImageIcon, Mail, Activity, BarChart3, Users, Percent, DollarSign } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,7 +13,6 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const generateMockData = () => {
   const baseViews = 80;
@@ -137,13 +137,10 @@ const SmartLinkShowcase = () => {
               {smartLinks.map((link, index) => (
                 <CarouselItem key={index}>
                   <div className="relative py-4">
-                    <OptimizedImage 
+                    <img 
                       src={link.image} 
-                      alt={`Smart Link Example ${index + 1}`}
-                      width={280}
-                      height={560}
-                      className="w-full shadow-sm border border-neutral-200/60 rounded-lg mx-auto"
-                      objectFit="contain"
+                      alt={`Smart Link Example ${index + 1}`} 
+                      className="w-full shadow-sm border border-neutral-200/60 rounded-lg mx-auto max-w-[280px]" 
                     />
                   </div>
                 </CarouselItem>
@@ -181,13 +178,10 @@ const SmartLinkShowcase = () => {
               }}
             >
               <div className="relative transition-all duration-300 group-hover:rotate-0 group-hover:-translate-y-4 group-hover:z-50">
-                <OptimizedImage 
+                <img 
                   src={link.image} 
-                  alt={`Smart Link Example ${index + 1}`}
-                  width={200}
-                  height={400}
-                  className="w-full shadow-sm border border-neutral-200/60 rounded-lg"
-                  objectFit="contain"
+                  alt={`Smart Link Example ${index + 1}`} 
+                  className="w-full shadow-sm border border-neutral-200/60 rounded-lg" 
                 />
               </div>
             </div>
@@ -232,16 +226,13 @@ const SocialAssetsShowcase = () => {
 
           <div className="h-[360px] flex items-center justify-center bg-neutral-50/50 p-4">
             <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[200px]'}`}>
-              <OptimizedImage 
+              <img 
                 src={activeFormat === 'post' 
                   ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg' 
                   : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
-                }
-                alt="Social media preview"
-                width={activeFormat === 'post' ? 360 : 200}
-                height={360}
-                className="w-full h-full rounded-lg shadow-sm border border-neutral-200/60"
-                objectFit="contain"
+                } 
+                alt="Social media preview" 
+                className="w-full h-full object-contain rounded-lg shadow-sm border border-neutral-200/60" 
               />
             </div>
           </div>
