@@ -1,13 +1,22 @@
 
 {
-  "rewrites": [
+  "images": {
+    "sizes": [400, 600, 800],
+    "domains": ["lovable-uploads.vercel.app"],
+    "formats": ["image/webp"],
+    "minimumCacheTTL": 60,
+    "dangerouslyAllowSVG": true,
+    "contentSecurityPolicy": "default-src 'self'; script-src 'none'; sandbox;"
+  },
+  "headers": [
     {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/(.*)\\.(jpg|jpeg|png|webp|avif|svg)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
