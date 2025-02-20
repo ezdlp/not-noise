@@ -33,7 +33,7 @@ export const OptimizedImage = ({
         height={height}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        fetchpriority={priority ? "high" : "auto"}
+        fetchPriority={priority ? "high" : "auto"}
         className="w-full h-full object-cover"
         {...props}
       />
