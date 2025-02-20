@@ -9,6 +9,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   width?: number;
   height?: number;
   priority?: boolean;
+  objectFit?: "cover" | "contain";
 }
 
 export const OptimizedImage = ({
@@ -18,6 +19,7 @@ export const OptimizedImage = ({
   width,
   height,
   priority = false,
+  objectFit = "cover",
   ...props
 }: OptimizedImageProps) => {
   // Convert image URL to Vercel's Image Optimization URL
@@ -25,7 +27,15 @@ export const OptimizedImage = ({
   const imageUrl = isAbsoluteUrl ? src : `/_vercel/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
   
   return (
-    <div className={cn("relative overflow-hidden", className)} style={{ aspectRatio: width && height ? width / height : 'auto' }}>
+    <div 
+      className={cn("relative overflow-hidden", className)} 
+      style={{ 
+        aspectRatio: width && height ? width / height : 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       <img
         src={imageUrl}
         alt={alt}
@@ -34,7 +44,7 @@ export const OptimizedImage = ({
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
-        className="w-full h-full object-cover"
+        className={cn("w-full h-full", objectFit === "contain" ? "object-contain" : "object-cover")}
         {...props}
       />
     </div>

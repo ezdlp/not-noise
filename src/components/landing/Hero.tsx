@@ -1,4 +1,3 @@
-
 import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -49,6 +48,7 @@ export const Hero = () => {
                   width={400}
                   height={800}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
               
@@ -63,6 +63,7 @@ export const Hero = () => {
                   height={1000}
                   priority={true}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
               
@@ -76,11 +77,12 @@ export const Hero = () => {
                   width={400}
                   height={800}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
             </div>
 
-            {/* Desktop Layout - Now matching mobile layout structure */}
+            {/* Desktop Layout */}
             <div className="hidden md:flex items-center justify-center h-full relative">
               <div 
                 className="absolute w-[45%] left-0 bottom-[10%] transform -rotate-6 z-10 transition-all duration-300 hover:scale-105"
@@ -92,6 +94,7 @@ export const Hero = () => {
                   width={600}
                   height={1200}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
               
@@ -108,6 +111,7 @@ export const Hero = () => {
                   height={1600}
                   priority={true}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
               
@@ -121,6 +125,7 @@ export const Hero = () => {
                   width={600}
                   height={1200}
                   className="w-full rounded-xl"
+                  objectFit="contain"
                 />
               </div>
             </div>

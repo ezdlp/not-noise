@@ -1,8 +1,8 @@
 
 {
   "images": {
-    "sizes": [400, 600, 800],
-    "domains": ["lovable-uploads.vercel.app"],
+    "sizes": [140, 160, 400, 500, 600, 800],
+    "domains": ["lovable-uploads.vercel.app", "owtufhdsuuyrgmxytclj.supabase.co"],
     "formats": ["image/webp"],
     "minimumCacheTTL": 60,
     "dangerouslyAllowSVG": true,
