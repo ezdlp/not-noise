@@ -1,6 +1,7 @@
 
 import { CTAButton } from "@/components/ui/cta-button";
 import { useNavigate } from "react-router-dom";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export const Hero = () => {
   const navigate = useNavigate();
@@ -42,9 +43,11 @@ export const Hero = () => {
                 className="absolute left-0 bottom-0 w-[40%] sm:w-[45%] transform -rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
+                  width={400}
+                  height={800}
                   className="w-full rounded-xl"
                 />
               </div>
@@ -53,9 +56,12 @@ export const Hero = () => {
                 className="absolute w-[50%] sm:w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png"
                   alt="Tyler Smart Link"
+                  width={500}
+                  height={1000}
+                  priority={true}
                   className="w-full rounded-xl"
                 />
               </div>
@@ -64,9 +70,11 @@ export const Hero = () => {
                 className="absolute right-0 bottom-0 w-[40%] sm:w-[45%] transform rotate-6 z-10 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
+                  width={400}
+                  height={800}
                   className="w-full rounded-xl"
                 />
               </div>
@@ -78,9 +86,11 @@ export const Hero = () => {
                 className="absolute w-[45%] left-0 bottom-[10%] transform -rotate-6 z-10 transition-all duration-300 hover:scale-105"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
+                  width={600}
+                  height={1200}
                   className="w-full rounded-xl"
                 />
               </div>
@@ -91,9 +101,12 @@ export const Hero = () => {
                   filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))'
                 }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png"
                   alt="Tyler Smart Link"
+                  width={800}
+                  height={1600}
+                  priority={true}
                   className="w-full rounded-xl"
                 />
               </div>
@@ -102,9 +115,11 @@ export const Hero = () => {
                 className="absolute w-[45%] right-0 bottom-[10%] transform rotate-6 z-10 transition-all duration-300 hover:scale-105"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
-                <img
+                <OptimizedImage
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
+                  width={600}
+                  height={1200}
                   className="w-full rounded-xl"
                 />
               </div>

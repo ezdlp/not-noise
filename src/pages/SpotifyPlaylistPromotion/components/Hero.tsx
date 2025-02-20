@@ -33,23 +33,33 @@ const Hero: React.FC = () => {
         const { data, error } = await supabase.functions.invoke('spotify-search', {
           body: { query: searchQuery }
         });
-        if (error) throw error;
         
-        if (data?.tracks?.items) {
-          return data.tracks.items.map((track: any) => ({
-            title: track.name,
-            artist: track.artists.map((artist: any) => artist.name).join(', '),
-            album: track.album.name,
-            artworkUrl: track.album.images[0]?.url,
-            spotifyId: track.id,
-            spotifyUrl: track.external_urls.spotify,
-            releaseDate: track.album.release_date
-          }));
+        if (error) {
+          console.error('Search error:', error);
+          toast.error("Failed to search tracks. Please try again.");
+          return null;
         }
-        return [];
+        
+        if (!data?.tracks?.items?.length) {
+          console.log('No tracks found for query:', searchQuery);
+          return { tracks: [], albums: [] };
+        }
+
+        const tracks = data.tracks.items.map((track: any) => ({
+          title: track.name,
+          artist: track.artists.map((artist: any) => artist.name).join(', '),
+          album: track.album.name,
+          artworkUrl: track.album.images[0]?.url,
+          spotifyId: track.id,
+          spotifyUrl: track.external_urls.spotify,
+          releaseDate: track.album.release_date
+        }));
+
+        return { tracks, albums: [] };
       } catch (error) {
         console.error('Search error:', error);
-        return [];
+        toast.error("An error occurred while searching. Please try again.");
+        return null;
       }
     },
     enabled: searchQuery.length > 2
@@ -127,9 +137,9 @@ const Hero: React.FC = () => {
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     <span className="ml-2 text-[#374151]">Searching...</span>
                   </Card>
-                ) : searchResults && searchResults.length > 0 ? (
+                ) : searchResults?.tracks && searchResults.tracks.length > 0 ? (
                   <Card className="divide-y divide-neutral-200 overflow-hidden max-h-[400px] overflow-y-auto">
-                    {searchResults.map((track: Track) => (
+                    {searchResults.tracks.map((track: Track) => (
                       <button
                         key={track.spotifyId}
                         onClick={() => handleSelectTrack(track)}
@@ -210,3 +220,4 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
+
