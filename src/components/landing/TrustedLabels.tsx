@@ -1,4 +1,6 @@
 
+import { OptimizedImage } from "@/components/ui/optimized-image";
+
 interface TrustedLabelsProps {
   isPricingPage?: boolean;
 }
