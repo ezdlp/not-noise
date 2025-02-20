@@ -8,6 +8,28 @@
     "dangerouslyAllowSVG": true,
     "contentSecurityPolicy": "default-src 'self'; script-src 'none'; sandbox;"
   },
+  "routes": [
+    {
+      "src": "^/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "^/lovable-uploads/(.*)",
+      "dest": "/lovable-uploads/$1"
+    },
+    {
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "^/_vercel/image(.*)",
+      "dest": "/_vercel/image$1"
+    },
+    {
+      "src": ".*",
+      "dest": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.(jpg|jpeg|png|webp|avif|svg)",
