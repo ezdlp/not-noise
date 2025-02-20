@@ -1,8 +1,7 @@
-
 {
   "images": {
     "sizes": [140, 160, 400, 500, 600, 800],
-    "domains": ["lovable-uploads.vercel.app", "owtufhdsuuyrgmxytclj.supabase.co"],
+    "domains": ["soundraiser.io", "lovable-uploads.vercel.app", "owtufhdsuuyrgmxytclj.supabase.co"],
     "formats": ["image/webp"],
     "minimumCacheTTL": 60,
     "dangerouslyAllowSVG": true,
@@ -15,7 +14,7 @@
     },
     {
       "src": "^/lovable-uploads/(.*)",
-      "dest": "/lovable-uploads/$1"
+      "dest": "/_next/image?url=/lovable-uploads/$1&w=1080&q=80"
     },
     {
       "src": "^/assets/(.*)",
@@ -26,7 +25,7 @@
       "dest": "/_vercel/image$1"
     },
     {
-      "src": ".*",
+      "src": "/((?!api|static|_next|lovable-uploads|assets).*)",
       "dest": "/index.html"
     }
   ],
