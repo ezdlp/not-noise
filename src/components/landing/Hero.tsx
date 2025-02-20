@@ -47,7 +47,7 @@ export const Hero = () => {
                   alt="Taylor Swift Smart Link"
                   width={400}
                   height={800}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
@@ -62,7 +62,7 @@ export const Hero = () => {
                   width={500}
                   height={1000}
                   priority={true}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
@@ -76,7 +76,7 @@ export const Hero = () => {
                   alt="Olivia Rodrigo Smart Link"
                   width={400}
                   height={800}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
@@ -93,7 +93,7 @@ export const Hero = () => {
                   alt="Taylor Swift Smart Link"
                   width={600}
                   height={1200}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
@@ -110,7 +110,7 @@ export const Hero = () => {
                   width={800}
                   height={1600}
                   priority={true}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
@@ -124,7 +124,7 @@ export const Hero = () => {
                   alt="Olivia Rodrigo Smart Link"
                   width={600}
                   height={1200}
-                  className="w-full rounded-xl"
+                  className="w-full rounded-2xl overflow-hidden"
                   objectFit="contain"
                 />
               </div>
