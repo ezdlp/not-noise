@@ -1,26 +1,19 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { serve } from 'https://deno.fresh.run/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
-const SPOTIFY_CLIENT_ID = Deno.env.get('SPOTIFY_CLIENT_ID')
-const SPOTIFY_CLIENT_SECRET = Deno.env.get('SPOTIFY_CLIENT_SECRET')
+interface SpotifyTokenResponse {
+  access_token: string
+}
 
-async function getSpotifyAccessToken() {
-  const response = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`,
-    },
-    body: 'grant_type=client_credentials',
-  })
-
-  const data = await response.json()
-  return data.access_token
+interface SpotifySearchParams {
+  query?: string
+  url?: string
 }
 
 serve(async (req) => {
@@ -30,59 +23,128 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
-    const requestData = await req.json()
+    const requestData: SpotifySearchParams = await req.json()
     console.log('Request data:', requestData)
 
-    // Handle both formats: direct query and body.query
-    const searchQuery = requestData.query || (requestData.body && requestData.body.query)
-    const spotifyUrl = requestData.url || (requestData.body && requestData.body.url)
-
-    // Validate input
-    if (!searchQuery && !spotifyUrl) {
-      console.error('No query or URL provided')
-      return new Response(
-        JSON.stringify({ error: 'No query or URL provided' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`Processing search query: ${searchQuery || spotifyUrl}\n`)
-
-    const accessToken = await getSpotifyAccessToken()
-
-    let endpoint
-    let params = new URLSearchParams()
-
-    if (spotifyUrl) {
-      const id = spotifyUrl.split('/').pop()?.split('?')[0]
-      endpoint = `https://api.spotify.com/v1/tracks/${id}`
-    } else {
-      endpoint = 'https://api.spotify.com/v1/search'
-      params.append('q', searchQuery)
-      params.append('type', 'track,album')
-      params.append('limit', '10')
-    }
-
-    const searchResponse = await fetch(`${endpoint}${params.toString() ? '?' + params.toString() : ''}`, {
+    // Get Spotify access token
+    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${btoa(`${Deno.env.get('SPOTIFY_CLIENT_ID')}:${Deno.env.get('SPOTIFY_CLIENT_SECRET')}`)}`,
       },
+      body: 'grant_type=client_credentials',
     })
 
-    const searchData = await searchResponse.json()
-    console.log('Search successful')
+    if (!tokenResponse.ok) {
+      console.error('Failed to get Spotify token:', await tokenResponse.text())
+      throw new Error('Failed to authenticate with Spotify')
+    }
 
-    return new Response(
-      JSON.stringify(searchData),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    const { access_token } = await tokenResponse.json() as SpotifyTokenResponse
+
+    // Handle URL lookup
+    if (requestData.url) {
+      console.log('Processing Spotify URL:', requestData.url)
+      const segments = requestData.url.split('/')
+      const type = segments[segments.length - 2]
+      const id = segments[segments.length - 1].split('?')[0]
+
+      const spotifyResponse = await fetch(`https://api.spotify.com/v1/${type}s/${id}`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      })
+
+      if (!spotifyResponse.ok) {
+        console.error('Spotify API error:', await spotifyResponse.text())
+        throw new Error('Failed to fetch from Spotify')
+      }
+
+      const data = await spotifyResponse.json()
+      console.log('Spotify response for URL:', data)
+
+      // Transform single item response
+      const transformedData = {
+        id: data.id,
+        title: data.name,
+        artist: data.type === 'track' ? data.artists[0].name : data.owner?.display_name || data.artists[0].name,
+        artworkUrl: data.images?.[0]?.url || data.album?.images[0]?.url,
+        content_type: data.type,
+        spotifyUrl: data.external_urls.spotify,
+        albumName: data.type === 'track' ? data.album.name : undefined,
+        releaseDate: data.release_date,
+        totalTracks: data.total_tracks,
+        albumType: data.album_type
+      }
+
+      return new Response(JSON.stringify(transformedData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Handle search query
+    if (requestData.query) {
+      console.log('Processing search query:', requestData.query)
+      const searchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(requestData.query)}&type=track,album&limit=5`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      )
+
+      if (!searchResponse.ok) {
+        console.error('Spotify search error:', await searchResponse.text())
+        throw new Error('Failed to search Spotify')
+      }
+
+      const data = await searchResponse.json()
+      console.log('Spotify search response:', data)
+
+      // Transform search results
+      const transformedData = {
+        tracks: data.tracks.items.map((track: any) => ({
+          id: track.id,
+          title: track.name,
+          artist: track.artists[0].name,
+          artworkUrl: track.album.images[0].url,
+          content_type: 'track',
+          spotifyUrl: track.external_urls.spotify,
+          albumName: track.album.name,
+          releaseDate: track.album.release_date
+        })),
+        albums: data.albums.items.map((album: any) => ({
+          id: album.id,
+          title: album.name,
+          artist: album.artists[0].name,
+          artworkUrl: album.images[0].url,
+          content_type: 'album',
+          spotifyUrl: album.external_urls.spotify,
+          totalTracks: album.total_tracks,
+          albumType: album.album_type,
+          releaseDate: album.release_date
+        }))
+      }
+
+      return new Response(JSON.stringify(transformedData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    throw new Error('Either query or url parameter is required')
 
   } catch (error) {
-    console.error('Error:', error.message)
+    console.error('Function error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: error.message || 'An error occurred processing your request'
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     )
   }
 })
