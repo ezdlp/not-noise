@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Pencil, Trash2, Search, Users, ArrowUpDown, X } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search, Users, ArrowUpDown, X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent } from "react";
 import { toast } from "sonner";
 import {
   Select,
@@ -22,22 +22,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Profile } from "@/types/database";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { genres } from "@/lib/genres";
 import { motion, AnimatePresence } from "framer-motion";
-
-const COUNTRIES = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Germany",
-  "France",
-  // ... keep existing code (other countries)
-];
 
 export default function UsersPage() {
   const navigate = useNavigate();
@@ -48,11 +51,33 @@ export default function UsersPage() {
   const [searchValue, setSearchValue] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState({
-    subscription: 'all' as 'all' | 'pro',
+    subscription: 'all' as 'all' | 'pro' | 'free',
     genre: 'all' as string,
     country: 'all' as string,
   });
   const [filteredCount, setFilteredCount] = useState<number>(0);
+  const [countryOpen, setCountryOpen] = useState(false);
+
+  const { data: countries = [] } = useQuery({
+    queryKey: ["uniqueCountries"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('country')
+        .not('country', 'is', null);
+
+      if (error) {
+        console.error("Error fetching countries:", error);
+        return [];
+      }
+
+      const uniqueCountries = Array.from(new Set(data.map(p => p.country)))
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+
+      return uniqueCountries;
+    }
+  });
 
   const { data: users, isLoading, error: queryError } = useQuery({
     queryKey: ["adminUsers", currentPage, pageSize, sortDirection, filters, searchQuery],
@@ -80,7 +105,7 @@ export default function UsersPage() {
             id,
             role
           ),
-          subscriptions (
+          subscriptions!inner (
             tier,
             is_lifetime,
             is_early_adopter,
@@ -97,9 +122,8 @@ export default function UsersPage() {
         `, { count: 'exact' })
         .order('created_at', { ascending: sortDirection === 'asc' });
 
-      // Apply filters
-      if (filters.subscription === 'pro') {
-        query = query.eq('subscriptions.tier', 'pro');
+      if (filters.subscription !== 'all') {
+        query = query.eq('subscriptions.tier', filters.subscription);
       }
       if (filters.genre !== 'all') {
         query = query.eq('music_genre', filters.genre);
@@ -239,7 +263,7 @@ export default function UsersPage() {
 
         <Select
           value={filters.subscription}
-          onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value as 'all' | 'pro' }))}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value as 'all' | 'pro' | 'free' }))}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Subscription tier" />
@@ -247,6 +271,7 @@ export default function UsersPage() {
           <SelectContent>
             <SelectItem value="all">All tiers</SelectItem>
             <SelectItem value="pro">Pro users</SelectItem>
+            <SelectItem value="free">Free users</SelectItem>
           </SelectContent>
         </Select>
 
@@ -265,20 +290,60 @@ export default function UsersPage() {
           </SelectContent>
         </Select>
 
-        <Select
-          value={filters.country}
-          onValueChange={(value) => setFilters(prev => ({ ...prev, country: value }))}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select country" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All countries</SelectItem>
-            {COUNTRIES.map(country => (
-              <SelectItem key={country} value={country}>{country}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={countryOpen}
+              className="w-[180px] justify-between"
+            >
+              {filters.country === 'all'
+                ? "Select country"
+                : filters.country}
+              <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[180px] p-0">
+            <Command>
+              <CommandInput placeholder="Search country..." />
+              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    setFilters(prev => ({ ...prev, country: 'all' }));
+                    setCountryOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      filters.country === 'all' ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  All countries
+                </CommandItem>
+                {countries.map((country) => (
+                  <CommandItem
+                    key={country}
+                    onSelect={() => {
+                      setFilters(prev => ({ ...prev, country }));
+                      setCountryOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        filters.country === country ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {country}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
 
         <Select
           value={pageSize.toString()}
@@ -446,7 +511,7 @@ export default function UsersPage() {
                   </TableCell>
                 </motion.tr>
               ))}
-              {users?.length === 0 && (
+              {(!users || users.length === 0) && (
                 <motion.tr
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -454,7 +519,9 @@ export default function UsersPage() {
                 >
                   <TableCell colSpan={9} className="h-24 text-center">
                     <p className="text-muted-foreground font-sans">
-                      No users found. Try adjusting your filters 🎧
+                      {filters.subscription !== 'all' 
+                        ? `No ${filters.subscription} users found 🎧` 
+                        : "No users found. Try adjusting your filters 🎧"}
                     </p>
                   </TableCell>
                 </motion.tr>
