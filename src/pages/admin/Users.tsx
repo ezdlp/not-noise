@@ -58,7 +58,7 @@ export default function UsersPage() {
   const [filteredCount, setFilteredCount] = useState<number>(0);
   const [countryOpen, setCountryOpen] = useState(false);
 
-  const { data: countries = [] } = useQuery({
+  const { data: countries = [], isLoading: isLoadingCountries } = useQuery({
     queryKey: ["uniqueCountries"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -323,7 +323,7 @@ export default function UsersPage() {
                   />
                   All countries
                 </CommandItem>
-                {countries.map((country) => (
+                {!isLoadingCountries && countries?.map((country) => (
                   <CommandItem
                     key={country}
                     onSelect={() => {
@@ -340,6 +340,11 @@ export default function UsersPage() {
                     {country}
                   </CommandItem>
                 ))}
+                {isLoadingCountries && (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    Loading countries...
+                  </div>
+                )}
               </CommandGroup>
             </Command>
           </PopoverContent>
