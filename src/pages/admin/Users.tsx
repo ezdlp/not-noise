@@ -486,7 +486,7 @@ export default function UsersPage() {
                                 <SelectValue placeholder="Select country" />
                               </SelectTrigger>
                               <SelectContent>
-                                {COUNTRIES.map(country => (
+                                {countries.map(country => (
                                   <SelectItem key={country} value={country}>{country}</SelectItem>
                                 ))}
                               </SelectContent>
