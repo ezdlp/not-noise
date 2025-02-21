@@ -48,9 +48,9 @@ export default function UsersPage() {
   const [searchValue, setSearchValue] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState({
-    subscription: '' as '' | 'pro',
-    genre: '' as string,
-    country: '' as string,
+    subscription: 'all' as 'all' | 'pro',
+    genre: 'all' as string,
+    country: 'all' as string,
   });
   const [filteredCount, setFilteredCount] = useState<number>(0);
 
@@ -101,10 +101,10 @@ export default function UsersPage() {
       if (filters.subscription === 'pro') {
         query = query.eq('subscriptions.tier', 'pro');
       }
-      if (filters.genre) {
+      if (filters.genre !== 'all') {
         query = query.eq('music_genre', filters.genre);
       }
-      if (filters.country) {
+      if (filters.country !== 'all') {
         query = query.eq('country', filters.country);
       }
       if (searchQuery) {
@@ -155,9 +155,9 @@ export default function UsersPage() {
 
   const clearFilters = () => {
     setFilters({
-      subscription: '',
-      genre: '',
-      country: '',
+      subscription: 'all',
+      genre: 'all',
+      country: 'all',
     });
     setSearchQuery('');
     setSearchValue('');
@@ -179,7 +179,7 @@ export default function UsersPage() {
     );
   }
 
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length + (searchQuery ? 1 : 0);
+  const activeFiltersCount = Object.values(filters).filter(value => value !== 'all').length + (searchQuery ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -239,13 +239,13 @@ export default function UsersPage() {
 
         <Select
           value={filters.subscription}
-          onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value as '' | 'pro' }))}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value as 'all' | 'pro' }))}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Subscription tier" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All tiers</SelectItem>
+            <SelectItem value="all">All tiers</SelectItem>
             <SelectItem value="pro">Pro users</SelectItem>
           </SelectContent>
         </Select>
@@ -258,7 +258,7 @@ export default function UsersPage() {
             <SelectValue placeholder="Select genre" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All genres</SelectItem>
+            <SelectItem value="all">All genres</SelectItem>
             {genres.map(genre => (
               <SelectItem key={genre} value={genre}>{genre}</SelectItem>
             ))}
@@ -273,7 +273,7 @@ export default function UsersPage() {
             <SelectValue placeholder="Select country" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All countries</SelectItem>
+            <SelectItem value="all">All countries</SelectItem>
             {COUNTRIES.map(country => (
               <SelectItem key={country} value={country}>{country}</SelectItem>
             ))}
@@ -322,12 +322,11 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               {users?.map((user) => (
-                <TableRow
+                <motion.tr
                   key={user.id}
                   className="transition-colors hover:bg-muted/50"
-                  as={motion.tr}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -445,8 +444,21 @@ export default function UsersPage() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
-                </TableRow>
+                </motion.tr>
               ))}
+              {users?.length === 0 && (
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <TableCell colSpan={9} className="h-24 text-center">
+                    <p className="text-muted-foreground font-sans">
+                      No users found. Try adjusting your filters 🎧
+                    </p>
+                  </TableCell>
+                </motion.tr>
+              )}
             </AnimatePresence>
           </TableBody>
         </Table>
