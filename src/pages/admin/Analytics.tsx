@@ -22,15 +22,9 @@ interface AnalyticsStats {
   unique_visitors: number;
   registered_users: number;
   active_users: number;
-}
-
-interface SubscriptionStats {
-  day: string;
-  total_users: number;
   pro_subscribers: number;
   new_subscribers: number;
   total_revenue: number;
-  conversion_rate: number;
 }
 
 function Analytics() {
@@ -38,7 +32,7 @@ function Analytics() {
   
   const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 28);
 
-  const { data: stats, isLoading: isStatsLoading, refetch } = useQuery({
+  const { data: stats, isLoading: isLoading, refetch } = useQuery({
     queryKey: ["analytics", timeRange],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_analytics_stats", {
@@ -47,72 +41,6 @@ function Analytics() {
 
       if (error) throw error;
       return data as AnalyticsStats[];
-    },
-  });
-
-  const { data: subscriptionStats, isLoading: isSubsLoading } = useQuery({
-    queryKey: ["subscription_analytics", timeRange],
-    queryFn: async () => {
-      // Get all users count
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Get subscriptions data
-      const { data: subsData, error: subsError } = await supabase
-        .from('subscriptions')
-        .select(`
-          created_at,
-          tier,
-          status,
-          payment_status,
-          billing_period,
-          current_period_end
-        `)
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: true });
-
-      if (subsError) throw subsError;
-
-      // Process data day by day
-      const processedData = Array.from(new Set(subsData.map(item => 
-        new Date(item.created_at).toISOString().split('T')[0]
-      ))).map(day => {
-        const date = new Date(day);
-        const activeSubs = subsData.filter(item => 
-          new Date(item.created_at) <= date &&
-          new Date(item.current_period_end) >= date &&
-          item.tier === 'pro' &&
-          item.status === 'active' &&
-          item.payment_status === 'paid'
-        );
-
-        const newSubs = subsData.filter(item => 
-          new Date(item.created_at).toISOString().split('T')[0] === day &&
-          item.tier === 'pro'
-        );
-
-        const monthlyPrice = 9.99;
-        const yearlyPrice = 99.99;
-        
-        const revenue = activeSubs.reduce((total, sub) => {
-          if (sub.billing_period === 'annual') { // Changed from 'yearly' to 'annual'
-            return total + yearlyPrice / 12; // Monthly equivalent
-          }
-          return total + monthlyPrice;
-        }, 0);
-
-        return {
-          day,
-          total_users: totalUsers || 0,
-          pro_subscribers: activeSubs.length,
-          new_subscribers: newSubs.length,
-          total_revenue: revenue,
-          conversion_rate: totalUsers ? (activeSubs.length / totalUsers) * 100 : 0
-        };
-      });
-
-      return processedData;
     },
   });
 
@@ -150,7 +78,7 @@ function Analytics() {
     };
   }, [refetch]);
 
-  if (isStatsLoading || isSubsLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
@@ -173,16 +101,10 @@ function Analytics() {
     unique_visitors: 0,
     registered_users: 0,
     active_users: 0,
+    pro_subscribers: 0,
+    new_subscribers: 0,
+    total_revenue: 0,
   };
-
-  const latestSubStats = subscriptionStats && subscriptionStats.length > 0 ? 
-    subscriptionStats[subscriptionStats.length - 1] : {
-      total_users: 0,
-      pro_subscribers: 0,
-      new_subscribers: 0,
-      total_revenue: 0,
-      conversion_rate: 0,
-    };
 
   return (
     <div className="space-y-4">
@@ -204,27 +126,31 @@ function Analytics() {
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Pro Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.pro_subscribers}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.conversion_rate.toFixed(2)}%</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Monthly Revenue</h3>
-          <p className="text-2xl font-bold text-neutral-night">${latestSubStats.total_revenue.toFixed(2)}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">New Subscribers</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.new_subscribers}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Total Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.total_users}</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.pro_subscribers}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Active Users</h3>
           <p className="text-2xl font-bold text-neutral-night">{latestStats.active_users}</p>
+        </Card>
+        <Card className="p-6 border-none bg-card/50 shadow-none">
+          <h3 className="font-medium text-muted-foreground">Monthly Revenue</h3>
+          <p className="text-2xl font-bold text-neutral-night">${latestStats.total_revenue.toFixed(2)}</p>
+        </Card>
+        <Card className="p-6 border-none bg-card/50 shadow-none">
+          <h3 className="font-medium text-muted-foreground">Registered Users</h3>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.registered_users}</p>
+        </Card>
+        <Card className="p-6 border-none bg-card/50 shadow-none">
+          <h3 className="font-medium text-muted-foreground">New Pro Users</h3>
+          <p className="text-2xl font-bold text-neutral-night">{latestStats.new_subscribers}</p>
+        </Card>
+        <Card className="p-6 border-none bg-card/50 shadow-none">
+          <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
+          <p className="text-2xl font-bold text-neutral-night">
+            {latestStats.unique_visitors > 0 
+              ? ((latestStats.pro_subscribers / latestStats.unique_visitors) * 100).toFixed(2)
+              : "0.00"}%
+          </p>
         </Card>
       </div>
 
@@ -299,10 +225,10 @@ function Analytics() {
       </Card>
 
       <Card className="p-6 border-none bg-card/50 shadow-none">
-        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Subscription Trends</h2>
+        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Revenue & Subscription Trends</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={subscriptionStats || []}>
+            <AreaChart data={stats || []}>
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#E6E6E6"
@@ -334,7 +260,7 @@ function Analytics() {
                 stroke="#6851FB"
                 fill="#6851FB"
                 fillOpacity={0.3}
-                name="Pro Subscribers"
+                name="Pro Users"
               />
               <Area
                 type="monotone"
@@ -343,7 +269,7 @@ function Analytics() {
                 stroke="#37D299"
                 fill="#37D299"
                 fillOpacity={0.3}
-                name="New Subscribers"
+                name="New Pro Users"
               />
               <Area
                 type="monotone"
@@ -353,15 +279,6 @@ function Analytics() {
                 fill="#FE28A2"
                 fillOpacity={0.3}
                 name="Revenue ($)"
-              />
-              <Area
-                type="monotone"
-                dataKey="conversion_rate"
-                stackId="4"
-                stroke="#F97316"
-                fill="#F97316"
-                fillOpacity={0.3}
-                name="Conversion Rate (%)"
               />
             </AreaChart>
           </ResponsiveContainer>

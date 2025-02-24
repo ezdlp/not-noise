@@ -1600,6 +1600,9 @@ export type Database = {
           unique_visitors: number
           registered_users: number
           active_users: number
+          pro_subscribers: number
+          new_subscribers: number
+          total_revenue: number
         }[]
       }
       get_daily_stats: {
