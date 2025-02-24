@@ -8,7 +8,6 @@ import {
   DownloadIcon,
   Link2Icon,
   BarChart2Icon,
-  RefreshCwIcon,
 } from "lucide-react";
 
 const menuItems = [
@@ -26,13 +25,6 @@ const menuItems = [
     title: "Users",
     icon: UsersIcon,
     href: "/control-room/users",
-    subItems: [
-      {
-        title: "User Migration",
-        icon: RefreshCwIcon,
-        href: "/control-room/users/migration",
-      }
-    ]
   },
   {
     title: "Smart Links",

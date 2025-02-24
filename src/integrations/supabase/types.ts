@@ -1502,48 +1502,6 @@ export type Database = {
           },
         ]
       }
-      user_migration_status: {
-        Row: {
-          created_at: string | null
-          email: string
-          error_message: string | null
-          id: string
-          password_reset_at: string | null
-          reset_email_sent_at: string | null
-          status:
-            | Database["public"]["Enums"]["user_migration_status_type"]
-            | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          error_message?: string | null
-          id?: string
-          password_reset_at?: string | null
-          reset_email_sent_at?: string | null
-          status?:
-            | Database["public"]["Enums"]["user_migration_status_type"]
-            | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          error_message?: string | null
-          id?: string
-          password_reset_at?: string | null
-          reset_email_sent_at?: string | null
-          status?:
-            | Database["public"]["Enums"]["user_migration_status_type"]
-            | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string | null
