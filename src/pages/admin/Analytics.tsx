@@ -12,8 +12,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 
 interface AnalyticsStats {
   day: string;
@@ -33,12 +34,15 @@ interface SubscriptionStats {
 }
 
 function Analytics() {
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>('28d');
+  
+  const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 28);
+
   const { data: stats, isLoading: isStatsLoading, refetch } = useQuery({
-    queryKey: ["analytics"],
+    queryKey: ["analytics", timeRange],
     queryFn: async () => {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
       const { data, error } = await supabase.rpc("get_analytics_stats", {
-        p_start_date: thirtyDaysAgo,
+        p_start_date: startDate.toISOString(),
       });
 
       if (error) throw error;
@@ -47,52 +51,64 @@ function Analytics() {
   });
 
   const { data: subscriptionStats, isLoading: isSubsLoading } = useQuery({
-    queryKey: ["subscription_analytics"],
+    queryKey: ["subscription_analytics", timeRange],
     queryFn: async () => {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
-      // Since the RPC function isn't in types yet, we'll use a raw query
-      const { data, error } = await supabase.from('subscriptions')
+      // Get all users count
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Get subscriptions data
+      const { data: subsData, error: subsError } = await supabase
+        .from('subscriptions')
         .select(`
           created_at,
           tier,
           status,
-          payment_status
+          payment_status,
+          billing_period,
+          current_period_end
         `)
-        .gte('created_at', thirtyDaysAgo)
+        .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (subsError) throw subsError;
 
-      // Process the data to match our SubscriptionStats interface
-      const processedData = Array.from(new Set(data.map(item => 
+      // Process data day by day
+      const processedData = Array.from(new Set(subsData.map(item => 
         new Date(item.created_at).toISOString().split('T')[0]
       ))).map(day => {
-        const dayData = data.filter(item => 
-          new Date(item.created_at).toISOString().split('T')[0] === day
+        const date = new Date(day);
+        const activeSubs = subsData.filter(item => 
+          new Date(item.created_at) <= date &&
+          new Date(item.current_period_end) >= date &&
+          item.tier === 'pro' &&
+          item.status === 'active' &&
+          item.payment_status === 'paid'
         );
+
+        const newSubs = subsData.filter(item => 
+          new Date(item.created_at).toISOString().split('T')[0] === day &&
+          item.tier === 'pro'
+        );
+
+        const monthlyPrice = 9.99;
+        const yearlyPrice = 99.99;
         
+        const revenue = activeSubs.reduce((total, sub) => {
+          if (sub.billing_period === 'yearly') {
+            return total + yearlyPrice / 12; // Monthly equivalent
+          }
+          return total + monthlyPrice;
+        }, 0);
+
         return {
           day,
-          total_users: data.length,
-          pro_subscribers: dayData.filter(item => 
-            item.tier === 'pro' && 
-            item.status === 'active' && 
-            item.payment_status === 'paid'
-          ).length,
-          new_subscribers: dayData.filter(item => 
-            item.tier === 'pro' && 
-            new Date(item.created_at).toISOString().split('T')[0] === day
-          ).length,
-          total_revenue: dayData.filter(item => 
-            item.tier === 'pro' && 
-            item.status === 'active' && 
-            item.payment_status === 'paid'
-          ).length * 9.99,
-          conversion_rate: (dayData.filter(item => 
-            item.tier === 'pro' && 
-            item.status === 'active' && 
-            item.payment_status === 'paid'
-          ).length / data.length) * 100
+          total_users: totalUsers || 0,
+          pro_subscribers: activeSubs.length,
+          new_subscribers: newSubs.length,
+          total_revenue: revenue,
+          conversion_rate: totalUsers ? (activeSubs.length / totalUsers) * 100 : 0
         };
       });
 
@@ -171,7 +187,10 @@ function Analytics() {
   return (
     <div className="space-y-4">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
-        <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
+          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
