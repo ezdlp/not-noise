@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import SmartLink from "@/pages/SmartLink";
@@ -27,7 +28,6 @@ import AdminContent from "@/pages/admin/Content";
 import AdminMediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminImport from "@/pages/admin/Import";
 import { AdminRoute } from "@/components/admin/AdminRoute";
-import { UserMigration } from "@/pages/admin";
 import ResetPassword from "@/pages/ResetPassword";
 import UpdatePassword from "@/pages/UpdatePassword";
 
@@ -72,7 +72,6 @@ export default function AppContent() {
         <Route path="smart-links" element={<AdminSmartLinks />} />
         <Route path="user-links" element={<AdminUserLinks />} />
         <Route path="users" element={<AdminUsers />} />
-        <Route path="users/migration" element={<UserMigration />} />
         <Route path="content" element={<AdminContent />} />
         <Route path="media" element={<AdminMediaLibrary />} />
         <Route path="import" element={<AdminImport />} />

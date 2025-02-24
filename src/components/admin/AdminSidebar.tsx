@@ -10,7 +10,13 @@ import {
   BarChart2Icon,
 } from "lucide-react";
 
-const menuItems = [
+type MenuItem = {
+  title: string;
+  icon: React.ComponentType;
+  href: string;
+};
+
+const menuItems: MenuItem[] = [
   {
     title: "Overview",
     icon: LayoutDashboardIcon,
@@ -59,45 +65,20 @@ export function AdminSidebar() {
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
-              const hasSubItems = item.subItems && item.subItems.length > 0;
               
               return (
-                <div key={item.title}>
-                  <Link
-                    to={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
-                      isActive 
-                        ? "bg-accent text-accent-foreground" 
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                  
-                  {hasSubItems && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {item.subItems.map((subItem) => {
-                        const isSubItemActive = location.pathname === subItem.href;
-                        
-                        return (
-                          <Link
-                            key={subItem.title}
-                            to={subItem.href}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
-                              isSubItemActive 
-                                ? "bg-accent text-accent-foreground" 
-                                : "text-muted-foreground hover:text-primary"
-                            }`}
-                          >
-                            <subItem.icon className="h-4 w-4" />
-                            <span>{subItem.title}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                <Link
+                  key={item.title}
+                  to={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
+                    isActive 
+                      ? "bg-accent text-accent-foreground" 
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </Link>
               );
             })}
           </nav>
