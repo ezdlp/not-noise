@@ -8,11 +8,12 @@ import {
   DownloadIcon,
   Link2Icon,
   BarChart2Icon,
+  LucideIcon
 } from "lucide-react";
 
 type MenuItem = {
   title: string;
-  icon: React.ComponentType;
+  icon: LucideIcon;
   href: string;
 };
 
@@ -65,6 +66,7 @@ export function AdminSidebar() {
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
+              const Icon = item.icon;
               
               return (
                 <Link
@@ -76,7 +78,7 @@ export function AdminSidebar() {
                       : "text-muted-foreground hover:text-primary"
                   }`}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" />
                   <span>{item.title}</span>
                 </Link>
               );
