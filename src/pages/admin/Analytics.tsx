@@ -96,7 +96,7 @@ function Analytics() {
         const yearlyPrice = 99.99;
         
         const revenue = activeSubs.reduce((total, sub) => {
-          if (sub.billing_period === 'yearly') {
+          if (sub.billing_period === 'annual') { // Changed from 'yearly' to 'annual'
             return total + yearlyPrice / 12; // Monthly equivalent
           }
           return total + monthlyPrice;
