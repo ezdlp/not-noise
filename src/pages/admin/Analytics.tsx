@@ -42,7 +42,7 @@ function Analytics() {
       });
 
       if (error) throw error;
-      return data;
+      return data as AnalyticsStats[];
     },
   });
 
@@ -50,12 +50,53 @@ function Analytics() {
     queryKey: ["subscription_analytics"],
     queryFn: async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
-      const { data, error } = await supabase.rpc("get_subscription_analytics", {
-        p_start_date: thirtyDaysAgo,
-      });
+      // Since the RPC function isn't in types yet, we'll use a raw query
+      const { data, error } = await supabase.from('subscriptions')
+        .select(`
+          created_at,
+          tier,
+          status,
+          payment_status
+        `)
+        .gte('created_at', thirtyDaysAgo)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data;
+
+      // Process the data to match our SubscriptionStats interface
+      const processedData = Array.from(new Set(data.map(item => 
+        new Date(item.created_at).toISOString().split('T')[0]
+      ))).map(day => {
+        const dayData = data.filter(item => 
+          new Date(item.created_at).toISOString().split('T')[0] === day
+        );
+        
+        return {
+          day,
+          total_users: data.length,
+          pro_subscribers: dayData.filter(item => 
+            item.tier === 'pro' && 
+            item.status === 'active' && 
+            item.payment_status === 'paid'
+          ).length,
+          new_subscribers: dayData.filter(item => 
+            item.tier === 'pro' && 
+            new Date(item.created_at).toISOString().split('T')[0] === day
+          ).length,
+          total_revenue: dayData.filter(item => 
+            item.tier === 'pro' && 
+            item.status === 'active' && 
+            item.payment_status === 'paid'
+          ).length * 9.99,
+          conversion_rate: (dayData.filter(item => 
+            item.tier === 'pro' && 
+            item.status === 'active' && 
+            item.payment_status === 'paid'
+          ).length / data.length) * 100
+        };
+      });
+
+      return processedData;
     },
   });
 
@@ -111,20 +152,21 @@ function Analytics() {
     );
   }
 
-  const latestStats = stats?.[stats.length - 1] || {
+  const latestStats = stats && stats.length > 0 ? stats[stats.length - 1] : {
     page_views: 0,
     unique_visitors: 0,
     registered_users: 0,
     active_users: 0,
   };
 
-  const latestSubStats = subscriptionStats?.[subscriptionStats.length - 1] || {
-    total_users: 0,
-    pro_subscribers: 0,
-    new_subscribers: 0,
-    total_revenue: 0,
-    conversion_rate: 0,
-  };
+  const latestSubStats = subscriptionStats && subscriptionStats.length > 0 ? 
+    subscriptionStats[subscriptionStats.length - 1] : {
+      total_users: 0,
+      pro_subscribers: 0,
+      new_subscribers: 0,
+      total_revenue: 0,
+      conversion_rate: 0,
+    };
 
   return (
     <div className="space-y-4">
@@ -147,7 +189,7 @@ function Analytics() {
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.conversion_rate}%</p>
+          <p className="text-2xl font-bold text-neutral-night">{latestSubStats.conversion_rate.toFixed(2)}%</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Monthly Revenue</h3>
@@ -171,7 +213,7 @@ function Analytics() {
         <h2 className="text-lg font-semibold mb-4 text-neutral-night">User Activity Trends</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={stats}>
+            <AreaChart data={stats || []}>
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#E6E6E6"
@@ -241,7 +283,7 @@ function Analytics() {
         <h2 className="text-lg font-semibold mb-4 text-neutral-night">Subscription Trends</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={subscriptionStats}>
+            <AreaChart data={subscriptionStats || []}>
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#E6E6E6"
