@@ -1496,7 +1496,7 @@ export type Database = {
             foreignKeyName: "fk_subscription_tier"
             columns: ["tier"]
             isOneToOne: false
-            referencedRelation: "subscription_features"
+            referencedRelation: "temp_subscription_tiers"
             referencedColumns: ["tier"]
           },
           {
@@ -1507,6 +1507,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      temp_subscription_tiers: {
+        Row: {
+          tier: Database["public"]["Enums"]["subscription_tier"] | null
+        }
+        Insert: {
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+        }
+        Update: {
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
