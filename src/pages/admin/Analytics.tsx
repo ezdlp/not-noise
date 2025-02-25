@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 
@@ -77,7 +76,6 @@ function Analytics() {
     };
   }, [refetch]);
 
-  // Calculate the latest metrics
   const currentMetrics = useMemo(() => {
     if (!stats || stats.length === 0) return null;
 
@@ -98,7 +96,6 @@ function Analytics() {
       total_revenue: 0,
     });
 
-    // Calculate conversion rate
     const conversionRate = total.unique_visitors > 0 
       ? ((total.pro_subscribers / total.unique_visitors) * 100).toFixed(2)
       : "0.00";
