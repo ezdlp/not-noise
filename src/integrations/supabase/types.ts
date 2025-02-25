@@ -1601,7 +1601,6 @@ export type Database = {
           registered_users: number
           active_users: number
           pro_subscribers: number
-          new_subscribers: number
           total_revenue: number
         }[]
       }

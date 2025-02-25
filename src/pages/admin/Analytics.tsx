@@ -23,7 +23,6 @@ interface AnalyticsStats {
   registered_users: number;
   active_users: number;
   pro_subscribers: number;
-  new_subscribers: number;
   total_revenue: number;
 }
 
@@ -83,7 +82,7 @@ function Analytics() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(8)].map((_, i) => (
+          {[...Array(7)].map((_, i) => (
             <Card key={i} className="p-4">
               <div className="h-20 animate-pulse bg-neutral-seasalt rounded" />
             </Card>
@@ -102,7 +101,6 @@ function Analytics() {
     registered_users: 0,
     active_users: 0,
     pro_subscribers: 0,
-    new_subscribers: 0,
     total_revenue: 0,
   };
 
@@ -133,16 +131,12 @@ function Analytics() {
           <p className="text-2xl font-bold text-neutral-night">{latestStats.active_users}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Monthly Revenue</h3>
+          <h3 className="font-medium text-muted-foreground">Revenue</h3>
           <p className="text-2xl font-bold text-neutral-night">${latestStats.total_revenue.toFixed(2)}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Registered Users</h3>
           <p className="text-2xl font-bold text-neutral-night">{latestStats.registered_users}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">New Pro Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.new_subscribers}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
@@ -264,21 +258,12 @@ function Analytics() {
               />
               <Area
                 type="monotone"
-                dataKey="new_subscribers"
-                stackId="2"
-                stroke="#37D299"
-                fill="#37D299"
-                fillOpacity={0.3}
-                name="New Pro Users"
-              />
-              <Area
-                type="monotone"
                 dataKey="total_revenue"
-                stackId="3"
+                stackId="2"
                 stroke="#FE28A2"
                 fill="#FE28A2"
                 fillOpacity={0.3}
-                name="Revenue ($)"
+                name="Revenue (€)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -289,3 +274,4 @@ function Analytics() {
 }
 
 export default Analytics;
+
