@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -30,16 +31,23 @@ function Analytics() {
   
   const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 28);
 
-  const { data: stats, isLoading, refetch } = useQuery({
+  const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ["analytics", timeRange],
     queryFn: async () => {
+      console.log('Fetching analytics stats for date range:', startDate.toISOString());
       const { data, error } = await supabase.rpc("get_analytics_stats", {
         p_start_date: startDate.toISOString(),
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Analytics query error:', error);
+        throw error;
+      }
+      
+      console.log('Received analytics data:', data);
       return data as AnalyticsStats[];
     },
+    retry: 2,
   });
 
   useEffect(() => {
@@ -120,6 +128,23 @@ function Analytics() {
         </div>
         <Card className="p-4">
           <div className="h-[400px] animate-pulse bg-neutral-seasalt rounded" />
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
+        <Card className="p-6 border-none bg-red-50 shadow-none">
+          <p className="text-red-600">Error loading analytics data. Please try again later.</p>
+          <button 
+            onClick={() => refetch()} 
+            className="mt-2 text-sm text-red-600 hover:text-red-700 underline"
+          >
+            Retry
+          </button>
         </Card>
       </div>
     );
