@@ -20,10 +20,43 @@ class AnalyticsService {
 
   constructor() {
     this.sessionId = this.generateSessionId();
+    this.initializeTracking();
   }
 
   private generateSessionId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+
+  private initializeTracking() {
+    // Track initial page view
+    this.trackPageView(window.location.pathname);
+
+    // Setup navigation tracking
+    if (typeof window !== 'undefined') {
+      this.setupHistoryTracking();
+    }
+  }
+
+  private setupHistoryTracking() {
+    // Track navigation changes
+    ['pushState', 'replaceState'].forEach(method => {
+      const original = window.history[method];
+      window.history[method] = function(...args) {
+        const result = original.apply(this, args);
+        window.dispatchEvent(new Event('locationchange'));
+        return result;
+      };
+    });
+
+    // Listen for navigation events
+    window.addEventListener('locationchange', () => {
+      this.trackPageView(window.location.pathname);
+    });
+
+    // Listen for popstate
+    window.addEventListener('popstate', () => {
+      this.trackPageView(window.location.pathname);
+    });
   }
 
   async getLocationInfo(): Promise<LocationInfo | null> {
@@ -66,6 +99,11 @@ class AnalyticsService {
   }
 
   async trackPageView(url: string) {
+    // Skip tracking for smart links as they have their own analytics
+    if (url.startsWith('/link/')) {
+      return;
+    }
+
     try {
       console.log('Tracking page view for:', url);
       const locationInfo = await this.getLocationInfo();
@@ -75,6 +113,7 @@ class AnalyticsService {
         return;
       }
       
+      // Track in Supabase
       await supabase.from('analytics_page_views').insert({
         url,
         user_agent: navigator.userAgent,
@@ -84,34 +123,18 @@ class AnalyticsService {
         session_id: this.sessionId
       });
 
+      // Track in GA4
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'page_view', {
+          page_location: url,
+          page_title: document.title,
+          session_id: this.sessionId
+        });
+      }
+
       console.log('Page view tracked successfully with location:', locationInfo);
     } catch (error) {
       console.error('Error tracking page view:', error);
-      throw error;
-    }
-  }
-
-  async trackPlatformClick(platformLinkId: string) {
-    try {
-      console.log('Tracking platform click for:', platformLinkId);
-      const locationInfo = await this.getLocationInfo();
-      
-      if (!locationInfo) {
-        console.warn('Location info not available for platform click');
-        return;
-      }
-      
-      await supabase.from('platform_clicks').insert({
-        platform_link_id: platformLinkId,
-        user_agent: navigator.userAgent,
-        country: locationInfo.country,
-        country_code: locationInfo.country_code,
-        ip_hash: locationInfo.ip_hash
-      });
-      
-      console.log('Platform click tracked successfully with location:', locationInfo);
-    } catch (error) {
-      console.error('Error tracking platform click:', error);
       throw error;
     }
   }
@@ -120,15 +143,53 @@ class AnalyticsService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Track in Supabase
       await supabase.from('analytics_events').insert({
         ...event,
         user_id: user?.id,
         session_id: this.sessionId
       });
+
+      // Track in GA4
+      if (typeof gtag !== 'undefined') {
+        gtag('event', event.event_type, {
+          ...event.event_data,
+          user_id: user?.id,
+          session_id: this.sessionId
+        });
+      }
     } catch (error) {
       console.error('Error tracking event:', error);
       throw error;
     }
+  }
+
+  async trackUserAction(action: string, metadata: Record<string, any> = {}) {
+    await this.trackEvent({
+      event_type: action,
+      event_data: metadata
+    });
+  }
+
+  async trackFeatureUsage(feature: string, metadata: Record<string, any> = {}) {
+    await this.trackEvent({
+      event_type: 'feature_usage',
+      event_data: {
+        feature,
+        ...metadata
+      }
+    });
+  }
+
+  async trackSubscriptionEvent(event: string, tier: string, metadata: Record<string, any> = {}) {
+    await this.trackEvent({
+      event_type: 'subscription_event',
+      event_data: {
+        event,
+        tier,
+        ...metadata
+      }
+    });
   }
 
   private async hashIP(ip: string): Promise<string> {

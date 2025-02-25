@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import AppContent from "./AppContent";
 import Header from "@/components/layout/Header";
 import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
-import { analytics } from "@/services/analytics";
+import { analyticsService } from "@/services/analyticsService";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -21,11 +21,10 @@ function AppLayout() {
                      location.pathname === '/update-password';
 
   useEffect(() => {
-    // Initialize analytics with correct configuration
-    analytics.initialize(isSmartLinkRoute);
-    
-    // Track page view
-    analytics.trackPageView(location.pathname, isSmartLinkRoute);
+    // Track page view for non-smart link routes
+    if (!isSmartLinkRoute) {
+      analyticsService.trackPageView(location.pathname);
+    }
   }, [location.pathname, isSmartLinkRoute]);
 
   return (
@@ -50,4 +49,3 @@ function App() {
 }
 
 export default App;
-
