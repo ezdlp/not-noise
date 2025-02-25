@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type TimeRangeValue = '7d' | '28d' | '12m';
+export type TimeRangeValue = '24h' | '7d' | '28d' | '12m';
 
 interface TimeRange {
   value: TimeRangeValue;
@@ -16,6 +16,7 @@ interface TimeRange {
 }
 
 export const timeRanges: TimeRange[] = [
+  { value: '24h', label: '24 hours', days: 1 },
   { value: '7d', label: '7 days', days: 7 },
   { value: '28d', label: '28 days', days: 28 },
   { value: '12m', label: '12 months', days: 365 }

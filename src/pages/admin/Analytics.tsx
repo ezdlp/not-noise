@@ -44,9 +44,9 @@ function StatCard({ title, value, change, className }: StatCardProps) {
 }
 
 function Analytics() {
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>('28d');
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>('24h');
   
-  const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 28);
+  const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 1);
 
   const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ["analytics", timeRange],
