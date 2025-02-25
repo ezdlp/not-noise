@@ -1,25 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { subDays, format } from "date-fns";
+import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { 
-  Bar, 
-  BarChart, 
-  Line, 
-  LineChart, 
-  Area,
-  AreaChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  Legend,
-  Tooltip
-} from "recharts";
+import { Bar, BarChart, Line, LineChart } from "recharts";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsStats {
@@ -55,20 +42,6 @@ function StatCard({ title, value, change, className }: StatCardProps) {
     </Card>
   );
 }
-
-const formatCurrency = (value: number) => 
-  new Intl.NumberFormat('en-US', { 
-    style: 'currency', 
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2 
-  }).format(value);
-
-const formatPercent = (value: number) => 
-  `${value.toFixed(2)}%`;
-
-const formatDate = (date: string) => 
-  format(new Date(date), 'MMM d');
 
 function Analytics() {
   const [timeRange, setTimeRange] = useState<TimeRangeValue>('24h');
@@ -165,35 +138,6 @@ function Analytics() {
     };
   }, [stats, timeRange]);
 
-  const chartData = useMemo(() => {
-    if (!stats || stats.length === 0) return null;
-
-    return {
-      traffic: stats.map(day => ({
-        name: formatDate(day.day),
-        pageViews: day.page_views,
-        visitors: day.unique_visitors,
-      })),
-      userJourney: stats.map(day => ({
-        name: formatDate(day.day),
-        active: day.active_users,
-        registered: day.registered_users,
-        pro: day.pro_subscribers,
-      })),
-      revenue: stats.map(day => ({
-        name: formatDate(day.day),
-        revenue: day.total_revenue,
-        subscribers: day.pro_subscribers,
-      })),
-      conversion: stats.map(day => ({
-        name: formatDate(day.day),
-        rate: day.registered_users > 0 
-          ? (day.pro_subscribers / day.registered_users) * 100 
-          : 0
-      }))
-    };
-  }, [stats]);
-
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -229,7 +173,26 @@ function Analytics() {
     );
   }
 
-  if (!currentMetrics || !stats || !chartData) return null;
+  if (!currentMetrics || !stats) return null;
+
+  const trafficData = stats.map(day => ({
+    name: day.day,
+    pageViews: day.page_views,
+    visitors: day.unique_visitors,
+  }));
+
+  const userJourneyData = stats.map(day => ({
+    name: day.day,
+    active: day.active_users,
+    registered: day.registered_users,
+    pro: day.pro_subscribers,
+  }));
+
+  const revenueData = stats.map(day => ({
+    name: day.day,
+    revenue: day.total_revenue,
+    subscribers: day.pro_subscribers,
+  }));
 
   return (
     <div className="space-y-6">
@@ -292,42 +255,21 @@ function Analytics() {
                 }
               }}
             >
-              <ResponsiveContainer>
-                <LineChart data={chartData.traffic}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" />
-                  <XAxis 
-                    dataKey="name"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="pageViews"
-                    name="Page Views"
-                    stroke="#6851FB"
-                    strokeWidth={2}
-                    dot={{ fill: '#6851FB', r: 4 }}
-                    activeDot={{ r: 6, fill: '#6851FB' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="visitors"
-                    name="Unique Visitors"
-                    stroke="#37D299"
-                    strokeWidth={2}
-                    dot={{ fill: '#37D299', r: 4 }}
-                    activeDot={{ r: 6, fill: '#37D299' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <LineChart data={trafficData}>
+                <ChartTooltip />
+                <Line 
+                  type="monotone"
+                  dataKey="pageViews"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="visitors"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
             </ChartContainer>
           </div>
         </Card>
@@ -352,51 +294,27 @@ function Analytics() {
                 }
               }}
             >
-              <ResponsiveContainer>
-                <LineChart data={chartData.userJourney}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" />
-                  <XAxis 
-                    dataKey="name"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="active"
-                    name="Active Users"
-                    stroke="#F97316"
-                    strokeWidth={2}
-                    dot={{ fill: '#F97316', r: 4 }}
-                    activeDot={{ r: 6, fill: '#F97316' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="registered"
-                    name="Registered Users"
-                    stroke="#FE28A2"
-                    strokeWidth={2}
-                    dot={{ fill: '#FE28A2', r: 4 }}
-                    activeDot={{ r: 6, fill: '#FE28A2' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="pro"
-                    name="Pro Users"
-                    stroke="#6851FB"
-                    strokeWidth={2}
-                    dot={{ fill: '#6851FB', r: 4 }}
-                    activeDot={{ r: 6, fill: '#6851FB' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <LineChart data={userJourneyData}>
+                <ChartTooltip />
+                <Line 
+                  type="monotone"
+                  dataKey="active"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="registered"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="pro"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
             </ChartContainer>
           </div>
         </Card>
@@ -413,88 +331,13 @@ function Analytics() {
                 }
               }}
             >
-              <ResponsiveContainer>
-                <BarChart data={chartData.revenue}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" />
-                  <XAxis 
-                    dataKey="name"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                    tickFormatter={(value) => formatCurrency(value)}
-                  />
-                  <Tooltip 
-                    content={<ChartTooltip 
-                      formatter={(value: number) => formatCurrency(value)}
-                    />} 
-                  />
-                  <Legend />
-                  <Bar 
-                    dataKey="revenue"
-                    name="Revenue"
-                    fill="#6851FB"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
-        </Card>
-
-        <Card className="p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold mb-4">Conversion Rate Over Time</h2>
-          <div className="h-[300px]">
-            <ChartContainer 
-              className="h-[300px]"
-              config={{
-                rate: {
-                  label: "Conversion Rate",
-                  color: "#6851FB"
-                }
-              }}
-            >
-              <ResponsiveContainer>
-                <AreaChart data={chartData.conversion}>
-                  <defs>
-                    <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6851FB" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#6851FB" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" />
-                  <XAxis 
-                    dataKey="name"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickLine={{ stroke: '#6B7280' }}
-                    axisLine={{ stroke: '#6B7280' }}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip 
-                    content={<ChartTooltip 
-                      formatter={(value: number) => formatPercent(value)}
-                    />} 
-                  />
-                  <Legend />
-                  <Area
-                    type="monotone"
-                    dataKey="rate"
-                    name="Conversion Rate"
-                    stroke="#6851FB"
-                    fillOpacity={1}
-                    fill="url(#colorRate)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <BarChart data={revenueData}>
+                <ChartTooltip />
+                <Bar 
+                  dataKey="revenue"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
             </ChartContainer>
           </div>
         </Card>
