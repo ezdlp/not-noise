@@ -3,18 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
+import { Bar, BarChart, Line, LineChart } from "@/components/ui/chart";
+import { cn } from "@/lib/utils";
 
 interface AnalyticsStats {
   day: string;
@@ -24,6 +17,30 @@ interface AnalyticsStats {
   active_users: number;
   pro_subscribers: number;
   total_revenue: number;
+}
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  change?: number;
+  className?: string;
+}
+
+function StatCard({ title, value, change, className }: StatCardProps) {
+  return (
+    <Card className={cn("p-6 border-none bg-card/50 shadow-none", className)}>
+      <h3 className="font-medium text-muted-foreground">{title}</h3>
+      <p className="text-2xl font-bold text-neutral-night">{value}</p>
+      {change !== undefined && (
+        <p className={cn(
+          "text-sm mt-1",
+          change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
+        )}>
+          {change > 0 ? "+" : ""}{change}%
+        </p>
+      )}
+    </Card>
+  );
 }
 
 function Analytics() {
@@ -120,7 +137,7 @@ function Analytics() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(7)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <Card key={i} className="p-4">
               <div className="h-20 animate-pulse bg-neutral-seasalt rounded" />
             </Card>
@@ -150,10 +167,30 @@ function Analytics() {
     );
   }
 
-  if (!currentMetrics) return null;
+  if (!currentMetrics || !stats) return null;
+
+  // Prepare data for charts
+  const trafficData = stats.map(day => ({
+    name: day.day,
+    pageViews: day.page_views,
+    visitors: day.unique_visitors,
+  }));
+
+  const userJourneyData = stats.map(day => ({
+    name: day.day,
+    active: day.active_users,
+    registered: day.registered_users,
+    pro: day.pro_subscribers,
+  }));
+
+  const revenueData = stats.map(day => ({
+    name: day.day,
+    revenue: day.total_revenue,
+    subscribers: day.pro_subscribers,
+  }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-neutral-night">Analytics</h1>
@@ -161,158 +198,88 @@ function Analytics() {
         </div>
       </div>
 
+      {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Page Views</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.page_views.toLocaleString()}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Unique Visitors</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.unique_visitors.toLocaleString()}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Pro Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.pro_subscribers.toLocaleString()}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Active Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.active_users.toLocaleString()}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Revenue</h3>
-          <p className="text-2xl font-bold text-neutral-night">${currentMetrics.total.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Registered Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.registered_users.toLocaleString()}</p>
-        </Card>
-        <Card className="p-6 border-none bg-card/50 shadow-none">
-          <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
-          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.conversionRate}%</p>
-        </Card>
+        <StatCard
+          title="Total Revenue"
+          value={`$${currentMetrics.total.total_revenue.toLocaleString(undefined, { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          })}`}
+          className="lg:col-span-2"
+        />
+        <StatCard
+          title="Page Views"
+          value={currentMetrics.total.page_views.toLocaleString()}
+        />
+        <StatCard
+          title="Unique Visitors"
+          value={currentMetrics.total.unique_visitors.toLocaleString()}
+        />
+        <StatCard
+          title="Active Users"
+          value={currentMetrics.total.active_users.toLocaleString()}
+        />
+        <StatCard
+          title="Pro Users"
+          value={currentMetrics.total.pro_subscribers.toLocaleString()}
+        />
+        <StatCard
+          title="Registered Users"
+          value={currentMetrics.total.registered_users.toLocaleString()}
+        />
+        <StatCard
+          title="Conversion Rate"
+          value={`${currentMetrics.conversionRate}%`}
+        />
       </div>
 
-      <Card className="p-6 border-none bg-card/50 shadow-none">
-        <h2 className="text-lg font-semibold mb-4 text-neutral-night">User Activity Trends</h2>
-        <div className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={stats || []}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#E6E6E6"
-                opacity={0.4}
-              />
-              <XAxis 
-                dataKey="day" 
-                stroke="#666666"
-                fontSize={12}
-                tickLine={false}
-              />
-              <YAxis 
-                stroke="#666666"
-                fontSize={12}
-                tickLine={false}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #E6E6E6',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.05)'
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="page_views"
-                stackId="1"
-                stroke="#6851FB"
-                fill="#6851FB"
-                fillOpacity={0.3}
-                name="Page Views"
-              />
-              <Area
-                type="monotone"
-                dataKey="unique_visitors"
-                stackId="2"
-                stroke="#37D299"
-                fill="#37D299"
-                fillOpacity={0.3}
-                name="Unique Visitors"
-              />
-              <Area
-                type="monotone"
-                dataKey="registered_users"
-                stackId="3"
-                stroke="#FE28A2"
-                fill="#FE28A2"
-                fillOpacity={0.3}
-                name="Registered Users"
-              />
-              <Area
-                type="monotone"
-                dataKey="active_users"
-                stackId="4"
-                stroke="#F97316"
-                fill="#F97316"
-                fillOpacity={0.3}
-                name="Active Users"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      {/* Traffic Overview */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Traffic Overview</h2>
+          <div className="h-[300px]">
+            <LineChart
+              data={trafficData}
+              categories={["pageViews", "visitors"]}
+              index="name"
+              colors={["#6851FB", "#37D299"]}
+              valueFormatter={(value: number) => value.toLocaleString()}
+              className="h-[300px]"
+            />
+          </div>
+        </Card>
 
-      <Card className="p-6 border-none bg-card/50 shadow-none">
-        <h2 className="text-lg font-semibold mb-4 text-neutral-night">Revenue & Subscription Trends</h2>
-        <div className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={stats || []}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#E6E6E6"
-                opacity={0.4}
-              />
-              <XAxis 
-                dataKey="day" 
-                stroke="#666666"
-                fontSize={12}
-                tickLine={false}
-              />
-              <YAxis 
-                stroke="#666666"
-                fontSize={12}
-                tickLine={false}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #E6E6E6',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(15, 15, 15, 0.05)'
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="pro_subscribers"
-                stackId="1"
-                stroke="#6851FB"
-                fill="#6851FB"
-                fillOpacity={0.3}
-                name="Pro Users"
-              />
-              <Area
-                type="monotone"
-                dataKey="total_revenue"
-                stackId="2"
-                stroke="#FE28A2"
-                fill="#FE28A2"
-                fillOpacity={0.3}
-                name="Revenue ($)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+        {/* User Journey */}
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">User Journey</h2>
+          <div className="h-[300px]">
+            <LineChart
+              data={userJourneyData}
+              categories={["active", "registered", "pro"]}
+              index="name"
+              colors={["#F97316", "#FE28A2", "#6851FB"]}
+              valueFormatter={(value: number) => value.toLocaleString()}
+              className="h-[300px]"
+            />
+          </div>
+        </Card>
+
+        {/* Revenue Trends */}
+        <Card className="p-6 lg:col-span-2">
+          <h2 className="text-lg font-semibold mb-4">Revenue Trends</h2>
+          <div className="h-[300px]">
+            <BarChart
+              data={revenueData}
+              categories={["revenue"]}
+              index="name"
+              colors={["#6851FB"]}
+              valueFormatter={(value: number) => `$${value.toLocaleString()}`}
+              className="h-[300px]"
+            />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
