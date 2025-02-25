@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -192,6 +191,32 @@ class AnalyticsService {
     });
   }
 
+  async trackPlatformClick(platformLinkId: string) {
+    try {
+      const locationInfo = await this.getLocationInfo();
+      
+      // Track in Supabase platform_clicks table
+      await supabase.from('platform_clicks').insert({
+        platform_link_id: platformLinkId,
+        user_agent: navigator.userAgent,
+        country_code: locationInfo?.country_code,
+        ip_hash: locationInfo?.ip_hash,
+        session_id: this.sessionId
+      });
+
+      // Track as a general analytics event
+      await this.trackEvent({
+        event_type: 'platform_click',
+        event_data: {
+          platform_link_id: platformLinkId
+        }
+      });
+    } catch (error) {
+      console.error('Error tracking platform click:', error);
+      throw error;
+    }
+  }
+
   private async hashIP(ip: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(ip);
@@ -202,4 +227,3 @@ class AnalyticsService {
 }
 
 export const analyticsService = new AnalyticsService();
-
