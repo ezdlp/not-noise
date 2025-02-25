@@ -9,11 +9,11 @@ import {
 const faqs = [
   {
     question: "What makes Soundraiser's Smart Links special?",
-    answer: "Our Smart Links combine powerful marketing tools with beautiful, customizable designs. They feature Meta Pixel integration for retargeting, email capture, detailed analytics, and automatic social media card generation - all while maintaining a sleek, professional look that matches your brand."
+    answer: "Our Smart Links combine powerful marketing tools with beautiful, customizable designs. Pro features include Meta Pixel integration for retargeting, email capture, and automatic social media card generation - all while maintaining a sleek, professional look that matches your brand."
   },
   {
     question: "How can I promote my music effectively using Smart Links?",
-    answer: "Our Smart Links offer multiple promotion tools: automatically generated social media cards for platforms like Instagram and TikTok, built-in Meta Pixel for retargeting campaigns, email capture for building your fan base, and detailed analytics to understand your audience's behavior across all streaming platforms."
+    answer: "Our Smart Links offer multiple promotion tools: automatically generated social media cards for platforms like Instagram and TikTok (Pro feature), built-in Meta Pixel for retargeting campaigns (Pro feature), email capture for building your fan base (Pro feature), and detailed analytics to understand your audience's behavior across all streaming platforms."
   },
   {
     question: "What analytics and insights do I get?",
@@ -29,15 +29,15 @@ const faqs = [
   },
   {
     question: "How does fan retargeting work?",
-    answer: "Through our Meta Pixel integration, you can track conversions and create custom audiences for retargeting on Facebook and Instagram. This allows you to reach fans who've interacted with your Smart Links, making your advertising more effective and targeted."
+    answer: "With our Pro plan's Meta Pixel integration, you can track conversions and create custom audiences for retargeting on Facebook and Instagram. This allows you to reach fans who've interacted with your Smart Links, making your advertising more effective and targeted."
   },
   {
     question: "What's included in the free plan?",
-    answer: "Our free plan includes unlimited Smart Link creation, basic analytics, Meta Pixel integration, and email capture capabilities. You can start promoting your music professionally without any upfront cost or credit card required."
+    answer: "Our free plan includes up to 10 Smart Links, basic analytics, and access to major streaming platforms. You can start promoting your music professionally without any upfront cost or credit card required."
   },
   {
     question: "How do I get started with my first Smart Link?",
-    answer: "Getting started is simple - just paste your Spotify track URL and we'll automatically fetch all the streaming links for other platforms. You can then enable Meta Pixel tracking, set up email capture, and your Smart Link is ready to share in minutes."
+    answer: "Getting started is simple - just paste your Spotify track URL and we'll automatically fetch all the streaming links for other platforms. Your Smart Link is ready to share in minutes, and Pro users can enable additional features like Meta Pixel tracking and email capture."
   },
   {
     question: "Do you offer any additional promotion services?",
