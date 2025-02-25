@@ -12,7 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 
@@ -31,7 +31,7 @@ function Analytics() {
   
   const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 28);
 
-  const { data: stats, isLoading: isLoading, refetch } = useQuery({
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ["analytics", timeRange],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_analytics_stats", {
@@ -77,6 +77,39 @@ function Analytics() {
     };
   }, [refetch]);
 
+  // Calculate the latest metrics
+  const currentMetrics = useMemo(() => {
+    if (!stats || stats.length === 0) return null;
+
+    const latest = stats[stats.length - 1];
+    const total = stats.reduce((acc, day) => ({
+      page_views: acc.page_views + day.page_views,
+      unique_visitors: acc.unique_visitors + day.unique_visitors,
+      registered_users: acc.registered_users + day.registered_users,
+      active_users: acc.active_users + day.active_users,
+      pro_subscribers: acc.pro_subscribers + day.pro_subscribers,
+      total_revenue: acc.total_revenue + day.total_revenue,
+    }), {
+      page_views: 0,
+      unique_visitors: 0,
+      registered_users: 0,
+      active_users: 0,
+      pro_subscribers: 0,
+      total_revenue: 0,
+    });
+
+    // Calculate conversion rate
+    const conversionRate = total.unique_visitors > 0 
+      ? ((total.pro_subscribers / total.unique_visitors) * 100).toFixed(2)
+      : "0.00";
+
+    return {
+      latest,
+      total,
+      conversionRate
+    };
+  }, [stats]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -95,14 +128,7 @@ function Analytics() {
     );
   }
 
-  const latestStats = stats && stats.length > 0 ? stats[stats.length - 1] : {
-    page_views: 0,
-    unique_visitors: 0,
-    registered_users: 0,
-    active_users: 0,
-    pro_subscribers: 0,
-    total_revenue: 0,
-  };
+  if (!currentMetrics) return null;
 
   return (
     <div className="space-y-4">
@@ -116,35 +142,31 @@ function Analytics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Page Views</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.page_views}</p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.page_views.toLocaleString()}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Unique Visitors</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.unique_visitors}</p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.unique_visitors.toLocaleString()}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Pro Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.pro_subscribers}</p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.pro_subscribers.toLocaleString()}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Active Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.active_users}</p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.active_users.toLocaleString()}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Revenue</h3>
-          <p className="text-2xl font-bold text-neutral-night">${latestStats.total_revenue.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-neutral-night">${currentMetrics.total.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Registered Users</h3>
-          <p className="text-2xl font-bold text-neutral-night">{latestStats.registered_users}</p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.total.registered_users.toLocaleString()}</p>
         </Card>
         <Card className="p-6 border-none bg-card/50 shadow-none">
           <h3 className="font-medium text-muted-foreground">Conversion Rate</h3>
-          <p className="text-2xl font-bold text-neutral-night">
-            {latestStats.unique_visitors > 0 
-              ? ((latestStats.pro_subscribers / latestStats.unique_visitors) * 100).toFixed(2)
-              : "0.00"}%
-          </p>
+          <p className="text-2xl font-bold text-neutral-night">{currentMetrics.conversionRate}%</p>
         </Card>
       </div>
 
@@ -263,7 +285,7 @@ function Analytics() {
                 stroke="#FE28A2"
                 fill="#FE28A2"
                 fillOpacity={0.3}
-                name="Revenue (€)"
+                name="Revenue ($)"
               />
             </AreaChart>
           </ResponsiveContainer>
