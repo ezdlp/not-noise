@@ -16,17 +16,30 @@ interface LocationInfo {
 class AnalyticsService {
   private sessionId: string;
   private locationInfo: LocationInfo | null = null;
+  private isInitialized: boolean = false;
 
   constructor() {
-    this.sessionId = this.generateSessionId();
+    this.sessionId = this.getOrCreateSessionId();
     this.initializeTracking();
   }
 
-  private generateSessionId(): string {
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  private getOrCreateSessionId(): string {
+    // Try to get existing session ID from storage
+    const existingSession = sessionStorage.getItem('analytics_session_id');
+    if (existingSession) {
+      return existingSession;
+    }
+
+    // Create new session ID if none exists
+    const newSession = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessionStorage.setItem('analytics_session_id', newSession);
+    return newSession;
   }
 
   private initializeTracking() {
+    if (this.isInitialized) return;
+    this.isInitialized = true;
+
     // Track initial page view
     this.trackPageView(window.location.pathname);
 
@@ -34,6 +47,9 @@ class AnalyticsService {
     if (typeof window !== 'undefined') {
       this.setupHistoryTracking();
     }
+
+    // Get location info in the background
+    this.getLocationInfo().catch(console.error);
   }
 
   private setupHistoryTracking() {
@@ -59,17 +75,17 @@ class AnalyticsService {
   }
 
   async getLocationInfo(): Promise<LocationInfo | null> {
+    // If we already have location info, return it
     if (this.locationInfo) {
       return this.locationInfo;
     }
 
     try {
-      console.log('Fetching location info...');
       const { data, error } = await supabase.functions.invoke('get-location');
       
       if (error) {
         console.error('Error invoking get-location function:', error);
-        throw error;
+        return null;
       }
 
       if (!data.country || !data.country_code) {
@@ -85,11 +101,6 @@ class AnalyticsService {
         ip_hash: ipHash
       };
 
-      console.log('Location info retrieved successfully:', {
-        country: this.locationInfo.country,
-        country_code: this.locationInfo.country_code
-      });
-
       return this.locationInfo;
     } catch (error) {
       console.error('Error getting location info:', error);
@@ -98,29 +109,20 @@ class AnalyticsService {
   }
 
   async trackPageView(url: string) {
-    // Skip tracking for smart links as they have their own analytics
+    // Skip tracking for smart links
     if (url.startsWith('/link/')) {
       return;
     }
 
     try {
       console.log('Tracking page view for:', url);
-      const locationInfo = await this.getLocationInfo();
       
-      if (!locationInfo) {
-        console.warn('Location info not available for page view');
-        return;
-      }
-      
-      // Track in Supabase
-      await supabase.from('analytics_page_views').insert({
+      // Track basic page view immediately without waiting for location
+      const baseData = {
         url,
         user_agent: navigator.userAgent,
-        country: locationInfo.country,
-        country_code: locationInfo.country_code,
-        ip_hash: locationInfo.ip_hash,
         session_id: this.sessionId
-      });
+      };
 
       // Track in GA4
       if (typeof gtag !== 'undefined') {
@@ -131,10 +133,24 @@ class AnalyticsService {
         });
       }
 
-      console.log('Page view tracked successfully with location:', locationInfo);
+      // Get location info in the background
+      const locationInfo = await this.getLocationInfo();
+      
+      // Track in Supabase with location info if available
+      await supabase.from('analytics_page_views').insert({
+        ...baseData,
+        ...(locationInfo && {
+          country: locationInfo.country,
+          country_code: locationInfo.country_code,
+          ip_hash: locationInfo.ip_hash
+        })
+      });
+
+      console.log('Page view tracked successfully');
     } catch (error) {
       console.error('Error tracking page view:', error);
-      throw error;
+      // Don't throw error to prevent breaking the app
+      // but log it for debugging
     }
   }
 
