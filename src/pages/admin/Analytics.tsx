@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Bar, BarChart, Line, LineChart } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsStats {
@@ -25,6 +26,14 @@ interface StatCardProps {
   change?: number;
   className?: string;
 }
+
+const chartColors = {
+  primary: "#6851FB",    // Majorelle Blue (Base)
+  lighter: "#9B87F5",    // 20% lighter
+  lightest: "#D0C7FF",   // 40% lighter
+  darker: "#271153",     // 20% darker
+  darkest: "#180B33"     // 40% darker
+};
 
 function StatCard({ title, value, change, className }: StatCardProps) {
   return (
@@ -175,21 +184,34 @@ function Analytics() {
 
   if (!currentMetrics || !stats) return null;
 
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
   const trafficData = stats.map(day => ({
-    name: day.day,
+    name: formatDate(day.day),
     pageViews: day.page_views,
     visitors: day.unique_visitors,
   }));
 
   const userJourneyData = stats.map(day => ({
-    name: day.day,
+    name: formatDate(day.day),
     active: day.active_users,
     registered: day.registered_users,
     pro: day.pro_subscribers,
   }));
 
   const revenueData = stats.map(day => ({
-    name: day.day,
+    name: formatDate(day.day),
     revenue: day.total_revenue,
     subscribers: day.pro_subscribers,
   }));
@@ -247,27 +269,46 @@ function Analytics() {
               config={{
                 pageViews: {
                   label: "Page Views",
-                  color: "#6851FB"
+                  color: chartColors.primary
                 },
                 visitors: {
                   label: "Unique Visitors",
-                  color: "#37D299"
+                  color: chartColors.lighter
                 }
               }}
             >
               <LineChart data={trafficData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E6E6E6" />
+                <XAxis 
+                  dataKey="name"
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                  tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value)}
+                />
                 <ChartTooltip />
                 <Line 
                   type="monotone"
                   dataKey="pageViews"
+                  stroke={chartColors.primary}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ fill: chartColors.primary, r: 4 }}
+                  activeDot={{ r: 6, fill: chartColors.primary }}
                 />
                 <Line 
                   type="monotone"
                   dataKey="visitors"
+                  stroke={chartColors.lighter}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ fill: chartColors.lighter, r: 4 }}
+                  activeDot={{ r: 6, fill: chartColors.lighter }}
                 />
               </LineChart>
             </ChartContainer>
@@ -282,37 +323,58 @@ function Analytics() {
               config={{
                 active: {
                   label: "Active Users",
-                  color: "#F97316"
+                  color: chartColors.darker
                 },
                 registered: {
                   label: "Registered Users",
-                  color: "#FE28A2"
+                  color: chartColors.primary
                 },
                 pro: {
                   label: "Pro Users",
-                  color: "#6851FB"
+                  color: chartColors.lighter
                 }
               }}
             >
               <LineChart data={userJourneyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E6E6E6" />
+                <XAxis 
+                  dataKey="name"
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                  tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: 'compact' }).format(value)}
+                />
                 <ChartTooltip />
                 <Line 
                   type="monotone"
                   dataKey="active"
+                  stroke={chartColors.darker}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ fill: chartColors.darker, r: 4 }}
+                  activeDot={{ r: 6, fill: chartColors.darker }}
                 />
                 <Line 
                   type="monotone"
                   dataKey="registered"
+                  stroke={chartColors.primary}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ fill: chartColors.primary, r: 4 }}
+                  activeDot={{ r: 6, fill: chartColors.primary }}
                 />
                 <Line 
                   type="monotone"
                   dataKey="pro"
+                  stroke={chartColors.lighter}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ fill: chartColors.lighter, r: 4 }}
+                  activeDot={{ r: 6, fill: chartColors.lighter }}
                 />
               </LineChart>
             </ChartContainer>
@@ -327,14 +389,32 @@ function Analytics() {
               config={{
                 revenue: {
                   label: "Revenue",
-                  color: "#6851FB"
+                  color: chartColors.primary
                 }
               }}
             >
               <BarChart data={revenueData}>
-                <ChartTooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E6E6E6" />
+                <XAxis 
+                  dataKey="name"
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#E6E6E6' }}
+                  tickFormatter={(value) => formatCurrency(value)}
+                />
+                <ChartTooltip 
+                  formatter={(value: any) => formatCurrency(value)}
+                />
                 <Bar 
                   dataKey="revenue"
+                  fill={chartColors.primary}
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -347,3 +427,4 @@ function Analytics() {
 }
 
 export default Analytics;
+
