@@ -1604,6 +1604,22 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_analytics_stats_with_trends: {
+        Args: {
+          p_start_date: string
+          p_end_date?: string
+        }
+        Returns: {
+          period: string
+          day: string
+          page_views: number
+          unique_visitors: number
+          registered_users: number
+          active_users: number
+          pro_subscribers: number
+          total_revenue: number
+        }[]
+      }
       get_daily_stats: {
         Args: {
           p_smart_link_id: string

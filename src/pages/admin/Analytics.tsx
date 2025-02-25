@@ -9,8 +9,10 @@ import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analyt
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface AnalyticsStats {
+  period: string;
   day: string;
   page_views: number;
   unique_visitors: number;
@@ -41,27 +43,34 @@ function StatCard({ title, value, change, className }: StatCardProps) {
       <h3 className="font-medium text-muted-foreground">{title}</h3>
       <p className="text-2xl font-bold text-neutral-night">{value}</p>
       {change !== undefined && (
-        <p className={cn(
-          "text-sm mt-1",
-          change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
-        )}>
-          {change > 0 ? "+" : ""}{change}%
-        </p>
+        <div className="flex items-center gap-1 mt-1">
+          {change > 0 ? (
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
+          ) : change < 0 ? (
+            <TrendingDown className="w-4 h-4 text-red-600" />
+          ) : null}
+          <p className={cn(
+            "text-sm",
+            change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
+          )}>
+            {change > 0 ? "+" : ""}{change.toFixed(1)}%
+          </p>
+        </div>
       )}
     </Card>
   );
 }
 
 function Analytics() {
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>('24h');
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>('7d'); // Changed default to 7d
   
-  const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 1);
+  const startDate = subDays(new Date(), timeRanges.find(r => r.value === timeRange)?.days || 7);
 
   const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ["analytics", timeRange],
     queryFn: async () => {
       console.log('Fetching analytics stats for date range:', startDate.toISOString());
-      const { data, error } = await supabase.rpc("get_analytics_stats", {
+      const { data, error } = await supabase.rpc("get_analytics_stats_with_trends", {
         p_start_date: startDate.toISOString(),
       });
 
@@ -113,39 +122,61 @@ function Analytics() {
   const currentMetrics = useMemo(() => {
     if (!stats || stats.length === 0) return null;
 
-    const periodTotals = stats.reduce((acc, day) => ({
-      page_views: acc.page_views + day.page_views,
-      unique_visitors: acc.unique_visitors + day.unique_visitors,
-      registered_users: acc.registered_users + day.registered_users,
-      active_users: acc.active_users + day.active_users,
-      pro_subscribers: acc.pro_subscribers + day.pro_subscribers,
-      total_revenue: acc.total_revenue + day.total_revenue,
-    }), {
-      page_views: 0,
-      unique_visitors: 0,
-      registered_users: 0,
-      active_users: 0,
-      pro_subscribers: 0,
-      total_revenue: 0,
-    });
+    const currentPeriodData = stats.filter(stat => stat.period === 'current');
+    const previousPeriodData = stats.filter(stat => stat.period === 'previous');
 
-    const conversionRate = periodTotals.registered_users > 0 
-      ? ((periodTotals.pro_subscribers / periodTotals.registered_users) * 100).toFixed(2)
-      : "0.00";
+    const calculateTotal = (data: AnalyticsStats[], metric: keyof AnalyticsStats) => {
+      return data.reduce((acc, day) => acc + (day[metric] as number), 0);
+    };
 
-    console.log('Period conversion rate calculation:', {
-      timeRange,
-      newRegisteredUsers: periodTotals.registered_users,
-      newProSubscribers: periodTotals.pro_subscribers,
-      conversionRate
-    });
+    const calculateTrend = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    const currentTotals = {
+      page_views: calculateTotal(currentPeriodData, 'page_views'),
+      unique_visitors: calculateTotal(currentPeriodData, 'unique_visitors'),
+      registered_users: calculateTotal(currentPeriodData, 'registered_users'),
+      active_users: calculateTotal(currentPeriodData, 'active_users'),
+      pro_subscribers: calculateTotal(currentPeriodData, 'pro_subscribers'),
+      total_revenue: calculateTotal(currentPeriodData, 'total_revenue'),
+    };
+
+    const previousTotals = {
+      page_views: calculateTotal(previousPeriodData, 'page_views'),
+      unique_visitors: calculateTotal(previousPeriodData, 'unique_visitors'),
+      registered_users: calculateTotal(previousPeriodData, 'registered_users'),
+      active_users: calculateTotal(previousPeriodData, 'active_users'),
+      pro_subscribers: calculateTotal(previousPeriodData, 'pro_subscribers'),
+      total_revenue: calculateTotal(previousPeriodData, 'total_revenue'),
+    };
+
+    const trends = {
+      page_views: calculateTrend(currentTotals.page_views, previousTotals.page_views),
+      unique_visitors: calculateTrend(currentTotals.unique_visitors, previousTotals.unique_visitors),
+      registered_users: calculateTrend(currentTotals.registered_users, previousTotals.registered_users),
+      active_users: calculateTrend(currentTotals.active_users, previousTotals.active_users),
+      pro_subscribers: calculateTrend(currentTotals.pro_subscribers, previousTotals.pro_subscribers),
+      total_revenue: calculateTrend(currentTotals.total_revenue, previousTotals.total_revenue),
+    };
+
+    const currentConversionRate = currentTotals.registered_users > 0 
+      ? ((currentTotals.pro_subscribers / currentTotals.registered_users) * 100)
+      : 0;
+    
+    const previousConversionRate = previousTotals.registered_users > 0 
+      ? ((previousTotals.pro_subscribers / previousTotals.registered_users) * 100)
+      : 0;
 
     return {
-      latest: stats[stats.length - 1],
-      total: periodTotals,
-      conversionRate
+      latest: currentPeriodData[currentPeriodData.length - 1],
+      total: currentTotals,
+      trends,
+      conversionRate: currentConversionRate.toFixed(2),
+      conversionTrend: calculateTrend(currentConversionRate, previousConversionRate)
     };
-  }, [stats, timeRange]);
+  }, [stats]);
 
   if (isLoading) {
     return (
@@ -197,24 +228,30 @@ function Analytics() {
     }).format(value);
   };
 
-  const trafficData = stats.map(day => ({
-    name: formatDate(day.day),
-    pageViews: day.page_views,
-    visitors: day.unique_visitors,
-  }));
+  const trafficData = stats
+    .filter(stat => stat.period === 'current')
+    .map(day => ({
+      name: formatDate(day.day),
+      pageViews: day.page_views,
+      visitors: day.unique_visitors,
+    }));
 
-  const userJourneyData = stats.map(day => ({
-    name: formatDate(day.day),
-    active: day.active_users,
-    registered: day.registered_users,
-    pro: day.pro_subscribers,
-  }));
+  const userJourneyData = stats
+    .filter(stat => stat.period === 'current')
+    .map(day => ({
+      name: formatDate(day.day),
+      active: day.active_users,
+      registered: day.registered_users,
+      pro: day.pro_subscribers,
+    }));
 
-  const revenueData = stats.map(day => ({
-    name: formatDate(day.day),
-    revenue: day.total_revenue,
-    subscribers: day.pro_subscribers,
-  }));
+  const revenueData = stats
+    .filter(stat => stat.period === 'current')
+    .map(day => ({
+      name: formatDate(day.day),
+      revenue: day.total_revenue,
+      subscribers: day.pro_subscribers,
+    }));
 
   return (
     <div className="space-y-6">
@@ -228,35 +265,39 @@ function Analytics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Revenue"
-          value={`$${currentMetrics.total.total_revenue.toLocaleString(undefined, { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
-          })}`}
+          value={formatCurrency(currentMetrics.total.total_revenue)}
+          change={currentMetrics.trends.total_revenue}
           className="lg:col-span-2"
         />
         <StatCard
           title="Page Views"
           value={currentMetrics.total.page_views.toLocaleString()}
+          change={currentMetrics.trends.page_views}
         />
         <StatCard
           title="Unique Visitors"
           value={currentMetrics.total.unique_visitors.toLocaleString()}
+          change={currentMetrics.trends.unique_visitors}
         />
         <StatCard
           title="Active Users"
           value={currentMetrics.total.active_users.toLocaleString()}
+          change={currentMetrics.trends.active_users}
         />
         <StatCard
           title="New Pro Users"
           value={currentMetrics.total.pro_subscribers.toLocaleString()}
+          change={currentMetrics.trends.pro_subscribers}
         />
         <StatCard
           title="New Registered Users"
           value={currentMetrics.total.registered_users.toLocaleString()}
+          change={currentMetrics.trends.registered_users}
         />
         <StatCard
           title="Period Conversion Rate"
           value={`${currentMetrics.conversionRate}%`}
+          change={currentMetrics.conversionTrend}
         />
       </div>
 
@@ -427,4 +468,3 @@ function Analytics() {
 }
 
 export default Analytics;
-
