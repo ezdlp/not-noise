@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
-import { Bar, BarChart, Line, LineChart } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { Bar, BarChart, Line, LineChart } from "recharts";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsStats {
@@ -239,14 +240,35 @@ function Analytics() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Traffic Overview</h2>
           <div className="h-[300px]">
-            <LineChart
-              data={trafficData}
-              categories={["pageViews", "visitors"]}
-              index="name"
-              colors={["#6851FB", "#37D299"]}
-              valueFormatter={(value: number) => value.toLocaleString()}
+            <ChartContainer 
               className="h-[300px]"
-            />
+              config={{
+                pageViews: {
+                  label: "Page Views",
+                  color: "#6851FB"
+                },
+                visitors: {
+                  label: "Unique Visitors",
+                  color: "#37D299"
+                }
+              }}
+            >
+              <LineChart data={trafficData}>
+                <ChartTooltip />
+                <Line 
+                  type="monotone"
+                  dataKey="pageViews"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="visitors"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ChartContainer>
           </div>
         </Card>
 
@@ -254,14 +276,45 @@ function Analytics() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">User Journey</h2>
           <div className="h-[300px]">
-            <LineChart
-              data={userJourneyData}
-              categories={["active", "registered", "pro"]}
-              index="name"
-              colors={["#F97316", "#FE28A2", "#6851FB"]}
-              valueFormatter={(value: number) => value.toLocaleString()}
+            <ChartContainer 
               className="h-[300px]"
-            />
+              config={{
+                active: {
+                  label: "Active Users",
+                  color: "#F97316"
+                },
+                registered: {
+                  label: "Registered Users",
+                  color: "#FE28A2"
+                },
+                pro: {
+                  label: "Pro Users",
+                  color: "#6851FB"
+                }
+              }}
+            >
+              <LineChart data={userJourneyData}>
+                <ChartTooltip />
+                <Line 
+                  type="monotone"
+                  dataKey="active"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="registered"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="pro"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ChartContainer>
           </div>
         </Card>
 
@@ -269,14 +322,23 @@ function Analytics() {
         <Card className="p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold mb-4">Revenue Trends</h2>
           <div className="h-[300px]">
-            <BarChart
-              data={revenueData}
-              categories={["revenue"]}
-              index="name"
-              colors={["#6851FB"]}
-              valueFormatter={(value: number) => `$${value.toLocaleString()}`}
+            <ChartContainer 
               className="h-[300px]"
-            />
+              config={{
+                revenue: {
+                  label: "Revenue",
+                  color: "#6851FB"
+                }
+              }}
+            >
+              <BarChart data={revenueData}>
+                <ChartTooltip />
+                <Bar 
+                  dataKey="revenue"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
           </div>
         </Card>
       </div>
