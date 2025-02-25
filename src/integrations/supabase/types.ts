@@ -1038,6 +1038,8 @@ export type Database = {
           language: string | null
           lyrics: string | null
           meta_click_event: string | null
+          meta_pixel_added_at: string | null
+          meta_pixel_grandfathered: boolean | null
           meta_pixel_id: string | null
           meta_view_event: string | null
           playlist_metadata: Json | null
@@ -1066,6 +1068,8 @@ export type Database = {
           language?: string | null
           lyrics?: string | null
           meta_click_event?: string | null
+          meta_pixel_added_at?: string | null
+          meta_pixel_grandfathered?: boolean | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           playlist_metadata?: Json | null
@@ -1094,6 +1098,8 @@ export type Database = {
           language?: string | null
           lyrics?: string | null
           meta_click_event?: string | null
+          meta_pixel_added_at?: string | null
+          meta_pixel_grandfathered?: boolean | null
           meta_pixel_id?: string | null
           meta_view_event?: string | null
           playlist_metadata?: Json | null
