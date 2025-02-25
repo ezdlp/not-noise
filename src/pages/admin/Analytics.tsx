@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -105,8 +104,7 @@ function Analytics() {
   const currentMetrics = useMemo(() => {
     if (!stats || stats.length === 0) return null;
 
-    const latest = stats[stats.length - 1];
-    const total = stats.reduce((acc, day) => ({
+    const periodTotals = stats.reduce((acc, day) => ({
       page_views: acc.page_views + day.page_views,
       unique_visitors: acc.unique_visitors + day.unique_visitors,
       registered_users: acc.registered_users + day.registered_users,
@@ -122,16 +120,23 @@ function Analytics() {
       total_revenue: 0,
     });
 
-    const conversionRate = total.unique_visitors > 0 
-      ? ((total.pro_subscribers / total.unique_visitors) * 100).toFixed(2)
+    const conversionRate = periodTotals.registered_users > 0 
+      ? ((periodTotals.pro_subscribers / periodTotals.registered_users) * 100).toFixed(2)
       : "0.00";
 
+    console.log('Period conversion rate calculation:', {
+      timeRange,
+      newRegisteredUsers: periodTotals.registered_users,
+      newProSubscribers: periodTotals.pro_subscribers,
+      conversionRate
+    });
+
     return {
-      latest,
-      total,
+      latest: stats[stats.length - 1],
+      total: periodTotals,
       conversionRate
     };
-  }, [stats]);
+  }, [stats, timeRange]);
 
   if (isLoading) {
     return (
@@ -170,7 +175,6 @@ function Analytics() {
 
   if (!currentMetrics || !stats) return null;
 
-  // Prepare data for charts
   const trafficData = stats.map(day => ({
     name: day.day,
     pageViews: day.page_views,
@@ -199,7 +203,6 @@ function Analytics() {
         </div>
       </div>
 
-      {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Revenue"
@@ -222,20 +225,19 @@ function Analytics() {
           value={currentMetrics.total.active_users.toLocaleString()}
         />
         <StatCard
-          title="Pro Users"
+          title="New Pro Users"
           value={currentMetrics.total.pro_subscribers.toLocaleString()}
         />
         <StatCard
-          title="Registered Users"
+          title="New Registered Users"
           value={currentMetrics.total.registered_users.toLocaleString()}
         />
         <StatCard
-          title="Conversion Rate"
+          title="Period Conversion Rate"
           value={`${currentMetrics.conversionRate}%`}
         />
       </div>
 
-      {/* Traffic Overview */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Traffic Overview</h2>
@@ -272,7 +274,6 @@ function Analytics() {
           </div>
         </Card>
 
-        {/* User Journey */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">User Journey</h2>
           <div className="h-[300px]">
@@ -318,7 +319,6 @@ function Analytics() {
           </div>
         </Card>
 
-        {/* Revenue Trends */}
         <Card className="p-6 lg:col-span-2">
           <h2 className="text-lg font-semibold mb-4">Revenue Trends</h2>
           <div className="h-[300px]">
