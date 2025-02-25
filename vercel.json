@@ -1,13 +1,36 @@
 
 {
+  "images": {
+    "sizes": [140, 160, 400, 500, 600, 800, 1080],
+    "domains": ["soundraiser.io"],
+    "formats": ["image/webp"],
+    "minimumCacheTTL": 60,
+    "dangerouslyAllowSVG": true,
+    "contentSecurityPolicy": "default-src 'self'; script-src 'none'; sandbox;"
+  },
   "rewrites": [
     {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
     {
+      "source": "/lovable-uploads/:path*",
+      "destination": "/_next/image?url=/lovable-uploads/:path*&w=1080&q=80"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*\\.(jpg|jpeg|png|webp|avif|svg)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

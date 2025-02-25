@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface SmartLinkHeaderProps {
   title: string;
@@ -23,11 +24,12 @@ const SmartLinkHeader = ({ title, artistName, artworkUrl, description, contentTy
 
   return (
     <div className="text-center mb-8">
-      <img
+      <OptimizedImage
         src={artworkUrl || "/placeholder.svg"}
         alt={`${title} cover`}
         className="w-72 h-72 mx-auto rounded-2xl shadow-xl mb-6 object-cover"
         onError={handleImageError}
+        priority={true}
       />
       <h1 className="text-2xl font-bold mb-1 text-gray-900">{title}</h1>
       <p className="text-lg text-gray-600 mb-2">
