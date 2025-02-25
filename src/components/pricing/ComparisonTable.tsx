@@ -60,7 +60,7 @@ const ComparisonTable = () => {
     {
       name: "Meta Pixel Integration",
       icon: <Sparkles className="h-4 w-4" />,
-      free: true,
+      free: false,
       pro: true,
       info: "Track your marketing campaigns with Meta Pixel integration",
     },
