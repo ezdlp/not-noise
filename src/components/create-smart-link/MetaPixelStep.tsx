@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { Lock } from "lucide-react";
 
 interface MetaPixelStepProps {
   initialData: any;
@@ -19,12 +22,20 @@ interface MetaPixelStepProps {
 }
 
 const MetaPixelStep = ({ initialData, onNext, onBack }: MetaPixelStepProps) => {
+  const { isFeatureEnabled } = useFeatureAccess();
+  const canUseMetaPixel = isFeatureEnabled('meta_pixel');
+  
   const [enabled, setEnabled] = useState(false);
   const [pixelId, setPixelId] = useState("");
   const [viewEventName, setViewEventName] = useState("SmartLinkView");
   const [clickEventName, setClickEventName] = useState("SmartLinkClick");
 
   const handleNext = () => {
+    if (!canUseMetaPixel && enabled) {
+      toast.error("Meta Pixel tracking is a Pro feature. Please upgrade to use this feature.");
+      return;
+    }
+
     if (enabled && !pixelId.trim()) {
       toast.error("Please enter a Meta Pixel ID");
       return;
@@ -33,7 +44,7 @@ const MetaPixelStep = ({ initialData, onNext, onBack }: MetaPixelStepProps) => {
     onNext({
       ...initialData,
       metaPixel: {
-        enabled,
+        enabled: enabled && canUseMetaPixel,
         pixelId: pixelId.trim(),
         viewEventName,
         clickEventName,
@@ -60,13 +71,35 @@ const MetaPixelStep = ({ initialData, onNext, onBack }: MetaPixelStepProps) => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
-            <Switch id="pixel-enabled" checked={enabled} onCheckedChange={setEnabled} />
-            <Label htmlFor="pixel-enabled">Enable Meta Pixel tracking</Label>
+            <Switch 
+              id="pixel-enabled" 
+              checked={enabled} 
+              onCheckedChange={setEnabled}
+              disabled={!canUseMetaPixel}
+            />
+            <Label htmlFor="pixel-enabled" className="flex items-center gap-2">
+              Enable Meta Pixel tracking
+              {!canUseMetaPixel && (
+                <Lock className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Label>
           </div>
+          {!canUseMetaPixel && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Meta Pixel tracking is available exclusively for Pro users. 
+              <Button 
+                variant="link" 
+                className="px-1 text-primary"
+                onClick={() => window.location.href = '/pricing'}
+              >
+                Upgrade now
+              </Button>
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {enabled && (
+      {enabled && canUseMetaPixel && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Meta Pixel ID</Label>

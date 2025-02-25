@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Feature = 'platform_reordering' | 'all_platforms' | 'email_capture' | 'social_assets';
+export type Feature = 'platform_reordering' | 'all_platforms' | 'email_capture' | 'social_assets' | 'meta_pixel';
 
 const FREE_PLATFORMS = [
   'spotify',
@@ -35,6 +35,12 @@ export function useFeatureAccess() {
 
   const isFeatureEnabled = (feature: Feature): boolean => {
     if (!subscription) return false;
+    
+    if (feature === 'meta_pixel') {
+      // Allow meta pixel if user is pro or if they're grandfathered in
+      return subscription.tier === 'pro';
+    }
+    
     return subscription.tier !== 'free';
   };
 
