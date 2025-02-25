@@ -323,18 +323,23 @@ export default function Pricing() {
                       Meta Pixel Integration
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Fan Email Collection
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Remove Soundraiser Branding
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Priority Support (24/7 response within 12 hours)
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Bulk Analytics Export
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       <div className="flex items-center gap-2">
                         Smart Link Social Media Cards
                         <TooltipProvider delayDuration={0}>
@@ -350,6 +355,7 @@ export default function Pricing() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
                       Early Access to New Features
                     </div>
                   </div>
