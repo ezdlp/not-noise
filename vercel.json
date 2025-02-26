@@ -6,7 +6,7 @@
     "formats": ["image/webp"],
     "minimumCacheTTL": 31536000,
     "dangerouslyAllowSVG": true,
-    "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    "contentSecurityPolicy": "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
   },
   "rewrites": [
     {
@@ -52,8 +52,12 @@
           "value": "noindex"
         },
         {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+          "value": "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
         }
       ]
     },
@@ -69,8 +73,12 @@
           "value": "public, max-age=86400"
         },
         {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+          "value": "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
         }
       ]
     }
