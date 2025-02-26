@@ -15,11 +15,11 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap"
+      "destination": "/api/sitemap"
     },
     {
       "source": "/sitemap-:segment.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap?segment=:segment"
+      "destination": "/api/sitemap?segment=:segment"
     },
     {
       "source": "/lovable-uploads/:path*",

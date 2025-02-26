@@ -10,8 +10,6 @@ const supabase = createClient(
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/xml; charset=UTF-8',
-  'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
 };
 
 // Escape special characters in XML
@@ -37,8 +35,13 @@ serve(async (req) => {
   try {
     console.log("Starting sitemap generation...");
 
-    const url = new URL(req.url);
-    const segment = url.searchParams.get('segment');
+    let segment: string | null = null;
+    
+    // Parse request body if present
+    if (req.method === 'POST') {
+      const body = await req.json();
+      segment = body.segment;
+    }
 
     // Get total URL count for pagination
     const { data: countResult, error: countError } = await supabase
@@ -54,7 +57,7 @@ serve(async (req) => {
     const pageSize = 1000;
     const totalPages = Math.ceil(totalUrls / pageSize);
     
-    console.log(`Total URLs: ${totalUrls}, Pages needed: ${totalPages}\n`);
+    console.log(`Total URLs: ${totalUrls}, Pages needed: ${totalPages}`);
 
     // Generate main sitemap index
     if (!segment) {
@@ -70,10 +73,7 @@ serve(async (req) => {
   </sitemap>`).join('')}
 </sitemapindex>`;
 
-      return new Response(sitemapIndex, { 
-        headers: corsHeaders,
-        status: 200
-      });
+      return new Response(sitemapIndex);
     }
 
     // Extract page number from segment
@@ -101,8 +101,7 @@ serve(async (req) => {
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
-        { headers: corsHeaders }
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`
       );
     }
 
@@ -120,10 +119,7 @@ serve(async (req) => {
 </urlset>`;
 
     console.log(`Generated sitemap with ${urls.length} URLs`);
-    return new Response(sitemap, { 
-      headers: corsHeaders,
-      status: 200
-    });
+    return new Response(sitemap);
 
   } catch (error) {
     console.error("Error in sitemap generation:", error);
@@ -133,10 +129,7 @@ serve(async (req) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Error: ${escapeXml(error.message)} -->
 </urlset>`, 
-      {
-        status: 500,
-        headers: corsHeaders
-      }
+      { status: 500 }
     );
   }
 });
