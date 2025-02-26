@@ -20,7 +20,9 @@ export function OptimizedImage({
   height,
   ...props 
 }: OptimizedImageProps) {
-  const sizes = [400, 600, 800, 1080];
+  const sizes = [304, 760];
+  const defaultWidth = 760;
+  
   const generateSrcSet = () => {
     return sizes
       .map(size => `/_next/image?url=${encodeURIComponent(src)}&w=${size}&q=75 ${size}w`)
@@ -33,7 +35,8 @@ export function OptimizedImage({
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
-      link.href = `/_next/image?url=${encodeURIComponent(src)}&w=1080&q=75`;
+      link.href = `/_next/image?url=${encodeURIComponent(src)}&w=${defaultWidth}&q=75`;
+      link.type = 'image/webp';
       document.head.appendChild(link);
       return () => {
         document.head.removeChild(link);
@@ -46,15 +49,21 @@ export function OptimizedImage({
       <source
         type="image/webp"
         srcSet={generateSrcSet()}
-        sizes="(max-width: 640px) 400px, (max-width: 768px) 600px, (max-width: 1024px) 800px, 1080px"
+        sizes="(max-width: 768px) 304px, 760px"
       />
       <img
-        src={`/_next/image?url=${encodeURIComponent(src)}&w=1080&q=75`}
+        src={`/_next/image?url=${encodeURIComponent(src)}&w=${defaultWidth}&q=75`}
         alt={alt}
         className={cn("", className)}
         loading={priority ? "eager" : "lazy"}
-        width={width}
+        width={width || defaultWidth}
         height={height}
+        onError={(e) => {
+          console.error(`Failed to load image: ${src}`);
+          const img = e.currentTarget;
+          img.onerror = null; // Prevent infinite error loop
+          img.src = "/placeholder.svg";
+        }}
         {...props}
       />
     </picture>

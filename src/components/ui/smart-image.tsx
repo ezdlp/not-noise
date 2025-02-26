@@ -37,6 +37,7 @@ export function SmartImage({
         onError={(e) => {
           console.error("Failed to load image:", src);
           const img = e.currentTarget;
+          img.onerror = null; // Prevent infinite error loop
           img.src = "/placeholder.svg";
         }}
         {...props}
