@@ -22,6 +22,39 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     }
   },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        format: 'es',
+        manualChunks: {
+          'vendor': [
+            '@supabase/supabase-js',
+            '@supabase/postgrest-js',
+            '@supabase/realtime-js',
+            '@supabase/storage-js',
+            '@supabase/functions-js',
+            '@supabase/auth-helpers-react'
+          ],
+          'ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip'
+          ],
+          'charts': ['recharts'],
+          'icons': ['lucide-react', '@fortawesome/react-fontawesome']
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]'
+      }
+    },
+    sourcemap: false,
+    minify: 'esbuild'
+  },
   optimizeDeps: {
     include: [
       '@supabase/supabase-js',
@@ -35,14 +68,6 @@ export default defineConfig(({ mode }) => ({
       target: 'es2020',
       platform: 'browser',
       format: 'esm'
-    }
-  },
-  build: {
-    target: 'es2020',
-    rollupOptions: {
-      output: {
-        format: 'es'
-      }
     }
   }
 }));
