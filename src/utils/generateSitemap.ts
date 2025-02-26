@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from '@/integrations/supabase/types';
 
 interface BlogPost {
   slug: string;
@@ -13,16 +14,18 @@ export async function generateSitemap() {
   try {
     // Fetch all published blog posts
     const { data: posts } = await supabase
-      .from("blog_posts")
-      .select<"blog_posts", BlogPost>("slug")
-      .eq("status", "published");
+      .from('blog_posts')
+      .select('slug')
+      .eq('status', 'published')
+      .returns<BlogPost[]>();
 
     // Fetch all public smart links
     const { data: links } = await supabase
-      .from("smart_links")
-      .select<"smart_links", SmartLink>("slug")
-      .eq("status", "active")
-      .eq("is_private", false);
+      .from('smart_links')
+      .select('slug')
+      .eq('status', 'active')
+      .eq('is_private', false)
+      .returns<SmartLink[]>();
 
     // Define static routes
     const staticUrls = [
