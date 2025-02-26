@@ -20,6 +20,10 @@
     {
       "source": "/lovable-uploads/:path*",
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [

@@ -45,6 +45,12 @@ const LoadingSpinner = () => (
 export default function AppContent() {
   return (
     <Routes>
+      <Route path="/link/:slug" element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <SmartLink />
+        </Suspense>
+      } />
+      
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -126,12 +132,6 @@ export default function AppContent() {
           </Suspense>
         } />
       </Route>
-      
-      <Route path="/link/:slug" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <SmartLink />
-        </Suspense>
-      } />
       
       <Route path="/dashboard" element={
         <Suspense fallback={<LoadingSpinner />}>

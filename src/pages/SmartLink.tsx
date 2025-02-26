@@ -30,7 +30,6 @@ export default function SmartLink() {
         console.log('View recorded successfully with location:', locationInfo?.country_code);
       } catch (error) {
         console.error('Error recording view:', error);
-        // Don't show error toast to end users for analytics
       }
     }
   });
@@ -38,30 +37,12 @@ export default function SmartLink() {
   const { data: smartLink, isLoading, error } = useQuery({
     queryKey: ['smartLink', slug],
     queryFn: async () => {
-      console.log("Fetching smart link:", slug);
+      console.log("Fetching smart link with slug:", slug);
       
-      let smartLinkData; // Changed to let since we might reassign it
+      let smartLinkData;
       
-      const { data: slugData, error: smartLinkError } = await supabase
-        .from('smart_links')
-        .select(`
-          *,
-          platform_links (
-            id,
-            platform_id,
-            platform_name,
-            url
-          ),
-          profiles:user_id (
-            hide_branding
-          )
-        `)
-        .eq('slug', slug)
-        .maybeSingle();
-
-      if (!slugData && !smartLinkError) {
-        console.log("No smart link found with slug, trying ID...");
-        const { data: idData, error: idError } = await supabase
+      try {
+        const { data: slugData, error: smartLinkError } = await supabase
           .from('smart_links')
           .select(`
             *,
@@ -75,33 +56,60 @@ export default function SmartLink() {
               hide_branding
             )
           `)
-          .eq('id', slug)
+          .eq('slug', slug)
           .maybeSingle();
 
-        if (idError) {
-          console.error('Error fetching smart link by ID:', idError);
-          throw idError;
+        console.log("Slug query result:", { data: slugData, error: smartLinkError });
+
+        if (!slugData && !smartLinkError) {
+          console.log("Attempting to fetch by ID:", slug);
+          const { data: idData, error: idError } = await supabase
+            .from('smart_links')
+            .select(`
+              *,
+              platform_links (
+                id,
+                platform_id,
+                platform_name,
+                url
+              ),
+              profiles:user_id (
+                hide_branding
+              )
+            `)
+            .eq('id', slug)
+            .maybeSingle();
+
+          console.log("ID query result:", { data: idData, error: idError });
+
+          if (idError) {
+            console.error('Error fetching smart link by ID:', idError);
+            throw idError;
+          }
+
+          if (!idData) {
+            console.error('Smart link not found by either slug or ID:', slug);
+            throw new Error('Smart link not found');
+          }
+
+          smartLinkData = idData;
+        } else if (smartLinkError) {
+          console.error('Error fetching smart link:', smartLinkError);
+          throw smartLinkError;
+        } else {
+          smartLinkData = slugData;
         }
 
-        if (!idData) {
-          console.error('Smart link not found by either slug or ID:', slug);
+        if (!smartLinkData) {
           throw new Error('Smart link not found');
         }
 
-        smartLinkData = idData;
-      } else if (smartLinkError) {
-        console.error('Error fetching smart link:', smartLinkError);
-        throw smartLinkError;
-      } else {
-        smartLinkData = slugData;
+        console.log("Successfully found smart link:", smartLinkData);
+        return smartLinkData;
+      } catch (error) {
+        console.error("Error in smart link query:", error);
+        throw error;
       }
-
-      if (!smartLinkData) {
-        throw new Error('Smart link not found');
-      }
-
-      console.log("Found smart link:", smartLinkData);
-      return smartLinkData;
     },
     retry: 1,
     staleTime: 5 * 60 * 1000,
@@ -153,6 +161,7 @@ export default function SmartLink() {
   };
 
   if (isLoading) {
+    console.log("Smart link is loading...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
@@ -164,6 +173,7 @@ export default function SmartLink() {
   }
 
   if (error || !smartLink) {
+    console.error("Smart link error or not found:", error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full mx-4">
