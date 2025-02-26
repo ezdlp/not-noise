@@ -1,5 +1,5 @@
 
-import { generateSitemap } from "@/utils/generateSitemap";
+import { supabase } from "@/integrations/supabase/client";
 
 export const config = {
   runtime: 'edge',
@@ -7,13 +7,17 @@ export const config = {
 
 export default async function handler() {
   try {
-    const sitemap = await generateSitemap();
+    const { data, error } = await supabase.functions.invoke('sitemap');
     
-    return new Response(sitemap, {
+    if (error) {
+      throw error;
+    }
+
+    return new Response(data, {
       status: 200,
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
       },
     });
   } catch (error) {
