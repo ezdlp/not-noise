@@ -15,5 +15,8 @@ Allow: /link/
 Allow: /spotify-playlist-promotion
 Allow: /streaming-calculator
 
-# Sitemap location
+# Sitemap locations
 Sitemap: https://soundraiser.io/sitemap.xml
+Sitemap: https://soundraiser.io/sitemap-main.xml
+Sitemap: https://soundraiser.io/sitemap-blog.xml
+

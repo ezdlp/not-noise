@@ -9,7 +9,28 @@ export default async function handler(request: Request) {
   try {
     const url = new URL(request.url)
     const segment = url.searchParams.get('segment')
-    const apiUrl = `https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap${segment ? `?segment=${segment}` : ''}`
+    const type = url.searchParams.get('type')
+    
+    // Handle XSL stylesheet requests
+    if (url.pathname === '/sitemap.xsl') {
+      const response = await fetch('https://soundraiser.io/sitemap.xsl');
+      return new Response(await response.text(), {
+        headers: {
+          'Content-Type': 'text/xsl',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    }
+
+    // Determine sitemap type from URL
+    let sitemapType = type || 'all';
+    if (url.pathname === '/sitemap-blog.xml') {
+      sitemapType = 'blog';
+    } else if (url.pathname === '/sitemap-main.xml') {
+      sitemapType = 'main';
+    }
+
+    const apiUrl = `https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap${segment ? `?segment=${segment}` : ''}${type ? `&type=${type}` : ''}`
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -27,17 +48,19 @@ export default async function handler(request: Request) {
 
     return new Response(xml, {
       headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=1800', // Cache for 30 minutes
+        'Content-Type': 'application/xml; charset=UTF-8',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'X-Robots-Tag': 'noindex',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
-        'Content-Security-Policy': "default-src 'none'; style-src 'none'; script-src 'none'",
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
       },
     });
   } catch (error) {
     console.error('Error in sitemap edge function:', error);
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://soundraiser.io</loc>
@@ -47,10 +70,10 @@ export default async function handler(request: Request) {
 </urlset>`,
       {
         headers: {
-          'Content-Type': 'application/xml',
+          'Content-Type': 'application/xml; charset=UTF-8',
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
-          'Content-Security-Policy': "default-src 'none'; style-src 'none'; script-src 'none'",
+          'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
         },
         status: 500
       }

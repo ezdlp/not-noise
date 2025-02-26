@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url)
   const sitemapSegment = url.searchParams.get('segment')
+  const sitemapType = url.searchParams.get('type') || 'all'
   
   try {
     // Initialize Supabase client
@@ -49,17 +50,18 @@ Deno.serve(async (req) => {
     const urlsPerFile = 50000 // Google's recommended limit
     const totalFiles = Math.ceil(totalUrls / urlsPerFile)
 
-    console.log(`Total URLs: ${totalUrls}, Segments needed: ${totalFiles}`)
+    console.log(`Total URLs: ${totalUrls}, Segments needed: ${totalFiles}, Type: ${sitemapType}`)
 
     // If no segment is specified, return the sitemap index
     if (!sitemapSegment) {
-      const sitemapIndex = generateSitemapIndex(siteUrl, totalFiles)
+      const sitemapIndex = generateSitemapIndex(siteUrl, totalFiles, sitemapType)
       
       return new Response(sitemapIndex, {
         headers: {
           ...corsHeaders,
-          'Content-Type': 'application/xml',
-          'Cache-Control': 'public, max-age=3600',
+          'Content-Type': 'application/xml; charset=UTF-8',
+          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+          'X-Robots-Tag': 'noindex',
         },
       })
     }
@@ -90,13 +92,14 @@ Deno.serve(async (req) => {
     console.log(`Generated sitemap segment ${segmentNumber} with ${urls.length} URLs`)
 
     // Generate XML sitemap for the segment
-    const xml = generateSitemapXml(urls as SitemapUrl[], siteUrl)
+    const xml = generateSitemapXml(urls as SitemapUrl[], siteUrl, sitemapType)
 
     return new Response(xml, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600',
+        'Content-Type': 'application/xml; charset=UTF-8',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'X-Robots-Tag': 'noindex',
       },
     })
   } catch (error) {
@@ -111,32 +114,63 @@ Deno.serve(async (req) => {
   }
 })
 
-function generateSitemapIndex(siteUrl: string, totalFiles: number): string {
-  const sitemaps = Array.from({ length: totalFiles }, (_, i) => `
-    <sitemap>
+function generateSitemapIndex(siteUrl: string, totalFiles: number, type: string): string {
+  const now = new Date().toISOString()
+  const sitemaps = [
+    `<sitemap>
+      <loc>${siteUrl}/sitemap-main.xml</loc>
+      <lastmod>${now}</lastmod>
+    </sitemap>`,
+    `<sitemap>
+      <loc>${siteUrl}/sitemap-blog.xml</loc>
+      <lastmod>${now}</lastmod>
+    </sitemap>`,
+    ...Array.from({ length: totalFiles }, (_, i) => 
+    `    <sitemap>
       <loc>${siteUrl}/sitemap-${i + 1}.xml</loc>
-      <lastmod>${new Date().toISOString()}</lastmod>
-    </sitemap>
-  `).join('')
+      <lastmod>${now}</lastmod>
+    </sitemap>`)
+  ].join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${sitemaps}
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+              xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+              xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+${sitemaps}
 </sitemapindex>`
 }
 
-function generateSitemapXml(urls: SitemapUrl[], siteUrl: string): string {
-  const urlElements = urls.map(url => `
-    <url>
-      <loc>${siteUrl}${url.url}</loc>
-      <lastmod>${new Date(url.updated_at).toISOString()}</lastmod>
-      <changefreq>${url.changefreq}</changefreq>
-      <priority>${url.priority}</priority>
-    </url>
-  `).join('')
+function generateSitemapXml(urls: SitemapUrl[], siteUrl: string, type: string): string {
+  const urlElements = urls.map(url => {
+    const loc = `${siteUrl}${url.url}`
+    const lastmod = new Date(url.updated_at).toISOString()
+    
+    // Add image and news tags for specific content types
+    const additionalTags = url.url.startsWith('/blog/') 
+      ? `    <news:news>
+        <news:publication>
+          <news:name>Soundraiser</news:name>
+          <news:language>en</news:language>
+        </news:publication>
+        <news:publication_date>${lastmod}</news:publication_date>
+        <news:title>Blog Post</news:title>
+      </news:news>`
+      : ''
+
+    return `  <url>
+    <loc>${loc}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>${additionalTags}
+  </url>`
+  }).join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${urlElements}
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+${urlElements}
 </urlset>`
 }
