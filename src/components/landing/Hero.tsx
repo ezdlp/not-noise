@@ -29,7 +29,7 @@ export const Hero = () => {
         <div className="relative order-2 w-full h-[350px] sm:h-[500px] md:h-[700px] mt-8 md:mt-0">
           {/* Background with subtle grain texture */}
           <div 
-            className="absolute inset-0 opacity-[0.06] pointer-events-none"
+            className="absolute inset-0 opacity-[0.06] pointer-events-none will-change-transform"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
             }}
@@ -40,7 +40,7 @@ export const Hero = () => {
             {/* Mobile Layout */}
             <div className="md:hidden relative h-full flex items-center justify-center">
               <div 
-                className="absolute left-0 bottom-0 w-[40%] sm:w-[45%] transform -rotate-6 z-10 transition-all duration-300"
+                className="absolute left-0 bottom-0 w-[40%] sm:w-[45%] transform -rotate-6 z-10 transition-all duration-300 will-change-transform"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <OptimizedImage
@@ -53,7 +53,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute w-[50%] sm:w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300"
+                className="absolute w-[50%] sm:w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300 will-change-transform"
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
               >
                 <OptimizedImage
@@ -67,7 +67,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute right-0 bottom-0 w-[40%] sm:w-[45%] transform rotate-6 z-10 transition-all duration-300"
+                className="absolute right-0 bottom-0 w-[40%] sm:w-[45%] transform rotate-6 z-10 transition-all duration-300 will-change-transform"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <OptimizedImage
@@ -83,7 +83,7 @@ export const Hero = () => {
             {/* Desktop Layout - Now matching mobile layout structure */}
             <div className="hidden md:flex items-center justify-center h-full relative">
               <div 
-                className="absolute w-[45%] left-0 bottom-[10%] transform -rotate-6 z-10 transition-all duration-300 hover:scale-105"
+                className="absolute w-[45%] left-0 bottom-[10%] transform -rotate-6 z-10 transition-all duration-300 hover:scale-105 will-change-transform"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <OptimizedImage
@@ -96,7 +96,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300 hover:scale-105"
+                className="absolute w-[55%] transform translate-y-[-5%] z-20 transition-all duration-300 hover:scale-105 will-change-transform"
                 style={{ 
                   filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))'
                 }}
@@ -112,7 +112,7 @@ export const Hero = () => {
               </div>
               
               <div 
-                className="absolute w-[45%] right-0 bottom-[10%] transform rotate-6 z-10 transition-all duration-300 hover:scale-105"
+                className="absolute w-[45%] right-0 bottom-[10%] transform rotate-6 z-10 transition-all duration-300 hover:scale-105 will-change-transform"
                 style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               >
                 <OptimizedImage
