@@ -47,6 +47,8 @@ export const Hero = () => {
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
                   className="w-full rounded-xl"
+                  width={400}
+                  height={800}
                 />
               </div>
               
@@ -59,6 +61,8 @@ export const Hero = () => {
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                   priority={true}
+                  width={500}
+                  height={1000}
                 />
               </div>
               
@@ -70,6 +74,8 @@ export const Hero = () => {
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
+                  width={400}
+                  height={800}
                 />
               </div>
             </div>
@@ -84,6 +90,8 @@ export const Hero = () => {
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
                   className="w-full rounded-xl"
+                  width={600}
+                  height={1200}
                 />
               </div>
               
@@ -98,6 +106,8 @@ export const Hero = () => {
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                   priority={true}
+                  width={800}
+                  height={1600}
                 />
               </div>
               
@@ -109,6 +119,8 @@ export const Hero = () => {
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
+                  width={600}
+                  height={1200}
                 />
               </div>
             </div>

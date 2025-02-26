@@ -4,7 +4,7 @@
     "sizes": [140, 160, 400, 500, 600, 800, 1080],
     "domains": ["soundraiser.io"],
     "formats": ["image/webp"],
-    "minimumCacheTTL": 60,
+    "minimumCacheTTL": 3600,
     "dangerouslyAllowSVG": true,
     "contentSecurityPolicy": "default-src 'self'; script-src 'none'; sandbox;"
   },
@@ -15,7 +15,7 @@
     },
     {
       "source": "/lovable-uploads/:path*",
-      "destination": "/_next/image?url=/lovable-uploads/:path*&w=1080&q=80"
+      "destination": "/_next/image?url=/lovable-uploads/:path*&w=1080&q=75"
     },
     {
       "source": "/(.*)",
