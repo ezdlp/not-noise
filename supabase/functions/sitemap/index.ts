@@ -1,213 +1,189 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import { corsHeaders } from '../_shared/cors.ts'
-import { compress } from 'https://deno.land/x/brotli@v0.1.4/mod.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { gzip } from "https://deno.land/x/compress@v0.4.5/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-interface SitemapUrl {
-  url: string
-  updated_at: string
-  changefreq: string
-  priority: number
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
-const CONTENT_TYPE = 'application/xml; charset=UTF-8'
+// Initialize Supabase client
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+async function generateSitemapXML(segment?: string): Promise<string> {
+  const baseUrl = 'https://soundraiser.io'
+  const now = new Date().toISOString()
 
-  const url = new URL(req.url)
-  const sitemapSegment = url.searchParams.get('segment')
-  const sitemapType = url.searchParams.get('type') || 'all'
-  
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
+    if (segment === 'index') {
+      // Generate sitemap index
+      const { data: count } = await supabaseClient.rpc('get_sitemap_url_count')
+      const totalUrls = count?.[0]?.total_urls || 0
+      const totalSitemaps = Math.ceil(totalUrls / 1000)
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing environment variables')
-    }
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      xml += '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n'
+      xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 
-    const cacheKey = `sitemap:${sitemapType}:${sitemapSegment || 'index'}`
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
+      // Add main sitemap for static pages
+      xml += `  <sitemap>
+    <loc>${baseUrl}/sitemap-main.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>\n`
+
+      // Add blog sitemap
+      xml += `  <sitemap>
+    <loc>${baseUrl}/sitemap-blog.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>\n`
+
+      xml += '</sitemapindex>'
+      return xml
+    } else if (segment === 'main') {
+      // Generate sitemap for static pages
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      xml += '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n'
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+      // Add static pages
+      const staticPages = [
+        { url: '/', priority: 1.0, changefreq: 'weekly' },
+        { url: '/pricing', priority: 0.9, changefreq: 'weekly' },
+        { url: '/spotify-playlist-promotion', priority: 0.9, changefreq: 'weekly' },
+        { url: '/spotify-royalty-calculator', priority: 0.8, changefreq: 'monthly' },
+        { url: '/blog', priority: 0.9, changefreq: 'daily' },
+        { url: '/create', priority: 0.8, changefreq: 'weekly' },
+      ]
+
+      for (const page of staticPages) {
+        xml += `  <url>
+    <loc>${baseUrl}${page.url}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>\n`
       }
-    })
 
-    // Try to get from cache first
-    const { data: cachedData } = await supabaseClient
-      .from('sitemap_cache')
-      .select('content, etag')
-      .eq('key', cacheKey)
-      .single()
+      xml += '</urlset>'
+      return xml
+    } else {
+      // Generate paginated sitemap for dynamic content
+      const offset = segment ? parseInt(segment) * 1000 : 0
+      const { data: urls } = await supabaseClient.rpc('get_sitemap_urls_paginated', {
+        p_offset: offset,
+        p_limit: 1000
+      })
 
-    // Check if we can return 304 Not Modified
-    const clientETag = req.headers.get('If-None-Match')
-    if (cachedData?.etag && clientETag === cachedData.etag) {
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      xml += '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n'
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+      if (urls) {
+        for (const url of urls) {
+          xml += `  <url>
+    <loc>${baseUrl}${url.url}</loc>
+    <lastmod>${url.updated_at}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>\n`
+        }
+      }
+
+      xml += '</urlset>'
+      return xml
+    }
+  } catch (error) {
+    console.error('Error generating sitemap:', error)
+    throw new Error('Failed to generate sitemap')
+  }
+}
+
+async function handleSitemapRequest(req: Request): Promise<Response> {
+  try {
+    // Extract segment from URL if present
+    const url = new URL(req.url)
+    const segment = url.searchParams.get('segment') || undefined
+
+    // Generate XML content
+    const xml = await generateSitemapXML(segment)
+
+    // Check cache first
+    const cacheKey = segment || 'index'
+    const etag = `"${await crypto.subtle.digest("SHA-1", new TextEncoder().encode(xml)).then(hash => 
+      Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+    )}"`
+
+    // Check if content is fresh
+    const ifNoneMatch = req.headers.get('if-none-match')
+    if (ifNoneMatch === etag) {
       return new Response(null, {
         status: 304,
         headers: {
           ...corsHeaders,
-          'Cache-Control': CACHE_CONTROL,
-          'ETag': cachedData.etag,
-        }
+          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+          'ETag': etag,
+        },
       })
     }
 
-    // Get total URL count
-    const { data: countData, error: countError } = await supabaseClient
-      .rpc('get_sitemap_url_count')
+    // Compress content
+    const compressedContent = await gzip(new TextEncoder().encode(xml))
 
-    if (countError) {
-      console.error('Error fetching URL count:', countError)
-      throw countError
-    }
-
-    const totalUrls = countData[0].total_urls
-    const urlsPerFile = 50000
-    const totalFiles = Math.ceil(totalUrls / urlsPerFile)
-
-    console.log(`Generating sitemap - Total URLs: ${totalUrls}, Segments: ${totalFiles}, Type: ${sitemapType}`)
-
-    let xml: string
-    if (!sitemapSegment) {
-      xml = generateSitemapIndex(siteUrl, totalFiles, sitemapType)
-    } else {
-      const segmentNumber = parseInt(sitemapSegment)
-      if (isNaN(segmentNumber) || segmentNumber < 1 || segmentNumber > totalFiles) {
-        throw new Error('Invalid sitemap segment')
-      }
-
-      const offset = (segmentNumber - 1) * urlsPerFile
-      const { data: urls, error } = await supabaseClient
-        .rpc('get_sitemap_urls_paginated', {
-          p_offset: offset,
-          p_limit: urlsPerFile
-        })
-
-      if (error) {
-        console.error('Error fetching sitemap URLs:', error)
-        throw error
-      }
-
-      if (!urls || urls.length === 0) {
-        console.warn('No URLs returned for segment:', segmentNumber)
-        throw new Error('No URLs found')
-      }
-
-      xml = generateSitemapXml(urls as SitemapUrl[], siteUrl, sitemapType)
-      console.log(`Generated sitemap segment ${segmentNumber} with ${urls.length} URLs`)
-    }
-
-    // Generate ETag
-    const etag = await crypto.subtle.digest(
-      "SHA-1",
-      new TextEncoder().encode(xml)
-    ).then(hash => 
-      Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
-    )
-
-    // Compress the XML
-    const compressedXml = compress(new TextEncoder().encode(xml))
-
-    // Update cache
+    // Store in cache
     await supabaseClient
       .from('sitemap_cache')
       .upsert({
         key: cacheKey,
         content: xml,
-        etag,
+        etag: etag,
         updated_at: new Date().toISOString()
       })
 
-    return new Response(compressedXml, {
+    return new Response(compressedContent, {
       headers: {
         ...corsHeaders,
-        'Content-Type': CONTENT_TYPE,
-        'Cache-Control': CACHE_CONTROL,
-        'Content-Encoding': 'br',
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
         'ETag': etag,
-        'Vary': 'Accept-Encoding',
-        'X-Robots-Tag': 'noindex',
       },
     })
   } catch (error) {
-    console.error('Error generating sitemap:', error)
-    return new Response(JSON.stringify({ 
-      error: 'Error generating sitemap',
-      details: error.message 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+    console.error('Error handling sitemap request:', error)
+    return new Response(
+      '<?xml version="1.0" encoding="UTF-8"?><error>Internal Server Error</error>',
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/xml; charset=utf-8',
+        },
+      }
+    )
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders
     })
   }
+
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: corsHeaders
+    })
+  }
+
+  return handleSitemapRequest(req)
 })
-
-function generateSitemapIndex(siteUrl: string, totalFiles: number, type: string): string {
-  const now = new Date().toISOString()
-  const sitemaps = [
-    `<sitemap>
-      <loc>${siteUrl}/sitemap-main.xml</loc>
-      <lastmod>${now}</lastmod>
-    </sitemap>`,
-    `<sitemap>
-      <loc>${siteUrl}/sitemap-blog.xml</loc>
-      <lastmod>${now}</lastmod>
-    </sitemap>`,
-    ...Array.from({ length: totalFiles }, (_, i) => 
-    `    <sitemap>
-      <loc>${siteUrl}/sitemap-${i + 1}.xml</loc>
-      <lastmod>${now}</lastmod>
-    </sitemap>`)
-  ].join('\n')
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-              xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-              xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-${sitemaps}
-</sitemapindex>`
-}
-
-function generateSitemapXml(urls: SitemapUrl[], siteUrl: string, type: string): string {
-  const urlElements = urls.map(url => {
-    const loc = `${siteUrl}${url.url}`
-    const lastmod = new Date(url.updated_at).toISOString()
-    
-    // Add image and news tags for specific content types
-    const additionalTags = url.url.startsWith('/blog/') 
-      ? `    <news:news>
-        <news:publication>
-          <news:name>Soundraiser</news:name>
-          <news:language>en</news:language>
-        </news:publication>
-        <news:publication_date>${lastmod}</news:publication_date>
-        <news:title>Blog Post</news:title>
-      </news:news>`
-      : ''
-
-    return `  <url>
-    <loc>${loc}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>${url.changefreq}</changefreq>
-    <priority>${url.priority}</priority>${additionalTags}
-  </url>`
-  }).join('\n')
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-${urlElements}
-</urlset>`
-}
