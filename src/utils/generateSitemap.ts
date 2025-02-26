@@ -1,22 +1,27 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Define simple interface for query results
+interface SimpleRow {
+  slug: string | null;
+}
+
 export async function generateSitemap() {
   try {
     // Fetch all published blog posts
-    const { data: posts } = await supabase
+    const posts = await supabase
       .from('blog_posts')
       .select('slug')
       .eq('status', 'published')
-      .throwOnError();
+      .then(({ data }) => (data || []) as SimpleRow[]);
 
     // Fetch all public smart links
-    const { data: links } = await supabase
+    const links = await supabase
       .from('smart_links')
       .select('slug')
       .eq('status', 'active')
       .eq('is_private', false)
-      .throwOnError();
+      .then(({ data }) => (data || []) as SimpleRow[]);
 
     // Define static routes
     const staticUrls = [
@@ -33,8 +38,8 @@ export async function generateSitemap() {
     // Combine all URLs
     const urls = [
       ...staticUrls.map(path => `${baseUrl}${path}`),
-      ...(posts?.map(post => `${baseUrl}/blog/${post.slug}`) || []),
-      ...(links?.map(link => `${baseUrl}/link/${link.slug}`) || [])
+      ...posts.filter(post => post.slug).map(post => `${baseUrl}/blog/${post.slug}`),
+      ...links.filter(link => link.slug).map(link => `${baseUrl}/link/${link.slug}`)
     ];
 
     // Generate sitemap XML
