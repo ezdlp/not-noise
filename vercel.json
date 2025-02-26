@@ -14,6 +14,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/sitemap-:segment.xml",
+      "destination": "/api/sitemap?segment=:segment"
+    },
+    {
       "source": "/lovable-uploads/:path*",
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },

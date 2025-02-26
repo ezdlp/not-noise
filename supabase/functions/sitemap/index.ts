@@ -15,35 +15,14 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Check for authentication
-  const authHeader = req.headers.get('Authorization')
-  const apiKey = req.headers.get('apikey')
-
-  if (!authHeader || !apiKey) {
-    console.error('Missing required headers:', {
-      hasAuthHeader: !!authHeader,
-      hasApiKey: !!apiKey
-    })
-    return new Response(
-      JSON.stringify({ 
-        error: 'Unauthorized',
-        message: 'Missing required authentication headers'
-      }), 
-      { 
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-  }
-
+  const url = new URL(req.url)
+  const sitemapSegment = url.searchParams.get('segment')
+  
   try {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io' // Updated default to production URL
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing environment variables')
@@ -57,11 +36,46 @@ Deno.serve(async (req) => {
       }
     })
 
-    console.log('Fetching sitemap URLs...')
-    
-    // Fetch sitemap URLs from our database function
+    // Get total URL count
+    const { data: countData, error: countError } = await supabaseClient
+      .rpc('get_sitemap_url_count')
+
+    if (countError) {
+      console.error('Error fetching URL count:', countError)
+      throw countError
+    }
+
+    const totalUrls = countData[0].total_urls
+    const urlsPerFile = 50000 // Google's recommended limit
+    const totalFiles = Math.ceil(totalUrls / urlsPerFile)
+
+    console.log(`Total URLs: ${totalUrls}, Segments needed: ${totalFiles}`)
+
+    // If no segment is specified, return the sitemap index
+    if (!sitemapSegment) {
+      const sitemapIndex = generateSitemapIndex(siteUrl, totalFiles)
+      
+      return new Response(sitemapIndex, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/xml',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      })
+    }
+
+    // Get URLs for the requested segment
+    const segmentNumber = parseInt(sitemapSegment)
+    if (isNaN(segmentNumber) || segmentNumber < 1 || segmentNumber > totalFiles) {
+      throw new Error('Invalid sitemap segment')
+    }
+
+    const offset = (segmentNumber - 1) * urlsPerFile
     const { data: urls, error } = await supabaseClient
-      .rpc('get_sitemap_urls')
+      .rpc('get_sitemap_urls_paginated', {
+        p_offset: offset,
+        p_limit: urlsPerFile
+      })
 
     if (error) {
       console.error('Error fetching sitemap URLs:', error)
@@ -69,21 +83,20 @@ Deno.serve(async (req) => {
     }
 
     if (!urls || urls.length === 0) {
-      console.warn('No URLs returned from get_sitemap_urls')
+      console.warn('No URLs returned for segment:', segmentNumber)
       throw new Error('No URLs found')
     }
 
-    console.log(`Generated sitemap with ${urls.length} URLs`)
+    console.log(`Generated sitemap segment ${segmentNumber} with ${urls.length} URLs`)
 
-    // Generate XML sitemap with configurable domain
+    // Generate XML sitemap for the segment
     const xml = generateSitemapXml(urls as SitemapUrl[], siteUrl)
 
-    // Return the XML with appropriate headers
     return new Response(xml, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=1800', // Cache for 30 minutes
+        'Cache-Control': 'public, max-age=3600',
       },
     })
   } catch (error) {
@@ -97,6 +110,20 @@ Deno.serve(async (req) => {
     })
   }
 })
+
+function generateSitemapIndex(siteUrl: string, totalFiles: number): string {
+  const sitemaps = Array.from({ length: totalFiles }, (_, i) => `
+    <sitemap>
+      <loc>${siteUrl}/sitemap-${i + 1}.xml</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+    </sitemap>
+  `).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${sitemaps}
+</sitemapindex>`
+}
 
 function generateSitemapXml(urls: SitemapUrl[], siteUrl: string): string {
   const urlElements = urls.map(url => `
