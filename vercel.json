@@ -35,6 +35,27 @@
           "value": "public, max-age=31536000, immutable, stale-while-revalidate=86400"
         }
       ]
+    },
+    {
+      "source": "/sitemap(:?-[0-9]+)?\\.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=UTF-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        },
+        {
+          "key": "Content-Encoding",
+          "value": "gzip"
+        }
+      ]
     }
   ]
 }

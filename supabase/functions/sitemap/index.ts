@@ -1,6 +1,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
 import { corsHeaders } from '../_shared/cors.ts'
+import { compress } from 'https://deno.land/x/brotli@v0.1.4/mod.ts'
 
 interface SitemapUrl {
   url: string
@@ -9,8 +10,10 @@ interface SitemapUrl {
   priority: number
 }
 
+const CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+const CONTENT_TYPE = 'application/xml; charset=UTF-8'
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -20,7 +23,6 @@ Deno.serve(async (req) => {
   const sitemapType = url.searchParams.get('type') || 'all'
   
   try {
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
@@ -29,6 +31,7 @@ Deno.serve(async (req) => {
       throw new Error('Missing environment variables')
     }
 
+    const cacheKey = `sitemap:${sitemapType}:${sitemapSegment || 'index'}`
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -36,6 +39,26 @@ Deno.serve(async (req) => {
         detectSessionInUrl: false
       }
     })
+
+    // Try to get from cache first
+    const { data: cachedData } = await supabaseClient
+      .from('sitemap_cache')
+      .select('content, etag')
+      .eq('key', cacheKey)
+      .single()
+
+    // Check if we can return 304 Not Modified
+    const clientETag = req.headers.get('If-None-Match')
+    if (cachedData?.etag && clientETag === cachedData.etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ...corsHeaders,
+          'Cache-Control': CACHE_CONTROL,
+          'ETag': cachedData.etag,
+        }
+      })
+    }
 
     // Get total URL count
     const { data: countData, error: countError } = await supabaseClient
@@ -47,58 +70,72 @@ Deno.serve(async (req) => {
     }
 
     const totalUrls = countData[0].total_urls
-    const urlsPerFile = 50000 // Google's recommended limit
+    const urlsPerFile = 50000
     const totalFiles = Math.ceil(totalUrls / urlsPerFile)
 
-    console.log(`Total URLs: ${totalUrls}, Segments needed: ${totalFiles}, Type: ${sitemapType}`)
+    console.log(`Generating sitemap - Total URLs: ${totalUrls}, Segments: ${totalFiles}, Type: ${sitemapType}`)
 
-    // If no segment is specified, return the sitemap index
+    let xml: string
     if (!sitemapSegment) {
-      const sitemapIndex = generateSitemapIndex(siteUrl, totalFiles, sitemapType)
-      
-      return new Response(sitemapIndex, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/xml; charset=UTF-8',
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-          'X-Robots-Tag': 'noindex',
-        },
+      xml = generateSitemapIndex(siteUrl, totalFiles, sitemapType)
+    } else {
+      const segmentNumber = parseInt(sitemapSegment)
+      if (isNaN(segmentNumber) || segmentNumber < 1 || segmentNumber > totalFiles) {
+        throw new Error('Invalid sitemap segment')
+      }
+
+      const offset = (segmentNumber - 1) * urlsPerFile
+      const { data: urls, error } = await supabaseClient
+        .rpc('get_sitemap_urls_paginated', {
+          p_offset: offset,
+          p_limit: urlsPerFile
+        })
+
+      if (error) {
+        console.error('Error fetching sitemap URLs:', error)
+        throw error
+      }
+
+      if (!urls || urls.length === 0) {
+        console.warn('No URLs returned for segment:', segmentNumber)
+        throw new Error('No URLs found')
+      }
+
+      xml = generateSitemapXml(urls as SitemapUrl[], siteUrl, sitemapType)
+      console.log(`Generated sitemap segment ${segmentNumber} with ${urls.length} URLs`)
+    }
+
+    // Generate ETag
+    const etag = await crypto.subtle.digest(
+      "SHA-1",
+      new TextEncoder().encode(xml)
+    ).then(hash => 
+      Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+    )
+
+    // Compress the XML
+    const compressedXml = compress(new TextEncoder().encode(xml))
+
+    // Update cache
+    await supabaseClient
+      .from('sitemap_cache')
+      .upsert({
+        key: cacheKey,
+        content: xml,
+        etag,
+        updated_at: new Date().toISOString()
       })
-    }
 
-    // Get URLs for the requested segment
-    const segmentNumber = parseInt(sitemapSegment)
-    if (isNaN(segmentNumber) || segmentNumber < 1 || segmentNumber > totalFiles) {
-      throw new Error('Invalid sitemap segment')
-    }
-
-    const offset = (segmentNumber - 1) * urlsPerFile
-    const { data: urls, error } = await supabaseClient
-      .rpc('get_sitemap_urls_paginated', {
-        p_offset: offset,
-        p_limit: urlsPerFile
-      })
-
-    if (error) {
-      console.error('Error fetching sitemap URLs:', error)
-      throw error
-    }
-
-    if (!urls || urls.length === 0) {
-      console.warn('No URLs returned for segment:', segmentNumber)
-      throw new Error('No URLs found')
-    }
-
-    console.log(`Generated sitemap segment ${segmentNumber} with ${urls.length} URLs`)
-
-    // Generate XML sitemap for the segment
-    const xml = generateSitemapXml(urls as SitemapUrl[], siteUrl, sitemapType)
-
-    return new Response(xml, {
+    return new Response(compressedXml, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/xml; charset=UTF-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'Content-Type': CONTENT_TYPE,
+        'Cache-Control': CACHE_CONTROL,
+        'Content-Encoding': 'br',
+        'ETag': etag,
+        'Vary': 'Accept-Encoding',
         'X-Robots-Tag': 'noindex',
       },
     })
