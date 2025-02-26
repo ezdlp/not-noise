@@ -1,7 +1,11 @@
 
 import { generateSitemap } from "@/utils/generateSitemap";
 
-export async function GET() {
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler() {
   try {
     const sitemap = await generateSitemap();
     
@@ -9,11 +13,11 @@ export async function GET() {
       status: 200,
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
       },
     });
   } catch (error) {
-    console.error('Sitemap generation error:', error);
+    console.error('Error generating sitemap:', error);
     return new Response('Error generating sitemap', { status: 500 });
   }
 }

@@ -1728,6 +1728,14 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       billing_period: "monthly" | "annual"
+      change_frequency:
+        | "always"
+        | "hourly"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "yearly"
+        | "never"
       content_type: "track" | "album" | "playlist"
       import_status: "pending" | "processing" | "completed" | "failed"
       playlist_category: "curated" | "algorithmic" | "editorial" | "independent"
