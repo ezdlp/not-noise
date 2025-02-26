@@ -1,22 +1,22 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from '@/integrations/supabase/types';
 
-type BlogPost = Database['public']['Tables']['blog_posts']['Row'];
-type SmartLink = Database['public']['Tables']['smart_links']['Row'];
+// Define minimal types for what we need
+type PostResult = { slug: string };
+type LinkResult = { slug: string };
 
 export async function generateSitemap() {
   try {
-    // Fetch all published blog posts
+    // Fetch all published blog posts with explicit typing
     const { data: posts } = await supabase
       .from('blog_posts')
-      .select('slug')
+      .select<string, PostResult>('slug')
       .eq('status', 'published');
 
-    // Fetch all public smart links
+    // Fetch all public smart links with explicit typing
     const { data: links } = await supabase
       .from('smart_links')
-      .select('slug')
+      .select<string, LinkResult>('slug')
       .eq('status', 'active')
       .eq('is_private', false);
 
