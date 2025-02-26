@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
@@ -128,12 +127,6 @@ export default function AppContent() {
         } />
       </Route>
       
-      <Route path="/:slug" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <PublicBlogPost />
-        </Suspense>
-      } />
-      
       <Route path="/link/:slug" element={
         <Suspense fallback={<LoadingSpinner />}>
           <SmartLink />
@@ -212,6 +205,12 @@ export default function AppContent() {
           </Suspense>
         } />
       </Route>
+      
+      <Route path="/:slug" element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <PublicBlogPost />
+        </Suspense>
+      } />
     </Routes>
   );
 }

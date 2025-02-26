@@ -8,6 +8,7 @@ import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { toast } from "sonner";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
+import { Loader2 } from "lucide-react";
 
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
@@ -29,8 +30,7 @@ export default function SmartLink() {
         console.log('View recorded successfully with location:', locationInfo?.country_code);
       } catch (error) {
         console.error('Error recording view:', error);
-        toast.error("Failed to record view");
-        throw error;
+        // Don't show error toast to end users for analytics
       }
     }
   });
@@ -40,7 +40,7 @@ export default function SmartLink() {
     queryFn: async () => {
       console.log("Fetching smart link:", slug);
       
-      let { data: smartLinkData, error: smartLinkError } = await supabase
+      const { data: smartLinkData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
@@ -50,7 +50,7 @@ export default function SmartLink() {
             platform_name,
             url
           ),
-          user_profile:user_id (
+          profiles:user_id (
             hide_branding
           )
         `)
@@ -69,7 +69,7 @@ export default function SmartLink() {
               platform_name,
               url
             ),
-            user_profile:user_id (
+            profiles:user_id (
               hide_branding
             )
           `)
@@ -92,9 +92,14 @@ export default function SmartLink() {
         throw smartLinkError;
       }
 
+      if (!smartLinkData) {
+        throw new Error('Smart link not found');
+      }
+
       console.log("Found smart link:", smartLinkData);
       return smartLinkData;
     },
+    retry: 1,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -139,24 +144,30 @@ export default function SmartLink() {
       }
     } catch (error) {
       console.error('Error in handlePlatformClick:', error);
-      throw error;
+      // Don't show error toast to end users for analytics
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-center mt-4 text-gray-600">Loading your music...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !smartLink) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-red-500">
-          {error ? 'Error loading smart link' : 'Smart link not found'}
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full mx-4">
+          <h1 className="text-2xl font-semibold text-center text-gray-900 mb-4">Link Not Found</h1>
+          <p className="text-center text-gray-600">
+            This link may have been removed or is temporarily unavailable.
+          </p>
+        </div>
       </div>
     );
   }
