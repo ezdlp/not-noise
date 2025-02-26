@@ -44,7 +44,7 @@ serve(async (req) => {
     const pageSize = 1000;
 
     // Generate main sitemap index
-    if (segment === 'main') {
+    if (!segment || segment === 'main') {
       console.log("Generating sitemap index...");
       
       const { data: countResult, error: countError } = await supabase
@@ -77,12 +77,19 @@ serve(async (req) => {
       });
     }
 
+    // Extract page number from segment (e.g., sitemap-1.xml -> 1)
+    const segmentMatch = segment.match(/^(\d+)$/);
+    if (!segmentMatch) {
+      throw new Error('Invalid sitemap segment');
+    }
+    const pageNumber = parseInt(segmentMatch[1]);
+
     // Generate paginated sitemap
-    console.log(`Fetching URLs for page ${page}...`);
+    console.log(`Fetching URLs for page ${pageNumber}...`);
     
     const { data: urls, error: urlError } = await supabase
       .rpc('get_sitemap_urls_paginated', {
-        p_offset: (page - 1) * pageSize,
+        p_offset: (pageNumber - 1) * pageSize,
         p_limit: pageSize
       });
 
