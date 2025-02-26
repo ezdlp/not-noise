@@ -1,18 +1,26 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+interface BlogPost {
+  slug: string;
+}
+
+interface SmartLink {
+  slug: string;
+}
+
 export async function generateSitemap() {
   try {
     // Fetch all published blog posts
     const { data: posts } = await supabase
       .from("blog_posts")
-      .select("slug")
+      .select<"blog_posts", BlogPost>("slug")
       .eq("status", "published");
 
     // Fetch all public smart links
     const { data: links } = await supabase
       .from("smart_links")
-      .select("slug")
+      .select<"smart_links", SmartLink>("slug")
       .eq("status", "active")
       .eq("is_private", false);
 
