@@ -7,9 +7,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { segment } = req.query;
     const format = req.query.format || 'html'; // Default to HTML
     
-    // Call the Supabase Edge Function
+    // Call the Supabase Edge Function with correct params property
     const { data, error } = await supabase.functions.invoke('sitemap', {
-      query: { 
+      params: { 
         segment: segment || null,
         format
       }
