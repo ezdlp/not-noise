@@ -1676,8 +1676,26 @@ export type Database = {
           total_users: number
         }[]
       }
+      get_sitemap_url_count: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_urls: number
+        }[]
+      }
       get_sitemap_urls: {
         Args: Record<PropertyKey, never>
+        Returns: {
+          url: string
+          updated_at: string
+          changefreq: string
+          priority: number
+        }[]
+      }
+      get_sitemap_urls_paginated: {
+        Args: {
+          p_offset?: number
+          p_limit?: number
+        }
         Returns: {
           url: string
           updated_at: string
