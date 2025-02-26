@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,6 @@ import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
 import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
-import { toast } from "sonner";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
 import { Loader2 } from "lucide-react";
@@ -40,7 +40,9 @@ export default function SmartLink() {
     queryFn: async () => {
       console.log("Fetching smart link:", slug);
       
-      const { data: smartLinkData, error: smartLinkError } = await supabase
+      let smartLinkData; // Changed to let since we might reassign it
+      
+      const { data: slugData, error: smartLinkError } = await supabase
         .from('smart_links')
         .select(`
           *,
@@ -57,7 +59,7 @@ export default function SmartLink() {
         .eq('slug', slug)
         .maybeSingle();
 
-      if (!smartLinkData && !smartLinkError) {
+      if (!slugData && !smartLinkError) {
         console.log("No smart link found with slug, trying ID...");
         const { data: idData, error: idError } = await supabase
           .from('smart_links')
@@ -90,6 +92,8 @@ export default function SmartLink() {
       } else if (smartLinkError) {
         console.error('Error fetching smart link:', smartLinkError);
         throw smartLinkError;
+      } else {
+        smartLinkData = slugData;
       }
 
       if (!smartLinkData) {
@@ -263,7 +267,7 @@ export default function SmartLink() {
           )}
         </div>
         
-        {!smartLink.user_profile?.hide_branding && (
+        {!smartLink.profiles?.hide_branding && (
           <div className="mt-8 text-center">
             <a 
               href="https://soundraiser.io" 
