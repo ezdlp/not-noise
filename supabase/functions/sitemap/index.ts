@@ -15,36 +15,55 @@ const corsHeaders = {
   'X-Robots-Tag': 'noindex'
 };
 
+// Escape special characters in XML
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case "'": return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Fetching sitemap URLs...");
+    console.log("Starting sitemap generation...");
 
-    // Get pagination parameters from query string
     const url = new URL(req.url);
     const segment = url.searchParams.get('segment');
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const pageSize = 1000; // Limit number of URLs per sitemap
-    
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+    const pageSize = 1000;
+
+    // Generate main sitemap index
     if (segment === 'main') {
-      // Generate the main sitemap index
-      const { count: totalUrls } = await supabase.rpc('get_sitemap_url_count').single();
+      console.log("Generating sitemap index...");
+      
+      const { data: countResult, error: countError } = await supabase
+        .rpc('get_sitemap_url_count')
+        .maybeSingle();
+
+      if (countError) {
+        console.error("Error fetching URL count:", countError);
+        throw new Error(`Failed to get URL count: ${countError.message}`);
+      }
+
+      const totalUrls = countResult?.total_urls || 0;
       const totalPages = Math.ceil(totalUrls / pageSize);
       
+      console.log(`Total URLs: ${totalUrls}, Total Pages: ${totalPages}`);
+
       const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>https://soundraiser.io/sitemap-main.xml</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>https://soundraiser.io/sitemap-blog.xml</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-  </sitemap>
   ${Array.from({ length: totalPages }, (_, i) => `
   <sitemap>
     <loc>https://soundraiser.io/sitemap-${i + 1}.xml</loc>
@@ -52,19 +71,34 @@ serve(async (req) => {
   </sitemap>`).join('')}
 </sitemapindex>`;
 
-      return new Response(sitemapIndex, { headers: corsHeaders });
+      return new Response(sitemapIndex, { 
+        headers: corsHeaders,
+        status: 200
+      });
     }
 
-    // Fetch URLs from database
-    const { data: urls, error } = await supabase
+    // Generate paginated sitemap
+    console.log(`Fetching URLs for page ${page}...`);
+    
+    const { data: urls, error: urlError } = await supabase
       .rpc('get_sitemap_urls_paginated', {
         p_offset: (page - 1) * pageSize,
         p_limit: pageSize
       });
 
-    if (error) {
-      console.error("Error fetching sitemap URLs:", error);
-      throw error;
+    if (urlError) {
+      console.error("Error fetching URLs:", urlError);
+      throw new Error(`Failed to fetch URLs: ${urlError.message}`);
+    }
+
+    if (!urls || urls.length === 0) {
+      console.log("No URLs found for this page");
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
+        { headers: corsHeaders }
+      );
     }
 
     // Generate sitemap XML
@@ -73,21 +107,31 @@ serve(async (req) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${urls.map(url => `
   <url>
-    <loc>https://soundraiser.io${url.url}</loc>
-    <lastmod>${url.updated_at}</lastmod>
-    <changefreq>${url.changefreq}</changefreq>
+    <loc>https://soundraiser.io${escapeXml(url.url)}</loc>
+    <lastmod>${new Date(url.updated_at).toISOString()}</lastmod>
+    <changefreq>${escapeXml(url.changefreq)}</changefreq>
     <priority>${url.priority}</priority>
   </url>`).join('')}
 </urlset>`;
 
     console.log(`Generated sitemap with ${urls.length} URLs`);
-    return new Response(sitemap, { headers: corsHeaders });
+    return new Response(sitemap, { 
+      headers: corsHeaders,
+      status: 200
+    });
 
   } catch (error) {
-    console.error("Error generating sitemap:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error("Error in sitemap generation:", error);
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Error: ${escapeXml(error.message)} -->
+</urlset>`, 
+      {
+        status: 500,
+        headers: corsHeaders
+      }
+    );
   }
 });
