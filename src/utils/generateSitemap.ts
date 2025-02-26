@@ -1,24 +1,22 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Define minimal types for what we need
-type PostResult = { slug: string };
-type LinkResult = { slug: string };
-
 export async function generateSitemap() {
   try {
-    // Fetch all published blog posts with explicit typing
+    // Fetch all published blog posts
     const { data: posts } = await supabase
       .from('blog_posts')
-      .select<string, PostResult>('slug')
-      .eq('status', 'published');
+      .select('slug')
+      .eq('status', 'published')
+      .throwOnError();
 
-    // Fetch all public smart links with explicit typing
+    // Fetch all public smart links
     const { data: links } = await supabase
       .from('smart_links')
-      .select<string, LinkResult>('slug')
+      .select('slug')
       .eq('status', 'active')
-      .eq('is_private', false);
+      .eq('is_private', false)
+      .throwOnError();
 
     // Define static routes
     const staticUrls = [
