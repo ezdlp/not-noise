@@ -28,25 +28,54 @@ export default defineConfig(({ mode }) => ({
       output: {
         format: 'es',
         manualChunks: {
-          'vendor': [
+          // Core vendor dependencies
+          'supabase-core': [
             '@supabase/supabase-js',
             '@supabase/postgrest-js',
-            '@supabase/realtime-js',
-            '@supabase/storage-js',
-            '@supabase/functions-js',
-            '@supabase/auth-helpers-react'
+            '@supabase/realtime-js'
           ],
-          'ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
+          'supabase-auth': [
+            '@supabase/auth-helpers-react',
+            '@supabase/auth-ui-react',
+            '@supabase/auth-ui-shared'
+          ],
+          'supabase-storage': [
+            '@supabase/storage-js',
+            '@supabase/functions-js'
+          ],
+          // UI components split by functionality
+          'ui-core': [
             '@radix-ui/react-label',
             '@radix-ui/react-slot',
             '@radix-ui/react-switch',
-            '@radix-ui/react-toast',
             '@radix-ui/react-tooltip'
           ],
-          'charts': ['recharts'],
-          'icons': ['lucide-react', '@fortawesome/react-fontawesome']
+          'ui-overlays': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-toast'
+          ],
+          'ui-navigation': [
+            '@radix-ui/react-navigation-menu',
+            '@radix-ui/react-tabs'
+          ],
+          // Charts split by type
+          'charts-core': [
+            'recharts/es6/component/ResponsiveContainer',
+            'recharts/es6/chart/LineChart',
+            'recharts/es6/chart/BarChart'
+          ],
+          'charts-elements': [
+            'recharts/es6/cartesian/Line',
+            'recharts/es6/cartesian/Bar',
+            'recharts/es6/cartesian/XAxis',
+            'recharts/es6/cartesian/YAxis'
+          ],
+          // Icons and visual assets
+          'icons': [
+            'lucide-react', 
+            '@fortawesome/react-fontawesome'
+          ]
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]'
