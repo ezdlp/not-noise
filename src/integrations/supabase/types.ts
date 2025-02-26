@@ -1021,6 +1021,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sitemap_cache: {
+        Row: {
+          content: string
+          created_at: string | null
+          etag: string
+          key: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          etag: string
+          key: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          etag?: string
+          key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       smart_links: {
         Row: {
           artist_name: string
@@ -1693,8 +1717,8 @@ export type Database = {
       }
       get_sitemap_urls_paginated: {
         Args: {
-          p_offset?: number
-          p_limit?: number
+          p_offset: number
+          p_limit: number
         }
         Returns: {
           url: string
