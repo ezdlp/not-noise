@@ -28,29 +28,25 @@ export default defineConfig(({ mode }) => ({
       output: {
         format: 'es',
         manualChunks: {
-          // Core vendor dependencies
-          'supabase-core': [
+          // Core vendor dependencies - grouped by major functionality
+          'vendor-core': [
             '@supabase/supabase-js',
             '@supabase/postgrest-js',
-            '@supabase/realtime-js'
+            '@supabase/realtime-js',
+            '@supabase/storage-js',
+            '@supabase/functions-js',
+            '@supabase/auth-helpers-react'
           ],
-          'supabase-auth': [
-            '@supabase/auth-helpers-react',
+          'vendor-auth': [
             '@supabase/auth-ui-react',
             '@supabase/auth-ui-shared'
           ],
-          'supabase-storage': [
-            '@supabase/storage-js',
-            '@supabase/functions-js'
-          ],
-          // UI components split by functionality
+          // UI components in logical groups
           'ui-core': [
             '@radix-ui/react-label',
             '@radix-ui/react-slot',
             '@radix-ui/react-switch',
-            '@radix-ui/react-tooltip'
-          ],
-          'ui-overlays': [
+            '@radix-ui/react-tooltip',
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
             '@radix-ui/react-toast'
@@ -59,19 +55,18 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-navigation-menu',
             '@radix-ui/react-tabs'
           ],
-          // Charts split by type
-          'charts-core': [
+          // Charts as complete functionality units
+          'charts': [
+            'recharts',
             'recharts/es6/component/ResponsiveContainer',
             'recharts/es6/chart/LineChart',
-            'recharts/es6/chart/BarChart'
-          ],
-          'charts-elements': [
+            'recharts/es6/chart/BarChart',
             'recharts/es6/cartesian/Line',
             'recharts/es6/cartesian/Bar',
             'recharts/es6/cartesian/XAxis',
             'recharts/es6/cartesian/YAxis'
           ],
-          // Icons and visual assets
+          // Icons and assets
           'icons': [
             'lucide-react', 
             '@fortawesome/react-fontawesome'
@@ -91,7 +86,8 @@ export default defineConfig(({ mode }) => ({
       '@supabase/realtime-js',
       '@supabase/storage-js',
       '@supabase/functions-js',
-      '@supabase/auth-helpers-react'
+      '@supabase/auth-helpers-react',
+      'recharts'
     ],
     esbuildOptions: {
       target: 'es2020',
