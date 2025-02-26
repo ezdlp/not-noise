@@ -15,11 +15,11 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
+      "destination": "https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap"
     },
     {
       "source": "/sitemap-:segment.xml",
-      "destination": "/api/sitemap?segment=:segment"
+      "destination": "https://owtufhdsuuyrgmxytclj.functions.supabase.co/sitemap?segment=:segment"
     },
     {
       "source": "/lovable-uploads/:path*",
@@ -50,10 +50,6 @@
         {
           "key": "X-Robots-Tag",
           "value": "noindex"
-        },
-        {
-          "key": "Content-Encoding",
-          "value": "gzip"
         }
       ]
     }

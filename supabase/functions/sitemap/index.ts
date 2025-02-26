@@ -12,7 +12,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Content-Type': 'application/xml; charset=UTF-8',
   'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-  'X-Robots-Tag': 'noindex'
 };
 
 // Escape special characters in XML
@@ -40,27 +39,27 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const segment = url.searchParams.get('segment');
-    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+
+    // Get total URL count for pagination
+    const { data: countResult, error: countError } = await supabase
+      .rpc('get_sitemap_url_count')
+      .maybeSingle();
+
+    if (countError) {
+      console.error("Error fetching URL count:", countError);
+      throw new Error(`Failed to get URL count: ${countError.message}`);
+    }
+
+    const totalUrls = countResult?.total_urls || 0;
     const pageSize = 1000;
+    const totalPages = Math.ceil(totalUrls / pageSize);
+    
+    console.log(`Total URLs: ${totalUrls}, Pages needed: ${totalPages}\n`);
 
     // Generate main sitemap index
-    if (!segment || segment === 'main') {
-      console.log("Generating sitemap index...");
+    if (!segment) {
+      console.log("Generating main sitemap index...");
       
-      const { data: countResult, error: countError } = await supabase
-        .rpc('get_sitemap_url_count')
-        .maybeSingle();
-
-      if (countError) {
-        console.error("Error fetching URL count:", countError);
-        throw new Error(`Failed to get URL count: ${countError.message}`);
-      }
-
-      const totalUrls = countResult?.total_urls || 0;
-      const totalPages = Math.ceil(totalUrls / pageSize);
-      
-      console.log(`Total URLs: ${totalUrls}, Total Pages: ${totalPages}`);
-
       const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -77,15 +76,14 @@ serve(async (req) => {
       });
     }
 
-    // Extract page number from segment (e.g., sitemap-1.xml -> 1)
-    const segmentMatch = segment.match(/^(\d+)$/);
-    if (!segmentMatch) {
+    // Extract page number from segment
+    const pageNumber = parseInt(segment);
+    if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > totalPages) {
       throw new Error('Invalid sitemap segment');
     }
-    const pageNumber = parseInt(segmentMatch[1]);
 
     // Generate paginated sitemap
-    console.log(`Fetching URLs for page ${pageNumber}...`);
+    console.log(`Generating sitemap page ${pageNumber}...`);
     
     const { data: urls, error: urlError } = await supabase
       .rpc('get_sitemap_urls_paginated', {
