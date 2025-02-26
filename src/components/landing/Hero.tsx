@@ -47,8 +47,9 @@ export const Hero = () => {
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
                   className="w-full rounded-xl"
-                  width={400}
-                  height={800}
+                  width={304}
+                  height={645}
+                  sizes="(max-width: 768px) 304px"
                 />
               </div>
               
@@ -61,8 +62,9 @@ export const Hero = () => {
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                   priority={true}
-                  width={500}
-                  height={1000}
+                  width={304}
+                  height={645}
+                  sizes="(max-width: 768px) 304px"
                 />
               </div>
               
@@ -74,13 +76,14 @@ export const Hero = () => {
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
-                  width={400}
-                  height={800}
+                  width={304}
+                  height={645}
+                  sizes="(max-width: 768px) 304px"
                 />
               </div>
             </div>
 
-            {/* Desktop Layout - Now matching mobile layout structure */}
+            {/* Desktop Layout */}
             <div className="hidden md:flex items-center justify-center h-full relative">
               <div 
                 className="absolute w-[45%] left-0 bottom-[10%] transform -rotate-6 z-10 transition-all duration-300 hover:scale-105 will-change-transform"
@@ -90,8 +93,9 @@ export const Hero = () => {
                   src="/lovable-uploads/1312b6ce-b7d7-473c-8627-3a0fdb32da04.png"
                   alt="Taylor Swift Smart Link"
                   className="w-full rounded-xl"
-                  width={600}
-                  height={1200}
+                  width={760}
+                  height={1615}
+                  sizes="(min-width: 769px) 760px"
                 />
               </div>
               
@@ -106,8 +110,9 @@ export const Hero = () => {
                   alt="Tyler Smart Link"
                   className="w-full rounded-xl"
                   priority={true}
-                  width={800}
-                  height={1600}
+                  width={760}
+                  height={1615}
+                  sizes="(min-width: 769px) 760px"
                 />
               </div>
               
@@ -119,8 +124,9 @@ export const Hero = () => {
                   src="/lovable-uploads/d852ef07-009f-4bf3-b033-645c174fb5d5.png"
                   alt="Olivia Rodrigo Smart Link"
                   className="w-full rounded-xl"
-                  width={600}
-                  height={1200}
+                  width={760}
+                  height={1615}
+                  sizes="(min-width: 769px) 760px"
                 />
               </div>
             </div>
