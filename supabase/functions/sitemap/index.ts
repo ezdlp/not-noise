@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { parseXml, serializeToString } from 'https://deno.land/x/xml@2.1.1/mod.ts';
@@ -13,6 +12,49 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Cache duration in seconds (1 hour)
+const CACHE_DURATION = 3600;
+
+async function getCachedContent(cacheKey: string): Promise<{ content: string; etag: string } | null> {
+  const { data: cache, error } = await supabase
+    .from('sitemap_cache')
+    .select('content, etag, updated_at')
+    .eq('key', cacheKey)
+    .single();
+
+  if (error || !cache) {
+    return null;
+  }
+
+  // Check if cache is expired
+  const cacheAge = Date.now() - new Date(cache.updated_at).getTime();
+  if (cacheAge > CACHE_DURATION * 1000) {
+    return null;
+  }
+
+  return { content: cache.content, etag: cache.etag };
+}
+
+async function setCachedContent(cacheKey: string, content: string): Promise<void> {
+  const etag = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content))
+    .then(hash => Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join(''));
+
+  const { error } = await supabase
+    .from('sitemap_cache')
+    .upsert({
+      key: cacheKey,
+      content,
+      etag,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error('Error caching sitemap:', error);
+  }
+}
 
 // Read and parse the XSL template
 const xslTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -201,9 +243,26 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const segment = url.searchParams.get('segment');
-    const format = url.searchParams.get('format') || 'html'; // Default to HTML
+    const format = url.searchParams.get('format') || 'html';
     
     console.log("Processing request:", { segment, format });
+
+    // Generate cache key based on parameters
+    const cacheKey = `sitemap:${segment || 'index'}:${format}`;
+    
+    // Check cache first
+    const cached = await getCachedContent(cacheKey);
+    if (cached) {
+      console.log(`Serving cached sitemap for key: ${cacheKey}`);
+      return new Response(cached.content, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': format === 'html' ? 'text/html; charset=utf-8' : 'application/xml; charset=utf-8',
+          'Cache-Control': `public, max-age=${CACHE_DURATION}, stale-while-revalidate=86400`,
+          'ETag': cached.etag
+        }
+      });
+    }
 
     // Get total URL count for pagination
     const { data: countResult, error: countError } = await supabase
@@ -267,24 +326,21 @@ serve(async (req) => {
     }
 
     // Transform to HTML if requested
+    let responseContent = xmlContent;
     if (format === 'html') {
       console.log("Transforming XML to HTML...");
-      const html = transformXMLToHTML(xmlContent);
-      return new Response(html, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
-        }
-      });
+      responseContent = transformXMLToHTML(xmlContent);
     }
 
-    // Return raw XML
-    return new Response(xmlContent, {
+    // Cache the generated content
+    await setCachedContent(cacheKey, responseContent);
+
+    // Return response
+    return new Response(responseContent, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+        'Content-Type': format === 'html' ? 'text/html; charset=utf-8' : 'application/xml; charset=utf-8',
+        'Cache-Control': `public, max-age=${CACHE_DURATION}, stale-while-revalidate=86400`
       }
     });
 
