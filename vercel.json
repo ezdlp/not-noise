@@ -73,8 +73,7 @@
       "use": "@vercel/static-build",
       "config": {
         "installCommand": "npm ci",
-        "buildCommand": "npm run build",
-        "outputDirectory": "dist"
+        "buildCommand": "npm run build"
       }
     }
   ],

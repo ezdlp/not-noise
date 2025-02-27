@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -33,7 +32,7 @@ interface PostEditorProps {
   onClose: () => void;
 }
 
-function PostEditor({ post, onClose }: PostEditorProps) {
+export function PostEditor({ post, onClose }: PostEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   console.log("Initial post data:", post);
@@ -287,6 +286,3 @@ function PostEditor({ post, onClose }: PostEditorProps) {
     </Form>
   );
 }
-
-// Change from named export to default export
-export default PostEditor;
