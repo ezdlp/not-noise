@@ -112,7 +112,7 @@ export interface SitemapLog {
 
 export interface SitemapCache {
   key: string;
-  content: string;
+  content?: string; // Make content optional since we often only need metadata
   etag: string;
   created_at: string;
   updated_at: string;

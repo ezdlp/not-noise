@@ -10,12 +10,28 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDistance } from 'date-fns';
-import { SitemapCache, SitemapLog } from '@/types/database';
+
+// Define local interface for partial cache items that doesn't require content field
+interface SitemapCacheItem {
+  key: string;
+  updated_at: string;
+  etag: string;
+  created_at: string;
+}
+
+interface SitemapLog {
+  id: string;
+  status: 'success' | 'error' | 'warning';
+  message: string;
+  source: string;
+  created_at: string;
+  details: Record<string, any>;
+}
 
 export default function SitemapManagement() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationType, setGenerationType] = useState('all');
-  const [sitemapCache, setSitemapCache] = useState<SitemapCache[]>([]);
+  const [sitemapCache, setSitemapCache] = useState<SitemapCacheItem[]>([]);
   const [sitemapLogs, setSitemapLogs] = useState<SitemapLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,15 +51,15 @@ export default function SitemapManagement() {
       if (cacheError) throw cacheError;
       setSitemapCache(cacheData || []);
 
-      // Fetch sitemap logs - using the admin path since sitemap_logs may not be in the type definition yet
+      // Fetch sitemap logs
       const { data: logsData, error: logsError } = await supabase
         .from('sitemap_logs')
-        .select('id, status, message, source, created_at, details, updated_at')
+        .select('id, status, message, source, created_at, details')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (logsError) throw logsError;
-      setSitemapLogs(logsData as SitemapLog[] || []);
+      setSitemapLogs(logsData || []);
 
     } catch (error) {
       console.error('Error fetching sitemap data:', error);
@@ -58,7 +74,6 @@ export default function SitemapManagement() {
     try {
       // Call the sitemap-generator function to regenerate sitemaps
       const { error } = await supabase.functions.invoke('sitemap-generator', {
-        method: 'POST',
         body: { 
           type: generationType === 'all' ? 'all' : 'file',
           filename: generationType !== 'all' ? `sitemap-${generationType}.xml` : undefined,
@@ -86,7 +101,6 @@ export default function SitemapManagement() {
   const pingSiteMapSearchEngines = async () => {
     try {
       const { error } = await supabase.functions.invoke('ping-search-engines', {
-        method: 'POST',
         body: { sitemapUrl: 'https://soundraiser.io/sitemap.xml' }
       });
 
