@@ -1,73 +1,42 @@
 
-import { Helmet } from "react-helmet";
-import { DEFAULT_SEO_CONFIG } from "./config";
+import React from 'react';
+import { Helmet } from 'react-helmet';
+import { WebsiteSEO } from './WebsiteSEO';
 
 interface BlogSEOProps {
-  currentPage?: number;
-  totalPages?: number;
+  currentPage: number;
+  totalPages: number;
 }
 
-export function BlogSEO({ currentPage, totalPages }: BlogSEOProps) {
-  const canonicalUrl = `${DEFAULT_SEO_CONFIG.siteUrl}/blog`;
-  const title = "Blog | Soundraiser";
-  const description = "Explore music marketing tips, industry insights, and success stories from artists using Soundraiser.";
-
-  // Prepare CollectionPage schema
-  const collectionSchema = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    headline: "Soundraiser Blog",
-    description: description,
-    publisher: {
-      "@type": "Organization",
-      name: "Soundraiser",
-      logo: {
-        "@type": "ImageObject",
-        url: `${DEFAULT_SEO_CONFIG.siteUrl}/logo.png`,
-      },
-    },
-    url: canonicalUrl,
-  };
+export const BlogSEO: React.FC<BlogSEOProps> = ({ currentPage, totalPages }) => {
+  const baseTitle = "Blog | Soundraiser";
+  const pageTitle = currentPage > 1 ? `${baseTitle} - Page ${currentPage}` : baseTitle;
+  const canonicalUrl = currentPage > 1 
+    ? `https://soundraiser.io/blog/page/${currentPage}` 
+    : 'https://soundraiser.io/blog';
+  
+  // Generate prev/next links for pagination
+  const prevLink = currentPage > 1 
+    ? (currentPage === 2 ? 'https://soundraiser.io/blog' : `https://soundraiser.io/blog/page/${currentPage - 1}`)
+    : null;
+  
+  const nextLink = currentPage < totalPages 
+    ? `https://soundraiser.io/blog/page/${currentPage + 1}` 
+    : null;
 
   return (
-    <Helmet>
-      {/* Basic */}
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <link rel="canonical" href={canonicalUrl} />
-
-      {/* Pagination meta tags */}
-      {currentPage && totalPages && currentPage > 1 && (
-        <>
-          <link
-            rel="prev"
-            href={`${canonicalUrl}${currentPage > 2 ? `/page/${currentPage - 1}` : ""}`}
-          />
-          {currentPage < totalPages && (
-            <link
-              rel="next"
-              href={`${canonicalUrl}/page/${currentPage + 1}`}
-            />
-          )}
-        </>
-      )}
-
-      {/* Open Graph */}
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="Soundraiser" />
-
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-
-      {/* Schema.org structured data */}
-      <script type="application/ld+json">
-        {JSON.stringify(collectionSchema)}
-      </script>
-    </Helmet>
+    <>
+      <WebsiteSEO 
+        title={pageTitle}
+        description="Read the latest music marketing tips, industry trends, and resources for independent musicians."
+        canonicalUrl={canonicalUrl}
+        ogType="website"
+      />
+      <Helmet>
+        {prevLink && <link rel="prev" href={prevLink} />}
+        {nextLink && <link rel="next" href={nextLink} />}
+        {currentPage > 1 && <meta name="robots" content="noindex, follow" />}
+      </Helmet>
+    </>
   );
-}
+};

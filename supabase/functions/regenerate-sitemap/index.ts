@@ -11,22 +11,52 @@ interface SitemapEntry {
 
 serve(async (req) => {
   try {
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+    }
+
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { 
+        status: 204,
+        headers: corsHeaders
+      })
+    }
+    
     // Check if this is a POST request
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 405, 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
     
     // Get API key from request headers
     const apiKey = req.headers.get('x-api-key')
     
-    // Check if the API key is valid (you should use a more secure method in production)
-    if (!apiKey || apiKey !== Deno.env.get('SITEMAP_API_KEY')) {
+    // Check if the API key is valid
+    const sitemapApiKey = Deno.env.get('SITEMAP_API_KEY') || 
+                         (await getConfigValue('sitemap_webhook_key'))
+    
+    if (!apiKey || apiKey !== sitemapApiKey) {
+      console.error('Unauthorized attempt to regenerate sitemap')
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
     
@@ -77,7 +107,7 @@ serve(async (req) => {
       })
     }
     
-    // Add blog posts
+    // Add blog posts and pagination
     const { data: blogPosts, error: blogPostsError } = await supabase
       .from('blog_posts')
       .select('slug, updated_at, published_at')
@@ -86,16 +116,34 @@ serve(async (req) => {
     
     if (blogPostsError) {
       console.error('Error fetching blog posts:', blogPostsError)
-    } else if (blogPosts) {
+    } else if (blogPosts && blogPosts.length > 0) {
+      // Add individual blog posts
       blogPosts.forEach(post => {
         const updateDate = post.updated_at || post.published_at || new Date().toISOString()
         entries.push({
-          loc: `https://soundraiser.io/${post.slug}`,
+          loc: `https://soundraiser.io/blog/${post.slug}`,
           lastmod: new Date(updateDate).toISOString(),
           changefreq: 'weekly',
           priority: '0.8'
         })
       })
+      
+      // Add blog pagination
+      const postsPerPage = 12
+      const totalPages = Math.ceil(blogPosts.length / postsPerPage)
+      
+      if (totalPages > 1) {
+        // First page is already included in static pages
+        // Add pages 2 to n
+        for (let i = 2; i <= totalPages; i++) {
+          entries.push({
+            loc: `https://soundraiser.io/blog/page/${i}`,
+            lastmod: new Date().toISOString(),
+            changefreq: 'daily',
+            priority: '0.8'
+          })
+        }
+      }
     }
     
     // Generate the sitemap XML
@@ -132,7 +180,13 @@ serve(async (req) => {
       console.error('Error storing sitemap:', storageError)
       return new Response(
         JSON.stringify({ error: 'Failed to store sitemap' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
     
@@ -142,13 +196,50 @@ serve(async (req) => {
         message: 'Sitemap regenerated successfully',
         url_count: entries.length
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
   } catch (error) {
     console.error('Error regenerating sitemap:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { 
+        status: 500, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        } 
+      }
     )
   }
 })
+
+// Helper function to get config values from the database
+async function getConfigValue(key: string): Promise<string> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', key)
+      .single()
+    
+    if (error || !data) {
+      console.error(`Error fetching config value for ${key}:`, error)
+      return ''
+    }
+    
+    return data.value
+  } catch (error) {
+    console.error(`Error in getConfigValue for ${key}:`, error)
+    return ''
+  }
+}

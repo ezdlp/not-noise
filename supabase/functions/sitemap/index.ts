@@ -4,6 +4,20 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 serve(async (req) => {
   try {
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { 
+        status: 204,
+        headers: corsHeaders
+      })
+    }
+    
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -33,6 +47,7 @@ serve(async (req) => {
       return new Response(fallbackSitemap, { 
         status: 200, 
         headers: { 
+          ...corsHeaders,
           'Content-Type': 'application/xml; charset=UTF-8',
           'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
         } 
@@ -43,6 +58,7 @@ serve(async (req) => {
     return new Response(data.content, { 
       status: 200, 
       headers: { 
+        ...corsHeaders,
         'Content-Type': 'application/xml; charset=UTF-8',
         'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
         'ETag': data.etag || '',
@@ -67,7 +83,8 @@ serve(async (req) => {
       status: 200, 
       headers: { 
         'Content-Type': 'application/xml; charset=UTF-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'Access-Control-Allow-Origin': '*',
       } 
     })
   }
