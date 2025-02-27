@@ -10,26 +10,12 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDistance } from 'date-fns';
-
-interface SitemapCacheItem {
-  key: string;
-  updated_at: string;
-  etag: string;
-}
-
-interface SitemapLog {
-  id: string;
-  status: 'success' | 'error' | 'warning';
-  message: string;
-  source: string;
-  created_at: string;
-  details: Record<string, any>;
-}
+import { SitemapCache, SitemapLog } from '@/types/database';
 
 export default function SitemapManagement() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationType, setGenerationType] = useState('all');
-  const [sitemapCache, setSitemapCache] = useState<SitemapCacheItem[]>([]);
+  const [sitemapCache, setSitemapCache] = useState<SitemapCache[]>([]);
   const [sitemapLogs, setSitemapLogs] = useState<SitemapLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,21 +29,21 @@ export default function SitemapManagement() {
       // Fetch sitemap cache data
       const { data: cacheData, error: cacheError } = await supabase
         .from('sitemap_cache')
-        .select('key, updated_at, etag')
+        .select('key, updated_at, etag, created_at')
         .order('updated_at', { ascending: false });
 
       if (cacheError) throw cacheError;
       setSitemapCache(cacheData || []);
 
-      // Fetch sitemap logs
+      // Fetch sitemap logs - using the admin path since sitemap_logs may not be in the type definition yet
       const { data: logsData, error: logsError } = await supabase
         .from('sitemap_logs')
-        .select('*')
+        .select('id, status, message, source, created_at, details, updated_at')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (logsError) throw logsError;
-      setSitemapLogs(logsData || []);
+      setSitemapLogs(logsData as SitemapLog[] || []);
 
     } catch (error) {
       console.error('Error fetching sitemap data:', error);

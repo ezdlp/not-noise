@@ -1,24 +1,28 @@
 
 import Analytics from './Analytics';
 import Content from './Content';
-import Import from './Import';
-import MediaLibrary from './MediaLibrary';
 import Overview from './Overview';
+import SitemapManagement from './SitemapManagement';
 import SmartLinks from './SmartLinks';
 import SitemapMonitor from './SitemapMonitor';
 import SitemapHelp from './SitemapHelp';
-import UserLinks from './UserLinks';
+import GenerateInitialSitemap from './GenerateInitialSitemap';
 import Users from './Users';
+import UserLinks from './UserLinks';
+import MediaLibrary from './MediaLibrary';
+import Import from './Import';
 
 export {
   Analytics,
   Content,
-  Import,
-  MediaLibrary,
   Overview,
-  SmartLinks,
+  SitemapManagement,
   SitemapMonitor,
   SitemapHelp,
-  UserLinks,
+  GenerateInitialSitemap,
+  SmartLinks,
   Users,
+  UserLinks,
+  MediaLibrary,
+  Import
 };

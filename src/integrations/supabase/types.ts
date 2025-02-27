@@ -1045,6 +1045,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sitemap_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          message: string
+          source: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          message: string
+          source: string
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          message?: string
+          source?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       smart_links: {
         Row: {
           artist_name: string
