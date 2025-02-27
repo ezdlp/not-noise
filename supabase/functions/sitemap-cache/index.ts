@@ -1,15 +1,8 @@
 
 // sitemap-cache edge function - generates and caches the site's XML sitemap
 
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '../_shared/database.types';
-
-// CORS headers for browser requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/xml; charset=UTF-8',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 // Main handler function
 export const handler = async (req: Request): Promise<Response> => {
@@ -23,7 +16,7 @@ export const handler = async (req: Request): Promise<Response> => {
     const authHeader = req.headers.get('Authorization') || '';
     
     // Initialize Supabase client with service role
-    const supabaseAdmin = createClient<Database>(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') || '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
@@ -139,6 +132,7 @@ export const handler = async (req: Request): Promise<Response> => {
     return new Response(sitemap, { 
       headers: {
         ...corsHeaders,
+        'Content-Type': 'application/xml; charset=UTF-8',
         'ETag': `"${etag}"`,
         'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
       } 
@@ -149,7 +143,7 @@ export const handler = async (req: Request): Promise<Response> => {
     
     try {
       // Initialize Supabase client to log error
-      const supabaseAdmin = createClient<Database>(
+      const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL') || '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
       );
@@ -182,6 +176,7 @@ export const handler = async (req: Request): Promise<Response> => {
     return new Response(fallbackSitemap, { 
       headers: {
         ...corsHeaders,
+        'Content-Type': 'application/xml; charset=UTF-8',
         'Cache-Control': 'public, max-age=300'
       }
     });

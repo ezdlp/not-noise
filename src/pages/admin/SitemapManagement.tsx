@@ -22,7 +22,7 @@ export default function SitemapManagement() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
   const [cacheInfo, setCacheInfo] = useState<SitemapCacheInfo | null>(null);
-  const [logs, setLogs] = useState<SitemapLog[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
@@ -48,15 +48,22 @@ export default function SitemapManagement() {
         });
       }
 
-      // Fetch recent logs
-      const { data: logsData } = await supabase
-        .from('sitemap_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (logsData) {
-        setLogs(logsData as SitemapLog[]);
+      // Fetch recent logs from custom endpoint
+      try {
+        const { data: logsData, error } = await supabase.functions.invoke('sitemap-health');
+        
+        if (error) throw error;
+        
+        if (logsData?.recent_errors) {
+          // Transform to match SitemapLog structure
+          setLogs(logsData.recent_errors.map((log: any) => ({
+            ...log,
+            status: log.status || 'error'
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching sitemap logs:', error);
+        toast.error('Failed to load sitemap logs');
       }
     } catch (error) {
       console.error('Error fetching sitemap data:', error);
@@ -117,11 +124,11 @@ export default function SitemapManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="success" className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Success</Badge>;
+        return <Badge variant="default" className="bg-green-500 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Success</Badge>;
       case 'error':
         return <Badge variant="destructive" className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Error</Badge>;
       case 'warning':
-        return <Badge variant="warning" className="flex items-center gap-1"><Info className="h-3 w-3" /> Warning</Badge>;
+        return <Badge variant="default" className="bg-amber-500 flex items-center gap-1"><Info className="h-3 w-3" /> Warning</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }

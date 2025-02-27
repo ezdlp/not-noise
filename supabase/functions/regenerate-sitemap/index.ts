@@ -2,14 +2,8 @@
 // regenerate-sitemap edge function - trigger for cron job
 // Triggers the sitemap-cache function to regenerate the sitemap
 
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '../_shared/database.types';
-
-// CORS headers for browser requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 // Main handler function
 export const handler = async (req: Request): Promise<Response> => {
@@ -19,7 +13,7 @@ export const handler = async (req: Request): Promise<Response> => {
   }
   
   // Initialize Supabase admin client
-  const supabaseAdmin = createClient<Database>(
+  const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') || '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
   );
