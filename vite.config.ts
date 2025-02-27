@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
       "react": path.resolve("./node_modules/react"),
       "react-dom": path.resolve("./node_modules/react-dom"),
+      "zod": path.resolve("./node_modules/zod"),
+      "@hookform/resolvers": path.resolve("./node_modules/@hookform/resolvers"),
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
     dedupe: [
@@ -69,6 +71,8 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
       },
+      // Ensure zod is not externalized
+      external: [],
       output: {
         format: 'es',
         manualChunks: (id) => {
