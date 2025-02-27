@@ -13,34 +13,43 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Request URL:', req.url);
-    
-    // Extract the filename from the URL path
     const url = new URL(req.url);
-    const pathParts = url.pathname.split('/').filter(Boolean);
+    console.log('Request URL:', req.url);
+    console.log('Search params:', Object.fromEntries(url.searchParams.entries()));
     
-    // The URL pattern will be like:
-    // /sitemap-file/sitemap-static.xml or /sitemap-file/static.xml
-    const lastPathPart = pathParts[pathParts.length - 1];
-    console.log('Path parts:', pathParts);
-    console.log('Last path part:', lastPathPart);
+    // Extract the filename from query parameters (from Vercel rewrite)
+    let fileParam = url.searchParams.get('file');
     
-    // Extract the file parameter
-    let cacheKey;
-    
-    // If the request already contains the full filename (sitemap-xxx.xml)
-    if (lastPathPart.startsWith('sitemap-')) {
-      cacheKey = lastPathPart;
-    } 
-    // If the request comes from vercel rewrite with just the file portion (/sitemap-:file.xml)
-    else if (lastPathPart.endsWith('.xml')) {
-      // This means the URL was something like /sitemap-file/static.xml
-      cacheKey = `sitemap-${lastPathPart}`;
+    // If no file parameter, try to extract from path (for direct calls)
+    if (!fileParam) {
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      fileParam = pathParts[pathParts.length - 1];
+      // Remove .xml extension if present in the path
+      if (fileParam && fileParam.endsWith('.xml')) {
+        fileParam = fileParam.replace(/\.xml$/, '');
+      }
     }
-    // Fallback - try to handle other formats
-    else {
-      cacheKey = `sitemap-${lastPathPart}.xml`;
+    
+    console.log('Extracted file parameter:', fileParam);
+    
+    // Ensure we have a file parameter to look for
+    if (!fileParam) {
+      console.error('No file parameter found in request');
+      return new Response('Missing file parameter', {
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/plain'
+        }
+      });
     }
+    
+    // Construct the cache key - remove any existing 'sitemap-' prefix to avoid duplication
+    let cacheKey = fileParam;
+    if (cacheKey.startsWith('sitemap-')) {
+      cacheKey = cacheKey.substring(8);
+    }
+    cacheKey = `sitemap-${cacheKey}.xml`;
     
     console.log('Looking for cache key:', cacheKey);
 
@@ -51,6 +60,14 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Log the request attempt
+    await supabase.from('sitemap_logs').insert({
+      status: 'info',
+      message: 'Sitemap file requested',
+      source: 'sitemap-file',
+      details: { requestUrl: req.url, cacheKey, fileParam }
+    });
+
     // Fetch the requested sitemap from cache
     const { data, error } = await supabase
       .from('sitemap_cache')
@@ -59,13 +76,23 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (error) {
+      console.error(`Error fetching sitemap: ${error.message}`);
+      
+      // Log the database error
+      await supabase.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Database error fetching sitemap',
+        source: 'sitemap-file',
+        details: { error: error.message, cacheKey }
+      });
+      
       throw new Error(`Error fetching sitemap: ${error.message}`);
     }
 
     if (!data) {
       console.error(`Sitemap not found: ${cacheKey}`);
       
-      // Log cache keys for debugging
+      // Log available cache keys for debugging
       const { data: cacheKeys } = await supabase
         .from('sitemap_cache')
         .select('key')
@@ -73,14 +100,18 @@ Deno.serve(async (req) => {
       
       console.log('Available cache keys:', cacheKeys?.map(item => item.key));
       
+      // Log the not found error
       await supabase.from('sitemap_logs').insert({
         status: 'error',
         message: 'Sitemap not found',
         source: 'sitemap-file',
-        details: { requestedKey: cacheKey }
+        details: { 
+          requestedKey: cacheKey,
+          availableKeys: cacheKeys?.map(item => item.key) 
+        }
       });
       
-      return new Response('Sitemap not found', {
+      return new Response(`Sitemap not found: ${cacheKey}`, {
         status: 404,
         headers: {
           ...corsHeaders,
@@ -91,12 +122,14 @@ Deno.serve(async (req) => {
 
     // Log the successful request
     await supabase.from('sitemap_logs').insert({
-      status: 'info',
+      status: 'success',
       message: 'Sitemap file served',
       source: 'sitemap-file',
       details: { key: cacheKey }
     });
 
+    console.log(`Successfully serving sitemap: ${cacheKey}`);
+    
     // Return the sitemap XML with proper headers
     return new Response(data.content, {
       headers: {
