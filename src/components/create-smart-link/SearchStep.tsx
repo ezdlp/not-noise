@@ -51,6 +51,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     albums: SearchResult[];
   } | null>(null);
   const [isUrlMode, setIsUrlMode] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (input.includes("spotify.com")) {
@@ -65,6 +66,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         setContentType(null);
       }
       setSearchResults(null);
+      setSearchError(null);
     } else {
       setIsUrlMode(false);
       setContentType(null);
@@ -72,6 +74,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
         handleSearch(input);
       } else {
         setSearchResults(null);
+        setSearchError(null);
       }
     }
   }, [input]);
@@ -80,6 +83,8 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     if (!searchQuery.trim()) return;
     
     setIsLoading(true);
+    setSearchError(null);
+    
     try {
       console.log('Initiating search with query:', searchQuery);
       const { data, error } = await supabase.functions.invoke("spotify-search", {
@@ -88,13 +93,32 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
 
       if (error) {
         console.error('Search error:', error);
+        setSearchError("We couldn't connect to Spotify at this moment. Please try again later.");
         throw error;
       }
 
       console.log('Search results:', data);
-      if (!data) throw new Error('No results found');
+      
+      if (!data) {
+        setSearchError("No results found. Try a different search term.");
+        setSearchResults({ tracks: [], albums: [] });
+        return;
+      }
+      
+      if (data.error) {
+        console.error('API returned error:', data.error);
+        setSearchError(`Error from Spotify: ${data.error}`);
+        return;
+      }
       
       setSearchResults(data);
+      
+      // Check if we have empty results
+      if ((!data.tracks || data.tracks.length === 0) && 
+          (!data.albums || data.albums.length === 0)) {
+        setSearchError("No matches found. Try a different search term.");
+      }
+      
     } catch (error) {
       console.error("Error searching:", error);
       toast.error("Failed to search. Please try again.");
@@ -110,14 +134,29 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
     }
 
     setIsLoading(true);
+    setSearchError(null);
+    
     try {
       console.log('Processing URL:', input);
       const { data, error } = await supabase.functions.invoke("spotify-search", {
         body: { url: input }
       });
 
-      if (error) throw error;
-      if (!data) throw new Error("No data returned from Spotify");
+      if (error) {
+        console.error('URL processing error:', error);
+        toast.error("We couldn't process this Spotify URL. Please check that it's valid.");
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error("No data returned from Spotify");
+      }
+      
+      if (data.error) {
+        console.error('API returned error:', data.error);
+        toast.error(`Error processing URL: ${data.error}`);
+        return;
+      }
 
       console.log('URL lookup result:', data);
       onNext(data);
@@ -174,6 +213,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
             </div>
           </div>
 
+          {searchError && (
+            <div className="mt-2 text-sm text-[#FE28A2] bg-[#FE28A2]/5 p-3 rounded-md">
+              {searchError}
+            </div>
+          )}
+
           <div className="mt-4 space-y-2 border-t border-[#E6E6E6] pt-4 my-[28px]">
             <p className="text-sm font-medium text-[#374151] mb-3 my-[6px]">
               Supported formats:
@@ -203,9 +248,16 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
           </div>
         </div>
 
-        {!isUrlMode && searchResults && (
+        {isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#6851FB]"></div>
+            <span className="ml-3 text-sm text-[#6B7280]">Searching Spotify...</span>
+          </div>
+        )}
+
+        {!isUrlMode && searchResults && !isLoading && (
           <div className="space-y-6">
-            {searchResults.tracks.length > 0 && (
+            {searchResults.tracks && searchResults.tracks.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-heading text-lg font-medium">Tracks</h3>
                 <div className="space-y-3">
@@ -216,9 +268,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
                     >
                       <div className="flex items-center gap-4">
                         <img
-                          src={track.artworkUrl}
+                          src={track.artworkUrl || "/placeholder.svg"}
                           alt={track.title}
-                          className="w-16 h-16 rounded-md object-cover shadow-sm"
+                          className="w-16 h-16 rounded-md object-cover shadow-sm bg-gray-100"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-medium text-[#111827] truncate">
@@ -244,7 +299,7 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
               </div>
             )}
 
-            {searchResults.albums.length > 0 && (
+            {searchResults.albums && searchResults.albums.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-heading text-lg font-medium">Albums & EPs</h3>
                 <div className="space-y-3">
@@ -255,9 +310,12 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
                     >
                       <div className="flex items-center gap-4">
                         <img
-                          src={album.artworkUrl}
+                          src={album.artworkUrl || "/placeholder.svg"}
                           alt={album.title}
-                          className="w-16 h-16 rounded-md object-cover shadow-sm"
+                          className="w-16 h-16 rounded-md object-cover shadow-sm bg-gray-100"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-medium text-[#111827] truncate">
@@ -291,7 +349,14 @@ const SearchStep = ({ onNext }: SearchStepProps) => {
             disabled={isLoading || !contentType}
             className="w-full bg-[#6851FB] hover:bg-[#4A47A5] active:bg-[#271153] disabled:bg-[#ECE9FF] h-10 px-4 text-white font-sans font-medium"
           >
-            {isLoading ? "Loading..." : "Continue"}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                Loading...
+              </>
+            ) : (
+              "Continue"
+            )}
           </Button>
         )}
       </div>
