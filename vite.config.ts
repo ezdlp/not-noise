@@ -14,9 +14,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      jsxRuntime: 'automatic',
-      // Force React import in JSX files
+      // Using proper SWC plugin options
       jsxImportSource: 'react',
+      plugins: [['@swc/plugin-emotion', {}]],
     }),
     mode === 'development' &&
     componentTagger(),
@@ -135,8 +135,6 @@ export default defineConfig(({ mode }) => ({
       format: 'esm',
       resolveExtensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
       jsx: 'automatic',
-      jsxFactory: 'React.createElement',
-      jsxFragment: 'React.Fragment',
       logLevel: 'info',
       treeShaking: true,
       minify: true
