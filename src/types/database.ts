@@ -102,7 +102,7 @@ export interface BlogPost {
 
 export interface SitemapLog {
   id: string;
-  status: 'success' | 'error' | 'warning';
+  status: string; // Changed from union type to string to match what comes from the database
   message: string;
   details: Record<string, any>;
   source: string;

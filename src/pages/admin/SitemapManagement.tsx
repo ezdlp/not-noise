@@ -19,9 +19,10 @@ interface SitemapCacheItem {
   created_at: string;
 }
 
+// Using a more flexible interface for logs that accepts any string status
 interface SitemapLog {
   id: string;
-  status: 'success' | 'error' | 'warning';
+  status: string; // Changed from 'success' | 'error' | 'warning' to allow any string
   message: string;
   source: string;
   created_at: string;
