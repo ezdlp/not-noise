@@ -1,210 +1,141 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+// ping-search-engines edge function
+// Notifies major search engines about sitemap updates
 
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '../_shared/database.types';
+
+// CORS headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-interface SearchEnginePingResult {
-  engine: string;
-  status: number;
-  success: boolean;
-  message: string;
-}
+// List of search engines to ping
+const searchEngines = [
+  {
+    name: 'Google',
+    url: 'https://www.google.com/ping',
+    queryParam: 'sitemap',
+  },
+  {
+    name: 'Bing',
+    url: 'https://www.bing.com/ping',
+    queryParam: 'sitemap',
+  }
+];
 
-serve(async (req) => {
+// Main handler function
+export const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204,
-      headers: corsHeaders
-    })
+    return new Response(null, { headers: corsHeaders });
   }
-
+  
+  // Initialize Supabase admin client
+  const supabaseAdmin = createClient<Database>(
+    Deno.env.get('SUPABASE_URL') || '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  );
+  
   try {
-    // Check for API key authentication
-    const apiKey = req.headers.get('x-api-key')
-    const validKey = Deno.env.get('SITEMAP_API_KEY') || 
-                     await getConfigValue('sitemap_webhook_key')
+    // Parse the request body
+    const body = await req.json();
+    const source = body.source || 'api';
+    const sitemapUrl = 'https://soundraiser.io/sitemap.xml';
     
-    // If an API key is not provided or is invalid, return 401
-    if (!apiKey || apiKey !== validKey) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-
-    // Get the site URL from environment or default
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
-    const sitemapUrl = `${siteUrl}/sitemap.xml`
+    console.log(`Pinging search engines with sitemap URL: ${sitemapUrl}`);
     
-    // Log ping attempt
-    await logSitemapEvent('success', 'Search engine ping initiated', 'ping-search-engines')
-    
-    // Define search engines to ping
-    const searchEngines = [
-      {
-        name: 'Google',
-        url: `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
-      },
-      {
-        name: 'Bing',
-        url: `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
+    // Log the start of pinging
+    await supabaseAdmin.from('sitemap_logs').insert({
+      status: 'success',
+      message: 'Started pinging search engines',
+      source: 'ping-search-engines',
+      details: { 
+        trigger_source: source, 
+        sitemap_url: sitemapUrl 
       }
-    ]
+    });
     
     // Ping each search engine
-    const results: SearchEnginePingResult[] = []
+    const pingResults = await Promise.all(
+      searchEngines.map(async (engine) => {
+        try {
+          const pingUrl = `${engine.url}?${engine.queryParam}=${encodeURIComponent(sitemapUrl)}`;
+          console.log(`Pinging ${engine.name} at ${pingUrl}`);
+          
+          const response = await fetch(pingUrl, { method: 'GET' });
+          const success = response.status >= 200 && response.status < 300;
+          
+          return {
+            engine: engine.name,
+            success,
+            status: response.status,
+            statusText: response.statusText,
+          };
+        } catch (error) {
+          console.error(`Error pinging ${engine.name}:`, error);
+          return {
+            engine: engine.name,
+            success: false,
+            error: error.message,
+          };
+        }
+      })
+    );
     
-    for (const engine of searchEngines) {
-      try {
-        const response = await fetch(engine.url, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Soundraiser-SitemapPing/1.0'
-          }
-        })
-        
-        const success = response.status >= 200 && response.status < 300
-        
-        results.push({
-          engine: engine.name,
-          status: response.status,
-          success,
-          message: success ? 'Successfully pinged' : `Failed with status ${response.status}`
-        })
-        
-        // Log the result
-        await logSitemapEvent(
-          success ? 'success' : 'warning',
-          `${engine.name} ping ${success ? 'successful' : 'failed'} with status ${response.status}`,
-          'ping-search-engines',
-          { engine: engine.name, status: response.status }
-        )
-      } catch (error) {
-        results.push({
-          engine: engine.name,
-          status: 0,
-          success: false,
-          message: `Error: ${error.message}`
-        })
-        
-        // Log the error
-        await logSitemapEvent(
-          'error',
-          `${engine.name} ping error: ${error.message}`,
-          'ping-search-engines',
-          { engine: engine.name, error: error.message }
-        )
+    // Log the results
+    const successCount = pingResults.filter(result => result.success).length;
+    const allSuccess = successCount === searchEngines.length;
+    
+    await supabaseAdmin.from('sitemap_logs').insert({
+      status: allSuccess ? 'success' : 'warning',
+      message: `Completed pinging search engines: ${successCount}/${searchEngines.length} successful`,
+      source: 'ping-search-engines',
+      details: { 
+        results: pingResults, 
+        success_count: successCount,
+        total_count: searchEngines.length
       }
-    }
-    
-    // Check if any pings were successful
-    const anySuccess = results.some(r => r.success)
+    });
     
     return new Response(
       JSON.stringify({
-        success: anySuccess,
-        message: anySuccess 
-          ? 'Successfully pinged at least one search engine' 
-          : 'Failed to ping any search engines',
-        results
+        success: true,
+        message: `Completed pinging search engines: ${successCount}/${searchEngines.length} successful`,
+        results: pingResults,
       }),
-      { 
-        status: anySuccess ? 200 : 500, 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json',
+        },
       }
-    )
+    );
+    
   } catch (error) {
+    console.error('Error pinging search engines:', error);
+    
     // Log the error
-    try {
-      await logSitemapEvent(
-        'error',
-        `Unhandled exception during search engine ping: ${error.message}`,
-        'ping-search-engines',
-        { error: error.message, stack: error.stack }
-      )
-    } catch (logError) {
-      console.error('Failed to log sitemap error:', logError)
-      console.error('Original error:', error)
-    }
+    await supabaseAdmin.from('sitemap_logs').insert({
+      status: 'error',
+      message: `Error pinging search engines: ${error.message}`,
+      source: 'ping-search-engines',
+      details: { error: error.stack || 'No stack trace available' }
+    });
     
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message,
       }),
-      { 
-        status: 500, 
-        headers: { 
+      {
+        status: 500,
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json',
+        },
       }
-    )
+    );
   }
-})
-
-// Helper function to get config values from the database
-async function getConfigValue(key: string): Promise<string> {
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
-    const { data, error } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', key)
-      .single()
-    
-    if (error || !data) {
-      console.error(`Error fetching config value for ${key}:`, error)
-      return ''
-    }
-    
-    return data.value
-  } catch (error) {
-    console.error(`Error in getConfigValue for ${key}:`, error)
-    return ''
-  }
-}
-
-// Helper function to log sitemap events
-async function logSitemapEvent(
-  status: 'success' | 'error' | 'warning',
-  message: string,
-  source: string,
-  details: Record<string, any> = {}
-): Promise<void> {
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
-    const { error } = await supabase.from('sitemap_logs').insert({
-      status,
-      message,
-      details,
-      source,
-    })
-    
-    if (error) {
-      console.error('Failed to log sitemap event:', error)
-    }
-  } catch (error) {
-    console.error('Exception while logging sitemap event:', error)
-  }
-}
+};

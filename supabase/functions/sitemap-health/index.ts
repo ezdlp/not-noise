@@ -1,183 +1,176 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+// sitemap-health edge function
+// Checks sitemap health and returns status details
 
-interface HealthCheckResponse {
-  status: 'ok' | 'warn' | 'error';
-  lastUpdated: string | null;
-  age: number | null;
-  urlCount: number | null;
-  errors: string[];
-  warnings: string[];
-}
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '../_shared/database.types';
 
-serve(async (req) => {
-  // CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-  }
+// CORS headers for browser requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
+export const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204,
-      headers: corsHeaders
-    })
+    return new Response(null, { headers: corsHeaders });
   }
-
+  
+  // Initialize Supabase client
+  const supabase = createClient<Database>(
+    Deno.env.get('SUPABASE_URL') || '',
+    Deno.env.get('SUPABASE_ANON_KEY') || ''
+  );
+  
   try {
-    // Check for API key authentication
-    const apiKey = req.headers.get('x-api-key')
-    const validKey = Deno.env.get('SITEMAP_API_KEY') || 
-                     await getConfigValue('sitemap_webhook_key')
-    
-    // If an API key is provided, validate it
-    if (apiKey && apiKey !== validKey) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid API key' }),
-        { 
-          status: 401, 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-
-    // Initialize response object
-    const response: HealthCheckResponse = {
-      status: 'ok',
-      lastUpdated: null,
-      age: null,
-      urlCount: null,
-      errors: [],
-      warnings: []
-    }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Check if sitemap exists in cache
-    const { data: sitemapData, error: sitemapError } = await supabase
+    // Fetch sitemap cache info
+    const { data: cacheData, error: cacheError } = await supabase
       .from('sitemap_cache')
-      .select('content, updated_at')
+      .select('*')
       .eq('key', 'sitemap.xml')
-      .single()
-
-    if (sitemapError) {
-      response.status = 'error'
-      response.errors.push(`Failed to retrieve sitemap: ${sitemapError.message}`)
-    } else if (sitemapData) {
-      // Get basic sitemap info
-      response.lastUpdated = sitemapData.updated_at
-      
-      // Calculate age in hours
-      const updatedAt = new Date(sitemapData.updated_at)
-      const now = new Date()
-      const ageInMs = now.getTime() - updatedAt.getTime()
-      response.age = Math.floor(ageInMs / (1000 * 60 * 60)) // Convert ms to hours
-      
-      // Count URLs in sitemap
-      const urlMatches = sitemapData.content.match(/<url>/g)
-      response.urlCount = urlMatches ? urlMatches.length : 0
-      
-      // Check if sitemap is too old (more than 24 hours)
-      if (response.age > 24) {
-        response.status = 'warn'
-        response.warnings.push(`Sitemap is ${response.age} hours old, which exceeds the 24 hour threshold.`)
-      }
-      
-      // Check if sitemap has too few URLs (less than 10)
-      if (response.urlCount < 10) {
-        response.status = 'warn'
-        response.warnings.push(`Sitemap contains only ${response.urlCount} URLs, which is below the expected minimum of 10.`)
-      }
-    } else {
-      response.status = 'error'
-      response.errors.push('Sitemap not found in database')
+      .maybeSingle();
+    
+    if (cacheError) {
+      throw new Error(`Failed to fetch sitemap cache: ${cacheError.message}`);
     }
     
-    // Check for recent regeneration errors
-    const { data: errorLogs, error: logsError } = await supabase
+    // Determine sitemap health status
+    let healthStatus = 'unknown';
+    let message = 'Unable to determine sitemap status';
+    
+    if (!cacheData) {
+      healthStatus = 'error';
+      message = 'No sitemap found in cache';
+    } else {
+      // Check sitemap age
+      const updateTime = new Date(cacheData.updated_at);
+      const now = new Date();
+      const ageInHours = (now.getTime() - updateTime.getTime()) / (1000 * 60 * 60);
+      
+      // Analyze URL count
+      const urlCount = cacheData.content.match(/<url>/g)?.length || 0;
+      
+      if (ageInHours > 24) {
+        // Sitemap is older than 24 hours
+        healthStatus = 'warning';
+        message = `Sitemap is ${Math.floor(ageInHours)} hours old`;
+      } else if (urlCount < 5) {
+        // Very few URLs in sitemap
+        healthStatus = 'warning';
+        message = `Sitemap contains only ${urlCount} URLs`;
+      } else {
+        // Sitemap appears healthy
+        healthStatus = 'ok';
+        message = 'Sitemap is up to date';
+      }
+    }
+    
+    // Fetch recent error logs
+    const { data: recentErrors, error: logsError } = await supabase
       .from('sitemap_logs')
       .select('*')
       .eq('status', 'error')
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(3);
     
     if (logsError) {
-      response.warnings.push(`Could not check for recent errors: ${logsError.message}`)
-    } else if (errorLogs && errorLogs.length > 0) {
-      // Check if there are recent errors (last 24 hours)
-      const recentErrors = errorLogs.filter(log => {
-        const logTime = new Date(log.created_at)
-        const now = new Date()
-        const ageInHours = (now.getTime() - logTime.getTime()) / (1000 * 60 * 60)
-        return ageInHours < 24
-      })
+      console.warn(`Failed to fetch sitemap logs: ${logsError.message}`);
+    }
+    
+    // Check if there are recent errors within the last hour
+    const hasRecentErrors = recentErrors?.some(log => {
+      const logTime = new Date(log.created_at);
+      const now = new Date();
+      const ageInMinutes = (now.getTime() - logTime.getTime()) / (1000 * 60);
+      return ageInMinutes < 60;
+    });
+    
+    // Override health status if there are recent errors
+    if (hasRecentErrors && healthStatus !== 'error') {
+      healthStatus = 'warning';
+      message = 'Recent errors detected in sitemap system';
+    }
+    
+    // Prepare response data
+    const healthData = {
+      status: healthStatus,
+      message: message,
+      last_updated: cacheData?.updated_at || null,
+      url_count: cacheData ? (cacheData.content.match(/<url>/g)?.length || 0) : 0,
+      etag: cacheData?.etag || null,
+      recency: {
+        age_hours: cacheData 
+          ? Math.round((new Date().getTime() - new Date(cacheData.updated_at).getTime()) / (1000 * 60 * 60) * 10) / 10
+          : null
+      },
+      recent_errors: recentErrors || [],
+      checks_performed_at: new Date().toISOString()
+    };
+    
+    // Log the health check
+    const supabaseAdmin = createClient<Database>(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+    
+    await supabaseAdmin
+      .from('sitemap_logs')
+      .insert({
+        status: 'success',
+        message: `Sitemap health check: ${healthStatus}`,
+        source: 'sitemap-health',
+        details: healthData
+      });
+    
+    // Return health data in response
+    return new Response(
+      JSON.stringify(healthData),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300'
+        }
+      }
+    );
+    
+  } catch (error) {
+    console.error(`Error checking sitemap health: ${error.message}`);
+    
+    // Log the error
+    try {
+      const supabaseAdmin = createClient<Database>(
+        Deno.env.get('SUPABASE_URL') || '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      );
       
-      if (recentErrors.length > 0) {
-        response.status = 'error'
-        response.errors.push(`Found ${recentErrors.length} recent sitemap regeneration errors in the last 24 hours`)
-      }
+      await supabaseAdmin
+        .from('sitemap_logs')
+        .insert({
+          status: 'error',
+          message: `Error checking sitemap health: ${error.message}`,
+          source: 'sitemap-health',
+          details: { error: error.stack || 'No stack trace available' }
+        });
+    } catch (logError) {
+      console.error(`Failed to log error: ${logError.message}`);
     }
-
-    // Return health check response
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
-  } catch (error) {
-    console.error('Health check error:', error)
     
+    // Return error in response
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         status: 'error',
-        errors: [`Unexpected error: ${error.message}`],
-        warnings: []
+        message: `Error checking sitemap health: ${error.message}`,
+        timestamp: new Date().toISOString()
       }),
-      { 
-        status: 500, 
-        headers: { 
+      {
+        status: 500,
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
-    )
+    );
   }
-})
-
-// Helper function to get config values from the database
-async function getConfigValue(key: string): Promise<string> {
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
-    const { data, error } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', key)
-      .single()
-    
-    if (error || !data) {
-      console.error(`Error fetching config value for ${key}:`, error)
-      return ''
-    }
-    
-    return data.value
-  } catch (error) {
-    console.error(`Error in getConfigValue for ${key}:`, error)
-    return ''
-  }
-}
+};
