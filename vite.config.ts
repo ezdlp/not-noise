@@ -13,13 +13,19 @@ export default defineConfig(({ mode }) => ({
     }
   },
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+      // Force React import in JSX files
+      jsxImportSource: 'react',
+    }),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": path.resolve("./node_modules/react"),
+      "react-dom": path.resolve("./node_modules/react-dom"),
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
     dedupe: [
@@ -61,13 +67,15 @@ export default defineConfig(({ mode }) => ({
       transformMixedEsModules: true,
     },
     rollupOptions: {
-      external: [],
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
       output: {
         format: 'es',
         manualChunks: (id) => {
           // Handle specific packages
           if (id.includes('node_modules')) {
-            // Create a single React vendor chunk
+            // Create a single React vendor chunk, including ALL React dependencies
             if (id.includes('react') || 
                 id.includes('react-dom') ||
                 id.includes('@radix-ui')) {
@@ -127,6 +135,8 @@ export default defineConfig(({ mode }) => ({
       format: 'esm',
       resolveExtensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
       jsx: 'automatic',
+      jsxFactory: 'React.createElement',
+      jsxFragment: 'React.Fragment',
       logLevel: 'info',
       treeShaking: true,
       minify: true
