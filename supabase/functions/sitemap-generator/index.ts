@@ -1,15 +1,19 @@
 
-import { corsHeaders, xmlResponse, xmlErrorResponse, createAdminClient, logSitemapEvent, generateETag, SITE_URL, BATCH_SIZE } from '../_shared/sitemap-utils.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { format } from 'https://deno.land/std@0.202.0/datetime/format.ts'
 
-// Generate sitemap index XML
-function generateSitemapIndex(sitemaps: Array<{ filename: string; lastmod: string }>) {
+// Batch size for processing URLs
+const BATCH_SIZE = 1000;
+
+// Create XML for a sitemap index
+function createSitemapIndex(sitemapFiles: string[]): string {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   
-  for (const sitemap of sitemaps) {
+  for (const file of sitemapFiles) {
     xml += '  <sitemap>\n';
-    xml += `    <loc>${SITE_URL}/${sitemap.filename}</loc>\n`;
-    xml += `    <lastmod>${sitemap.lastmod}</lastmod>\n`;
+    xml += `    <loc>https://soundraiser.io/${file}</loc>\n`;
+    xml += `    <lastmod>${format(new Date(), "yyyy-MM-dd")}</lastmod>\n`;
     xml += '  </sitemap>\n';
   }
   
@@ -17,21 +21,28 @@ function generateSitemapIndex(sitemaps: Array<{ filename: string; lastmod: strin
   return xml;
 }
 
-// Generate sitemap XML for a group of URLs
-function generateSitemap(urls: Array<{ loc: string; lastmod?: string; changefreq: string; priority: number }>) {
+// Create XML for a regular sitemap
+function createSitemap(urls: any[]): string {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   
   for (const url of urls) {
     xml += '  <url>\n';
-    xml += `    <loc>${url.loc}</loc>\n`;
+    xml += `    <loc>https://soundraiser.io${url.url}</loc>\n`;
     
-    if (url.lastmod) {
-      xml += `    <lastmod>${url.lastmod}</lastmod>\n`;
+    if (url.updated_at) {
+      const date = new Date(url.updated_at);
+      xml += `    <lastmod>${format(date, "yyyy-MM-dd")}</lastmod>\n`;
     }
     
-    xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
-    xml += `    <priority>${url.priority.toFixed(1)}</priority>\n`;
+    if (url.changefreq) {
+      xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
+    }
+    
+    if (url.priority) {
+      xml += `    <priority>${url.priority}</priority>\n`;
+    }
+    
     xml += '  </url>\n';
   }
   
@@ -39,307 +50,167 @@ function generateSitemap(urls: Array<{ loc: string; lastmod?: string; changefreq
   return xml;
 }
 
-// Main handler function
-export const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// Generate sitemaps and store them in cache
+export async function generateSitemaps(): Promise<string[]> {
+  console.log("Starting sitemap generation");
   
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return xmlErrorResponse('Only POST method is allowed', 405);
-  }
+  // Create a Supabase client with service role
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    {
+      auth: { persistSession: false }
+    }
+  );
   
   try {
-    // Parse request body
-    const { type, filename, trigger } = await req.json();
+    // Get total URL count from database
+    const { data: countData, error: countError } = await supabase.rpc('get_sitemap_url_count');
     
-    // Initialize Supabase client with admin role
-    const supabase = createAdminClient();
+    if (countError) {
+      throw new Error(`Error getting URL count: ${countError.message}`);
+    }
     
-    // Log start of operation
-    await logSitemapEvent(
-      supabase, 
-      'success', 
-      `Started sitemap generation for ${type || 'all'}`, 
-      'sitemap-generator',
-      { type, filename, trigger }
-    );
+    const totalUrls = countData?.total_urls || 0;
+    console.log(`Found ${totalUrls} URLs to include in sitemap`);
     
-    // Collect all sitemaps that will be included in the index
-    const sitemapFiles: Array<{ filename: string; lastmod: string }> = [];
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 1. Generate static pages sitemap
-    const staticPages = [
-      { url: '/', priority: 1.0, changefreq: 'weekly' },
-      { url: '/pricing', priority: 0.9, changefreq: 'weekly' },
-      { url: '/spotify-playlist-promotion', priority: 0.9, changefreq: 'weekly' },
-      { url: '/spotify-royalty-calculator', priority: 0.8, changefreq: 'monthly' },
-      { url: '/blog', priority: 0.9, changefreq: 'daily' },
-      { url: '/create', priority: 0.8, changefreq: 'weekly' },
-    ];
-    
-    if (type === 'index' || type === 'all' || (type === 'file' && filename === 'sitemap-static.xml')) {
-      console.log('Generating static pages sitemap');
+    // If no URLs, just create a static sitemap
+    if (totalUrls === 0) {
+      const staticSitemap = createSitemap([
+        { url: '/', changefreq: 'weekly', priority: 1.0 }
+      ]);
       
-      const staticUrls = staticPages.map(page => ({
-        loc: `${SITE_URL}${page.url}`,
-        lastmod: today,
-        changefreq: page.changefreq,
-        priority: page.priority
-      }));
-      
-      const staticSitemap = generateSitemap(staticUrls);
-      const staticEtag = await generateETag(staticSitemap);
-      
+      // Save to cache
       await supabase
         .from('sitemap_cache')
-        .upsert(
-          { 
-            key: 'sitemap-static.xml',
-            content: staticSitemap,
-            etag: staticEtag,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'key' }
-        );
-      
-      sitemapFiles.push({ 
-        filename: 'sitemap-static.xml', 
-        lastmod: today 
-      });
-      
-      console.log('Static pages sitemap generated successfully');
-    }
-    
-    // 2. Generate blog posts sitemap
-    if (type === 'index' || type === 'all' || (type === 'file' && filename === 'sitemap-blog.xml')) {
-      console.log('Generating blog posts sitemap');
-      
-      const { data: blogPosts, error: blogError } = await supabase
-        .from('blog_posts')
-        .select('slug, published_at, updated_at')
-        .eq('status', 'published');
-      
-      if (blogError) {
-        throw new Error(`Failed to fetch blog posts: ${blogError.message}`);
-      }
-      
-      if (blogPosts && blogPosts.length > 0) {
-        const blogUrls = blogPosts.map(post => ({
-          loc: `${SITE_URL}/blog/${post.slug}`,
-          lastmod: new Date(post.updated_at || post.published_at).toISOString().split('T')[0],
-          changefreq: 'weekly',
-          priority: 0.8
-        }));
-        
-        const blogSitemap = generateSitemap(blogUrls);
-        const blogEtag = await generateETag(blogSitemap);
-        
-        await supabase
-          .from('sitemap_cache')
-          .upsert(
-            { 
-              key: 'sitemap-blog.xml',
-              content: blogSitemap,
-              etag: blogEtag,
-              updated_at: new Date().toISOString()
-            },
-            { onConflict: 'key' }
-          );
-        
-        sitemapFiles.push({ 
-          filename: 'sitemap-blog.xml', 
-          lastmod: today 
+        .upsert({ 
+          key: 'sitemap-static.xml',
+          content: staticSitemap,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
         });
-        
-        console.log(`Blog sitemap generated with ${blogPosts.length} posts`);
-      }
-    }
-    
-    // 3. Generate smart links sitemaps (paginated)
-    if (type === 'index' || type === 'all' || (type === 'file' && filename?.startsWith('sitemap-links-'))) {
-      console.log('Generating smart links sitemaps');
       
-      // Count total smart links with slugs
-      const { count: totalLinks, error: countError } = await supabase
-        .from('smart_links')
-        .select('*', { count: 'exact', head: true })
-        .not('slug', 'is', null);
+      // Create index
+      const sitemapIndex = createSitemapIndex(['sitemap-static.xml']);
       
-      if (countError) {
-        throw new Error(`Failed to count smart links: ${countError.message}`);
-      }
-      
-      const totalPages = Math.ceil((totalLinks || 0) / BATCH_SIZE);
-      console.log(`Found ${totalLinks} smart links, will create ${totalPages} sitemap files`);
-      
-      // If generating a specific links sitemap file
-      if (type === 'file' && filename?.startsWith('sitemap-links-')) {
-        const pageMatch = filename.match(/sitemap-links-(\d+)\.xml/);
-        if (pageMatch && pageMatch[1]) {
-          const page = parseInt(pageMatch[1], 10);
-          
-          if (page > 0 && page <= totalPages) {
-            await generateSmartLinkSitemap(supabase, page, BATCH_SIZE, sitemapFiles);
-          } else {
-            console.error(`Requested page ${page} is out of range (1-${totalPages})`);
-          }
-        }
-      } 
-      // If generating all links sitemaps
-      else {
-        for (let page = 1; page <= totalPages; page++) {
-          await generateSmartLinkSitemap(supabase, page, BATCH_SIZE, sitemapFiles);
-        }
-      }
-    }
-    
-    // 4. Finally, generate the sitemap index if requested
-    if (type === 'index' || type === 'all') {
-      console.log('Generating sitemap index');
-      
-      const sitemapIndex = generateSitemapIndex(sitemapFiles);
-      const indexEtag = await generateETag(sitemapIndex);
-      
+      // Save index to cache
       await supabase
         .from('sitemap_cache')
-        .upsert(
-          { 
-            key: 'sitemap-index.xml',
-            content: sitemapIndex,
-            etag: indexEtag,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'key' }
-        );
-      
-      console.log(`Sitemap index generated with ${sitemapFiles.length} sitemaps`);
-    }
-    
-    // Log successful completion
-    await logSitemapEvent(
-      supabase, 
-      'success', 
-      `Completed sitemap generation for ${type || 'all'}`, 
-      'sitemap-generator',
-      { 
-        type, 
-        filename, 
-        generated_files: sitemapFiles.map(f => f.filename),
-        file_count: sitemapFiles.length
-      }
-    );
-    
-    // Ping search engines if this was a full generation
-    if (type === 'all') {
-      try {
-        await supabase.functions.invoke('ping-search-engines', {
-          body: { sitemapUrl: `${SITE_URL}/sitemap.xml` }
+        .upsert({
+          key: 'sitemap-index.xml',
+          content: sitemapIndex,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
         });
-      } catch (pingError) {
-        console.error(`Failed to ping search engines: ${pingError.message}`);
-      }
+      
+      return ['sitemap-static.xml'];
     }
     
-    // Return success response
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Successfully generated sitemaps for ${type || 'all'}`,
-        files: sitemapFiles.map(f => f.filename)
-      }),
-      { 
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        } 
-      }
-    );
+    // Calculate number of sitemap files needed
+    const totalFiles = Math.ceil(totalUrls / BATCH_SIZE);
+    const sitemapFiles: string[] = [];
     
-  } catch (error) {
-    console.error(`Error generating sitemap: ${error.message}`);
-    
-    // Try to log the error
-    try {
-      const supabase = createAdminClient();
-      await logSitemapEvent(
-        supabase, 
-        'error', 
-        `Error generating sitemap: ${error.message}`, 
-        'sitemap-generator',
-        { error: error.stack || 'No stack trace available' }
+    // Process URLs in batches
+    for (let i = 0; i < totalFiles; i++) {
+      const offset = i * BATCH_SIZE;
+      const batch = Math.min(BATCH_SIZE, totalUrls - offset);
+      
+      console.log(`Processing batch ${i+1}/${totalFiles} (offset ${offset}, limit ${batch})`);
+      
+      // Get URLs for this batch using our fixed function
+      const { data: urls, error: urlsError } = await supabase.rpc(
+        'get_sitemap_urls_fixed',
+        { p_offset: offset, p_limit: batch }
       );
-    } catch (logError) {
-      console.error(`Failed to log error: ${logError.message}`);
+      
+      if (urlsError) {
+        throw new Error(`Error getting URLs for batch ${i+1}: ${urlsError.message}`);
+      }
+      
+      if (!urls || urls.length === 0) {
+        console.log(`No URLs returned for batch ${i+1}`);
+        continue;
+      }
+      
+      // Determine sitemap type based on URLs in this batch
+      let sitemapType = 'general';
+      if (i === 0) {
+        // Check first URL to see if it's a specific type
+        const firstUrl = urls[0].url;
+        if (firstUrl.startsWith('/blog/')) {
+          sitemapType = 'blog';
+        } else if (firstUrl.startsWith('/link/')) {
+          sitemapType = 'links';
+        } else {
+          sitemapType = 'static';
+        }
+      } else {
+        sitemapType = `part${i}`;
+      }
+      
+      // Generate sitemap filename
+      const filename = `sitemap-${sitemapType}.xml`;
+      sitemapFiles.push(filename);
+      
+      // Create and save sitemap for this batch
+      const sitemap = createSitemap(urls);
+      
+      await supabase
+        .from('sitemap_cache')
+        .upsert({
+          key: filename,
+          content: sitemap,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
+        });
+      
+      console.log(`Saved sitemap file: ${filename}`);
     }
     
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: `Error generating sitemap: ${error.message}`
-      }),
-      { 
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        } 
-      }
-    );
-  }
-};
-
-// Helper function to generate a single smart links sitemap page
-async function generateSmartLinkSitemap(supabase: any, page: number, batchSize: number, sitemapFiles: Array<{ filename: string; lastmod: string }>) {
-  const offset = (page - 1) * batchSize;
-  
-  console.log(`Generating smart links sitemap page ${page} (offset: ${offset}, limit: ${batchSize})`);
-  
-  const { data: links, error: linksError } = await supabase
-    .from('smart_links')
-    .select('slug, updated_at')
-    .not('slug', 'is', null)
-    .order('updated_at', { ascending: false })
-    .range(offset, offset + batchSize - 1);
-  
-  if (linksError) {
-    throw new Error(`Failed to fetch smart links for page ${page}: ${linksError.message}`);
-  }
-  
-  if (links && links.length > 0) {
-    const linkUrls = links.map(link => ({
-      loc: `${SITE_URL}/link/${link.slug}`,
-      lastmod: new Date(link.updated_at).toISOString().split('T')[0],
-      changefreq: 'monthly',
-      priority: 0.7
-    }));
-    
-    const linkSitemap = generateSitemap(linkUrls);
-    const linkEtag = await generateETag(linkSitemap);
-    const filename = `sitemap-links-${page}.xml`;
+    // Create and save sitemap index
+    const sitemapIndex = createSitemapIndex(sitemapFiles);
     
     await supabase
       .from('sitemap_cache')
-      .upsert(
-        { 
-          key: filename,
-          content: linkSitemap,
-          etag: linkEtag,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'key' }
-      );
+      .upsert({
+        key: 'sitemap-index.xml',
+        content: sitemapIndex,
+        etag: crypto.randomUUID(),
+        updated_at: new Date().toISOString()
+      });
     
-    sitemapFiles.push({ 
-      filename, 
-      lastmod: new Date().toISOString().split('T')[0] 
-    });
+    console.log('Saved sitemap index file');
     
-    console.log(`Generated smart links sitemap page ${page} with ${links.length} links`);
-  } else {
-    console.log(`No smart links found for page ${page}`);
+    // Return list of generated files
+    return sitemapFiles;
+    
+  } catch (error) {
+    console.error('Error generating sitemaps:', error);
+    
+    // Log the error to the database
+    await supabase
+      .from('sitemap_logs')
+      .insert({
+        status: 'error',
+        message: `Error generating sitemap: ${error.message}`,
+        source: 'sitemap-generator',
+        details: { 
+          error: error.message,
+          stack: error.stack
+        }
+      });
+    
+    throw error;
+  }
+}
+
+// If this module is run directly, generate sitemaps
+if (import.meta.main) {
+  try {
+    const files = await generateSitemaps();
+    console.log(`Generated ${files.length} sitemap files`);
+  } catch (error) {
+    console.error('Fatal error in sitemap generation:', error);
+    Deno.exit(1);
   }
 }

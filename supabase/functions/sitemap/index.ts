@@ -20,9 +20,11 @@ Deno.serve(async (req) => {
   
   try {
     // Create a Supabase client using the Deno runtime environment variables
+    // We use the SERVICE_ROLE_KEY to ensure we can always access the sitemap_cache
+    // even if RLS policies aren't properly configured
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: { persistSession: false }
       }
