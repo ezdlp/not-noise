@@ -23,9 +23,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Define explicit path to zod's index file rather than directory
+      "zod": path.resolve("./node_modules/zod/lib/index.js"),
       "react": path.resolve("./node_modules/react"),
       "react-dom": path.resolve("./node_modules/react-dom"),
-      "zod": path.resolve("./node_modules/zod"),
       "@hookform/resolvers": path.resolve("./node_modules/@hookform/resolvers"),
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
@@ -61,7 +62,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'es2020',
-    chunkSizeWarningLimit: 500, // Moved to correct location
+    chunkSizeWarningLimit: 500,
     commonjsOptions: {
       include: [/node_modules/],
       extensions: ['.js', '.cjs', '.mjs', '.ts'],
@@ -201,6 +202,10 @@ export default defineConfig(({ mode }) => ({
     }
   },
   ssr: {
-    noExternal: ['zod', '@hookform/resolvers']
+    // Force zod to be processed correctly for SSR
+    noExternal: ['zod', '@hookform/resolvers'],
+    optimizeDeps: {
+      disabled: false
+    }
   }
 }));

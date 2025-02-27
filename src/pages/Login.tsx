@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod"; // Import named export from zod
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const formSchema = z.object({
