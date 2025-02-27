@@ -35,11 +35,15 @@ declare global {
       ready: (callback: () => void) => void;
       execute: (siteKey: string, options: { action: string }) => Promise<string>;
     };
+    loadRecaptcha: () => Promise<any>;
+    recaptchaLoaded: boolean;
+    onRecaptchaLoaded: (recaptcha: any) => void;
   }
 }
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
+  const [recaptchaLoading, setRecaptchaLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
@@ -47,6 +51,7 @@ export default function Register() {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [recaptchaError, setRecaptchaError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,10 +64,29 @@ export default function Register() {
   });
 
   useEffect(() => {
-    window.grecaptcha?.ready(() => {
-      setRecaptchaLoaded(true);
-      console.log('reCAPTCHA ready');
-    });
+    // Load reCAPTCHA using the function defined in index.html
+    const loadRecaptchaScript = async () => {
+      try {
+        setRecaptchaLoading(true);
+        setRecaptchaError(null);
+        
+        if (typeof window.loadRecaptcha === 'function') {
+          await window.loadRecaptcha();
+          setRecaptchaLoaded(true);
+          console.log('reCAPTCHA loaded successfully');
+        } else {
+          console.error('loadRecaptcha function not found');
+          setRecaptchaError('Could not load security verification. Please refresh the page and try again.');
+        }
+      } catch (err) {
+        console.error('Error loading reCAPTCHA:', err);
+        setRecaptchaError('Failed to load security verification. Please refresh the page and try again.');
+      } finally {
+        setRecaptchaLoading(false);
+      }
+    };
+
+    loadRecaptchaScript();
   }, []);
 
   useEffect(() => {
@@ -306,6 +330,12 @@ export default function Register() {
           </Alert>
         )}
 
+        {recaptchaError && (
+          <Alert variant="destructive" className="w-full">
+            <AlertDescription>{recaptchaError}</AlertDescription>
+          </Alert>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
             <FormField
@@ -403,12 +433,17 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || !recaptchaLoaded}
+              disabled={loading || recaptchaLoading || !recaptchaLoaded}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
+                </>
+              ) : recaptchaLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading security verification...
                 </>
               ) : (
                 'Create account'
