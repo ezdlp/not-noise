@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -71,45 +70,46 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
       },
-      // Ensure zod is not externalized
+      // Don't externalize any dependencies
       external: [],
       output: {
         format: 'es',
-        manualChunks: (id) => {
-          // Handle specific packages
-          if (id.includes('node_modules')) {
-            // Create a single React vendor chunk, including ALL React dependencies
-            if (id.includes('react') || 
-                id.includes('react-dom') ||
-                id.includes('@radix-ui')) {
-              return 'vendor-react';
-            }
-            
-            if (id.includes('zod') || 
-                id.includes('react-hook-form') || 
-                id.includes('@hookform/resolvers')) {
-              return 'vendor-forms';
-            }
-            
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
-            
-            if (id.includes('lucide-react') || 
-                id.includes('@fortawesome')) {
-              return 'vendor-icons';
-            }
-            
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
-            }
-            
-            // Default vendor chunk for other node_modules
-            return 'vendor';
-          }
+        manualChunks: {
+          // Put React and all its dependencies in a single chunk that loads first
+          'react-vendor': [
+            'react',
+            'react-dom',
+            'react/jsx-runtime',
+            '@radix-ui/react-primitive',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-compose-refs',
+            '@radix-ui/primitive',
+            '@radix-ui/react-context',
+            '@radix-ui/react-presence',
+            '@radix-ui/react-use-callback-ref',
+            '@radix-ui/react-use-controllable-state'
+          ],
+          // Forms-related packages
+          'forms-vendor': [
+            'zod',
+            'react-hook-form',
+            '@hookform/resolvers'
+          ],
+          // Other vendor packages
+          'supabase-vendor': [
+            '@supabase/supabase-js',
+            '@supabase/postgrest-js',
+            '@supabase/realtime-js',
+            '@supabase/storage-js',
+            '@supabase/functions-js',
+            '@supabase/auth-helpers-react'
+          ]
         },
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]'
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        // Ensure proper loading order
+        entryFileNames: 'assets/[name]-[hash].js'
       }
     },
     sourcemap: false,
@@ -129,7 +129,12 @@ export default defineConfig(({ mode }) => ({
       '@supabase/storage-js',
       '@supabase/functions-js',
       '@supabase/auth-helpers-react',
-      'recharts'
+      'recharts',
+      // Include all Radix UI components that use hooks
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tabs'
     ],
     exclude: [],
     esbuildOptions: {
