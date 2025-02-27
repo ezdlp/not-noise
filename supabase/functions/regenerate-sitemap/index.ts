@@ -1,134 +1,326 @@
 
-// regenerate-sitemap edge function - trigger for cron job
-// Triggers the sitemap-cache function to regenerate the sitemap
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+// Define CORS headers 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Content-Type': 'application/json'
+}
 
-// Main handler function
-export const handler = async (req: Request): Promise<Response> => {
+// Helper to generate the sitemap for static pages
+const generateStaticSitemap = () => {
+  const date = new Date().toISOString().split('T')[0];
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://soundraiser.io/</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/pricing</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/spotify-playlist-promotion</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/spotify-royalty-calculator</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/blog</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/create</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/login</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://soundraiser.io/register</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>`;
+}
+
+// Helper to generate sitemap index
+const generateSitemapIndex = (sitemapFiles) => {
+  const date = new Date().toISOString().split('T')[0];
+  const sitemaps = sitemapFiles.map(file => 
+    `  <sitemap>
+    <loc>https://soundraiser.io/sitemap-${file}.xml</loc>
+    <lastmod>${date}</lastmod>
+  </sitemap>`
+  ).join('\n');
+  
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemaps}
+</sitemapindex>`;
+}
+
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
   
-  // Initialize Supabase admin client
-  const supabaseAdmin = createClient(
-    Deno.env.get('SUPABASE_URL') || '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  );
-  
   try {
-    // Validate the request
-    const authHeader = req.headers.get('Authorization') || '';
-    const providedApiKey = authHeader.replace('Bearer ', '');
-    
-    // Parse the request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      body = { source: 'unknown' };
-    }
-    
-    const source = body.source || 'api';
-    
-    // Log the start
-    await supabaseAdmin
-      .from('sitemap_logs')
-      .insert({
-        status: 'success',
-        message: 'Triggered scheduled sitemap regeneration',
-        source: 'regenerate-sitemap',
-        details: { 
-          trigger_source: source,
-          scheduled: true
-        }
-      });
-    
-    console.log(`Triggering sitemap regeneration from ${source}`);
-    
-    // Call the sitemap-cache function
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sitemap-cache`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        source: 'scheduled-job',
-        trigger: 'cron'
-      })
-    });
-    
-    const responseStatus = response.status;
-    const responseData = await response.text();
-    
-    console.log(`Sitemap regeneration triggered with status ${responseStatus}`);
-    
-    // Call the ping-search-engines function if sitemap generation was successful
-    if (responseStatus >= 200 && responseStatus < 300) {
-      console.log('Pinging search engines');
-      
-      try {
-        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ping-search-engines`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            source: 'scheduled-job',
-            trigger: 'cron-after-regeneration'
-          })
-        });
-      } catch (pingError) {
-        console.error('Error pinging search engines:', pingError);
+    // Check for optional webhook key for added security
+    const webhookKey = Deno.env.get('SITEMAP_WEBHOOK_KEY');
+    if (webhookKey) {
+      const authHeader = req.headers.get('x-api-key');
+      if (authHeader !== webhookKey) {
+        console.warn('Unauthorized regenerate-sitemap attempt');
+        
+        // Still return 200 to avoid leaking information, but log it
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Unauthorized request' 
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders } 
+          }
+        );
       }
     }
     
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Sitemap regeneration triggered',
-        sitemap_response: {
-          status: responseStatus,
-          data: responseData.substring(0, 100) + (responseData.length > 100 ? '...' : '')
+    // Parse the request body to get parameters
+    let body = {};
+    try {
+      if (req.body) {
+        const bodyText = await req.text();
+        if (bodyText) {
+          body = JSON.parse(bodyText);
         }
-      }),
+      }
+    } catch (e) {
+      console.error('Error parsing request body:', e);
+      body = {};
+    }
+    
+    const type = body.type || 'all';
+    const trigger = body.trigger || 'api';
+    
+    console.log(`Regenerating sitemap, type: ${type}, trigger: ${trigger}`);
+    
+    // Create a Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+        auth: { persistSession: false }
+      }
+    );
+    
+    // Log the regeneration start
+    await supabaseClient.from('sitemap_logs').insert({
+      status: 'success',
+      message: `Started sitemap generation [${type}]`,
+      source: `regenerate-sitemap-${trigger}`,
+      details: { 
+        type,
+        trigger,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    // Generate static sitemap
+    const staticSitemap = generateStaticSitemap();
+    
+    // Generate blog posts sitemap (simplified version)
+    let blogSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+    
+    // Fetch blog posts
+    const { data: blogPosts, error: blogError } = await supabaseClient
+      .from('blog_posts')
+      .select('slug, published_at, updated_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false });
+    
+    if (blogError) {
+      console.error('Error fetching blog posts for sitemap:', blogError);
+    } else if (blogPosts && blogPosts.length > 0) {
+      blogPosts.forEach(post => {
+        const date = (post.updated_at || post.published_at || new Date().toISOString()).split('T')[0];
+        blogSitemap += `
+  <url>
+    <loc>https://soundraiser.io/blog/${post.slug}</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      });
+    }
+    
+    blogSitemap += `
+</urlset>`;
+    
+    // Generate smart links sitemap (simplified version)
+    let linksSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+    
+    // Fetch smart links
+    const { data: smartLinks, error: linksError } = await supabaseClient
+      .from('smart_links')
+      .select('slug, updated_at')
+      .is('slug', 'not.null')
+      .order('updated_at', { ascending: false });
+    
+    if (linksError) {
+      console.error('Error fetching smart links for sitemap:', linksError);
+    } else if (smartLinks && smartLinks.length > 0) {
+      smartLinks.forEach(link => {
+        const date = (link.updated_at || new Date().toISOString()).split('T')[0];
+        linksSitemap += `
+  <url>
+    <loc>https://soundraiser.io/link/${link.slug}</loc>
+    <lastmod>${date}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+      });
+    }
+    
+    linksSitemap += `
+</urlset>`;
+    
+    // Store the generated sitemaps in the cache
+    const etag = Math.random().toString(36).substring(2);
+    const timestamp = new Date().toISOString();
+    
+    // Store based on requested type
+    const sitemapFiles = [];
+    
+    if (type === 'all' || type === 'static') {
+      await supabaseClient.from('sitemap_cache').upsert({
+        key: 'sitemap-static.xml',
+        content: staticSitemap,
+        etag,
+        updated_at: timestamp
+      });
+      sitemapFiles.push('static');
+    }
+    
+    if (type === 'all' || type === 'blog') {
+      await supabaseClient.from('sitemap_cache').upsert({
+        key: 'sitemap-blog.xml',
+        content: blogSitemap,
+        etag,
+        updated_at: timestamp
+      });
+      sitemapFiles.push('blog');
+    }
+    
+    if (type === 'all' || type === 'links') {
+      await supabaseClient.from('sitemap_cache').upsert({
+        key: 'sitemap-links.xml',
+        content: linksSitemap,
+        etag,
+        updated_at: timestamp
+      });
+      sitemapFiles.push('links');
+    }
+    
+    // If regenerating all, also update the sitemap index
+    if (type === 'all') {
+      const sitemapIndex = generateSitemapIndex(['static', 'blog', 'links']);
+      await supabaseClient.from('sitemap_cache').upsert({
+        key: 'sitemap-index.xml',
+        content: sitemapIndex,
+        etag,
+        updated_at: timestamp
+      });
+    }
+    
+    // Log the successful generation
+    await supabaseClient.from('sitemap_logs').insert({
+      status: 'success',
+      message: `Completed sitemap generation [${type}]`,
+      source: `regenerate-sitemap-${trigger}`,
+      details: { 
+        type,
+        trigger,
+        sitemaps_generated: sitemapFiles,
+        timestamp
+      }
+    });
+    
+    // Return success response
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Sitemap generation complete for ${type}`, 
+        files: sitemapFiles
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders } 
       }
     );
     
   } catch (error) {
-    console.error('Error triggering sitemap regeneration:', error);
-    
     // Log the error
-    await supabaseAdmin
-      .from('sitemap_logs')
-      .insert({
-        status: 'error',
-        message: `Error triggering sitemap regeneration: ${error.message}`,
-        source: 'regenerate-sitemap',
-        details: { error: error.stack || 'No stack trace available' }
-      });
+    console.error('Error in regenerate-sitemap function:', error);
     
+    // Try to log to database
+    try {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        {
+          auth: { persistSession: false }
+        }
+      );
+      
+      await supabaseClient.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Error during sitemap generation',
+        source: 'regenerate-sitemap-function',
+        details: { 
+          error: error.message,
+          stack: error.stack
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log error to database:', logError);
+    }
+    
+    // Return error response
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
+      JSON.stringify({ 
+        success: false, 
+        message: 'Error generating sitemap', 
+        error: error.message 
       }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+      { 
+        status: 200, // Still return 200 to avoid triggering webhook retries
+        headers: { ...corsHeaders } 
       }
     );
   }
-};
+});

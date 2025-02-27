@@ -1,101 +1,119 @@
 
-import { corsHeaders, xmlResponse, xmlErrorResponse, createAnonClient, logSitemapEvent, SITE_URL } from '../_shared/sitemap-utils.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
-// Basic fallback sitemap index
-const fallbackSitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${SITE_URL}/sitemap-static.xml</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>
-</sitemapindex>`;
+// Define CORS headers to allow public access
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/xml; charset=UTF-8',
+  'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+}
 
-export const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
   
-  console.log('Sitemap index request received');
+  // Log the request for debugging
+  console.log(`Sitemap request received: ${req.url}`);
   
   try {
-    // Initialize Supabase client with anonymous access
-    const supabase = createAnonClient();
+    // Create a Supabase client using the Deno runtime environment variables
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        auth: { persistSession: false }
+      }
+    );
     
-    // Get If-None-Match header for ETag comparison
-    const ifNoneMatch = req.headers.get('If-None-Match') || '';
+    // Log that we're attempting to fetch from cache
+    console.log('Attempting to fetch sitemap from cache');
     
-    // Try to fetch the sitemap index from cache
-    const { data: sitemapData, error } = await supabase
+    // Try to get the sitemap from cache
+    const { data: sitemapData, error: cacheError } = await supabaseClient
       .from('sitemap_cache')
-      .select('content, etag, updated_at')
+      .select('content')
       .eq('key', 'sitemap-index.xml')
       .single();
     
-    if (error) {
-      console.error(`Error fetching sitemap index: ${error.message}`);
+    // If we got an error or no data, log it and generate a basic fallback sitemap
+    if (cacheError || !sitemapData) {
+      console.warn('Error fetching sitemap from cache:', cacheError);
       
-      // Try to trigger background generation
-      try {
-        const { error: invocationError } = await supabase.functions.invoke('sitemap-generator', {
-          body: { type: 'index', trigger: 'fetch-error' }
-        });
-        
-        if (invocationError) {
-          console.error(`Error triggering regeneration: ${invocationError.message}`);
+      // Log the sitemap generation attempt
+      await supabaseClient.from('sitemap_logs').insert({
+        status: 'warning',
+        message: 'Sitemap not found in cache, serving fallback',
+        source: 'sitemap-function',
+        details: { 
+          error: cacheError ? cacheError.message : 'No sitemap in cache',
+          request_url: req.url 
         }
-      } catch (triggerError) {
-        console.error(`Failed to trigger sitemap generation: ${triggerError.message}`);
-      }
+      });
       
-      // Return fallback sitemap index
-      return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
-    }
-    
-    // If no sitemap index is found in cache
-    if (!sitemapData || !sitemapData.content) {
-      console.log('No sitemap index found in cache, returning fallback');
+      // Return a basic fallback sitemap
+      const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://soundraiser.io/sitemap-static.xml</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+  </sitemap>
+</sitemapindex>`;
       
-      // Try to trigger background generation
-      try {
-        const { error: invocationError } = await supabase.functions.invoke('sitemap-generator', {
-          body: { type: 'index', trigger: 'missing-cache' }
-        });
-        
-        if (invocationError) {
-          console.error(`Error triggering regeneration: ${invocationError.message}`);
-        }
-      } catch (triggerError) {
-        console.error(`Failed to trigger sitemap generation: ${triggerError.message}`);
-      }
-      
-      return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
-    }
-    
-    // Check if ETag matches for 304 Not Modified response
-    if (ifNoneMatch === `"${sitemapData.etag}"`) {
-      console.log('ETag matches, returning 304 Not Modified');
-      return new Response(null, {
-        status: 304,
-        headers: {
-          'Content-Type': 'application/xml; charset=UTF-8',
-          'ETag': `"${sitemapData.etag}"`,
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-          'Access-Control-Allow-Origin': '*',
-        }
+      return new Response(fallbackSitemap, {
+        headers: corsHeaders
       });
     }
     
-    console.log(`Serving sitemap index from cache, last updated: ${sitemapData.updated_at}`);
+    // Log success and return the sitemap from cache
+    console.log('Successfully retrieved sitemap from cache');
     
-    // Return the cached sitemap with appropriate headers
-    return xmlResponse(sitemapData.content, { 
-      etag: sitemapData.etag,
-      maxAge: 3600
+    // Return the cached sitemap with proper XML and CORS headers
+    return new Response(sitemapData.content, {
+      headers: corsHeaders
     });
     
   } catch (error) {
-    console.error(`Error serving sitemap index: ${error.message}`);
-    return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
+    // Log any unexpected errors
+    console.error('Unexpected error in sitemap function:', error);
+    
+    // Try to log the error to the database if possible
+    try {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        {
+          auth: { persistSession: false }
+        }
+      );
+      
+      await supabaseClient.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Error serving sitemap',
+        source: 'sitemap-function',
+        details: { 
+          error: error.message,
+          stack: error.stack,
+          request_url: req.url 
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log error to database:', logError);
+    }
+    
+    // Even on error, return a basic XML sitemap to avoid breaking crawlers
+    const emergencyFallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://soundraiser.io/</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+    
+    return new Response(emergencyFallbackSitemap, {
+      headers: corsHeaders
+    });
   }
-};
+});
