@@ -104,7 +104,7 @@ export interface SitemapLog {
   id: string;
   status: string; // Changed from union type to string to match what comes from the database
   message: string;
-  details: Record<string, any>;
+  details: any; // Changed from Record<string, any> to any to accept any JSON value
   source: string;
   created_at: string;
   updated_at: string;

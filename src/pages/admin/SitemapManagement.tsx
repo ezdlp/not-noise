@@ -19,14 +19,14 @@ interface SitemapCacheItem {
   created_at: string;
 }
 
-// Using a more flexible interface for logs that accepts any string status
+// Using a more flexible interface for logs
 interface SitemapLog {
   id: string;
-  status: string; // Changed from 'success' | 'error' | 'warning' to allow any string
+  status: string;
   message: string;
   source: string;
   created_at: string;
-  details: Record<string, any>;
+  details: any; // Changed from Record<string, any> to any to accept any JSON value
 }
 
 export default function SitemapManagement() {
@@ -60,7 +60,8 @@ export default function SitemapManagement() {
         .limit(50);
 
       if (logsError) throw logsError;
-      setSitemapLogs(logsData || []);
+      // Explicitly cast to SitemapLog[] to ensure compatibility
+      setSitemapLogs(logsData as SitemapLog[] || []);
 
     } catch (error) {
       console.error('Error fetching sitemap data:', error);
