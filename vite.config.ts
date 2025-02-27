@@ -20,63 +20,57 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    }
+    },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
+    dedupe: [
+      'zod', 
+      'react-hook-form', 
+      '@hookform/resolvers',
+      'react', 
+      'react-dom'
+    ]
   },
   build: {
     target: 'es2020',
+    commonjsOptions: {
+      include: [/node_modules/],
+      extensions: ['.js', '.cjs', '.mjs', '.ts'],
+      strictRequires: true,
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
+      external: [],
       output: {
         format: 'es',
-        manualChunks: {
-          // Core vendor dependencies - grouped by major functionality
-          'vendor-core': [
-            '@supabase/supabase-js',
-            '@supabase/postgrest-js',
-            '@supabase/realtime-js',
-            '@supabase/storage-js',
-            '@supabase/functions-js',
-            '@supabase/auth-helpers-react'
-          ],
-          'vendor-auth': [
-            '@supabase/auth-ui-react',
-            '@supabase/auth-ui-shared'
-          ],
-          // Form validation and handling
-          'vendor-forms': [
-            'zod',
-            '@hookform/resolvers',
-            'react-hook-form'
-          ],
-          // UI components in logical groups
-          'ui-core': [
-            '@radix-ui/react-label',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-toast'
-          ],
-          'ui-navigation': [
-            '@radix-ui/react-navigation-menu',
-            '@radix-ui/react-tabs'
-          ],
-          // Charts as complete functionality units
-          'charts': [
-            'recharts',
-            'recharts/es6/component/ResponsiveContainer',
-            'recharts/es6/chart/LineChart',
-            'recharts/es6/chart/BarChart',
-            'recharts/es6/cartesian/Line',
-            'recharts/es6/cartesian/Bar',
-            'recharts/es6/cartesian/XAxis',
-            'recharts/es6/cartesian/YAxis'
-          ],
-          // Icons and assets
-          'icons': [
-            'lucide-react', 
-            '@fortawesome/react-fontawesome'
-          ]
+        manualChunks: (id) => {
+          // Handle specific packages
+          if (id.includes('node_modules')) {
+            if (id.includes('zod') || 
+                id.includes('react-hook-form') || 
+                id.includes('@hookform/resolvers')) {
+              return 'vendor-forms';
+            }
+            
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            
+            if (id.includes('@radix-ui')) {
+              return 'vendor-radix';
+            }
+            
+            if (id.includes('lucide-react') || 
+                id.includes('@fortawesome')) {
+              return 'vendor-icons';
+            }
+            
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            
+            // Default vendor chunk for other node_modules
+            return 'vendor';
+          }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]'
@@ -87,21 +81,30 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: [
+      'zod',
+      '@hookform/resolvers',
+      'react-hook-form',
       '@supabase/supabase-js',
       '@supabase/postgrest-js',
       '@supabase/realtime-js',
       '@supabase/storage-js',
       '@supabase/functions-js',
       '@supabase/auth-helpers-react',
-      'recharts',
-      'zod',
-      '@hookform/resolvers',
-      'react-hook-form'
+      'recharts'
     ],
+    exclude: [],
     esbuildOptions: {
       target: 'es2020',
       platform: 'browser',
-      format: 'esm'
+      format: 'esm',
+      resolveExtensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
+      jsx: 'automatic',
+      logLevel: 'info',
+      treeShaking: true,
+      minify: true
     }
+  },
+  ssr: {
+    noExternal: ['zod', '@hookform/resolvers']
   }
 }));
