@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle, FileText, Settings, Tool } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Settings, Wrench } from 'lucide-react';
 
 export default function SitemapHelp() {
   return (
@@ -32,7 +32,7 @@ export default function SitemapHelp() {
             Maintenance
           </TabsTrigger>
           <TabsTrigger value="troubleshooting" className="flex items-center gap-1">
-            <Tool className="h-4 w-4" />
+            <Wrench className="h-4 w-4" />
             Troubleshooting
           </TabsTrigger>
         </TabsList>
