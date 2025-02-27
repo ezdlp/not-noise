@@ -57,7 +57,8 @@ export default defineConfig(({ mode }) => ({
       '@radix-ui/react-visually-hidden',
       'zod', 
       'react-hook-form', 
-      '@hookform/resolvers'
+      '@hookform/resolvers',
+      'framer-motion'
     ]
   },
   build: {
@@ -85,6 +86,11 @@ export default defineConfig(({ mode }) => ({
               id.includes('node_modules/@radix-ui/react-primitive') ||
               id.includes('node_modules/@radix-ui/react-slot')) {
             return 'react-vendor';
+          }
+          
+          // Animation libraries - Must include React in this chunk
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'react-vendor'; // Changed from 'animation-vendor' to include with React
           }
           
           // Form related packages
@@ -117,11 +123,6 @@ export default defineConfig(({ mode }) => ({
           // Chart related libraries
           if (id.includes('node_modules/recharts/')) {
             return 'charts-vendor';
-          }
-          
-          // Animation libraries
-          if (id.includes('node_modules/framer-motion/')) {
-            return 'animation-vendor';
           }
           
           // Rich Text Editor - TipTap and related packages
