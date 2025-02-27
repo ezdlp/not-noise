@@ -23,7 +23,7 @@
     },
     {
       "source": "/sitemap-:file.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-file"
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-file?file=:file"
     },
     {
       "source": "/(.*)",

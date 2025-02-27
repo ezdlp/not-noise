@@ -1,12 +1,9 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
-// Define CORS headers for public access
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/xml; charset=UTF-8',
-  'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
 }
 
 Deno.serve(async (req) => {
@@ -14,75 +11,76 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-  
+
   try {
-    // Extract the filename from the URL
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split('/');
-    const filenamePart = pathParts[pathParts.length - 1]; // Get the last part of the path
+    console.log('Request URL:', req.url);
     
-    // Extract just the filename without extension if present
-    let filename = filenamePart;
-    if (filename.endsWith('.xml')) {
-      filename = filename.substring(0, filename.length - 4);
+    // Extract the filename from the URL path
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    
+    // The URL pattern will be like:
+    // /sitemap-file/sitemap-static.xml or /sitemap-file/static.xml
+    const lastPathPart = pathParts[pathParts.length - 1];
+    console.log('Path parts:', pathParts);
+    console.log('Last path part:', lastPathPart);
+    
+    // Extract the file parameter
+    let cacheKey;
+    
+    // If the request already contains the full filename (sitemap-xxx.xml)
+    if (lastPathPart.startsWith('sitemap-')) {
+      cacheKey = lastPathPart;
+    } 
+    // If the request comes from vercel rewrite with just the file portion (/sitemap-:file.xml)
+    else if (lastPathPart.endsWith('.xml')) {
+      // This means the URL was something like /sitemap-file/static.xml
+      cacheKey = `sitemap-${lastPathPart}`;
+    }
+    // Fallback - try to handle other formats
+    else {
+      cacheKey = `sitemap-${lastPathPart}.xml`;
     }
     
-    // Format the correct cache key
-    const cacheKey = `sitemap-${filename}.xml`;
-    
-    console.log(`Sitemap file request for: ${cacheKey}`);
-    
-    // Create a Supabase client with SERVICE_ROLE_KEY to ensure access
-    const supabaseClient = createClient(
+    console.log('Looking for cache key:', cacheKey);
+
+    // Initialize Supabase client
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: { persistSession: false }
-      }
+      { auth: { persistSession: false } }
     );
-    
-    // Get the sitemap from cache
-    const { data, error } = await supabaseClient
+
+    // Fetch the requested sitemap from cache
+    const { data, error } = await supabase
       .from('sitemap_cache')
-      .select('content')
+      .select('content, etag')
       .eq('key', cacheKey)
-      .single();
-    
-    // If we got an error or no data, return a 404 or basic sitemap
-    if (error || !data) {
-      console.warn(`Error fetching sitemap ${cacheKey} from cache:`, error);
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Error fetching sitemap: ${error.message}`);
+    }
+
+    if (!data) {
+      console.error(`Sitemap not found: ${cacheKey}`);
       
-      // Log the issue to sitemap_logs
-      await supabaseClient.from('sitemap_logs').insert({
-        status: 'warning',
-        message: `Sitemap file not found: ${cacheKey}`,
-        source: 'sitemap-file-function',
-        details: { 
-          error: error ? error.message : 'Not found',
-          request_url: req.url 
-        }
+      // Log cache keys for debugging
+      const { data: cacheKeys } = await supabase
+        .from('sitemap_cache')
+        .select('key')
+        .order('key');
+      
+      console.log('Available cache keys:', cacheKeys?.map(item => item.key));
+      
+      await supabase.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Sitemap not found',
+        source: 'sitemap-file',
+        details: { requestedKey: cacheKey }
       });
       
-      // Generate a basic fallback sitemap for the request
-      if (filename === 'static') {
-        // Basic sitemap for static pages if the static sitemap is missing
-        const staticSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://soundraiser.io/</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>`;
-        
-        return new Response(staticSitemap, {
-          headers: corsHeaders
-        });
-      }
-      
-      // Return a 404 if the requested sitemap doesn't exist and it's not a known type
-      return new Response(`Sitemap file ${cacheKey} not found`, {
+      return new Response('Sitemap not found', {
         status: 404,
         headers: {
           ...corsHeaders,
@@ -90,48 +88,62 @@ Deno.serve(async (req) => {
         }
       });
     }
-    
-    console.log(`Successfully retrieved sitemap file: ${cacheKey}`);
-    
-    // Return the cached sitemap with proper XML and CORS headers
-    return new Response(data.content, {
-      headers: corsHeaders
+
+    // Log the successful request
+    await supabase.from('sitemap_logs').insert({
+      status: 'info',
+      message: 'Sitemap file served',
+      source: 'sitemap-file',
+      details: { key: cacheKey }
     });
-    
+
+    // Return the sitemap XML with proper headers
+    return new Response(data.content, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/xml; charset=UTF-8',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'ETag': data.etag || '""'
+      }
+    });
+
   } catch (error) {
-    console.error('Unexpected error in sitemap-file function:', error);
+    console.error('Error serving sitemap file:', error);
     
-    // Try to log the error to the database
+    // Try to log the error
     try {
-      const supabaseClient = createClient(
+      const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-        {
-          auth: { persistSession: false }
-        }
+        { auth: { persistSession: false } }
       );
-      
-      await supabaseClient.from('sitemap_logs').insert({
+
+      await supabase.from('sitemap_logs').insert({
         status: 'error',
         message: 'Error serving sitemap file',
-        source: 'sitemap-file-function',
-        details: { 
+        source: 'sitemap-file',
+        details: {
           error: error.message,
-          stack: error.stack,
-          request_url: req.url 
+          stack: error.stack
         }
       });
     } catch (logError) {
-      console.error('Failed to log error to database:', logError);
+      console.error('Failed to log error:', logError);
     }
-    
-    // Return a 500 error with a basic message
-    return new Response('An error occurred processing the sitemap request', {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/plain'
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: 'Error serving sitemap file',
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
-    });
+    );
   }
 });
