@@ -1,91 +1,73 @@
 
-import { Link, useLocation } from "react-router-dom";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
-  UsersIcon, 
-  FolderIcon, 
-  LayoutDashboardIcon,
-  ImageIcon,
-  DownloadIcon,
-  Link2Icon,
-  BarChart2Icon,
-  LucideIcon
-} from "lucide-react";
+  BarChart3, 
+  FileText, 
+  Users, 
+  LayoutGrid, 
+  ImageIcon, 
+  UploadIcon, 
+  Link2, 
+  Globe
+} from 'lucide-react';
 
-type MenuItem = {
-  title: string;
-  icon: LucideIcon;
-  href: string;
-};
-
-const menuItems: MenuItem[] = [
-  {
-    title: "Overview",
-    icon: LayoutDashboardIcon,
-    href: "/control-room",
-  },
-  {
-    title: "Analytics",
-    icon: BarChart2Icon,
-    href: "/control-room/analytics",
-  },
-  {
-    title: "Users",
-    icon: UsersIcon,
-    href: "/control-room/users",
-  },
-  {
-    title: "Smart Links",
-    icon: Link2Icon,
-    href: "/control-room/smart-links",
-  },
-  {
-    title: "Content",
-    icon: FolderIcon,
-    href: "/control-room/content",
-  },
-  {
-    title: "Media Library",
-    icon: ImageIcon,
-    href: "/control-room/media",
-  },
-  {
-    title: "Import",
-    icon: DownloadIcon,
-    href: "/control-room/import",
-  },
-];
-
-export function AdminSidebar() {
+export const AdminSidebar: React.FC = () => {
   const location = useLocation();
+  
+  const menuItems = [
+    { to: '/control-room', icon: <LayoutGrid size={18} />, label: 'Overview' },
+    { to: '/control-room/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+    { to: '/control-room/content', icon: <FileText size={18} />, label: 'Blog Content' },
+    { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
+    { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
+    { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
+    { to: '/control-room/import', icon: <UploadIcon size={18} />, label: 'Import' },
+    { to: '/control-room/sitemap', icon: <Globe size={18} />, label: 'Sitemap Monitor' },
+  ];
 
   return (
-    <div className="h-full bg-background border-r">
-      <div className="space-y-4 py-4">
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold">Admin Panel</h2>
-          <nav className="space-y-1">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
-              const Icon = item.icon;
-              
-              return (
+    <div className="w-64 h-screen bg-gray-50 border-r border-gray-200 pt-4 flex flex-col overflow-y-auto">
+      {/* Admin Menu Header */}
+      <div className="px-6 py-4 mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Control Room</h2>
+        <p className="text-sm text-gray-500">Admin Dashboard</p>
+      </div>
+      
+      {/* Menu Items */}
+      <nav className="flex-1">
+        <ul className="px-4 space-y-1">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <li key={item.to}>
                 <Link
-                  key={item.title}
-                  to={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent ${
-                    isActive 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:text-primary"
+                  to={item.to}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm group ${
+                    isActive
+                      ? 'bg-primary text-white font-medium'
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.title}</span>
+                  <span className={`mr-3 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-600'}`}>
+                    {item.icon}
+                  </span>
+                  {item.label}
                 </Link>
-              );
-            })}
-          </nav>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      
+      {/* Bottom Section */}
+      <div className="px-6 py-4 border-t border-gray-200 mt-auto">
+        <div className="flex items-center">
+          <div className="ml-3">
+            <p className="text-xs text-gray-500">Soundraiser Admin</p>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};

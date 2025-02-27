@@ -1,9 +1,22 @@
 
-export { default as Overview } from "./Overview";
-export { default as Users } from "./Users";
-export { default as Content } from "./Content";
-export { default as UserLinks } from "./UserLinks";
-export { default as Media } from "./MediaLibrary";
-export { default as Import } from "./Import";
-export { default as SmartLinks } from "./SmartLinks";
-export { default as Analytics } from "./Analytics";
+import Analytics from './Analytics';
+import Content from './Content';
+import Import from './Import';
+import MediaLibrary from './MediaLibrary';
+import Overview from './Overview';
+import SmartLinks from './SmartLinks';
+import SitemapMonitor from './SitemapMonitor';
+import UserLinks from './UserLinks';
+import Users from './Users';
+
+export {
+  Analytics,
+  Content,
+  Import,
+  MediaLibrary,
+  Overview,
+  SmartLinks,
+  SitemapMonitor,
+  UserLinks,
+  Users,
+};

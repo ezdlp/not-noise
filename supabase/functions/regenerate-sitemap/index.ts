@@ -9,24 +9,58 @@ interface SitemapEntry {
   priority?: string;
 }
 
-serve(async (req) => {
-  try {
-    // CORS headers
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-    }
+interface SitemapLog {
+  status: 'success' | 'error' | 'warning';
+  message: string;
+  details?: Record<string, any>;
+  source: string;
+}
 
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { 
-        status: 204,
-        headers: corsHeaders
-      })
+serve(async (req) => {
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  }
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+  
+  try {
+    let source = 'unknown';
+    let requestBody = {};
+    
+    // Try to parse request body
+    try {
+      requestBody = await req.json();
+      source = requestBody.source || 'api';
+    } catch (e) {
+      // If parsing fails, default to API source
+      source = 'api';
     }
+    
+    // Log generation attempt
+    await logSitemapEvent({
+      status: 'success',
+      message: 'Sitemap regeneration started',
+      source,
+      details: { trigger: source }
+    });
     
     // Check if this is a POST request
     if (req.method !== 'POST') {
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Method not allowed',
+        source,
+        details: { method: req.method }
+      });
+      
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
         { 
@@ -47,7 +81,13 @@ serve(async (req) => {
                          (await getConfigValue('sitemap_webhook_key'))
     
     if (!apiKey || apiKey !== sitemapApiKey) {
-      console.error('Unauthorized attempt to regenerate sitemap')
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Unauthorized sitemap regeneration attempt',
+        source,
+        details: { provided_key: apiKey ? 'redacted' : 'none' }
+      });
+      
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { 
@@ -89,61 +129,103 @@ serve(async (req) => {
     })
     
     // Add smart links
-    const { data: smartLinks, error: smartLinksError } = await supabase
-      .from('smart_links')
-      .select('slug, updated_at')
-      .not('slug', 'is', null)
-    
-    if (smartLinksError) {
-      console.error('Error fetching smart links:', smartLinksError)
-    } else if (smartLinks) {
-      smartLinks.forEach(link => {
-        entries.push({
-          loc: `https://soundraiser.io/link/${link.slug}`,
-          lastmod: new Date(link.updated_at || Date.now()).toISOString(),
-          changefreq: 'weekly',
-          priority: '0.7'
+    try {
+      const { data: smartLinks, error: smartLinksError } = await supabase
+        .from('smart_links')
+        .select('slug, updated_at')
+        .not('slug', 'is', null)
+      
+      if (smartLinksError) {
+        await logSitemapEvent({
+          status: 'warning',
+          message: 'Error fetching smart links',
+          source,
+          details: { error: smartLinksError.message }
+        });
+      } else if (smartLinks) {
+        await logSitemapEvent({
+          status: 'success',
+          message: 'Smart links fetched successfully',
+          source,
+          details: { count: smartLinks.length }
+        });
+        
+        smartLinks.forEach(link => {
+          entries.push({
+            loc: `https://soundraiser.io/link/${link.slug}`,
+            lastmod: new Date(link.updated_at || Date.now()).toISOString(),
+            changefreq: 'weekly',
+            priority: '0.7'
+          })
         })
-      })
+      }
+    } catch (error) {
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Exception while processing smart links',
+        source,
+        details: { error: error.message }
+      });
     }
     
     // Add blog posts and pagination
-    const { data: blogPosts, error: blogPostsError } = await supabase
-      .from('blog_posts')
-      .select('slug, updated_at, published_at')
-      .eq('status', 'published')
-      .eq('visibility', 'public')
-    
-    if (blogPostsError) {
-      console.error('Error fetching blog posts:', blogPostsError)
-    } else if (blogPosts && blogPosts.length > 0) {
-      // Add individual blog posts
-      blogPosts.forEach(post => {
-        const updateDate = post.updated_at || post.published_at || new Date().toISOString()
-        entries.push({
-          loc: `https://soundraiser.io/blog/${post.slug}`,
-          lastmod: new Date(updateDate).toISOString(),
-          changefreq: 'weekly',
-          priority: '0.8'
-        })
-      })
+    try {
+      const { data: blogPosts, error: blogPostsError } = await supabase
+        .from('blog_posts')
+        .select('slug, updated_at, published_at')
+        .eq('status', 'published')
+        .eq('visibility', 'public')
       
-      // Add blog pagination
-      const postsPerPage = 12
-      const totalPages = Math.ceil(blogPosts.length / postsPerPage)
-      
-      if (totalPages > 1) {
-        // First page is already included in static pages
-        // Add pages 2 to n
-        for (let i = 2; i <= totalPages; i++) {
+      if (blogPostsError) {
+        await logSitemapEvent({
+          status: 'warning',
+          message: 'Error fetching blog posts',
+          source,
+          details: { error: blogPostsError.message }
+        });
+      } else if (blogPosts && blogPosts.length > 0) {
+        await logSitemapEvent({
+          status: 'success',
+          message: 'Blog posts fetched successfully',
+          source,
+          details: { count: blogPosts.length }
+        });
+        
+        // Add individual blog posts
+        blogPosts.forEach(post => {
+          const updateDate = post.updated_at || post.published_at || new Date().toISOString()
           entries.push({
-            loc: `https://soundraiser.io/blog/page/${i}`,
-            lastmod: new Date().toISOString(),
-            changefreq: 'daily',
+            loc: `https://soundraiser.io/blog/${post.slug}`,
+            lastmod: new Date(updateDate).toISOString(),
+            changefreq: 'weekly',
             priority: '0.8'
           })
+        })
+        
+        // Add blog pagination
+        const postsPerPage = 12
+        const totalPages = Math.ceil(blogPosts.length / postsPerPage)
+        
+        if (totalPages > 1) {
+          // First page is already included in static pages
+          // Add pages 2 to n
+          for (let i = 2; i <= totalPages; i++) {
+            entries.push({
+              loc: `https://soundraiser.io/blog/page/${i}`,
+              lastmod: new Date().toISOString(),
+              changefreq: 'daily',
+              priority: '0.8'
+            })
+          }
         }
       }
+    } catch (error) {
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Exception while processing blog posts',
+        source,
+        details: { error: error.message }
+      });
     }
     
     // Generate the sitemap XML
@@ -164,22 +246,71 @@ serve(async (req) => {
 </urlset>`
     
     // Store the sitemap in the database for later retrieval
-    const { error: storageError } = await supabase
-      .from('sitemap_cache')
-      .upsert(
-        { 
-          key: 'sitemap.xml', 
-          content: sitemap,
-          etag: Date.now().toString(),
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'key' }
-      )
-    
-    if (storageError) {
-      console.error('Error storing sitemap:', storageError)
+    try {
+      const { error: storageError } = await supabase
+        .from('sitemap_cache')
+        .upsert(
+          { 
+            key: 'sitemap.xml', 
+            content: sitemap,
+            etag: Date.now().toString(),
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'key' }
+        )
+      
+      if (storageError) {
+        await logSitemapEvent({
+          status: 'error',
+          message: 'Failed to store sitemap',
+          source,
+          details: { error: storageError.message }
+        });
+        
+        return new Response(
+          JSON.stringify({ error: 'Failed to store sitemap' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        )
+      }
+      
+      // Log successful sitemap generation
+      await logSitemapEvent({
+        status: 'success',
+        message: 'Sitemap regenerated and stored successfully',
+        source,
+        details: { url_count: entries.length, size_bytes: sitemap.length }
+      });
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to store sitemap' }),
+        JSON.stringify({ 
+          success: true,
+          message: 'Sitemap regenerated successfully',
+          url_count: entries.length
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    } catch (error) {
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Exception while storing sitemap',
+        source,
+        details: { error: error.message }
+      });
+      
+      return new Response(
+        JSON.stringify({ error: 'Internal server error while storing sitemap' }),
         { 
           status: 500, 
           headers: { 
@@ -189,23 +320,20 @@ serve(async (req) => {
         }
       )
     }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Sitemap regenerated successfully',
-        url_count: entries.length
-      }),
-      { 
-        status: 200, 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
   } catch (error) {
-    console.error('Error regenerating sitemap:', error)
+    // Log the error
+    try {
+      await logSitemapEvent({
+        status: 'error',
+        message: 'Unhandled exception during sitemap regeneration',
+        source: 'unknown',
+        details: { error: error.message, stack: error.stack }
+      });
+    } catch (logError) {
+      console.error('Failed to log sitemap error:', logError);
+      console.error('Original error:', error);
+    }
+    
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
@@ -241,5 +369,29 @@ async function getConfigValue(key: string): Promise<string> {
   } catch (error) {
     console.error(`Error in getConfigValue for ${key}:`, error)
     return ''
+  }
+}
+
+// Helper function to log sitemap events
+async function logSitemapEvent(event: SitemapLog): Promise<void> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    const { error } = await supabase
+      .from('sitemap_logs')
+      .insert({
+        status: event.status,
+        message: event.message,
+        details: event.details || {},
+        source: event.source,
+      })
+    
+    if (error) {
+      console.error('Failed to log sitemap event:', error)
+    }
+  } catch (error) {
+    console.error('Exception while logging sitemap event:', error)
   }
 }

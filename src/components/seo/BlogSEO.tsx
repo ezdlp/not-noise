@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { WebsiteSEO } from './WebsiteSEO';
+import WebsiteSEO from './WebsiteSEO';
 
 interface BlogSEOProps {
   currentPage: number;
