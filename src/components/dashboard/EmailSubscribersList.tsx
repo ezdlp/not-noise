@@ -16,6 +16,17 @@ interface EmailSubscriber {
   };
 }
 
+interface RawEmailSubscriber {
+  id: string;
+  email: string;
+  subscribed_at: string;
+  smart_link: {
+    title: string;
+  } | {
+    title: string;
+  }[];
+}
+
 export function EmailSubscribersList() {
   const { data: subscribers, isLoading } = useQuery({
     queryKey: ['email-subscribers'],
@@ -33,14 +44,23 @@ export function EmailSubscribersList() {
       if (error) throw error;
       
       // Transform the data to match the EmailSubscriber interface
-      return (data || []).map(subscriber => ({
-        id: subscriber.id,
-        email: subscriber.email,
-        subscribed_at: subscriber.subscribed_at,
-        smart_link: {
-          title: subscriber.smart_link.title
-        }
-      })) as EmailSubscriber[];
+      return (data || []).map(subscriber => {
+        const rawSubscriber = subscriber as unknown as RawEmailSubscriber;
+        
+        // Handle the case where smart_link could be an array or a single object
+        const smartLinkTitle = Array.isArray(rawSubscriber.smart_link) 
+          ? rawSubscriber.smart_link[0]?.title 
+          : rawSubscriber.smart_link?.title;
+          
+        return {
+          id: rawSubscriber.id,
+          email: rawSubscriber.email,
+          subscribed_at: rawSubscriber.subscribed_at,
+          smart_link: {
+            title: smartLinkTitle || 'Unknown'
+          }
+        };
+      }) as EmailSubscriber[];
     },
   });
 
