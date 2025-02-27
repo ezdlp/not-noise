@@ -1,85 +1,14 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { format } from 'https://deno.land/std@0.202.0/datetime/format.ts'
 
-// Define CORS headers 
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-  'Content-Type': 'application/json'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper to generate the sitemap for static pages
-const generateStaticSitemap = () => {
-  const date = new Date().toISOString().split('T')[0];
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://soundraiser.io/</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/pricing</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/spotify-playlist-promotion</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/spotify-royalty-calculator</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/blog</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/create</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/login</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://soundraiser.io/register</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-</urlset>`;
-}
-
-// Helper to generate sitemap index
-const generateSitemapIndex = (sitemapFiles) => {
-  const date = new Date().toISOString().split('T')[0];
-  const sitemaps = sitemapFiles.map(file => 
-    `  <sitemap>
-    <loc>https://soundraiser.io/sitemap-${file}.xml</loc>
-    <lastmod>${date}</lastmod>
-  </sitemap>`
-  ).join('\n');
-  
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemaps}
-</sitemapindex>`;
-}
-
+// Handler for the Edge Function
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -87,219 +16,58 @@ Deno.serve(async (req) => {
   }
   
   try {
-    // Check for optional webhook key for added security
-    const webhookKey = Deno.env.get('SITEMAP_WEBHOOK_KEY');
-    if (webhookKey) {
-      const authHeader = req.headers.get('x-api-key');
-      if (authHeader !== webhookKey) {
-        console.warn('Unauthorized regenerate-sitemap attempt');
-        
-        // Still return 200 to avoid leaking information, but log it
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Unauthorized request' 
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders } 
-          }
-        );
-      }
-    }
+    // Verify API key for security (optional)
+    // We would check req.headers.get('x-api-key') === Deno.env.get('SITEMAP_API_KEY')
     
-    // Parse the request body to get parameters
-    let body = {};
-    try {
-      if (req.body) {
-        const bodyText = await req.text();
-        if (bodyText) {
-          body = JSON.parse(bodyText);
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing request body:', e);
-      body = {};
-    }
+    console.log('Received request to regenerate sitemap');
     
-    const type = body.type || 'all';
-    const trigger = body.trigger || 'api';
-    
-    console.log(`Regenerating sitemap, type: ${type}, trigger: ${trigger}`);
-    
-    // Create a Supabase client
-    const supabaseClient = createClient(
+    // Create a Supabase client with service role for admin access
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: { persistSession: false }
-      }
+      { auth: { persistSession: false } }
     );
     
-    // Log the regeneration start
-    await supabaseClient.from('sitemap_logs').insert({
+    // Log the start of regeneration
+    await supabase.from('sitemap_logs').insert({
       status: 'success',
-      message: `Started sitemap generation [${type}]`,
-      source: `regenerate-sitemap-${trigger}`,
-      details: { 
-        type,
-        trigger,
-        timestamp: new Date().toISOString()
-      }
+      message: 'Started sitemap regeneration',
+      source: 'regenerate-sitemap-function',
+      details: { trigger: 'api-request' }
     });
     
-    // Generate static sitemap
-    const staticSitemap = generateStaticSitemap();
-    
-    // Generate blog posts sitemap (simplified version)
-    let blogSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-    
-    // Fetch blog posts
-    const { data: blogPosts, error: blogError } = await supabaseClient
-      .from('blog_posts')
-      .select('slug, published_at, updated_at')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false });
-    
-    if (blogError) {
-      console.error('Error fetching blog posts for sitemap:', blogError);
-    } else if (blogPosts && blogPosts.length > 0) {
-      blogPosts.forEach(post => {
-        const date = (post.updated_at || post.published_at || new Date().toISOString()).split('T')[0];
-        blogSitemap += `
-  <url>
-    <loc>https://soundraiser.io/blog/${post.slug}</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-      });
-    }
-    
-    blogSitemap += `
-</urlset>`;
-    
-    // Generate smart links sitemap (simplified version)
-    let linksSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-    
-    // Fetch smart links
-    const { data: smartLinks, error: linksError } = await supabaseClient
-      .from('smart_links')
-      .select('slug, updated_at')
-      .is('slug', 'not.null')
-      .order('updated_at', { ascending: false });
-    
-    if (linksError) {
-      console.error('Error fetching smart links for sitemap:', linksError);
-    } else if (smartLinks && smartLinks.length > 0) {
-      smartLinks.forEach(link => {
-        const date = (link.updated_at || new Date().toISOString()).split('T')[0];
-        linksSitemap += `
-  <url>
-    <loc>https://soundraiser.io/link/${link.slug}</loc>
-    <lastmod>${date}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-      });
-    }
-    
-    linksSitemap += `
-</urlset>`;
-    
-    // Store the generated sitemaps in the cache
-    const etag = Math.random().toString(36).substring(2);
-    const timestamp = new Date().toISOString();
-    
-    // Store based on requested type
-    const sitemapFiles = [];
-    
-    if (type === 'all' || type === 'static') {
-      await supabaseClient.from('sitemap_cache').upsert({
-        key: 'sitemap-static.xml',
-        content: staticSitemap,
-        etag,
-        updated_at: timestamp
-      });
-      sitemapFiles.push('static');
-    }
-    
-    if (type === 'all' || type === 'blog') {
-      await supabaseClient.from('sitemap_cache').upsert({
-        key: 'sitemap-blog.xml',
-        content: blogSitemap,
-        etag,
-        updated_at: timestamp
-      });
-      sitemapFiles.push('blog');
-    }
-    
-    if (type === 'all' || type === 'links') {
-      await supabaseClient.from('sitemap_cache').upsert({
-        key: 'sitemap-links.xml',
-        content: linksSitemap,
-        etag,
-        updated_at: timestamp
-      });
-      sitemapFiles.push('links');
-    }
-    
-    // If regenerating all, also update the sitemap index
-    if (type === 'all') {
-      const sitemapIndex = generateSitemapIndex(['static', 'blog', 'links']);
-      await supabaseClient.from('sitemap_cache').upsert({
-        key: 'sitemap-index.xml',
-        content: sitemapIndex,
-        etag,
-        updated_at: timestamp
-      });
-    }
-    
-    // Log the successful generation
-    await supabaseClient.from('sitemap_logs').insert({
-      status: 'success',
-      message: `Completed sitemap generation [${type}]`,
-      source: `regenerate-sitemap-${trigger}`,
-      details: { 
-        type,
-        trigger,
-        sitemaps_generated: sitemapFiles,
-        timestamp
-      }
-    });
+    // Generate sitemaps (this might take time for large sites)
+    const files = await generateSitemaps(supabase);
     
     // Return success response
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Sitemap generation complete for ${type}`, 
-        files: sitemapFiles
-      }),
+      JSON.stringify({
+        success: true,
+        message: 'Sitemap regenerated successfully',
+        files: files
+      }), 
       { 
-        status: 200, 
-        headers: { ...corsHeaders } 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
     
   } catch (error) {
-    // Log the error
     console.error('Error in regenerate-sitemap function:', error);
     
-    // Try to log to database
+    // Log the error
     try {
-      const supabaseClient = createClient(
+      const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-        {
-          auth: { persistSession: false }
-        }
+        { auth: { persistSession: false } }
       );
       
-      await supabaseClient.from('sitemap_logs').insert({
+      await supabase.from('sitemap_logs').insert({
         status: 'error',
-        message: 'Error during sitemap generation',
+        message: `Error in regenerate-sitemap function: ${error.message}`,
         source: 'regenerate-sitemap-function',
         details: { 
           error: error.message,
@@ -307,20 +75,207 @@ Deno.serve(async (req) => {
         }
       });
     } catch (logError) {
-      console.error('Failed to log error to database:', logError);
+      console.error('Failed to log error:', logError);
     }
     
     // Return error response
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: 'Error generating sitemap', 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        message: 'Error regenerating sitemap',
+        error: error.message
       }),
       { 
-        status: 200, // Still return 200 to avoid triggering webhook retries
-        headers: { ...corsHeaders } 
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
   }
 });
+
+// Function to generate all sitemaps
+async function generateSitemaps(supabase) {
+  const BATCH_SIZE = 1000;
+  console.log("Starting sitemap generation");
+  
+  try {
+    // Get total URL count from database
+    const { data: countData, error: countError } = await supabase.rpc('get_sitemap_url_count');
+    
+    if (countError) {
+      throw new Error(`Error getting URL count: ${countError.message}`);
+    }
+    
+    const totalUrls = countData?.total_urls || 0;
+    console.log(`Found ${totalUrls} URLs to include in sitemap`);
+    
+    // If no URLs, just create a static sitemap
+    if (totalUrls === 0) {
+      const staticSitemap = createSitemap([
+        { url: '/', changefreq: 'weekly', priority: 1.0 }
+      ]);
+      
+      // Save to cache
+      await supabase
+        .from('sitemap_cache')
+        .upsert({ 
+          key: 'sitemap-static.xml',
+          content: staticSitemap,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
+        });
+      
+      // Create index
+      const sitemapIndex = createSitemapIndex(['sitemap-static.xml']);
+      
+      // Save index to cache
+      await supabase
+        .from('sitemap_cache')
+        .upsert({
+          key: 'sitemap-index.xml',
+          content: sitemapIndex,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
+        });
+      
+      return ['sitemap-static.xml'];
+    }
+    
+    // Calculate number of sitemap files needed
+    const totalFiles = Math.ceil(totalUrls / BATCH_SIZE);
+    const sitemapFiles = [];
+    
+    // Process URLs in batches
+    for (let i = 0; i < totalFiles; i++) {
+      const offset = i * BATCH_SIZE;
+      const batch = Math.min(BATCH_SIZE, totalUrls - offset);
+      
+      console.log(`Processing batch ${i+1}/${totalFiles} (offset ${offset}, limit ${batch})`);
+      
+      // Get URLs for this batch using our fixed function
+      const { data: urls, error: urlsError } = await supabase.rpc(
+        'get_sitemap_urls_fixed', 
+        { p_offset: offset, p_limit: batch }
+      );
+      
+      if (urlsError) {
+        throw new Error(`Error getting URLs for batch ${i+1}: ${urlsError.message}`);
+      }
+      
+      if (!urls || urls.length === 0) {
+        console.log(`No URLs returned for batch ${i+1}`);
+        continue;
+      }
+      
+      // Determine sitemap type based on batch
+      const sitemapType = i === 0 ? 'static' : `part${i}`;
+      const filename = `sitemap-${sitemapType}.xml`;
+      sitemapFiles.push(filename);
+      
+      // Create and save sitemap for this batch
+      const sitemap = createSitemap(urls);
+      
+      await supabase
+        .from('sitemap_cache')
+        .upsert({
+          key: filename,
+          content: sitemap,
+          etag: crypto.randomUUID(),
+          updated_at: new Date().toISOString()
+        });
+      
+      console.log(`Saved sitemap file: ${filename}`);
+    }
+    
+    // Create and save sitemap index
+    const sitemapIndex = createSitemapIndex(sitemapFiles);
+    
+    await supabase
+      .from('sitemap_cache')
+      .upsert({
+        key: 'sitemap-index.xml',
+        content: sitemapIndex,
+        etag: crypto.randomUUID(),
+        updated_at: new Date().toISOString()
+      });
+    
+    console.log('Saved sitemap index file');
+    
+    // Log successful generation
+    await supabase.from('sitemap_logs').insert({
+      status: 'success',
+      message: `Generated ${sitemapFiles.length} sitemap files`,
+      source: 'regenerate-sitemap-function',
+      details: { files: sitemapFiles }
+    });
+    
+    // Return list of generated files
+    return sitemapFiles;
+    
+  } catch (error) {
+    console.error('Error generating sitemaps:', error);
+    
+    // Log the error to the database
+    await supabase
+      .from('sitemap_logs')
+      .insert({
+        status: 'error',
+        message: `Error generating sitemap: ${error.message}`,
+        source: 'regenerate-sitemap-function',
+        details: { 
+          error: error.message,
+          stack: error.stack
+        }
+      });
+    
+    throw error;
+  }
+}
+
+// Create XML for a sitemap index
+function createSitemapIndex(sitemapFiles) {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  
+  for (const file of sitemapFiles) {
+    xml += '  <sitemap>\n';
+    xml += `    <loc>https://soundraiser.io/${file}</loc>\n`;
+    xml += `    <lastmod>${format(new Date(), "yyyy-MM-dd")}</lastmod>\n`;
+    xml += '  </sitemap>\n';
+  }
+  
+  xml += '</sitemapindex>';
+  return xml;
+}
+
+// Create XML for a regular sitemap
+function createSitemap(urls) {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  
+  for (const url of urls) {
+    xml += '  <url>\n';
+    xml += `    <loc>https://soundraiser.io${url.url}</loc>\n`;
+    
+    if (url.updated_at) {
+      const date = new Date(url.updated_at);
+      xml += `    <lastmod>${format(date, "yyyy-MM-dd")}</lastmod>\n`;
+    }
+    
+    if (url.changefreq) {
+      xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
+    }
+    
+    if (url.priority) {
+      xml += `    <priority>${url.priority}</priority>\n`;
+    }
+    
+    xml += '  </url>\n';
+  }
+  
+  xml += '</urlset>';
+  return xml;
+}

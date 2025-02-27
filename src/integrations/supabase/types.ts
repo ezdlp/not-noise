@@ -1736,6 +1736,18 @@ export type Database = {
           total_urls: number
         }[]
       }
+      get_sitemap_urls_fixed: {
+        Args: {
+          p_offset: number
+          p_limit: number
+        }
+        Returns: {
+          url: string
+          updated_at: string
+          changefreq: string
+          priority: number
+        }[]
+      }
       get_sitemap_urls_paginated: {
         Args: {
           p_offset: number
