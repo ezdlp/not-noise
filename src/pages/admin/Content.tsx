@@ -1,13 +1,22 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { FileText, Pencil, Trash2, Eye } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { PostEditor } from "@/components/admin/blog/PostEditor";
+import { useState, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Lazy load components for better code splitting
+const ContentTable = lazy(() => import("@/components/admin/blog/ContentTable"));
+const PostEditor = lazy(() => import("@/components/admin/blog/PostEditor"));
+
+// Loader component
+const ComponentLoader = () => (
+  <div className="w-full p-8 flex justify-center">
+    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+  </div>
+);
 
 export default function Content() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
@@ -131,7 +140,11 @@ export default function Content() {
       : "bg-[#E6E6E6] text-[#666666] hover:bg-[#E6E6E6]/90";
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div className="w-full p-8 flex justify-center">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+    </div>
+  );
 
   if (isEditing) {
     return (
@@ -156,14 +169,16 @@ export default function Content() {
             Back to Content
           </Button>
         </div>
-        <PostEditor
-          post={selectedPost}
-          onClose={() => {
-            setIsEditing(false);
-            setSelectedPost(null);
-            refetch();
-          }}
-        />
+        <Suspense fallback={<ComponentLoader />}>
+          <PostEditor
+            post={selectedPost}
+            onClose={() => {
+              setIsEditing(false);
+              setSelectedPost(null);
+              refetch();
+            }}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -199,75 +214,19 @@ export default function Content() {
         </Select>
       </div>
 
-      <div className="rounded-md border border-[#E6E6E6]">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-[#FAFAFA]">
-              <TableHead className="text-night font-medium">Title</TableHead>
-              <TableHead className="text-night font-medium">Type</TableHead>
-              <TableHead className="text-night font-medium">Status</TableHead>
-              <TableHead className="text-night font-medium">Published Date</TableHead>
-              <TableHead className="text-night font-medium">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {posts?.map((post) => {
-              const contentType = getContentType(post);
-              return (
-                <TableRow key={post.id} className="hover:bg-[#ECE9FF]">
-                  <TableCell className="font-medium text-night">{post.title}</TableCell>
-                  <TableCell>
-                    <Badge className={getContentTypeBadgeVariant(contentType)}>
-                      {contentType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeVariant(post.status)}>
-                      {post.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-[#666666]">
-                    {post.published_at 
-                      ? new Date(post.published_at).toLocaleDateString()
-                      : "Not published"}
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedPost(post);
-                        setIsEditing(true);
-                      }}
-                      className="text-night hover:text-primary hover:bg-primary-light"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(post.id)}
-                      className="text-night hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      className="text-night hover:text-primary hover:bg-primary-light"
-                    >
-                      <a href={`/${post.slug}`} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <Suspense fallback={<ComponentLoader />}>
+        <ContentTable
+          posts={posts || []}
+          onEdit={(post) => {
+            setSelectedPost(post);
+            setIsEditing(true);
+          }}
+          onDelete={handleDelete}
+          getContentType={getContentType}
+          getContentTypeBadgeVariant={getContentTypeBadgeVariant}
+          getStatusBadgeVariant={getStatusBadgeVariant}
+        />
+      </Suspense>
     </div>
   );
 }

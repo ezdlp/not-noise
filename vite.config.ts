@@ -61,6 +61,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'es2020',
+    chunkSizeWarningLimit: 500, // Moved to correct location
     commonjsOptions: {
       include: [/node_modules/],
       extensions: ['.js', '.cjs', '.mjs', '.ts'],
@@ -75,7 +76,6 @@ export default defineConfig(({ mode }) => ({
       external: [],
       output: {
         format: 'es',
-        chunkSizeWarningLimit: 1000, // Increase warning threshold to 1MB
         manualChunks: (id) => {
           // Core React libraries
           if (id.includes('node_modules/react/') || 
@@ -121,6 +121,25 @@ export default defineConfig(({ mode }) => ({
           // Animation libraries
           if (id.includes('node_modules/framer-motion/')) {
             return 'animation-vendor';
+          }
+          
+          // Rich Text Editor - TipTap and related packages
+          if (id.includes('node_modules/@tiptap/') || 
+              id.includes('node_modules/prosemirror-')) {
+            return 'editor-vendor';
+          }
+          
+          // Split admin components by feature
+          if (id.includes('/src/components/admin/blog/RichTextEditor')) {
+            return 'admin-editor';
+          }
+          
+          if (id.includes('/src/components/admin/blog/PostEditor')) {
+            return 'admin-post-editor';
+          }
+          
+          if (id.includes('/src/components/admin/blog/')) {
+            return 'admin-blog-components';
           }
           
           // Large pages should be split
