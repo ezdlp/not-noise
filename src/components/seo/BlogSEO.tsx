@@ -29,10 +29,11 @@ export const BlogSEO: React.FC<BlogSEOProps> = ({ currentPage, totalPages }) => 
       <WebsiteSEO 
         title={pageTitle}
         description="Read the latest music marketing tips, industry trends, and resources for independent musicians."
-        canonicalUrl={canonicalUrl}
-        ogType="website"
+        image="/lovable-uploads/soundraiser-logo/Iso A.svg"
+        article={false}
       />
       <Helmet>
+        <link rel="canonical" href={canonicalUrl} />
         {prevLink && <link rel="prev" href={prevLink} />}
         {nextLink && <link rel="next" href={nextLink} />}
         {currentPage > 1 && <meta name="robots" content="noindex, follow" />}

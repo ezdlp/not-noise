@@ -80,7 +80,7 @@ export default function SitemapMonitor() {
     queryKey: ["sitemap-logs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sitemap_logs")
+        .from("sitemap_logs" as any)
         .select("*")
         .order("created_at", { ascending: false })
         .limit(50);
@@ -89,7 +89,7 @@ export default function SitemapMonitor() {
         throw error;
       }
 
-      return data as SitemapLog[];
+      return data as unknown as SitemapLog[];
     },
   });
 
@@ -246,7 +246,7 @@ export default function SitemapMonitor() {
               )}
 
               {healthData.warnings.length > 0 && (
-                <Alert variant="warning">
+                <Alert>
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Warnings</AlertTitle>
                   <AlertDescription>
