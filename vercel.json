@@ -18,6 +18,10 @@
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

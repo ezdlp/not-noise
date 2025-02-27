@@ -1,22 +1,13 @@
 
+# Sitemap
+Sitemap: https://soundraiser.io/sitemap.xml
+
+# Allow all robots full access
 User-agent: *
 Allow: /
 
-# Prevent crawling of admin and private areas
-Disallow: /control-room/
-Disallow: /dashboard/
-Disallow: /settings/
+# Disallow certain paths
+Disallow: /control-room
+Disallow: /dashboard
+Disallow: /settings
 Disallow: /links/*/edit
-Disallow: /links/*/analytics
-
-# Allow crawling of public pages
-Allow: /blog/
-Allow: /link/
-Allow: /spotify-playlist-promotion
-Allow: /streaming-calculator
-
-# Sitemap locations
-Sitemap: https://soundraiser.io/sitemap.xml
-Sitemap: https://soundraiser.io/sitemap-main.xml
-Sitemap: https://soundraiser.io/sitemap-blog.xml
-
