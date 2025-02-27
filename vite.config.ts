@@ -14,7 +14,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      // Using proper SWC plugin options
       jsxImportSource: 'react',
     }),
     mode === 'development' &&
@@ -23,7 +22,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Define explicit path to zod's index file rather than directory
       "zod": path.resolve("./node_modules/zod/lib/index.js"),
       "react": path.resolve("./node_modules/react"),
       "react-dom": path.resolve("./node_modules/react-dom"),
@@ -58,7 +56,8 @@ export default defineConfig(({ mode }) => ({
       'zod', 
       'react-hook-form', 
       '@hookform/resolvers',
-      'framer-motion'
+      'framer-motion',
+      'lucide-react'
     ]
   },
   build: {
@@ -74,23 +73,19 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
       },
-      // Don't externalize any dependencies
       external: [],
       output: {
         format: 'es',
         manualChunks: (id) => {
-          // Core React libraries
+          // React ecosystem chunk - includes React and all React-dependent libraries
           if (id.includes('node_modules/react/') || 
               id.includes('node_modules/react-dom/') || 
               id.includes('node_modules/react/jsx-runtime') ||
               id.includes('node_modules/@radix-ui/react-primitive') ||
-              id.includes('node_modules/@radix-ui/react-slot')) {
-            return 'react-vendor';
-          }
-          
-          // Animation libraries - Must include React in this chunk
-          if (id.includes('node_modules/framer-motion/')) {
-            return 'react-vendor'; // Changed from 'animation-vendor' to include with React
+              id.includes('node_modules/@radix-ui/react-slot') ||
+              id.includes('node_modules/framer-motion/') ||
+              id.includes('node_modules/lucide-react/')) {
+            return 'react-ecosystem';
           }
           
           // Form related packages
@@ -105,13 +100,10 @@ export default defineConfig(({ mode }) => ({
             return 'supabase-vendor';
           }
           
-          // Lucide Icons - split into a separate chunk
-          if (id.includes('node_modules/lucide-react/')) {
-            return 'icons-vendor';
-          }
-          
-          // UI Components - Radix UI
-          if (id.includes('node_modules/@radix-ui/') && !id.includes('react-primitive') && !id.includes('react-slot')) {
+          // UI Components - Radix UI (excluding primitive components)
+          if (id.includes('node_modules/@radix-ui/') && 
+              !id.includes('react-primitive') && 
+              !id.includes('react-slot')) {
             return 'ui-components-vendor';
           }
           
@@ -131,35 +123,20 @@ export default defineConfig(({ mode }) => ({
             return 'editor-vendor';
           }
           
-          // Split admin components by feature
-          if (id.includes('/src/components/admin/blog/RichTextEditor')) {
-            return 'admin-editor';
-          }
-          
-          if (id.includes('/src/components/admin/blog/PostEditor')) {
-            return 'admin-post-editor';
-          }
-          
-          if (id.includes('/src/components/admin/blog/')) {
-            return 'admin-blog-components';
-          }
-          
-          // Large pages should be split
-          if (id.includes('/src/pages/admin/Content.tsx')) {
-            return 'admin-content';
-          }
-          
-          if (id.includes('/src/pages/admin/Users.tsx')) {
-            return 'admin-users';
-          }
-          
-          // Route-based code splitting
+          // Route-based code splitting for pages
           if (id.includes('/src/pages/')) {
             const parts = id.split('/src/pages/')[1].split('/');
             if (parts.length > 0) {
-              // Use first-level page directory as chunk name
               return `page-${parts[0].toLowerCase()}`;
             }
+          }
+          
+          // Admin feature-based splitting
+          if (id.includes('/src/components/admin/')) {
+            if (id.includes('/blog/')) {
+              return 'admin-blog';
+            }
+            return 'admin-components';
           }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
@@ -184,7 +161,6 @@ export default defineConfig(({ mode }) => ({
       'date-fns',
       'lucide-react',
       'framer-motion',
-      // Include all Radix UI components that use hooks
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
       '@radix-ui/react-popover',
@@ -203,7 +179,6 @@ export default defineConfig(({ mode }) => ({
     }
   },
   ssr: {
-    // Force zod to be processed correctly for SSR
     noExternal: ['zod', '@hookform/resolvers'],
     optimizeDeps: {
       disabled: false
