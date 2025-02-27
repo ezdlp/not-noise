@@ -99,3 +99,21 @@ export interface BlogPost {
     };
   }[];
 }
+
+export interface SitemapLog {
+  id: string;
+  status: 'success' | 'error' | 'warning';
+  message: string;
+  details: Record<string, any>;
+  source: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SitemapCache {
+  key: string;
+  content: string;
+  etag: string;
+  created_at: string;
+  updated_at: string;
+}

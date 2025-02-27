@@ -11,3 +11,4 @@ Disallow: /control-room
 Disallow: /dashboard
 Disallow: /settings
 Disallow: /links/*/edit
+

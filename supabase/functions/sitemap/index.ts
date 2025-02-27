@@ -2,90 +2,115 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
-serve(async (req) => {
-  try {
-    // CORS headers
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    }
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { 
-        status: 204,
-        headers: corsHeaders
-      })
-    }
-    
-    // Initialize Supabase client with service role key
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+
+  try {
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     const supabase = createClient(supabaseUrl, supabaseKey)
     
-    // Retrieve the stored sitemap
-    const { data, error } = await supabase
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
+
+    // Get sitemap from cache
+    const { data: sitemap, error } = await supabase
       .from('sitemap_cache')
-      .select('content, etag, updated_at')
+      .select('content, updated_at')
       .eq('key', 'sitemap.xml')
       .single()
+      
+    if (error) {
+      // Log the error to sitemap_logs
+      await supabase.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Failed to retrieve sitemap from cache',
+        details: { error: error.message },
+        source: 'sitemap-endpoint'
+      })
+      
+      return new Response(
+        JSON.stringify({ error: 'Sitemap not found' }),
+        { 
+          status: 404, 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
     
-    if (error || !data) {
-      console.error('Error retrieving sitemap:', error)
-      
-      // If we can't get the stored sitemap, generate a minimal fallback
-      const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://soundraiser.io/</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>`
-      
-      return new Response(fallbackSitemap, { 
-        status: 200, 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/xml; charset=UTF-8',
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
-        } 
+    // Set headers for XML content and caching
+    const headers = {
+      ...corsHeaders,
+      'Content-Type': 'application/xml',
+      'Cache-Control': 'public, max-age=3600',
+      'ETag': `"${Date.parse(sitemap.updated_at).toString()}"`,
+      'Last-Modified': new Date(sitemap.updated_at).toUTCString()
+    }
+    
+    // Check if we have a conditional request
+    const ifNoneMatch = req.headers.get('if-none-match')
+    const ifModifiedSince = req.headers.get('if-modified-since')
+    
+    // Handle 304 Not Modified
+    if (
+      (ifNoneMatch && ifNoneMatch === headers.ETag) ||
+      (ifModifiedSince && new Date(ifModifiedSince) >= new Date(sitemap.updated_at))
+    ) {
+      return new Response(null, { 
+        status: 304,
+        headers
       })
     }
     
-    // Return the sitemap with appropriate headers
-    return new Response(data.content, { 
-      status: 200, 
-      headers: { 
-        ...corsHeaders,
-        'Content-Type': 'application/xml; charset=UTF-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-        'ETag': data.etag || '',
-        'Last-Modified': data.updated_at || new Date().toISOString()
-      } 
+    // Return the sitemap
+    return new Response(sitemap.content, { 
+      status: 200,
+      headers
     })
   } catch (error) {
-    console.error('Error serving sitemap:', error)
+    // Log the error
+    console.error('Sitemap endpoint error:', error)
     
-    // Provide a minimal fallback sitemap in case of error
-    const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://soundraiser.io/</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>`
+    // Initialize Supabase client for error logging
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      await supabase.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Unhandled exception in sitemap endpoint',
+        details: { error: error.message, stack: error.stack },
+        source: 'sitemap-endpoint'
+      })
+    } catch (logError) {
+      console.error('Failed to log sitemap error:', logError)
+    }
     
-    return new Response(fallbackSitemap, { 
-      status: 200, 
-      headers: { 
-        'Content-Type': 'application/xml; charset=UTF-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-        'Access-Control-Allow-Origin': '*',
-      } 
-    })
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { 
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
   }
 })

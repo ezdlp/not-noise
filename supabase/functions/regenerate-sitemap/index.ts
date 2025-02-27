@@ -287,6 +287,42 @@ serve(async (req) => {
         details: { url_count: entries.length, size_bytes: sitemap.length }
       });
       
+      // Ping search engines
+      try {
+        // Call the ping-search-engines edge function
+        const pingUrl = 'https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/ping-search-engines';
+        const pingResponse = await fetch(pingUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey
+          },
+          body: JSON.stringify({
+            source: 'sitemap-regeneration',
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        const pingData = await pingResponse.json();
+        
+        await logSitemapEvent({
+          status: pingData.success ? 'success' : 'warning',
+          message: `Search engine ping ${pingData.success ? 'successful' : 'failed'}`,
+          source,
+          details: pingData
+        });
+      } catch (pingError) {
+        await logSitemapEvent({
+          status: 'warning',
+          message: 'Search engine ping failed',
+          source,
+          details: { error: pingError.message }
+        });
+        
+        // Continue execution - ping failure shouldn't affect overall success
+        console.error('Error pinging search engines:', pingError);
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: true,
