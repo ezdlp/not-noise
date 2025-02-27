@@ -41,6 +41,12 @@ export default defineConfig(({ mode }) => ({
             '@supabase/auth-ui-react',
             '@supabase/auth-ui-shared'
           ],
+          // Form validation and handling
+          'vendor-forms': [
+            'zod',
+            '@hookform/resolvers',
+            'react-hook-form'
+          ],
           // UI components in logical groups
           'ui-core': [
             '@radix-ui/react-label',
@@ -87,7 +93,10 @@ export default defineConfig(({ mode }) => ({
       '@supabase/storage-js',
       '@supabase/functions-js',
       '@supabase/auth-helpers-react',
-      'recharts'
+      'recharts',
+      'zod',
+      '@hookform/resolvers',
+      'react-hook-form'
     ],
     esbuildOptions: {
       target: 'es2020',
