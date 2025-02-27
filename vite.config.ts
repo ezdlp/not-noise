@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "zod": path.resolve(__dirname, "./node_modules/zod/lib/index.mjs"),
+      "@hookform/resolvers/zod": path.resolve(__dirname, "./node_modules/@hookform/resolvers/zod/index.js")
     },
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
     dedupe: [
