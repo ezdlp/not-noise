@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -74,41 +75,74 @@ export default defineConfig(({ mode }) => ({
       external: [],
       output: {
         format: 'es',
-        manualChunks: {
-          // Put React and all its dependencies in a single chunk that loads first
-          'react-vendor': [
-            'react',
-            'react-dom',
-            'react/jsx-runtime',
-            '@radix-ui/react-primitive',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-compose-refs',
-            '@radix-ui/primitive',
-            '@radix-ui/react-context',
-            '@radix-ui/react-presence',
-            '@radix-ui/react-use-callback-ref',
-            '@radix-ui/react-use-controllable-state'
-          ],
-          // Forms-related packages
-          'forms-vendor': [
-            'zod',
-            'react-hook-form',
-            '@hookform/resolvers'
-          ],
-          // Other vendor packages
-          'supabase-vendor': [
-            '@supabase/supabase-js',
-            '@supabase/postgrest-js',
-            '@supabase/realtime-js',
-            '@supabase/storage-js',
-            '@supabase/functions-js',
-            '@supabase/auth-helpers-react'
-          ]
+        chunkSizeWarningLimit: 1000, // Increase warning threshold to 1MB
+        manualChunks: (id) => {
+          // Core React libraries
+          if (id.includes('node_modules/react/') || 
+              id.includes('node_modules/react-dom/') || 
+              id.includes('node_modules/react/jsx-runtime') ||
+              id.includes('node_modules/@radix-ui/react-primitive') ||
+              id.includes('node_modules/@radix-ui/react-slot')) {
+            return 'react-vendor';
+          }
+          
+          // Form related packages
+          if (id.includes('node_modules/zod/') || 
+              id.includes('node_modules/react-hook-form/') ||
+              id.includes('node_modules/@hookform/resolvers/')) {
+            return 'forms-vendor';
+          }
+          
+          // Supabase related packages
+          if (id.includes('node_modules/@supabase/')) {
+            return 'supabase-vendor';
+          }
+          
+          // Lucide Icons - split into a separate chunk
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'icons-vendor';
+          }
+          
+          // UI Components - Radix UI
+          if (id.includes('node_modules/@radix-ui/') && !id.includes('react-primitive') && !id.includes('react-slot')) {
+            return 'ui-components-vendor';
+          }
+          
+          // Date related libraries
+          if (id.includes('node_modules/date-fns/')) {
+            return 'date-vendor';
+          }
+          
+          // Chart related libraries
+          if (id.includes('node_modules/recharts/')) {
+            return 'charts-vendor';
+          }
+          
+          // Animation libraries
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'animation-vendor';
+          }
+          
+          // Large pages should be split
+          if (id.includes('/src/pages/admin/Content.tsx')) {
+            return 'admin-content';
+          }
+          
+          if (id.includes('/src/pages/admin/Users.tsx')) {
+            return 'admin-users';
+          }
+          
+          // Route-based code splitting
+          if (id.includes('/src/pages/')) {
+            const parts = id.split('/src/pages/')[1].split('/');
+            if (parts.length > 0) {
+              // Use first-level page directory as chunk name
+              return `page-${parts[0].toLowerCase()}`;
+            }
+          }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
-        // Ensure proper loading order
         entryFileNames: 'assets/[name]-[hash].js'
       }
     },
@@ -124,12 +158,11 @@ export default defineConfig(({ mode }) => ({
       '@hookform/resolvers',
       'react-hook-form',
       '@supabase/supabase-js',
-      '@supabase/postgrest-js',
-      '@supabase/realtime-js',
-      '@supabase/storage-js',
-      '@supabase/functions-js',
-      '@supabase/auth-helpers-react',
+      '@supabase/ssr',
       'recharts',
+      'date-fns',
+      'lucide-react',
+      'framer-motion',
       // Include all Radix UI components that use hooks
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
