@@ -1,14 +1,16 @@
 
-import { corsHeaders, xmlResponse, xmlErrorResponse, createAnonClient, logSitemapEvent, SITE_URL } from '../_shared/sitemap-utils.ts';
+import { corsHeaders, xmlResponse, xmlErrorResponse, createAnonClient, SITE_URL } from '../_shared/sitemap-utils.ts';
 
-// Basic fallback sitemap index
-const fallbackSitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${SITE_URL}/sitemap-static.xml</loc>
+// Fallback sitemap with just the homepage
+const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${SITE_URL}/</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>
-</sitemapindex>`;
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
 
 export const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -16,29 +18,37 @@ export const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
   
-  console.log('Sitemap index request received');
-  
   try {
+    // Get the sitemap key from URL
+    const url = new URL(req.url);
+    const path = url.pathname.split('/').pop();
+    
+    if (!path || !path.startsWith('sitemap-')) {
+      return xmlErrorResponse('Invalid sitemap file requested', 400);
+    }
+    
+    console.log(`Sitemap file request received for: ${path}`);
+    
     // Initialize Supabase client with anonymous access
     const supabase = createAnonClient();
     
     // Get If-None-Match header for ETag comparison
     const ifNoneMatch = req.headers.get('If-None-Match') || '';
     
-    // Try to fetch the sitemap index from cache
+    // Try to fetch the requested sitemap file from cache
     const { data: sitemapData, error } = await supabase
       .from('sitemap_cache')
       .select('content, etag, updated_at')
-      .eq('key', 'sitemap-index.xml')
+      .eq('key', path)
       .single();
     
     if (error) {
-      console.error(`Error fetching sitemap index: ${error.message}`);
+      console.error(`Error fetching sitemap file ${path}: ${error.message}`);
       
-      // Try to trigger background generation
+      // Trigger background generation for this specific sitemap
       try {
         const { error: invocationError } = await supabase.functions.invoke('sitemap-generator', {
-          body: { type: 'index', trigger: 'fetch-error' }
+          body: { type: 'file', filename: path, trigger: 'fetch-error' }
         });
         
         if (invocationError) {
@@ -48,18 +58,18 @@ export const handler = async (req: Request): Promise<Response> => {
         console.error(`Failed to trigger sitemap generation: ${triggerError.message}`);
       }
       
-      // Return fallback sitemap index
-      return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
+      // Return fallback sitemap for this specific file
+      return xmlResponse(fallbackSitemap, { maxAge: 300 });
     }
     
-    // If no sitemap index is found in cache
+    // If no sitemap file is found in cache
     if (!sitemapData || !sitemapData.content) {
-      console.log('No sitemap index found in cache, returning fallback');
+      console.log(`No sitemap file found in cache for ${path}, returning fallback`);
       
-      // Try to trigger background generation
+      // Trigger background generation for this specific sitemap
       try {
         const { error: invocationError } = await supabase.functions.invoke('sitemap-generator', {
-          body: { type: 'index', trigger: 'missing-cache' }
+          body: { type: 'file', filename: path, trigger: 'missing-cache' }
         });
         
         if (invocationError) {
@@ -69,7 +79,7 @@ export const handler = async (req: Request): Promise<Response> => {
         console.error(`Failed to trigger sitemap generation: ${triggerError.message}`);
       }
       
-      return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
+      return xmlResponse(fallbackSitemap, { maxAge: 300 });
     }
     
     // Check if ETag matches for 304 Not Modified response
@@ -86,7 +96,7 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
     
-    console.log(`Serving sitemap index from cache, last updated: ${sitemapData.updated_at}`);
+    console.log(`Serving sitemap file ${path} from cache, last updated: ${sitemapData.updated_at}`);
     
     // Return the cached sitemap with appropriate headers
     return xmlResponse(sitemapData.content, { 
@@ -95,7 +105,7 @@ export const handler = async (req: Request): Promise<Response> => {
     });
     
   } catch (error) {
-    console.error(`Error serving sitemap index: ${error.message}`);
-    return xmlResponse(fallbackSitemapIndex, { maxAge: 300 });
+    console.error(`Error serving sitemap file: ${error.message}`);
+    return xmlResponse(fallbackSitemap, { maxAge: 300 });
   }
 };

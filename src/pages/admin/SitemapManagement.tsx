@@ -2,330 +2,327 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { RefreshCw, AlertTriangle, CheckCircle, Info, Search } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { RefreshCw, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, formatDistanceToNow } from 'date-fns';
-import { SitemapLog } from '@/types/database';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatDistance } from 'date-fns';
 
-interface SitemapCacheInfo {
+interface SitemapCacheItem {
   key: string;
   updated_at: string;
   etag: string;
-  url_count?: number;
+}
+
+interface SitemapLog {
+  id: string;
+  status: 'success' | 'error' | 'warning';
+  message: string;
+  source: string;
+  created_at: string;
+  details: Record<string, any>;
 }
 
 export default function SitemapManagement() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isPinging, setIsPinging] = useState(false);
-  const [cacheInfo, setCacheInfo] = useState<SitemapCacheInfo | null>(null);
-  const [logs, setLogs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationType, setGenerationType] = useState('all');
+  const [sitemapCache, setSitemapCache] = useState<SitemapCacheItem[]>([]);
+  const [sitemapLogs, setSitemapLogs] = useState<SitemapLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    fetchSitemapData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchSitemapData = async () => {
     setIsLoading(true);
     try {
-      // Fetch sitemap cache info
-      const { data: cacheData } = await supabase
+      // Fetch sitemap cache data
+      const { data: cacheData, error: cacheError } = await supabase
         .from('sitemap_cache')
+        .select('key, updated_at, etag')
+        .order('updated_at', { ascending: false });
+
+      if (cacheError) throw cacheError;
+      setSitemapCache(cacheData || []);
+
+      // Fetch sitemap logs
+      const { data: logsData, error: logsError } = await supabase
+        .from('sitemap_logs')
         .select('*')
-        .eq('key', 'sitemap.xml')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      if (cacheData) {
-        setCacheInfo({
-          key: cacheData.key,
-          updated_at: cacheData.updated_at,
-          etag: cacheData.etag,
-          url_count: cacheData.content.match(/<url>/g)?.length || 0
-        });
-      }
+      if (logsError) throw logsError;
+      setSitemapLogs(logsData || []);
 
-      // Fetch recent logs from custom endpoint
-      try {
-        const { data: logsData, error } = await supabase.functions.invoke('sitemap-health');
-        
-        if (error) throw error;
-        
-        if (logsData?.recent_errors) {
-          // Transform to match SitemapLog structure
-          setLogs(logsData.recent_errors.map((log: any) => ({
-            ...log,
-            status: log.status || 'error'
-          })));
-        }
-      } catch (error) {
-        console.error('Error fetching sitemap logs:', error);
-        toast.error('Failed to load sitemap logs');
-      }
     } catch (error) {
       console.error('Error fetching sitemap data:', error);
-      toast.error('Failed to load sitemap information');
+      toast.error('Failed to load sitemap data');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const regenerateSitemap = async () => {
-    setIsRegenerating(true);
+  const generateSitemap = async () => {
+    setIsGenerating(true);
     try {
-      const { error } = await supabase.functions.invoke('sitemap-cache', {
+      // Call the sitemap-generator function to regenerate sitemaps
+      const { error } = await supabase.functions.invoke('sitemap-generator', {
+        method: 'POST',
         body: { 
-          source: 'admin-panel',
-          trigger: 'manual'
+          type: generationType === 'all' ? 'all' : 'file',
+          filename: generationType !== 'all' ? `sitemap-${generationType}.xml` : undefined,
+          trigger: 'manual-admin'
         }
       });
 
       if (error) throw error;
       
-      toast.success('Sitemap regeneration started');
+      toast.success(`Sitemap generation started for ${generationType === 'all' ? 'all types' : generationType}`);
       
-      // Wait a moment then refetch to show progress
-      setTimeout(fetchData, 2000);
+      // Refresh data after a short delay to show new results
+      setTimeout(() => {
+        fetchSitemapData();
+      }, 2000);
+      
     } catch (error) {
-      console.error('Error regenerating sitemap:', error);
-      toast.error('Failed to regenerate sitemap');
+      console.error('Error generating sitemap:', error);
+      toast.error('Failed to generate sitemap');
     } finally {
-      setIsRegenerating(false);
+      setIsGenerating(false);
     }
   };
 
-  const pingSearchEngines = async () => {
-    setIsPinging(true);
+  const pingSiteMapSearchEngines = async () => {
     try {
       const { error } = await supabase.functions.invoke('ping-search-engines', {
-        body: { 
-          source: 'admin-panel',
-          trigger: 'manual'
-        }
+        method: 'POST',
+        body: { sitemapUrl: 'https://soundraiser.io/sitemap.xml' }
       });
 
       if (error) throw error;
+      toast.success('Search engines pinged successfully');
       
-      toast.success('Search engines notification sent');
+      // Refresh data after a short delay
+      setTimeout(() => {
+        fetchSitemapData();
+      }, 1000);
       
-      // Wait a moment then refetch to show progress
-      setTimeout(fetchData, 2000);
     } catch (error) {
       console.error('Error pinging search engines:', error);
-      toast.error('Failed to notify search engines');
-    } finally {
-      setIsPinging(false);
+      toast.error('Failed to ping search engines');
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default" className="bg-green-500 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Success</Badge>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" /> Success</span>;
       case 'error':
-        return <Badge variant="destructive" className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Error</Badge>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><AlertTriangle className="w-3 h-3 mr-1" /> Error</span>;
       case 'warning':
-        return <Badge variant="default" className="bg-amber-500 flex items-center gap-1"><Info className="h-3 w-3" /> Warning</Badge>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3 mr-1" /> Warning</span>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{status}</span>;
     }
   };
 
   return (
-    <div className="container py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Sitemap Management</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchData} 
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={pingSearchEngines}
-            disabled={isPinging || isLoading}
-          >
-            <Search className={`h-4 w-4 mr-1 ${isPinging ? 'animate-pulse' : ''}`} />
-            Ping Search Engines
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={regenerateSitemap}
-            disabled={isRegenerating || isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isRegenerating ? 'animate-spin' : ''}`} />
-            Regenerate Sitemap
-          </Button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
-          <TabsTrigger value="overview">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="logs">
-            Logs ({logs.filter(log => log.status === 'error').length > 0 ? '⚠️' : '✓'})
-          </TabsTrigger>
+    <div className="container py-12">
+      <h1 className="text-2xl font-bold mb-6">Sitemap Management</h1>
+      
+      <Tabs defaultValue="generate">
+        <TabsList className="mb-4">
+          <TabsTrigger value="generate">Generate Sitemaps</TabsTrigger>
+          <TabsTrigger value="cache">Sitemap Cache</TabsTrigger>
+          <TabsTrigger value="logs">Activity Logs</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview">
+        
+        <TabsContent value="generate">
           <Card>
             <CardHeader>
-              <CardTitle>Sitemap Status</CardTitle>
+              <CardTitle>Generate Sitemaps</CardTitle>
               <CardDescription>
-                Current status of your sitemap and XML configuration
+                Generate or update your site's XML sitemaps to ensure search engines can discover all your content.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!cacheInfo ? (
-                <div className="p-4 bg-amber-50 text-amber-700 rounded-md border border-amber-200">
-                  <h3 className="font-medium flex items-center gap-1">
-                    <AlertTriangle className="h-4 w-4" /> Sitemap Not Found
-                  </h3>
-                  <p className="mt-1 text-sm">
-                    No sitemap has been generated yet. Click the "Regenerate Sitemap" button to create one.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-base">Last Updated</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-semibold mb-1">
-                          {formatDistanceToNow(new Date(cacheInfo.updated_at), { addSuffix: true })}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {format(new Date(cacheInfo.updated_at), 'MMMM d, yyyy h:mm a')}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-base">URL Count</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-semibold mb-1">
-                          {cacheInfo.url_count || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Total URLs in sitemap
-                        </div>
-                      </CardContent>
-                    </Card>
+              <div className="space-y-4">
+                <h3 className="text-base font-medium">What would you like to generate?</h3>
+                <RadioGroup 
+                  value={generationType} 
+                  onValueChange={setGenerationType}
+                  className="flex flex-col space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="all" id="all" />
+                    <Label htmlFor="all">All sitemaps (complete regeneration)</Label>
                   </div>
-
-                  <div>
-                    <h3 className="font-medium mb-2">Access Information</h3>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-muted rounded-md flex justify-between items-center">
-                        <div>
-                          <div className="font-mono text-sm">Sitemap URL</div>
-                          <div className="text-sm text-muted-foreground">https://soundraiser.io/sitemap.xml</div>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => window.open('https://soundraiser.io/sitemap.xml', '_blank')}>
-                          View
-                        </Button>
-                      </div>
-                      
-                      <div className="p-3 bg-muted rounded-md flex justify-between items-center">
-                        <div>
-                          <div className="font-mono text-sm">Robots.txt</div>
-                          <div className="text-sm text-muted-foreground">https://soundraiser.io/robots.txt</div>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => window.open('https://soundraiser.io/robots.txt', '_blank')}>
-                          View
-                        </Button>
-                      </div>
-                      
-                      <div className="p-3 bg-muted rounded-md">
-                        <div className="font-mono text-sm mb-1">ETag</div>
-                        <div className="text-sm font-mono break-all text-muted-foreground">
-                          {cacheInfo.etag}
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="static" id="static" />
+                    <Label htmlFor="static">Static pages sitemap only</Label>
                   </div>
-                </>
-              )}
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="blog" id="blog" />
+                    <Label htmlFor="blog">Blog posts sitemap only</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="links" id="links" />
+                    <Label htmlFor="links">Smart links sitemaps only</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800">
+                <h3 className="font-medium flex items-center gap-1">
+                  <AlertTriangle className="h-4 w-4" /> Important Note
+                </h3>
+                <p className="mt-1 text-sm">
+                  Generating all sitemaps for a large site may take a few minutes. The process runs in the background, and you'll see the updated results in the "Sitemap Cache" tab when complete.
+                </p>
+              </div>
             </CardContent>
+            <CardFooter className="flex flex-col items-start sm:flex-row sm:justify-between sm:items-center gap-4">
+              <Button 
+                onClick={generateSitemap}
+                disabled={isGenerating}
+                className="w-full sm:w-auto"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+                {isGenerating ? 'Generating...' : 'Generate Now'}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={pingSiteMapSearchEngines}
+                className="w-full sm:w-auto"
+              >
+                Ping Search Engines
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
-
-        <TabsContent value="logs">
+        
+        <TabsContent value="cache">
           <Card>
             <CardHeader>
-              <CardTitle>Sitemap Logs</CardTitle>
+              <CardTitle>Sitemap Cache</CardTitle>
               <CardDescription>
-                Recent activity and status messages for the sitemap system
+                View all the sitemap files currently cached in your system.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-4 text-left font-medium">Time</th>
-                      <th className="py-3 px-4 text-left font-medium">Status</th>
-                      <th className="py-3 px-4 text-left font-medium">Source</th>
-                      <th className="py-3 px-4 text-left font-medium">Message</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-4 text-center text-muted-foreground">
-                          No logs found
-                        </td>
-                      </tr>
-                    ) : (
-                      logs.map((log) => (
-                        <tr key={log.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-4 align-top">
-                            <div className="font-mono whitespace-nowrap">{format(new Date(log.created_at), 'yyyy-MM-dd')}</div>
-                            <div className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'HH:mm:ss')}</div>
-                          </td>
-                          <td className="py-3 px-4 align-top">
-                            {getStatusBadge(log.status)}
-                          </td>
-                          <td className="py-3 px-4 align-top">{log.source}</td>
-                          <td className="py-3 px-4 align-top">
-                            <div>{log.message}</div>
-                            {log.details && Object.keys(log.details).length > 0 && (
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {Object.entries(log.details).map(([key, value]) => (
-                                  <div key={key} className="mt-0.5">
-                                    <span className="font-medium">{key}:</span>{' '}
-                                    {typeof value === 'object' 
-                                      ? JSON.stringify(value).substring(0, 100) 
-                                      : String(value).substring(0, 100)}
-                                    {(typeof value === 'object' ? JSON.stringify(value).length > 100 : String(value).length > 100) && '...'}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : sitemapCache.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No sitemap files found in cache.</p>
+                  <p className="text-sm mt-2">Generate a sitemap first using the "Generate Sitemaps" tab.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Filename</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead>ETag</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sitemapCache.map((item) => (
+                      <TableRow key={item.key}>
+                        <TableCell className="font-medium">{item.key}</TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDistance(new Date(item.updated_at), new Date(), { addSuffix: true })}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs truncate max-w-[120px]">
+                          {item.etag}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(`/sitemap${item.key === 'sitemap-index.xml' ? '' : `-${item.key.replace('sitemap-', '').replace('.xml', '')}`}.xml`, '_blank')}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
+            <CardFooter>
+              <Button variant="outline" onClick={fetchSitemapData} className="w-full">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="logs">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sitemap Activity Logs</CardTitle>
+              <CardDescription>
+                View recent sitemap generation and activity logs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : sitemapLogs.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No sitemap activity logs found.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Message</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sitemapLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{getStatusBadge(log.status)}</TableCell>
+                        <TableCell>{log.message}</TableCell>
+                        <TableCell>{log.source}</TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDistance(new Date(log.created_at), new Date(), { addSuffix: true })}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" onClick={fetchSitemapData} className="w-full">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Logs
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>

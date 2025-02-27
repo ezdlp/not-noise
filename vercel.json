@@ -22,6 +22,10 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap"
     },
     {
+      "source": "/sitemap-:file.xml",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-file"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -38,6 +42,19 @@
     },
     {
       "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=UTF-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap-:file.xml",
       "headers": [
         {
           "key": "Cache-Control",
