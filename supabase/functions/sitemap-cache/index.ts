@@ -1,6 +1,5 @@
 
 // sitemap-cache edge function - generates and caches the site's XML sitemap
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
@@ -8,13 +7,38 @@ import { corsHeaders } from '../_shared/cors.ts';
 export const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Origin': '*',
+      }
+    });
+  }
+  
+  // For POST requests, require authentication to prevent unauthorized regeneration
+  if (req.method === 'POST') {
+    // Check for authentication header
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      console.error('Missing or invalid authentication for POST request');
+      // Return XML error instead of JSON
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?>
+        <error>
+          <message>Authentication required for regeneration</message>
+        </error>`,
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/xml; charset=UTF-8',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      );
+    }
   }
   
   try {
-    // Extract API key from request headers
-    const authHeader = req.headers.get('Authorization') || '';
-    
     // Initialize Supabase client with service role
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') || '',
@@ -28,66 +52,89 @@ export const handler = async (req: Request): Promise<Response> => {
         status: 'success',
         message: 'Started sitemap generation',
         source: 'sitemap-cache',
-        details: { method: 'manual', trigger: 'edge-function' }
+        details: { method: req.method, trigger: req.method === 'POST' ? 'manual' : 'auto' }
       });
     
     console.log('Starting sitemap generation process');
 
-    // Get total URL count
-    const { data: urlCountData, error: urlCountError } = await supabaseAdmin.rpc('get_sitemap_url_count');
+    // Generate static URLs
+    const staticUrls = [
+      { url: '/', priority: 1.0, changefreq: 'weekly' },
+      { url: '/pricing', priority: 0.9, changefreq: 'weekly' },
+      { url: '/spotify-playlist-promotion', priority: 0.9, changefreq: 'weekly' },
+      { url: '/spotify-royalty-calculator', priority: 0.8, changefreq: 'monthly' },
+      { url: '/blog', priority: 0.9, changefreq: 'daily' },
+      { url: '/create', priority: 0.8, changefreq: 'weekly' },
+      { url: '/login', priority: 0.6, changefreq: 'monthly' },
+      { url: '/register', priority: 0.6, changefreq: 'monthly' },
+    ];
     
-    if (urlCountError) {
-      throw new Error(`Failed to get URL count: ${urlCountError.message}`);
+    // Function to get blog post URLs
+    async function getBlogPostUrls() {
+      const { data, error } = await supabaseAdmin
+        .from('blog_posts')
+        .select('slug, published_at, updated_at')
+        .eq('status', 'published');
+      
+      if (error) {
+        console.error('Error fetching blog posts:', error);
+        return [];
+      }
+      
+      return data?.map(post => ({
+        url: `/blog/${post.slug}`,
+        lastmod: post.updated_at || post.published_at,
+        priority: 0.8,
+        changefreq: 'weekly'
+      })) || [];
     }
     
-    const totalUrls = urlCountData?.total_urls || 0;
-    console.log(`Found ${totalUrls} URLs to include in sitemap`);
-    
-    if (totalUrls === 0) {
-      throw new Error('No URLs found for sitemap');
+    // Function to get smart link URLs
+    async function getSmartLinkUrls() {
+      const { data, error } = await supabaseAdmin
+        .from('smart_links')
+        .select('slug, updated_at')
+        .not('slug', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching smart links:', error);
+        return [];
+      }
+      
+      return data?.map(link => ({
+        url: `/link/${link.slug}`,
+        lastmod: link.updated_at,
+        priority: 0.7,
+        changefreq: 'monthly'
+      })) || [];
     }
+    
+    // Fetch dynamic URLs
+    const [blogUrls, smartLinkUrls] = await Promise.all([
+      getBlogPostUrls(),
+      getSmartLinkUrls()
+    ]);
+    
+    // Combine all URLs
+    const allUrls = [...staticUrls, ...blogUrls, ...smartLinkUrls];
     
     // Build XML sitemap
     let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n';
     sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
     
-    // Process URLs in batches of 1000
-    const batchSize = 1000;
-    const batches = Math.ceil(totalUrls / batchSize);
-    
-    for (let i = 0; i < batches; i++) {
-      const offset = i * batchSize;
+    // Add each URL to the sitemap
+    for (const url of allUrls) {
+      sitemap += '  <url>\n';
+      sitemap += `    <loc>https://soundraiser.io${url.url}</loc>\n`;
       
-      const { data: urls, error: urlsError } = await supabaseAdmin.rpc(
-        'get_sitemap_urls_paginated', 
-        { p_offset: offset, p_limit: batchSize }
-      );
-      
-      if (urlsError) {
-        throw new Error(`Failed to get URLs (batch ${i+1}/${batches}): ${urlsError.message}`);
+      if (url.lastmod) {
+        const lastmod = new Date(url.lastmod).toISOString().split('T')[0];
+        sitemap += `    <lastmod>${lastmod}</lastmod>\n`;
       }
       
-      if (!urls || urls.length === 0) {
-        console.warn(`No URLs returned for batch ${i+1}/${batches}`);
-        continue;
-      }
-      
-      // Add each URL to the sitemap
-      for (const url of urls) {
-        sitemap += '  <url>\n';
-        sitemap += `    <loc>https://soundraiser.io${url.url}</loc>\n`;
-        
-        if (url.updated_at) {
-          const lastmod = new Date(url.updated_at).toISOString().split('T')[0];
-          sitemap += `    <lastmod>${lastmod}</lastmod>\n`;
-        }
-        
-        sitemap += `    <changefreq>${url.changefreq}</changefreq>\n`;
-        sitemap += `    <priority>${url.priority}</priority>\n`;
-        sitemap += '  </url>\n';
-      }
-      
-      console.log(`Processed batch ${i+1}/${batches} (${urls.length} URLs)`);
+      sitemap += `    <changefreq>${url.changefreq}</changefreq>\n`;
+      sitemap += `    <priority>${url.priority}</priority>\n`;
+      sitemap += '  </url>\n';
     }
     
     sitemap += '</urlset>';
@@ -123,18 +170,19 @@ export const handler = async (req: Request): Promise<Response> => {
         message: 'Successfully generated and cached sitemap',
         source: 'sitemap-cache',
         details: { 
-          url_count: totalUrls,
+          url_count: allUrls.length,
           etag: etag,
           size_bytes: sitemap.length
         }
       });
     
+    // For direct access, return the sitemap
     return new Response(sitemap, { 
       headers: {
-        ...corsHeaders,
         'Content-Type': 'application/xml; charset=UTF-8',
         'ETag': `"${etag}"`,
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400'
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'Access-Control-Allow-Origin': '*',
       } 
     });
     
@@ -161,7 +209,7 @@ export const handler = async (req: Request): Promise<Response> => {
       console.error(`Failed to log error: ${logError.message}`);
     }
     
-    // For errors, return a simple XML sitemap that's still valid but empty
+    // Return a simple valid XML response for errors
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Sitemap generation error: ${error.message} -->
@@ -175,9 +223,9 @@ export const handler = async (req: Request): Promise<Response> => {
     
     return new Response(fallbackSitemap, { 
       headers: {
-        ...corsHeaders,
         'Content-Type': 'application/xml; charset=UTF-8',
-        'Cache-Control': 'public, max-age=300'
+        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Origin': '*',
       }
     });
   }
