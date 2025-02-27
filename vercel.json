@@ -14,10 +14,6 @@
       "destination": "/_next/image"
     },
     {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
-    },
-    {
       "source": "/lovable-uploads/:path*",
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
