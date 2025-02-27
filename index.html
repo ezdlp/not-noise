@@ -43,26 +43,8 @@
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js"></script>
 
-    <!-- Lazy load reCAPTCHA -->
-    <script>
-      window.loadRecaptcha = function() {
-        if (!window.recaptchaLoaded) {
-          window.recaptchaLoaded = true;
-          const script = document.createElement('script');
-          script.src = 'https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F';
-          script.async = true;
-          script.defer = true;
-          document.head.appendChild(script);
-        }
-        return new Promise(resolve => {
-          if (window.grecaptcha) {
-            resolve(window.grecaptcha);
-          } else {
-            window.onRecaptchaLoaded = resolve;
-          }
-        });
-      };
-    </script>
+    <!-- Direct reCAPTCHA loading -->
+    <script src="https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F"></script>
     <style>
       .grecaptcha-badge {
         visibility: hidden;

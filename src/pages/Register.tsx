@@ -38,6 +38,8 @@ declare global {
   }
 }
 
+const RECAPTCHA_SITE_KEY = "6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F";
+
 export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function Register() {
   const { toast } = useToast();
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
-  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,27 +60,29 @@ export default function Register() {
     },
   });
 
+  // Check if reCAPTCHA is ready
   useEffect(() => {
-    // Simple approach: check if grecaptcha is available and wait for it to be ready
+    // Simple direct check if grecaptcha exists and is ready
     if (window.grecaptcha) {
       window.grecaptcha.ready(() => {
-        setRecaptchaLoaded(true);
-        console.log('reCAPTCHA ready');
+        console.log("reCAPTCHA is ready");
+        setRecaptchaReady(true);
       });
     } else {
-      // If grecaptcha isn't available, listen for when it becomes available
-      const checkRecaptcha = setInterval(() => {
+      console.log("Waiting for reCAPTCHA to load...");
+      // Set up a listener to check every 100ms
+      const checkRecaptchaInterval = setInterval(() => {
         if (window.grecaptcha) {
           window.grecaptcha.ready(() => {
-            setRecaptchaLoaded(true);
-            console.log('reCAPTCHA ready');
+            console.log("reCAPTCHA is ready");
+            setRecaptchaReady(true);
           });
-          clearInterval(checkRecaptcha);
+          clearInterval(checkRecaptchaInterval);
         }
       }, 100);
-      
-      // Clear interval on component unmount
-      return () => clearInterval(checkRecaptcha);
+
+      // Clean up interval on unmount
+      return () => clearInterval(checkRecaptchaInterval);
     }
   }, []);
 
@@ -112,12 +116,12 @@ export default function Register() {
 
   const verifyRecaptcha = async () => {
     try {
-      if (!recaptchaLoaded || !window.grecaptcha) {
-        throw new Error('reCAPTCHA not loaded');
+      if (!window.grecaptcha) {
+        throw new Error('reCAPTCHA not available');
       }
 
       console.log('Executing reCAPTCHA...');
-      const token = await window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { 
+      const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { 
         action: 'register' 
       });
       
@@ -420,17 +424,17 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || !recaptchaLoaded}
+              disabled={loading || !recaptchaReady}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
                 </>
-              ) : !recaptchaLoaded ? (
+              ) : !recaptchaReady ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Preparing form...
+                  Loading security verification...
                 </>
               ) : (
                 'Create account'
