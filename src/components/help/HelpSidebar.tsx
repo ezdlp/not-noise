@@ -1,117 +1,114 @@
 
-import { HelpCategory } from "@/pages/Help";
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { HelpCategory, HelpArticle } from "@/types/help";
 
 interface HelpSidebarProps {
-  activeCategory: HelpCategory;
-  onCategoryChange: (category: HelpCategory) => void;
+  categories: HelpCategory[];
+  articles: HelpArticle[];
+  activeArticleId: string | null;
+  activeCategoryId: string | null;
+  onSelectArticle: (articleId: string) => void;
+  onSelectCategory: (categoryId: string) => void;
+  className?: string;
 }
 
-const categories = [
-  {
-    title: "Getting Started",
-    value: "getting-started" as HelpCategory["id"],
-    icon: BookOpen,
-    items: ["Welcome Guide", "Creating Your Account", "Understanding Your Dashboard", "Platform Overview"],
-  },
-  {
-    title: "Smart Links",
-    value: "smartlinks" as HelpCategory["id"],
-    icon: List,
-    items: ["What are Smart Links?", "Creating Smart Links", "Custom URLs", "Email Capture", "Design & Customization"],
-  },
-  {
-    title: "Analytics & Tracking",
-    value: "analytics" as HelpCategory["id"],
-    icon: BarChart3,
-    items: ["Dashboard Overview", "Performance Metrics", "Meta Pixel Setup", "Conversion Tracking", "Audience Insights"],
-  },
-  {
-    title: "Social Media",
-    value: "social-media" as HelpCategory["id"],
-    icon: ImageIcon,
-    items: ["Social Cards", "Platform Integration", "Best Practices", "Supported Networks"],
-  },
-  {
-    title: "Support",
-    value: "support" as HelpCategory["id"],
-    icon: HelpCircle,
-    items: ["FAQs", "Contact Support", "Account Issues", "Billing Questions"],
-  },
-];
-
-export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    [activeCategory.id]: true
-  });
-
-  const toggleCategory = (value: HelpCategory["id"]) => {
+export function HelpSidebar({
+  categories,
+  articles,
+  activeArticleId,
+  activeCategoryId,
+  onSelectArticle,
+  onSelectCategory,
+  className
+}: HelpSidebarProps) {
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  
+  // Initialize expanded state based on active category
+  useEffect(() => {
+    if (activeCategoryId) {
+      setExpandedCategories(prev => ({
+        ...prev,
+        [activeCategoryId]: true
+      }));
+    }
+  }, [activeCategoryId]);
+  
+  const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => ({
       ...prev,
-      [value]: !prev[value]
+      [categoryId]: !prev[categoryId]
     }));
   };
-
+  
   return (
-    <aside className="space-y-2">
-      <div className="space-y-1">
-        {categories.map((category) => (
-          <div key={category.title} className="space-y-1">
-            <button
-              onClick={() => {
-                onCategoryChange({ id: category.value, name: category.title });
-                toggleCategory(category.value);
-              }}
-              className={cn(
-                "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-primary/5",
-                activeCategory.id === category.value && "bg-primary/10 text-primary"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <category.icon className="h-4 w-4" />
-                <span className="font-medium">{category.title}</span>
-              </div>
-              {expandedCategories[category.value] ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </button>
+    <div className={cn("space-y-6", className)}>
+      <div className="sticky top-24">
+        <h3 className="font-medium text-lg mb-3">Help Topics</h3>
+        <nav className="space-y-1">
+          {categories.map((category) => {
+            const categoryArticles = articles.filter(a => a.category_id === category.id);
+            const isExpanded = expandedCategories[category.id] || false;
+            const Icon = category.icon;
             
-            {expandedCategories[category.value] && (
-              <div className="ml-9 space-y-1">
-                {category.items.map((item, index) => (
-                  <Button
-                    key={item}
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start font-normal h-8 hover:bg-primary/5",
-                      activeCategory.id === category.value
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    <span className="truncate">{item}</span>
-                    {(item === "Meta Pixel Setup" || item === "Email Capture") && (
-                      <Badge 
-                        variant="outline" 
-                        className="ml-2 bg-primary/5 text-primary border-primary/20"
+            return (
+              <div key={category.id} className="mb-2">
+                <button 
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors hover:bg-primary/5", 
+                    activeCategoryId === category.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"
+                  )}
+                  onClick={() => {
+                    onSelectCategory(category.id);
+                    toggleCategory(category.id);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span>{category.name}</span>
+                  </div>
+                  {isExpanded ? 
+                    <ChevronDown className="h-4 w-4" /> : 
+                    <ChevronRight className="h-4 w-4" />
+                  }
+                </button>
+                
+                {isExpanded && (
+                  <div className="pl-9 mt-1 space-y-1">
+                    {categoryArticles.map((article) => (
+                      <button 
+                        key={article.id}
+                        className={cn(
+                          "w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors hover:bg-primary/5",
+                          activeArticleId === article.id ? "text-primary font-medium" : "text-muted-foreground"
+                        )}
+                        onClick={() => onSelectArticle(article.id)}
                       >
-                        Pro
-                      </Badge>
-                    )}
-                  </Button>
-                ))}
+                        {article.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })}
+        </nav>
+        
+        <div className="mt-8 p-4 bg-primary/5 rounded-lg">
+          <h4 className="font-medium mb-2">Need more help?</h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            Can't find what you're looking for? Reach out to our support team.
+          </p>
+          <Button size="sm" className="w-full" asChild>
+            <a href="/contact">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Contact Support
+            </a>
+          </Button>
+        </div>
       </div>
-    </aside>
+    </div>
   );
 }
