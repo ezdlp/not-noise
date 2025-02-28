@@ -1,10 +1,10 @@
 
+import { HelpCategory } from "@/pages/Help";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { HelpCategory } from "@/pages/Help";
 import { useState } from "react";
 
 interface HelpSidebarProps {
@@ -15,31 +15,31 @@ interface HelpSidebarProps {
 const categories = [
   {
     title: "Getting Started",
-    value: "getting-started" as HelpCategory,
+    value: "getting-started" as HelpCategory["id"],
     icon: BookOpen,
     items: ["Welcome Guide", "Creating Your Account", "Understanding Your Dashboard", "Platform Overview"],
   },
   {
     title: "Smart Links",
-    value: "smart-links" as HelpCategory,
+    value: "smartlinks" as HelpCategory["id"],
     icon: List,
     items: ["What are Smart Links?", "Creating Smart Links", "Custom URLs", "Email Capture", "Design & Customization"],
   },
   {
     title: "Analytics & Tracking",
-    value: "analytics" as HelpCategory,
+    value: "analytics" as HelpCategory["id"],
     icon: BarChart3,
     items: ["Dashboard Overview", "Performance Metrics", "Meta Pixel Setup", "Conversion Tracking", "Audience Insights"],
   },
   {
     title: "Social Media",
-    value: "social-media" as HelpCategory,
+    value: "social-media" as HelpCategory["id"],
     icon: ImageIcon,
     items: ["Social Cards", "Platform Integration", "Best Practices", "Supported Networks"],
   },
   {
     title: "Support",
-    value: "support" as HelpCategory,
+    value: "support" as HelpCategory["id"],
     icon: HelpCircle,
     items: ["FAQs", "Contact Support", "Account Issues", "Billing Questions"],
   },
@@ -47,10 +47,10 @@ const categories = [
 
 export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    [activeCategory]: true
+    [activeCategory.id]: true
   });
 
-  const toggleCategory = (value: HelpCategory) => {
+  const toggleCategory = (value: HelpCategory["id"]) => {
     setExpandedCategories(prev => ({
       ...prev,
       [value]: !prev[value]
@@ -64,12 +64,12 @@ export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarPro
           <div key={category.title} className="space-y-1">
             <button
               onClick={() => {
-                onCategoryChange(category.value);
+                onCategoryChange({ id: category.value, name: category.title });
                 toggleCategory(category.value);
               }}
               className={cn(
                 "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-primary/5",
-                activeCategory === category.value && "bg-primary/10 text-primary"
+                activeCategory.id === category.value && "bg-primary/10 text-primary"
               )}
             >
               <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export function HelpSidebar({ activeCategory, onCategoryChange }: HelpSidebarPro
                     variant="ghost"
                     className={cn(
                       "w-full justify-start font-normal h-8 hover:bg-primary/5",
-                      activeCategory === category.value
+                      activeCategory.id === category.value
                         ? "text-primary"
                         : "text-muted-foreground"
                     )}

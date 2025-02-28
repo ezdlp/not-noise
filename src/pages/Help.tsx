@@ -8,13 +8,14 @@ import { PageSEO } from "@/components/seo/PageSEO";
 import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 
-interface HelpCategory {
+// Export the interfaces for use in other components
+export interface HelpCategory {
   id: string;
   name: string;
   icon?: string;
 }
 
-interface HelpArticle {
+export interface HelpArticle {
   id: string;
   title: string;
   content: string;
