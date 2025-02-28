@@ -1,2 +1,5 @@
 
+# IMPORTANT: This is a public function that must remain accessible without authentication
 project_id = "owtufhdsuuyrgmxytclj"
+verify_jwt = false
+

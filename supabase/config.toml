@@ -3,3 +3,8 @@ project_id = "owtufhdsuuyrgmxytclj"
 
 [functions.generate-social-assets]
 verify_jwt = true
+
+# Sitemap functions configuration - MUST REMAIN DISABLED FOR PUBLIC ACCESS
+[functions.sitemap]
+verify_jwt = false
+
