@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,14 +92,50 @@ function HelpArticle({
     queryFn: async () => {
       if (!articleId) return null;
       
-      const { data, error } = await supabase
-        .from('help_articles')
-        .select('*, help_categories(name)')
-        .eq('id', articleId)
-        .single();
+      // Instead of fetching from a non-existent table, we'll use mock data
+      // This would normally come from the database
+      const mockArticles = [
+        {
+          id: '1',
+          title: 'Getting Started with Smart Links',
+          content: `
+            <h2>Getting Started with Smart Links</h2>
+            <p>Smart Links are a powerful way to share your music across all streaming platforms with a single link. Here's how to get started:</p>
+            <h3>Step 1: Create Your Smart Link</h3>
+            <p>Navigate to the dashboard and click "Create New Smart Link". Enter your song or album title and artist name.</p>
+            <h3>Step 2: Add Streaming Platforms</h3>
+            <p>Add links to your music on different streaming platforms. You can manually enter links or let our system search for them automatically.</p>
+            <h3>Step 3: Customize Your Link</h3>
+            <p>Add artwork, change your URL slug, and set up additional options like email capture or Meta Pixel tracking.</p>
+            <h3>Step 4: Share Your Link</h3>
+            <p>Copy your Smart Link and share it on social media, in your bio, or wherever you promote your music!</p>
+          `,
+          category_id: 'smartlinks',
+          slug: 'getting-started-with-smart-links',
+          category: { name: 'Smart Links' }
+        },
+        {
+          id: '2',
+          title: 'Understanding Analytics',
+          content: `
+            <h2>Understanding Your Analytics Dashboard</h2>
+            <p>Your Smart Link analytics provide valuable insights into how fans are interacting with your music.</p>
+            <h3>Views vs. Clicks</h3>
+            <p>Views represent how many times your Smart Link page was loaded. Clicks show how many times visitors clicked through to a streaming platform.</p>
+            <h3>Click-Through Rate (CTR)</h3>
+            <p>This percentage shows how many people who viewed your link clicked on a streaming platform. A higher CTR means your link is effectively converting views to platform visits.</p>
+            <h3>Geographic Data</h3>
+            <p>See where your fans are located around the world. This can help with planning promotions, tours, and targeted advertising.</p>
+            <h3>Platform Popularity</h3>
+            <p>Understand which streaming platforms your audience prefers. This can inform your promotional strategy and help you focus on the platforms where your fans are most active.</p>
+          `,
+          category_id: 'analytics',
+          slug: 'understanding-analytics',
+          category: { name: 'Analytics & Tracking' }
+        }
+      ];
       
-      if (error) throw error;
-      return data;
+      return mockArticles.find(a => a.id === articleId) || null;
     },
     enabled: !!articleId,
   });
@@ -157,30 +194,67 @@ export default function Help() {
   // Check if we should show the homepage or an article
   const showHomepage = pathname === '/help';
 
-  // Fetch help data (categories and articles)
+  // Use mock data instead of fetching from non-existent tables
   const { data: helpData, isLoading: isLoadingHelp } = useQuery({
     queryKey: ['help-data'],
     queryFn: async () => {
-      // Fetch categories
-      const { data: categories, error: categoriesError } = await supabase
-        .from('help_categories')
-        .select('*')
-        .order('name');
+      // Since the tables don't exist, we'll use mock data
+      const mockCategories: HelpCategory[] = [
+        { id: 'getting-started', name: 'Getting Started', icon: 'BookOpen' },
+        { id: 'smartlinks', name: 'Smart Links', icon: 'List' },
+        { id: 'analytics', name: 'Analytics & Tracking', icon: 'BarChart3' },
+        { id: 'design', name: 'Design & Customization', icon: 'Image' },
+        { id: 'support', name: 'Support', icon: 'HelpCircle' }
+      ];
       
-      if (categoriesError) throw categoriesError;
-      
-      // Fetch articles
-      const { data: articles, error: articlesError } = await supabase
-        .from('help_articles')
-        .select('*')
-        .eq('status', 'published')
-        .order('title');
-      
-      if (articlesError) throw articlesError;
+      const mockArticles: HelpArticle[] = [
+        {
+          id: '1',
+          title: 'Getting Started with Smart Links',
+          content: '<p>Smart Links guide content...</p>',
+          category_id: 'smartlinks',
+          slug: 'getting-started-with-smart-links'
+        },
+        {
+          id: '2',
+          title: 'Understanding Analytics',
+          content: '<p>Analytics guide content...</p>',
+          category_id: 'analytics',
+          slug: 'understanding-analytics'
+        },
+        {
+          id: '3',
+          title: 'Customizing Your Smart Link',
+          content: '<p>Customization guide content...</p>',
+          category_id: 'design',
+          slug: 'customizing-your-smart-link'
+        },
+        {
+          id: '4',
+          title: 'Frequently Asked Questions',
+          content: '<p>FAQ content...</p>',
+          category_id: 'support',
+          slug: 'frequently-asked-questions'
+        },
+        {
+          id: '5',
+          title: 'Creating Your Account',
+          content: '<p>Account creation guide...</p>',
+          category_id: 'getting-started',
+          slug: 'creating-your-account'
+        },
+        {
+          id: '6',
+          title: 'Email Capture Setup',
+          content: '<p>Email capture guide...</p>',
+          category_id: 'smartlinks',
+          slug: 'email-capture-setup'
+        }
+      ];
       
       return { 
-        categories, 
-        articles 
+        categories: mockCategories, 
+        articles: mockArticles 
       } as HelpData;
     },
   });
