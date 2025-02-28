@@ -1,260 +1,174 @@
 
-import { serve } from "https://deno.land/std@0.170.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno'
 
-// CORS headers for preflight requests
+// Import the CORS headers from shared module
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-// For notification on webhook failures
-const sendAlertEmail = async (errorMessage: string) => {
-  try {
-    const adminEmail = Deno.env.get("ADMIN_EMAIL");
-    if (!adminEmail) {
-      console.error("No admin email configured for alerts");
-      return;
-    }
-    
-    // Simple implementation using a notification service
-    // This could be expanded to use a dedicated service like SendGrid, Postmark, etc.
-    const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-      },
-      body: JSON.stringify({
-        to: adminEmail,
-        subject: "ALERT: Stripe Webhook Failure",
-        message: `The Stripe webhook encountered an error: ${errorMessage}`,
-      }),
-    });
-    
-    if (!response.ok) {
-      console.error("Failed to send alert notification", await response.text());
-    }
-  } catch (error) {
-    console.error("Error sending alert notification:", error);
-  }
-};
+// Create a Stripe client
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+  apiVersion: '2022-11-15',
+  httpClient: Stripe.createFetchHttpClient(),
+})
 
-// Log webhook activity with detailed information
-const logWebhookActivity = async (status: string, eventType: string, details: any) => {
-  try {
-    const { data, error } = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/webhook_logs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || '',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        status,
-        event_type: eventType,
-        details: JSON.stringify(details),
-        created_at: new Date().toISOString(),
-      }),
-    }).then(res => res.json());
-
-    if (error) {
-      console.error("Failed to log webhook activity:", error);
-    }
-  } catch (error) {
-    console.error("Error logging webhook activity:", error);
-  }
-};
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders, status: 204 });
+    return new Response(null, { headers: corsHeaders })
   }
 
-  // Only allow POST requests for actual webhook events
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-
-  let event;
   try {
-    // Get stripe signature from headers
-    const signature = req.headers.get('stripe-signature');
+    // Get the signature from the header
+    const signature = req.headers.get('stripe-signature')
+    
     if (!signature) {
-      const errorMsg = "Missing stripe-signature header";
-      console.error(errorMsg);
-      await logWebhookActivity('error', 'unknown', { error: errorMsg });
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      console.error('No stripe signature found in request headers')
+      await notifyAdminOfError('Stripe webhook error: No signature found in headers')
+      return new Response(
+        JSON.stringify({ error: 'No stripe signature found in request headers' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Get the webhook secret from environment variables
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-    if (!webhookSecret) {
-      const errorMsg = "Missing STRIPE_WEBHOOK_SECRET environment variable";
-      console.error(errorMsg);
-      await sendAlertEmail(errorMsg);
-      await logWebhookActivity('error', 'unknown', { error: errorMsg });
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Get the request body
+    const body = await req.text()
+    
+    if (!body) {
+      console.error('No request body found')
+      await notifyAdminOfError('Stripe webhook error: No request body found')
+      return new Response(
+        JSON.stringify({ error: 'No request body found' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Get the raw request body
-    const body = await req.text();
-    
-    // Initialize Stripe with the API key
-    const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '');
-    
-    // Use the async version of constructEvent as required by Deno
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret
-    );
+    let event
 
-    // Log the received event
-    console.log(`Received stripe webhook: ${event.type}`);
-    await logWebhookActivity('success', event.type, { 
-      id: event.id,
-      api_version: event.api_version,
-      created: event.created
-    });
+    try {
+      // Important: Use constructEventAsync (async) instead of constructEvent (sync)
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
+      console.log(`✅ Success: Verified webhook signature | ${event.id}`)
+    } catch (err) {
+      console.error(`❌ Error verifying webhook signature: ${err.message}`)
+      await notifyAdminOfError(`Stripe webhook signature verification failed: ${err.message}`)
+      return new Response(
+        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Handle specific webhook events
+    console.log(`Webhook event type: ${event.type}`)
+
+    // Handle different event types
     switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
+      case 'checkout.session.completed':
+        const checkoutSession = event.data.object
         
-        // Handle the checkout session completion
-        console.log(`Processing checkout session: ${session.id}`);
-        
-        if (session.mode === 'subscription') {
-          // Process subscription purchase
-          console.log(`New subscription: ${session.subscription}`);
+        // If checkout session is for a subscription
+        if (checkoutSession.mode === 'subscription') {
+          // Get the subscription details
+          const subscription = await stripe.subscriptions.retrieve(checkoutSession.subscription)
           
-          // Get customer details
-          const customerDetails = session.customer_details;
-          const customerEmail = customerDetails?.email;
+          console.log(`✓ Subscription ${subscription.id} for customer ${subscription.customer} is ${subscription.status}`)
           
-          if (customerEmail) {
-            // Update user subscription status in the database
-            // This is a simplified example - actual implementation would depend on your database schema
-            const customerId = session.customer;
-            const subscriptionId = session.subscription;
-            
-            // Call another function to update the user subscription status
-            const updateResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/update-user-subscription`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-              },
-              body: JSON.stringify({
-                email: customerEmail,
-                customerId,
-                subscriptionId,
-                status: 'active',
-                plan: session.metadata?.plan || 'default',
-              }),
-            });
-            
-            if (!updateResponse.ok) {
-              const errorMsg = `Failed to update user subscription: ${await updateResponse.text()}`;
-              console.error(errorMsg);
-              await sendAlertEmail(errorMsg);
-              await logWebhookActivity('error', event.type, { error: errorMsg, session_id: session.id });
-            }
-          }
-        } else if (session.mode === 'payment') {
-          // Process one-time payment
-          console.log(`One-time payment: ${session.payment_intent}`);
+          // Update the user's subscription status in your database
+          // This will depend on your specific database structure
           
-          // Similar logic for one-time payments
-          // ...
+          // Call your database update function here
         }
-        break;
-      }
-      
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        console.log(`Subscription updated: ${subscription.id}`);
-        
-        // Handle subscription updates (upgrades, downgrades, etc.)
-        const customerId = subscription.customer;
-        const status = subscription.status;
-        
-        // Call function to update the subscription status
-        const updateResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/update-subscription-status`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            customerId,
-            subscriptionId: subscription.id,
-            status,
-            currentPeriodEnd: subscription.current_period_end,
-          }),
-        });
-        
-        if (!updateResponse.ok) {
-          const errorMsg = `Failed to update subscription status: ${await updateResponse.text()}`;
-          console.error(errorMsg);
-          await sendAlertEmail(errorMsg);
-          await logWebhookActivity('error', event.type, { error: errorMsg, subscription_id: subscription.id });
+        // If checkout session is for a one-time payment
+        else if (checkoutSession.mode === 'payment') {
+          console.log(`✓ One-time payment for customer ${checkoutSession.customer} completed`)
+          
+          // Process the payment completion
+          
+          // Call your payment processing function here
         }
-        break;
-      }
+        break
       
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        console.log(`Subscription canceled: ${subscription.id}`);
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        const subscription = event.data.object
+        console.log(`✓ Subscription ${subscription.id} status is ${subscription.status}`)
         
-        // Handle subscription cancellation
-        // Similar logic as above
-        // ...
-        break;
-      }
+        // Update subscription status
+        
+        // Call your subscription update function here
+        break
       
-      // Add other event types as needed
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object
+        console.log(`✓ Invoice payment succeeded for ${invoice.customer}`)
+        
+        // Process successful payment
+        
+        // Call your invoice processing function here
+        break
+      
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object
+        console.log(`✗ Invoice payment failed for ${failedInvoice.customer}`)
+        
+        // Handle failed payment
+        
+        // Call your failed payment function here
+        break
       
       default:
-        // Unexpected event type
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`Unhandled event type: ${event.type}`)
     }
 
+    // Return a response to acknowledge receipt of the event
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    })
   } catch (err) {
-    // Detailed error handling
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error(`Webhook error: ${errorMessage}`);
-    
-    // Alert administrators about the error
-    await sendAlertEmail(errorMessage);
-    
-    // Log the error for debugging
-    await logWebhookActivity('error', event?.type || 'unknown', { 
-      error: errorMessage,
-      stack: err instanceof Error ? err.stack : undefined
-    });
-
-    return new Response(JSON.stringify({ error: `Webhook error: ${errorMessage}` }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error(`❌ Error processing webhook: ${err.message}`)
+    await notifyAdminOfError(`Stripe webhook processing error: ${err.message}`)
+    return new Response(
+      JSON.stringify({ error: `Webhook processing failed: ${err.message}` }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
-});
+})
+
+// Helper function to notify admin of webhook errors
+async function notifyAdminOfError(errorMessage: string): Promise<void> {
+  try {
+    const adminEmail = Deno.env.get('ADMIN_EMAIL')
+    if (!adminEmail) {
+      console.warn('ADMIN_EMAIL not set, cannot send notification')
+      return
+    }
+
+    // Call the send-notification function
+    const response = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-notification`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          to: adminEmail,
+          subject: 'Stripe Webhook Error Alert',
+          message: `There was an error with the Stripe webhook:\n\n${errorMessage}\n\nPlease check your Supabase logs for more details.`,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error(`Failed to send error notification: ${errorData}`)
+    }
+  } catch (err) {
+    console.error(`Error sending notification: ${err.message}`)
+  }
+}
