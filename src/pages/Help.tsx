@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { 
   BookOpen, 
@@ -26,16 +25,19 @@ import { cn } from "@/lib/utils";
 // Import help center components
 import { HelpSearch } from "@/components/help/HelpSearch";
 import { HelpNavigation } from "@/components/help/HelpNavigation";
-import { HelpArticleView } from "@/components/help/HelpArticleView";
+import { HelpArticle } from "@/components/help/HelpArticle";
 import { HelpHome } from "@/components/help/HelpHome";
+import { HelpSearchResults } from "@/components/help/HelpSearchResults";
+import { HelpCategoryView } from "@/components/help/HelpCategoryView";
+import { HelpSidebar } from "@/components/help/HelpSidebar";
 
 // Import types
-import { HelpCategory, HelpArticle, HelpSearchResult } from "@/types/help";
+import { HelpCategory, HelpArticle as HelpArticleType, HelpSearchResult } from "@/types/help";
 
 export default function Help() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { slug } = useParams();
+  const { categoryId, slug } = useParams<{ categoryId?: string; slug?: string }>();
   
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function Help() {
   ];
   
   // Define help articles
-  const articles: HelpArticle[] = [
+  const articles: HelpArticleType[] = [
     // Getting Started
     {
       id: 'welcome',
@@ -1150,7 +1152,7 @@ export default function Help() {
       
       if (titleMatch || contentMatch) {
         // Calculate relevance score (title matches are weighted higher)
-        const relevance = (titleMatch ? 2 : 0) + (contentMatch ? 1 : 0);
+        const relevance = (titleMatch ? 3 : 0) + (contentMatch ? 1 : 0);
         results.push({ article, relevance });
       }
     });
@@ -1160,22 +1162,11 @@ export default function Help() {
     setSearchResults(results);
   };
   
-  // Load article based on slug in URL
-  useEffect(() => {
-    if (slug && articles.length > 0) {
-      const article = articles.find(a => a.slug === slug);
-      if (article) {
-        setActiveArticleId(article.id);
-        setActiveCategoryId(article.category_id);
-        setShowSearchResults(false);
-      } else {
-        navigate('/help', { replace: true });
-      }
-    } else if (location.pathname === '/help') {
-      setActiveArticleId(null);
-      setActiveCategoryId(null);
-    }
-  }, [slug, articles, navigate, location.pathname]);
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setShowSearchResults(false);
+    setSearchResults([]);
+  };
   
   // Handle article selection
   const handleArticleSelect = (articleId: string) => {
@@ -1187,26 +1178,57 @@ export default function Help() {
   
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
-    setActiveCategoryId(categoryId);
-    if (!articles.find(a => a.id === activeArticleId && a.category_id === categoryId)) {
-      const firstArticleInCategory = articles.find(a => a.category_id === categoryId);
-      if (firstArticleInCategory) {
-        handleArticleSelect(firstArticleInCategory.id);
-      }
-    }
+    navigate(`/help/category/${categoryId}`);
   };
   
   // Handle back navigation
   const handleBack = () => {
     navigate('/help');
-    setActiveArticleId(null);
-    setActiveCategoryId(null);
   };
+  
+  // URL-based navigation & routing
+  useEffect(() => {
+    // Case 1: Article route (/help/:slug)
+    if (slug && !categoryId) {
+      const article = articles.find(a => a.slug === slug);
+      if (article) {
+        setActiveArticleId(article.id);
+        setActiveCategoryId(article.category_id);
+        setShowSearchResults(false);
+      } else {
+        navigate('/help', { replace: true });
+      }
+    } 
+    // Case 2: Category route (/help/category/:categoryId)
+    else if (categoryId && !slug) {
+      const category = categories.find(c => c.id === categoryId);
+      if (category) {
+        setActiveCategoryId(categoryId);
+        setActiveArticleId(null);
+        setShowSearchResults(false);
+      } else {
+        navigate('/help', { replace: true });
+      }
+    }
+    // Case 3: Default help center route (/help)
+    else if (location.pathname === '/help') {
+      setActiveArticleId(null);
+      setActiveCategoryId(null);
+    }
+  }, [slug, categoryId, articles, categories, navigate, location.pathname]);
   
   // Get current article and related articles
   const currentArticle = activeArticleId ? 
     articlesWithCategories.find(a => a.id === activeArticleId) || null 
     : null;
+  
+  const currentCategory = activeCategoryId ? 
+    categories.find(c => c.id === activeCategoryId) || null 
+    : null;
+    
+  const articlesInCurrentCategory = currentCategory ?
+    articlesWithCategories.filter(a => a.category_id === currentCategory.id)
+    : [];
   
   const relatedArticles = useMemo(() => {
     if (!currentArticle || !currentArticle.related || currentArticle.related.length === 0) {
@@ -1218,7 +1240,7 @@ export default function Help() {
   return (
     <>
       <PageSEO
-        title="Help Center | Soundraiser"
+        title={currentArticle ? `${currentArticle.title} | Help Center` : (currentCategory ? `${currentCategory.name} | Help Center` : "Help Center")}
         description="Find answers to your questions about Soundraiser. Learn how to create Smart Links, manage your music, track analytics, and more."
       />
       
@@ -1230,7 +1252,7 @@ export default function Help() {
               <HelpSearch onSearch={performSearch} />
             </div>
             
-            <Sheet>
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
                   <Menu className="h-5 w-5" />
@@ -1238,7 +1260,7 @@ export default function Help() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[350px] overflow-auto">
-                <HelpNavigation
+                <HelpSidebar
                   categories={categories}
                   articles={articles}
                   activeArticleId={activeArticleId}
@@ -1262,7 +1284,7 @@ export default function Help() {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Sidebar (Desktop only) */}
             <div className="hidden md:block w-64 lg:w-72 flex-shrink-0">
-              <HelpNavigation
+              <HelpSidebar
                 categories={categories}
                 articles={articles}
                 activeArticleId={activeArticleId}
@@ -1276,78 +1298,30 @@ export default function Help() {
             <div className="flex-1">
               {/* Search Results */}
               {showSearchResults && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-4">
-                    Search Results for "{searchQuery}"
-                  </h2>
-                  
-                  {searchResults.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="bg-primary/5 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                        <Search className="h-8 w-8 text-primary" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-2">No results found</h3>
-                      <p className="text-muted-foreground max-w-md mx-auto">
-                        We couldn't find any articles matching your search. Try different keywords or check out the popular articles below.
-                      </p>
-                      
-                      <div className="mt-8">
-                        <h3 className="text-lg font-medium mb-4">Popular Articles</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                          {popularArticles.slice(0, 4).map(article => (
-                            <button
-                              key={article.id}
-                              onClick={() => handleArticleSelect(article.id)}
-                              className="p-4 border rounded-lg hover:border-primary hover:shadow-sm transition-all text-left"
-                            >
-                              <h4 className="font-medium">{article.title}</h4>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <p className="text-muted-foreground mb-4">
-                        Found {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
-                      </p>
-                      
-                      <div className="grid gap-4">
-                        {searchResults.map(({ article }) => (
-                          <button
-                            key={article.id}
-                            onClick={() => handleArticleSelect(article.id)}
-                            className="p-4 border rounded-lg hover:border-primary hover:shadow-sm transition-all text-left w-full"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div>
-                                <h3 className="font-medium mb-1">{article.title}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {article.content
-                                    .replace(/<[^>]*>/g, '')
-                                    .substring(0, 150)}
-                                  ...
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <HelpSearchResults 
+                  searchQuery={searchQuery}
+                  searchResults={searchResults}
+                  popularArticles={popularArticles}
+                  onSelectArticle={handleArticleSelect}
+                  onClearSearch={handleClearSearch}
+                />
               )}
               
-              {/* Article Content or Home */}
+              {/* Article, Category, or Home View */}
               {!showSearchResults && (
                 <>
-                  {activeArticleId ? (
-                    <HelpArticleView
+                  {activeArticleId && currentArticle ? (
+                    <HelpArticle
                       article={currentArticle}
                       relatedArticles={relatedArticles}
-                      isLoading={false}
                       onBack={handleBack}
                       onArticleSelect={handleArticleSelect}
+                    />
+                  ) : currentCategory ? (
+                    <HelpCategoryView
+                      category={currentCategory}
+                      articles={articlesInCurrentCategory}
+                      onSelectArticle={handleArticleSelect}
                     />
                   ) : (
                     <HelpHome
