@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageSEO } from "@/components/seo/PageSEO";
 import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
+import { cn } from "@/lib/utils";
 
 // Export the interfaces for use in other components
 export interface HelpCategory {
@@ -388,7 +389,10 @@ export default function Help() {
           )}
           
           {/* Main content */}
-          <div className={`md:col-span-${showHomepage ? '12' : '9'} lg:col-span-${showHomepage ? '12' : '9'}`}>
+          <div className={cn(
+            "md:col-span-9 lg:col-span-9",
+            showHomepage && "md:col-span-12 lg:col-span-12"
+          )}>
             {showHomepage ? (
               renderHomepage()
             ) : (
