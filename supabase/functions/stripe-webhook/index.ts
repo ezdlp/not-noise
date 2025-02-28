@@ -1,322 +1,259 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@12.16.0?target=deno';
+import { serve } from "https://deno.land/std@0.170.0/http/server.ts";
+import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno';
 
-// Define CORS headers - critical for allowing webhook requests
+// CORS headers for preflight requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-});
+// For notification on webhook failures
+const sendAlertEmail = async (errorMessage: string) => {
+  try {
+    const adminEmail = Deno.env.get("ADMIN_EMAIL");
+    if (!adminEmail) {
+      console.error("No admin email configured for alerts");
+      return;
+    }
+    
+    // Simple implementation using a notification service
+    // This could be expanded to use a dedicated service like SendGrid, Postmark, etc.
+    const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        to: adminEmail,
+        subject: "ALERT: Stripe Webhook Failure",
+        message: `The Stripe webhook encountered an error: ${errorMessage}`,
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error("Failed to send alert notification", await response.text());
+    }
+  } catch (error) {
+    console.error("Error sending alert notification:", error);
+  }
+};
 
-console.log("Stripe webhook function loaded");
+// Log webhook activity with detailed information
+const logWebhookActivity = async (status: string, eventType: string, details: any) => {
+  try {
+    const { data, error } = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/webhook_logs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        'apikey': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || '',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        status,
+        event_type: eventType,
+        details: JSON.stringify(details),
+        created_at: new Date().toISOString(),
+      }),
+    }).then(res => res.json());
+
+    if (error) {
+      console.error("Failed to log webhook activity:", error);
+    }
+  } catch (error) {
+    console.error("Error logging webhook activity:", error);
+  }
+};
 
 serve(async (req) => {
-  console.log(`Received ${req.method} request to ${req.url}`);
-  
-  // Handle CORS preflight requests - critical for webhook reception
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request with CORS headers');
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
+    return new Response(null, { headers: corsHeaders, status: 204 });
+  }
+
+  // Only allow POST requests for actual webhook events
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
+  let event;
   try {
-    // Verify this is a POST request
-    if (req.method !== 'POST') {
-      console.error(`Invalid method: ${req.method}`);
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
+    // Get stripe signature from headers
+    const signature = req.headers.get('stripe-signature');
+    if (!signature) {
+      const errorMsg = "Missing stripe-signature header";
+      console.error(errorMsg);
+      await logWebhookActivity('error', 'unknown', { error: errorMsg });
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 400, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Get the raw request body for signature verification
-    const body = await req.text();
-    console.log(`Received webhook body of length: ${body.length}`);
-    
-    // Get the Stripe signature from headers
-    const signature = req.headers.get('stripe-signature');
-    if (!signature) {
-      console.error('No Stripe signature found in headers');
-      return new Response(JSON.stringify({ error: 'No Stripe signature' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Get the webhook secret
+    // Get the webhook secret from environment variables
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET environment variable is not set');
-      return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), {
+      const errorMsg = "Missing STRIPE_WEBHOOK_SECRET environment variable";
+      console.error(errorMsg);
+      await sendAlertEmail(errorMsg);
+      await logWebhookActivity('error', 'unknown', { error: errorMsg });
+      return new Response(JSON.stringify({ error: errorMsg }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    // Get the raw request body
+    const body = await req.text();
     
-    // Verify the event using the signature and secret
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log(`Webhook verified: ${event.type}`);
-    } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    // Initialize Stripe with the API key
+    const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '');
     
-    // Handle the event based on its type
+    // Use the async version of constructEvent as required by Deno
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret
+    );
+
+    // Log the received event
+    console.log(`Received stripe webhook: ${event.type}`);
+    await logWebhookActivity('success', event.type, { 
+      id: event.id,
+      api_version: event.api_version,
+      created: event.created
+    });
+
+    // Handle specific webhook events
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        console.log(`Processing checkout.session.completed for session ID: ${session.id}`);
         
-        // Extract relevant data
-        const customerId = session.customer as string;
-        const subscriptionId = session.subscription as string;
-        const userId = session.metadata?.userId;
-        const type = session.metadata?.type;
+        // Handle the checkout session completion
+        console.log(`Processing checkout session: ${session.id}`);
         
-        console.log(`Session details: customerId=${customerId}, subscriptionId=${subscriptionId}, userId=${userId}, type=${type}`);
-        
-        if (!userId) {
-          console.error('No userId in session metadata');
-          return new Response(JSON.stringify({ error: 'Missing userId in metadata' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        
-        // Process subscription
-        if (type === 'subscription' && subscriptionId) {
-          try {
-            console.log(`Retrieving subscription details for ID: ${subscriptionId}`);
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        if (session.mode === 'subscription') {
+          // Process subscription purchase
+          console.log(`New subscription: ${session.subscription}`);
+          
+          // Get customer details
+          const customerDetails = session.customer_details;
+          const customerEmail = customerDetails?.email;
+          
+          if (customerEmail) {
+            // Update user subscription status in the database
+            // This is a simplified example - actual implementation would depend on your database schema
+            const customerId = session.customer;
+            const subscriptionId = session.subscription;
             
-            if (!subscription) {
-              console.error(`No subscription found for ID: ${subscriptionId}`);
-              return new Response(JSON.stringify({ error: 'Subscription not found' }), {
-                status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-              });
-            }
-            
-            // Get the priceId from subscription
-            const priceId = subscription.items.data[0]?.price.id;
-            console.log(`Subscription price ID: ${priceId}`);
-            
-            if (!priceId) {
-              console.error('No price ID found in subscription');
-              return new Response(JSON.stringify({ error: 'No price ID found in subscription' }), {
-                status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-              });
-            }
-
-            // Determine subscription tier based on priceId
-            let tier = 'free';
-            if (priceId === 'price_1Qs5ALFx6uwYcH3S96XYib6f' || priceId === 'price_1QsQGrFx6uwYcH3SCT6RJsSI') {
-              tier = 'pro';
-            }
-            console.log(`Determined tier: ${tier} based on priceId: ${priceId}`);
-
-            // Create or update subscription in database
-            const supabaseAdminUrl = Deno.env.get('SUPABASE_URL') || '';
-            const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-            
-            if (!supabaseAdminUrl || !supabaseServiceKey) {
-              console.error('Missing Supabase admin credentials');
-              return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-              });
-            }
-
-            const adminHeaders = {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': supabaseServiceKey
-            };
-
-            // Check if subscription exists
-            const checkUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=id`;
-            console.log(`Checking for existing subscription: ${checkUrl}`);
-            const checkResponse = await fetch(checkUrl, {
-              method: 'GET',
-              headers: adminHeaders
+            // Call another function to update the user subscription status
+            const updateResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/update-user-subscription`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                email: customerEmail,
+                customerId,
+                subscriptionId,
+                status: 'active',
+                plan: session.metadata?.plan || 'default',
+              }),
             });
             
-            const existingSubscriptions = await checkResponse.json();
-            const subscriptionExists = existingSubscriptions && existingSubscriptions.length > 0;
-            console.log(`Subscription exists: ${subscriptionExists}`);
-
-            // Prepare subscription data
-            const subscriptionData = {
-              user_id: userId,
-              customer_id: customerId,
-              subscription_id: subscriptionId,
-              price_id: priceId,
-              tier: tier,
-              status: subscription.status,
-              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-              cancel_at_period_end: subscription.cancel_at_period_end
-            };
-
-            let dbResponse;
-            if (subscriptionExists) {
-              // Update existing subscription
-              const updateUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?user_id=eq.${userId}`;
-              console.log(`Updating subscription: ${updateUrl}`);
-              dbResponse = await fetch(updateUrl, {
-                method: 'PATCH',
-                headers: adminHeaders,
-                body: JSON.stringify(subscriptionData)
-              });
-            } else {
-              // Create new subscription
-              const createUrl = `${supabaseAdminUrl}/rest/v1/subscriptions`;
-              console.log(`Creating subscription: ${createUrl}`);
-              dbResponse = await fetch(createUrl, {
-                method: 'POST',
-                headers: adminHeaders,
-                body: JSON.stringify(subscriptionData)
-              });
+            if (!updateResponse.ok) {
+              const errorMsg = `Failed to update user subscription: ${await updateResponse.text()}`;
+              console.error(errorMsg);
+              await sendAlertEmail(errorMsg);
+              await logWebhookActivity('error', event.type, { error: errorMsg, session_id: session.id });
             }
-
-            if (!dbResponse.ok) {
-              const errorText = await dbResponse.text();
-              console.error(`Database operation failed: ${dbResponse.status} ${dbResponse.statusText}, Error: ${errorText}`);
-              return new Response(JSON.stringify({ error: `Database operation failed: ${errorText}` }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-              });
-            }
-
-            console.log(`Subscription successfully ${subscriptionExists ? 'updated' : 'created'} for user ${userId}`);
-            return new Response(JSON.stringify({ success: true }), {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          } catch (err) {
-            console.error(`Error processing subscription: ${err.message}`);
-            return new Response(JSON.stringify({ error: `Error processing subscription: ${err.message}` }), {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
           }
+        } else if (session.mode === 'payment') {
+          // Process one-time payment
+          console.log(`One-time payment: ${session.payment_intent}`);
+          
+          // Similar logic for one-time payments
+          // ...
         }
-        
-        // Handle promotion payments if needed
-        if (type === 'promotion') {
-          // Implementation for handling promotion payments would go here
-          console.log(`Processed promotion payment for user: ${userId}`);
-        }
-
-        return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        break;
       }
       
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
-        console.log(`Processing customer.subscription.updated for subscription ID: ${subscription.id}`);
+        console.log(`Subscription updated: ${subscription.id}`);
         
-        // Extract customer ID to find the user
-        const customerId = subscription.customer as string;
+        // Handle subscription updates (upgrades, downgrades, etc.)
+        const customerId = subscription.customer;
+        const status = subscription.status;
         
-        // Get Supabase admin credentials
-        const supabaseAdminUrl = Deno.env.get('SUPABASE_URL') || '';
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-        
-        if (!supabaseAdminUrl || !supabaseServiceKey) {
-          console.error('Missing Supabase admin credentials');
-          return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        // Find the user subscription
-        const adminHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': supabaseServiceKey
-        };
-        
-        const findUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?customer_id=eq.${customerId}&select=*`;
-        console.log(`Finding subscription: ${findUrl}`);
-        const findResponse = await fetch(findUrl, {
-          method: 'GET',
-          headers: adminHeaders
-        });
-        
-        const subscriptions = await findResponse.json();
-        if (!subscriptions || subscriptions.length === 0) {
-          console.error(`No subscription found for customer ID: ${customerId}`);
-          return new Response(JSON.stringify({ error: 'Subscription not found' }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        
-        const userSubscription = subscriptions[0];
-        console.log(`Found subscription for user ID: ${userSubscription.user_id}`);
-        
-        // Update the subscription
-        const updateData = {
-          status: subscription.status,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end
-        };
-        
-        const updateUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?id=eq.${userSubscription.id}`;
-        console.log(`Updating subscription: ${updateUrl}`);
-        const updateResponse = await fetch(updateUrl, {
-          method: 'PATCH',
-          headers: adminHeaders,
-          body: JSON.stringify(updateData)
+        // Call function to update the subscription status
+        const updateResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/update-subscription-status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            customerId,
+            subscriptionId: subscription.id,
+            status,
+            currentPeriodEnd: subscription.current_period_end,
+          }),
         });
         
         if (!updateResponse.ok) {
-          const errorText = await updateResponse.text();
-          console.error(`Failed to update subscription: ${updateResponse.status} ${updateResponse.statusText}, Error: ${errorText}`);
-          return new Response(JSON.stringify({ error: `Failed to update subscription: ${errorText}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          const errorMsg = `Failed to update subscription status: ${await updateResponse.text()}`;
+          console.error(errorMsg);
+          await sendAlertEmail(errorMsg);
+          await logWebhookActivity('error', event.type, { error: errorMsg, subscription_id: subscription.id });
         }
-        
-        console.log(`Subscription updated for user ID: ${userSubscription.user_id}`);
-        return new Response(JSON.stringify({ success: true }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        break;
       }
       
-      // Handle other event types if needed
-      default: {
-        console.log(`Unhandled event type: ${event.type}`);
-        return new Response(JSON.stringify({ received: true, handled: false }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object;
+        console.log(`Subscription canceled: ${subscription.id}`);
+        
+        // Handle subscription cancellation
+        // Similar logic as above
+        // ...
+        break;
       }
+      
+      // Add other event types as needed
+      
+      default:
+        // Unexpected event type
+        console.log(`Unhandled event type: ${event.type}`);
     }
-  } catch (error) {
-    console.error(`Webhook error: ${error.message}`);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (err) {
+    // Detailed error handling
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`Webhook error: ${errorMessage}`);
+    
+    // Alert administrators about the error
+    await sendAlertEmail(errorMessage);
+    
+    // Log the error for debugging
+    await logWebhookActivity('error', event?.type || 'unknown', { 
+      error: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined
+    });
+
+    return new Response(JSON.stringify({ error: `Webhook error: ${errorMessage}` }), {
+      status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
