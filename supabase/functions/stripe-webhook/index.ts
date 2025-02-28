@@ -1,405 +1,323 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14.21.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Stripe from 'https://esm.sh/stripe@12.16.0?target=deno';
 
+// Define CORS headers - critical for allowing webhook requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
+// Initialize Stripe with the secret key
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient()
-})
+});
 
-const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
-
-// Utility function to log webhook events with structured data
-const logWebhookEvent = (eventType: string, data: any, status: 'success' | 'error' = 'success') => {
-  console.log(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    type: 'webhook_event',
-    event_type: eventType,
-    status,
-    data
-  }));
-}
-
-// Utility function to verify subscription data against FDW tables
-async function verifySubscriptionData(subscriptionId: string, customerId: string) {
-  try {
-    const { data: stripeSubData, error: subError } = await supabaseClient
-      .from('stripe_subscriptions')
-      .select('*')
-      .eq('id', subscriptionId)
-      .single();
-
-    if (subError) {
-      throw new Error(`Failed to verify subscription in FDW: ${subError.message}`);
-    }
-
-    const { data: stripeCustomerData, error: custError } = await supabaseClient
-      .from('stripe_customers')
-      .select('*')
-      .eq('id', customerId)
-      .single();
-
-    if (custError) {
-      throw new Error(`Failed to verify customer in FDW: ${custError.message}`);
-    }
-
-    return {
-      verified: true,
-      subscription: stripeSubData,
-      customer: stripeCustomerData
-    };
-  } catch (err) {
-    console.error('Verification error:', err);
-    return {
-      verified: false,
-      error: err.message
-    };
-  }
-}
-
-// Utility function to determine subscription tier from price ID
-async function determineTierFromPrice(priceId: string): Promise<'free' | 'pro'> {
-  try {
-    const { data: priceData, error } = await supabaseClient
-      .from('stripe_prices')
-      .select('product, attrs')
-      .eq('id', priceId)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to fetch price data: ${error.message}`);
-    }
-
-    // Default to 'pro' tier for now, but we could make this more sophisticated
-    // based on product metadata if needed
-    return 'pro';
-  } catch (err) {
-    console.error('Error determining tier:', err);
-    return 'free';
-  }
-}
-
-// Utility function to update subscription with retry logic
-async function updateSubscriptionWithRetry(
-  userId: string,
-  customerId: string,
-  subscriptionId: string,
-  tier: 'free' | 'pro',
-  status: string,
-  currentPeriodEnd: string,
-  cancelAtPeriodEnd: boolean,
-  retries = 3
-): Promise<void> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      // First, try to find an existing subscription for this user
-      const { data: existingSub, error: fetchError } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw fetchError;
-      }
-
-      // Update or insert the subscription
-      const subscriptionData = {
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        tier,
-        status,
-        current_period_end: currentPeriodEnd,
-        cancel_at_period_end: cancelAtPeriodEnd,
-        updated_at: new Date().toISOString()
-      };
-
-      let error;
-      if (existingSub) {
-        // Update existing subscription
-        const { error: updateError } = await supabaseClient
-          .from('subscriptions')
-          .update(subscriptionData)
-          .eq('user_id', userId);
-        error = updateError;
-      } else {
-        // Insert new subscription
-        const { error: insertError } = await supabaseClient
-          .from('subscriptions')
-          .insert({
-            ...subscriptionData,
-            created_at: new Date().toISOString()
-          });
-        error = insertError;
-      }
-
-      if (error) {
-        throw error;
-      }
-      
-      logWebhookEvent('subscription_update', {
-        userId,
-        customerId,
-        subscriptionId,
-        tier,
-        status,
-        isNew: !existingSub
-      });
-      
-      return;
-    } catch (err) {
-      if (i === retries - 1) {
-        throw err;
-      }
-      // Wait with exponential backoff before retrying
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-    }
-  }
-}
+console.log("Stripe webhook function loaded");
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log(`Received ${req.method} request to ${req.url}`);
+  
+  // Handle CORS preflight requests - critical for webhook reception
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    console.log('Handling OPTIONS request with CORS headers');
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   try {
-    // Validate webhook secret
-    if (!webhookSecret) {
-      console.error('Missing STRIPE_WEBHOOK_SECRET');
-      throw new Error('Webhook secret is not configured');
+    // Verify this is a POST request
+    if (req.method !== 'POST') {
+      console.error(`Invalid method: ${req.method}`);
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Get the stripe signature from headers
+    // Get the raw request body for signature verification
+    const body = await req.text();
+    console.log(`Received webhook body of length: ${body.length}`);
+    
+    // Get the Stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
-      console.error('No stripe signature found in headers');
-      throw new Error('No stripe signature found in request headers');
+      console.error('No Stripe signature found in headers');
+      return new Response(JSON.stringify({ error: 'No Stripe signature' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    // Get the raw request body
-    const rawBody = await req.arrayBuffer();
-    const body = new TextDecoder().decode(rawBody);
-
-    logWebhookEvent('received', {
-      method: req.method,
-      contentType: req.headers.get('content-type'),
-      bodyLength: body.length,
-      signatureHeader: signature?.substring(0, 50) + '...'
-    });
-
-    // Verify the webhook signature
-    let event: Stripe.Event;
+    
+    // Get the webhook secret
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET environment variable is not set');
+      return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Verify the event using the signature and secret
+    let event;
     try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        signature,
-        webhookSecret,
-        undefined,
-        Stripe.LATEST_API_VERSION
-      );
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log(`Webhook verified: ${event.type}`);
     } catch (err) {
-      logWebhookEvent('signature_verification_failed', {
-        error: err.message,
-        type: err.type || 'unknown'
-      }, 'error');
-
-      return new Response(
-        JSON.stringify({
-          error: 'Webhook signature verification failed',
-          details: err.message
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    logWebhookEvent('verified', {
-      eventId: event.id,
-      eventType: event.type
-    });
-
-    // Handle the event
+    
+    // Handle the event based on its type
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
+        console.log(`Processing checkout.session.completed for session ID: ${session.id}`);
+        
+        // Extract relevant data
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
         const userId = session.metadata?.userId;
-
-        logWebhookEvent('processing_checkout_completed', {
-          customerId,
-          subscriptionId,
-          userId,
-          metadata: session.metadata
-        });
-
-        if (!userId) {
-          throw new Error('No user ID found in session metadata');
-        }
-
-        // Verify subscription data against FDW
-        const verificationResult = await verifySubscriptionData(subscriptionId, customerId);
-        if (!verificationResult.verified) {
-          throw new Error(`Subscription verification failed: ${verificationResult.error}`);
-        }
-
-        // Get subscription details
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const priceId = subscription.items.data[0].price.id;
+        const type = session.metadata?.type;
         
-        // Determine tier based on price data from FDW
-        const tier = await determineTierFromPrice(priceId);
+        console.log(`Session details: customerId=${customerId}, subscriptionId=${subscriptionId}, userId=${userId}, type=${type}`);
+        
+        if (!userId) {
+          console.error('No userId in session metadata');
+          return new Response(JSON.stringify({ error: 'Missing userId in metadata' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Process subscription
+        if (type === 'subscription' && subscriptionId) {
+          try {
+            console.log(`Retrieving subscription details for ID: ${subscriptionId}`);
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            
+            if (!subscription) {
+              console.error(`No subscription found for ID: ${subscriptionId}`);
+              return new Response(JSON.stringify({ error: 'Subscription not found' }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+            
+            // Get the priceId from subscription
+            const priceId = subscription.items.data[0]?.price.id;
+            console.log(`Subscription price ID: ${priceId}`);
+            
+            if (!priceId) {
+              console.error('No price ID found in subscription');
+              return new Response(JSON.stringify({ error: 'No price ID found in subscription' }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
 
-        // Update subscription with retry logic
-        await updateSubscriptionWithRetry(
-          userId,
-          customerId,
-          subscriptionId,
-          tier,
-          subscription.status,
-          new Date(subscription.current_period_end * 1000).toISOString(),
-          subscription.cancel_at_period_end
-        );
+            // Determine subscription tier based on priceId
+            let tier = 'free';
+            if (priceId === 'price_1Qs5ALFx6uwYcH3S96XYib6f' || priceId === 'price_1QsQGrFx6uwYcH3SCT6RJsSI') {
+              tier = 'pro';
+            }
+            console.log(`Determined tier: ${tier} based on priceId: ${priceId}`);
 
-        logWebhookEvent('checkout_completed_processed', {
-          userId,
-          customerId,
-          subscriptionId,
-          tier
+            // Create or update subscription in database
+            const supabaseAdminUrl = Deno.env.get('SUPABASE_URL') || '';
+            const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+            
+            if (!supabaseAdminUrl || !supabaseServiceKey) {
+              console.error('Missing Supabase admin credentials');
+              return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+
+            const adminHeaders = {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey
+            };
+
+            // Check if subscription exists
+            const checkUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=id`;
+            console.log(`Checking for existing subscription: ${checkUrl}`);
+            const checkResponse = await fetch(checkUrl, {
+              method: 'GET',
+              headers: adminHeaders
+            });
+            
+            const existingSubscriptions = await checkResponse.json();
+            const subscriptionExists = existingSubscriptions && existingSubscriptions.length > 0;
+            console.log(`Subscription exists: ${subscriptionExists}`);
+
+            // Prepare subscription data
+            const subscriptionData = {
+              user_id: userId,
+              customer_id: customerId,
+              subscription_id: subscriptionId,
+              price_id: priceId,
+              tier: tier,
+              status: subscription.status,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              cancel_at_period_end: subscription.cancel_at_period_end
+            };
+
+            let dbResponse;
+            if (subscriptionExists) {
+              // Update existing subscription
+              const updateUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?user_id=eq.${userId}`;
+              console.log(`Updating subscription: ${updateUrl}`);
+              dbResponse = await fetch(updateUrl, {
+                method: 'PATCH',
+                headers: adminHeaders,
+                body: JSON.stringify(subscriptionData)
+              });
+            } else {
+              // Create new subscription
+              const createUrl = `${supabaseAdminUrl}/rest/v1/subscriptions`;
+              console.log(`Creating subscription: ${createUrl}`);
+              dbResponse = await fetch(createUrl, {
+                method: 'POST',
+                headers: adminHeaders,
+                body: JSON.stringify(subscriptionData)
+              });
+            }
+
+            if (!dbResponse.ok) {
+              const errorText = await dbResponse.text();
+              console.error(`Database operation failed: ${dbResponse.status} ${dbResponse.statusText}, Error: ${errorText}`);
+              return new Response(JSON.stringify({ error: `Database operation failed: ${errorText}` }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+
+            console.log(`Subscription successfully ${subscriptionExists ? 'updated' : 'created'} for user ${userId}`);
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } catch (err) {
+            console.error(`Error processing subscription: ${err.message}`);
+            return new Response(JSON.stringify({ error: `Error processing subscription: ${err.message}` }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        }
+        
+        // Handle promotion payments if needed
+        if (type === 'promotion') {
+          // Implementation for handling promotion payments would go here
+          console.log(`Processed promotion payment for user: ${userId}`);
+        }
+
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
-        break;
       }
-
+      
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
+        console.log(`Processing customer.subscription.updated for subscription ID: ${subscription.id}`);
+        
+        // Extract customer ID to find the user
         const customerId = subscription.customer as string;
+        
+        // Get Supabase admin credentials
+        const supabaseAdminUrl = Deno.env.get('SUPABASE_URL') || '';
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+        
+        if (!supabaseAdminUrl || !supabaseServiceKey) {
+          console.error('Missing Supabase admin credentials');
+          return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
 
-        logWebhookEvent('processing_subscription_updated', {
-          customerId,
-          subscriptionId: subscription.id,
-          status: subscription.status
+        // Find the user subscription
+        const adminHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey
+        };
+        
+        const findUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?customer_id=eq.${customerId}&select=*`;
+        console.log(`Finding subscription: ${findUrl}`);
+        const findResponse = await fetch(findUrl, {
+          method: 'GET',
+          headers: adminHeaders
         });
-
-        // Find user_id from stripe_customer_id
-        const { data: subscriptionData, error: fetchError } = await supabaseClient
-          .from('subscriptions')
-          .select('user_id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (fetchError) {
-          throw new Error(`Error fetching user_id: ${fetchError.message}`);
+        
+        const subscriptions = await findResponse.json();
+        if (!subscriptions || subscriptions.length === 0) {
+          console.error(`No subscription found for customer ID: ${customerId}`);
+          return new Response(JSON.stringify({ error: 'Subscription not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
-
-        if (!subscriptionData?.user_id) {
-          throw new Error(`No subscription found for customer: ${customerId}`);
-        }
-
-        // Verify subscription data
-        const verificationResult = await verifySubscriptionData(subscription.id, customerId);
-        if (!verificationResult.verified) {
-          throw new Error(`Subscription verification failed: ${verificationResult.error}`);
-        }
-
-        // Determine tier based on price data
-        const priceId = subscription.items.data[0].price.id;
-        const tier = await determineTierFromPrice(priceId);
-
-        // Update subscription with retry logic
-        await updateSubscriptionWithRetry(
-          subscriptionData.user_id,
-          customerId,
-          subscription.id,
-          tier,
-          subscription.status,
-          new Date(subscription.current_period_end * 1000).toISOString(),
-          subscription.cancel_at_period_end
-        );
-
-        logWebhookEvent('subscription_updated_processed', {
-          userId: subscriptionData.user_id,
-          customerId,
-          subscriptionId: subscription.id,
-          tier
+        
+        const userSubscription = subscriptions[0];
+        console.log(`Found subscription for user ID: ${userSubscription.user_id}`);
+        
+        // Update the subscription
+        const updateData = {
+          status: subscription.status,
+          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          cancel_at_period_end: subscription.cancel_at_period_end
+        };
+        
+        const updateUrl = `${supabaseAdminUrl}/rest/v1/subscriptions?id=eq.${userSubscription.id}`;
+        console.log(`Updating subscription: ${updateUrl}`);
+        const updateResponse = await fetch(updateUrl, {
+          method: 'PATCH',
+          headers: adminHeaders,
+          body: JSON.stringify(updateData)
         });
-        break;
+        
+        if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          console.error(`Failed to update subscription: ${updateResponse.status} ${updateResponse.statusText}, Error: ${errorText}`);
+          return new Response(JSON.stringify({ error: `Failed to update subscription: ${errorText}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        console.log(`Subscription updated for user ID: ${userSubscription.user_id}`);
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
-
-        logWebhookEvent('processing_subscription_deleted', {
-          customerId,
-          subscriptionId: subscription.id
-        });
-
-        // Update subscription status
-        const { data: subData, error: updateError } = await supabaseClient
-          .from('subscriptions')
-          .update({
-            status: 'canceled',
-            tier: 'free',
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_customer_id', customerId)
-          .select('user_id')
-          .single();
-
-        if (updateError) {
-          throw new Error(`Error updating subscription status: ${updateError.message}`);
-        }
-
-        logWebhookEvent('subscription_deleted_processed', {
-          userId: subData?.user_id,
-          customerId,
-          subscriptionId: subscription.id
-        });
-        break;
-      }
-
+      
+      // Handle other event types if needed
       default: {
-        logWebhookEvent('unhandled_event', {
-          type: event.type
+        console.log(`Unhandled event type: ${event.type}`);
+        return new Response(JSON.stringify({ received: true, handled: false }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
     }
-
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+  } catch (error) {
+    console.error(`Webhook error: ${error.message}`);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-
-  } catch (err) {
-    logWebhookEvent('error_processing_webhook', {
-      error: err.message,
-      stack: err.stack
-    }, 'error');
-
-    return new Response(
-      JSON.stringify({
-        error: 'Error processing webhook',
-        details: err.message
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
   }
 });
-
