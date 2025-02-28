@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -430,6 +429,8 @@ export default function Pricing() {
           </div>
         </div>
       </div>
-      <Footer />
+      <div className="w-full">
+        <Footer />
+      </div>
     </div>;
 }
