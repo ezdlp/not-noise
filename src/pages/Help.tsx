@@ -1,12 +1,141 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { HelpSidebar } from "@/components/help/HelpSidebar";
-import { HelpArticle } from "@/components/help/HelpArticle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageSEO } from "@/components/seo/PageSEO";
 import { Footer } from "@/components/landing/Footer";
+import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
+
+// Define types for help data
+interface HelpCategory {
+  id: string;
+  name: string;
+  position: number;
+}
+
+interface HelpArticle {
+  id: string;
+  title: string;
+  content: string;
+  category_id: string;
+  position: number;
+}
+
+// Simple component implementations to replace the imported ones
+const HelpSidebar = ({ 
+  categories = [], 
+  articles = [], 
+  activeArticleId = null, 
+  onSelectArticle = () => {} 
+}: { 
+  categories: HelpCategory[]; 
+  articles: HelpArticle[]; 
+  activeArticleId: string | null; 
+  onSelectArticle: (id: string) => void; 
+}) => {
+  return (
+    <aside className="space-y-2">
+      <div className="space-y-1">
+        {categories.map((category) => (
+          <div key={category.id} className="space-y-1">
+            <div className="flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-primary/5">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="font-medium">{category.name}</span>
+              </div>
+            </div>
+            
+            <div className="ml-9 space-y-1">
+              {articles
+                .filter(article => article.category_id === category.id)
+                .map((article) => (
+                  <button
+                    key={article.id}
+                    onClick={() => onSelectArticle(article.id)}
+                    className={`w-full text-left px-3 py-1 text-sm rounded-md hover:bg-primary/5 ${
+                      activeArticleId === article.id ? "text-primary bg-primary/10" : "text-muted-foreground"
+                    }`}
+                  >
+                    <span className="truncate">{article.title}</span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+};
+
+const HelpArticle = ({ 
+  articleId, 
+  onBack 
+}: { 
+  articleId: string | null; 
+  onBack: () => void; 
+}) => {
+  const { data: article, isLoading } = useQuery({
+    queryKey: ["help-article", articleId],
+    queryFn: async () => {
+      if (!articleId) return null;
+      
+      const { data, error } = await supabase
+        .from("help_articles")
+        .select("*")
+        .eq("id", articleId)
+        .single();
+      
+      if (error) throw error;
+      return data as HelpArticle;
+    },
+    enabled: !!articleId
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="text-center py-12">
+        <p>Article not found. Please select another article.</p>
+        <button 
+          onClick={onBack}
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Back to Help Center
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button 
+        onClick={onBack}
+        className="mb-6 text-sm text-primary hover:underline flex items-center"
+      >
+        ← Back to Help Center
+      </button>
+      
+      <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
+      
+      <div 
+        className="prose max-w-none"
+        dangerouslySetInnerHTML={{ __html: article.content }}
+      />
+    </div>
+  );
+};
 
 export default function Help() {
   const { pathname } = useLocation();
@@ -37,10 +166,6 @@ export default function Help() {
       };
     }
   });
-
-  // If pathname has an article ID, set it as active
-  // This would be for direct article links
-  // For simplicity, we're assuming the path is like /help/article-id
 
   const handleArticleSelect = (articleId: string) => {
     setActiveArticleId(articleId);

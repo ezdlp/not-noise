@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { PageSEO } from "@/components/seo/PageSEO";
-import { ComparisonTable } from "@/components/pricing/ComparisonTable";
+import ComparisonTable from "@/components/pricing/ComparisonTable";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/landing/Footer";
 
@@ -92,9 +92,11 @@ export default function Pricing() {
                 <span>Email support</span>
               </li>
             </ul>
-            <Button variant="outline" className="w-full" href="/register">
-              Get Started
-            </Button>
+            <Link to="/register" className="w-full">
+              <Button variant="outline" className="w-full">
+                Get Started
+              </Button>
+            </Link>
           </div>
 
           {/* Pro Plan */}
@@ -149,9 +151,11 @@ export default function Pricing() {
                 <span>Priority support</span>
               </li>
             </ul>
-            <Button className="w-full" href={`/register?plan=pro&billing=${yearly ? 'yearly' : 'monthly'}`}>
-              Get Pro
-            </Button>
+            <Link to={`/register?plan=pro&billing=${yearly ? 'yearly' : 'monthly'}`} className="w-full">
+              <Button className="w-full">
+                Get Pro
+              </Button>
+            </Link>
           </div>
 
           {/* Business Plan */}
@@ -203,9 +207,11 @@ export default function Pricing() {
                 <span>Dedicated account manager</span>
               </li>
             </ul>
-            <Button variant="outline" className="w-full" href={`/register?plan=business&billing=${yearly ? 'yearly' : 'monthly'}`}>
-              Get Business
-            </Button>
+            <Link to={`/register?plan=business&billing=${yearly ? 'yearly' : 'monthly'}`} className="w-full">
+              <Button variant="outline" className="w-full">
+                Get Business
+              </Button>
+            </Link>
           </div>
         </div>
 
