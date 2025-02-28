@@ -7,7 +7,6 @@ import { BlogSEO } from "@/components/seo/BlogSEO";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Footer } from "@/components/landing/Footer";
 
 interface BlogPost {
   id: string;
@@ -167,7 +166,6 @@ export default function Blog() {
           </>
         )}
       </div>
-      <Footer />
     </>
   );
 }
