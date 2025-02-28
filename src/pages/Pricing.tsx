@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
 import { useQuery } from "@tanstack/react-query";
 import ComparisonTable from "@/components/pricing/ComparisonTable";
+import { Footer } from "@/components/landing/Footer";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -428,5 +430,6 @@ export default function Pricing() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>;
 }

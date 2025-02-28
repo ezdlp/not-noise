@@ -1,395 +1,334 @@
-
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { 
-  Search,
-  BookOpen,
-  List,
-  BarChart3,
-  Image as ImageIcon,
-  HelpCircle 
-} from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { HelpArticle } from "@/components/help/HelpArticle";
-import { HelpSidebar } from "@/components/help/HelpSidebar";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageSEO } from "@/components/seo/PageSEO";
+import { BookOpen, List, BarChart3, Image as ImageIcon, HelpCircle } from "lucide-react";
+import { Footer } from "@/components/landing/Footer";
 
-export type HelpCategory = "getting-started" | "smart-links" | "analytics" | "social-media" | "support";
+interface HelpCategory {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+interface HelpArticle {
+  id: string;
+  title: string;
+  content: string;
+  category_id: string;
+  slug: string;
+}
+
+interface HelpData {
+  categories: HelpCategory[];
+  articles: HelpArticle[];
+}
+
+function HelpSidebar({ 
+  categories, 
+  articles, 
+  activeArticleId,
+  onSelectArticle 
+}: { 
+  categories: HelpCategory[]; 
+  articles: HelpArticle[];
+  activeArticleId: string | null;
+  onSelectArticle: (articleId: string) => void;
+}) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="font-medium mb-3">Categories</h3>
+        <ul className="space-y-2">
+          {categories.map((category) => (
+            <li key={category.id}>
+              <button 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                onClick={() => {
+                  const firstArticleInCategory = articles.find(a => a.category_id === category.id);
+                  if (firstArticleInCategory) {
+                    onSelectArticle(firstArticleInCategory.id);
+                  }
+                }}
+              >
+                {category.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="font-medium mb-3">Popular Articles</h3>
+        <ul className="space-y-2">
+          {articles.slice(0, 5).map((article) => (
+            <li key={article.id}>
+              <button 
+                className={`text-sm ${activeArticleId === article.id ? 'text-primary font-medium' : 'text-muted-foreground'} hover:text-foreground transition-colors w-full text-left`}
+                onClick={() => onSelectArticle(article.id)}
+              >
+                {article.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function HelpArticle({ 
+  articleId,
+  onBack
+}: { 
+  articleId: string | null;
+  onBack: () => void;
+}) {
+  const { data: article, isLoading } = useQuery({
+    queryKey: ['help-article', articleId],
+    queryFn: async () => {
+      if (!articleId) return null;
+      
+      const { data, error } = await supabase
+        .from('help_articles')
+        .select('*, help_categories(name)')
+        .eq('id', articleId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!articleId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="text-center py-12">
+        <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Article Not Found</h2>
+        <p className="text-muted-foreground mb-6">The article you're looking for doesn't exist or has been moved.</p>
+        <button 
+          onClick={onBack}
+          className="text-primary hover:underline"
+        >
+          Return to Help Center
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button 
+        onClick={onBack}
+        className="text-sm text-muted-foreground hover:text-foreground mb-6 flex items-center"
+      >
+        ← Back to Help Center
+      </button>
+      
+      <h1 className="text-3xl font-bold mb-6">{article.title}</h1>
+      
+      <div 
+        className="prose prose-lg max-w-none [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:mt-6 [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:mt-4 [&_ul]:mb-4 [&_li]:mb-2"
+        dangerouslySetInnerHTML={{ __html: article.content }} 
+      />
+    </div>
+  );
+}
 
 export default function Help() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<HelpCategory>("getting-started");
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
 
-  const handleCategoryChange = (category: HelpCategory) => {
-    setActiveCategory(category);
-  };
+  // Check if we should show the homepage or an article
+  const showHomepage = pathname === '/help';
 
-  const renderContent = () => {
-    switch (activeCategory) {
-      case "getting-started":
-        return (
-          <div className="space-y-6">
-            <HelpArticle
-              title="Welcome Guide"
-              icon={BookOpen}
-              content={`
-                Welcome to Soundraiser! We're excited to help you promote your music effectively. 
-                This guide will walk you through everything you need to know to get started.
-                
-                Our platform helps you create professional Smart Links, track performance, and grow your audience through powerful marketing tools.
-              `}
-            />
-            <HelpArticle
-              title="Creating Your Account"
-              icon={List}
-              content={`
-                Creating an account is quick and easy:
-                1. Click the Sign Up button
-                2. Enter your email and password
-                3. Fill in your artist details
-                4. Start creating Smart Links or access analytics features
-                
-                Once your account is created, you'll have immediate access to create your first Smart Link.
-              `}
-            />
-            <HelpArticle
-              title="Understanding Your Dashboard"
-              icon={BarChart3}
-              content={`
-                Your dashboard is your command center:
-                - View your Smart Links performance
-                - Track audience engagement
-                - Monitor conversion rates
-                - Access Meta Pixel integration
-                - View social media metrics
-                - Manage email subscribers
-                
-                Each section is designed to give you clear insights into your music's performance.
-              `}
-            />
-            <HelpArticle
-              title="Platform Overview"
-              icon={BookOpen}
-              content={`
-                Soundraiser offers a comprehensive suite of tools:
-                - Smart Links creation and management
-                - Advanced analytics and tracking
-                - Email capture and fan data collection
-                - Meta Pixel integration for retargeting
-                - Social media optimization
-                - Custom branding options
-                
-                Each feature is designed to help you promote your music more effectively.
-              `}
-            />
-          </div>
-        );
-      case "smart-links":
-        return (
-          <div className="space-y-6">
-            <HelpArticle
-              title="What are Smart Links?"
-              icon={List}
-              content={`
-                Smart Links are powerful music marketing tools that:
-                - Share your music across all streaming platforms
-                - Track listener engagement
-                - Capture fan emails
-                - Enable retargeting with Meta Pixel
-                - Create customized social cards
-                - Provide detailed analytics
-              `}
-            />
-            <HelpArticle
-              title="Creating Smart Links"
-              icon={List}
-              content={`
-                Create your Smart Link in minutes:
-                1. Click "Create Smart Link"
-                2. Enter your track or album details
-                3. Add your streaming platform links
-                4. Customize your page design
-                5. Set up email capture
-                6. Configure Meta Pixel
-                7. Customize your social cards
-                8. Share your link!
-              `}
-            />
-            <HelpArticle
-              title="Custom URLs"
-              icon={List}
-              content={`
-                Customize your Smart Link URLs:
-                - Create memorable, branded URLs
-                - Choose custom slugs for each link
-                - Use your artist name or song title
-                - Maintain consistent branding
-                - Track performance by URL
-                - Manage multiple custom URLs
-              `}
-            />
-            <HelpArticle
-              title="Email Capture"
-              icon={List}
-              content={`
-                Build your fan email list:
-                - Customize email capture forms
-                - Set up automated responses
-                - Export subscriber data
-                - Track conversion rates
-                - Segment your audience
-                - Integrate with email marketing tools
-              `}
-            />
-            <HelpArticle
-              title="Design & Customization"
-              icon={List}
-              content={`
-                Create your unique branded experience:
-                - Customize colors and themes
-                - Upload custom artwork
-                - Add artist bio and details
-                - Customize button styles
-                - Add custom backgrounds
-                - Create mobile-optimized layouts
-              `}
-            />
-          </div>
-        );
-      case "analytics":
-        return (
-          <div className="space-y-6">
-            <HelpArticle
-              title="Dashboard Overview"
-              icon={BarChart3}
-              content={`
-                Your analytics dashboard provides:
-                - Real-time performance tracking
-                - Click-through rates
-                - Geographic data
-                - Platform preferences
-                - Audience behavior insights
-                - Conversion tracking
-              `}
-            />
-            <HelpArticle
-              title="Performance Metrics"
-              icon={BarChart3}
-              content={`
-                Track key performance indicators:
-                - Total link views
-                - Platform-specific clicks
-                - Conversion rates
-                - Geographic distribution
-                - Device analytics
-                - Time-based performance
-              `}
-            />
-            <HelpArticle
-              title="Meta Pixel Setup"
-              icon={BarChart3}
-              content={`
-                Enhance your marketing with Meta Pixel:
-                - Set up Meta Pixel tracking
-                - Create custom audiences
-                - Track conversion events
-                - Retarget your audience
-                - Optimize ad campaigns
-                - Measure ROI
-              `}
-            />
-            <HelpArticle
-              title="Conversion Tracking"
-              icon={BarChart3}
-              content={`
-                Monitor and optimize conversions:
-                - Track click-through rates
-                - Measure platform preferences
-                - Monitor email signups
-                - Track custom events
-                - Analyze user journeys
-                - Export conversion data
-              `}
-            />
-            <HelpArticle
-              title="Audience Insights"
-              icon={BarChart3}
-              content={`
-                Understand your audience better:
-                - Geographic distribution
-                - Platform preferences
-                - Device usage
-                - Time-based activity
-                - Engagement patterns
-                - Audience segmentation
-              `}
-            />
-          </div>
-        );
-      case "social-media":
-        return (
-          <div className="space-y-6">
-            <HelpArticle
-              title="Social Cards"
-              icon={ImageIcon}
-              content={`
-                Create engaging social media presence:
-                - Customize social preview cards
-                - Optimize for each platform
-                - Add branded visuals
-                - Set up platform-specific metadata
-                - Track social engagement
-              `}
-            />
-            <HelpArticle
-              title="Platform Integration"
-              icon={ImageIcon}
-              content={`
-                Integrate with major platforms:
-                - Facebook sharing optimization
-                - Twitter card customization
-                - Instagram bio links
-                - LinkedIn professional sharing
-                - Platform-specific analytics
-              `}
-            />
-            <HelpArticle
-              title="Best Practices"
-              icon={ImageIcon}
-              content={`
-                Optimize your social media strategy:
-                - Timing your posts
-                - Platform-specific content
-                - Hashtag strategies
-                - Engagement optimization
-                - Cross-platform promotion
-                - Content calendar planning
-              `}
-            />
-            <HelpArticle
-              title="Supported Networks"
-              icon={ImageIcon}
-              content={`
-                Share across major platforms:
-                - Facebook & Instagram
-                - Twitter & X
-                - TikTok
-                - LinkedIn
-                - YouTube
-                - Pinterest
-                
-                Each platform is optimized for maximum engagement and reach.
-              `}
-            />
-          </div>
-        );
-      case "support":
-        return (
-          <div className="space-y-6">
-            <HelpArticle
-              title="FAQs"
-              icon={HelpCircle}
-              content={`
-                Common questions about:
-                - Smart Links features
-                - Analytics & tracking
-                - Meta Pixel setup
-                - Social media integration
-                - Email capture
-                - Account management
-                - Billing & subscriptions
-              `}
-            />
-            <HelpArticle
-              title="Contact Support"
-              icon={HelpCircle}
-              content={`
-                Need additional help?
-                - 24/7 email support
-                - Live chat (Pro plans)
-                - Technical assistance
-                - Feature requests
-                - Account help
-              `}
-            />
-            <HelpArticle
-              title="Account Issues"
-              icon={HelpCircle}
-              content={`
-                Get help with your account:
-                - Password reset
-                - Account security
-                - Profile updates
-                - Linking platforms
-                - Account recovery
-                - Data management
-              `}
-            />
-            <HelpArticle
-              title="Billing Questions"
-              icon={HelpCircle}
-              content={`
-                Understanding billing and subscriptions:
-                - Plan comparisons
-                - Payment methods
-                - Subscription management
-                - Invoices and receipts
-                - Pro plan features
-                - Refund policy
-              `}
-            />
-          </div>
-        );
+  // Fetch help data (categories and articles)
+  const { data: helpData, isLoading: isLoadingHelp } = useQuery({
+    queryKey: ['help-data'],
+    queryFn: async () => {
+      // Fetch categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from('help_categories')
+        .select('*')
+        .order('name');
+      
+      if (categoriesError) throw categoriesError;
+      
+      // Fetch articles
+      const { data: articles, error: articlesError } = await supabase
+        .from('help_articles')
+        .select('*')
+        .eq('status', 'published')
+        .order('title');
+      
+      if (articlesError) throw articlesError;
+      
+      return { 
+        categories, 
+        articles 
+      } as HelpData;
+    },
+  });
+
+  // Handle article selection
+  const handleArticleSelect = (articleId: string) => {
+    setActiveArticleId(articleId);
+    const article = helpData?.articles.find(a => a.id === articleId);
+    if (article) {
+      navigate(`/help/${article.slug}`);
     }
   };
 
+  // Render homepage content
+  const renderHomepage = () => {
+    if (isLoadingHelp) {
+      return (
+        <div className="space-y-8">
+          <Skeleton className="h-12 w-3/4" />
+          <Skeleton className="h-6 w-1/2" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            {[1, 2, 3, 4].map((n) => (
+              <Skeleton key={n} className="h-40" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">How can we help you?</h1>
+          <p className="text-xl text-muted-foreground">
+            Find answers to your questions about Soundraiser
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {helpData?.categories.map((category) => {
+            // Determine icon based on category name or icon field
+            let IconComponent = HelpCircle;
+            if (category.name.toLowerCase().includes('smart link')) {
+              IconComponent = List;
+            } else if (category.name.toLowerCase().includes('analytics')) {
+              IconComponent = BarChart3;
+            } else if (category.name.toLowerCase().includes('design') || category.name.toLowerCase().includes('visual')) {
+              IconComponent = ImageIcon;
+            } else if (category.name.toLowerCase().includes('guide') || category.name.toLowerCase().includes('tutorial')) {
+              IconComponent = BookOpen;
+            }
+
+            return (
+              <div 
+                key={category.id}
+                className="border rounded-lg p-6 hover:border-primary hover:shadow-sm transition-all cursor-pointer"
+                onClick={() => {
+                  const firstArticleInCategory = helpData.articles.find(a => a.category_id === category.id);
+                  if (firstArticleInCategory) {
+                    handleArticleSelect(firstArticleInCategory.id);
+                  }
+                }}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="bg-primary/10 p-3 rounded-full mb-4">
+                    <IconComponent className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-medium mb-2">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {helpData.articles.filter(a => a.category_id === category.id).length} articles
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">Popular Articles</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {helpData?.articles.slice(0, 6).map((article) => (
+              <div 
+                key={article.id}
+                className="p-4 border rounded-lg hover:border-primary hover:shadow-sm transition-all cursor-pointer"
+                onClick={() => handleArticleSelect(article.id)}
+              >
+                <h3 className="font-medium mb-2">{article.title}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {article.content.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-seasalt">
-      {/* Hero Section */}
-      <div className="bg-white border-b border-border">
-        <div className="container mx-auto px-4 py-8 md:py-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-center mb-6">
-            How can we help you?
-          </h1>
-          <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search for help..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12"
-            />
-          </div>
-        </div>
-      </div>
-
+    <>
+      <PageSEO
+        title="Help Center | Soundraiser"
+        description="Find answers to your questions about Soundraiser - smart links, promotion services, and more."
+      />
+      
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
-          {/* Enhanced Sidebar */}
-          <div className="relative">
-            <ScrollArea className="h-[calc(100vh-200px)] md:sticky md:top-20">
-              <HelpSidebar 
-                activeCategory={activeCategory} 
-                onCategoryChange={handleCategoryChange} 
-              />
-            </ScrollArea>
-          </div>
-
-          {/* Main Content */}
-          <div className="space-y-8">
-            {renderContent()}
-
-            {/* Contact Support Card */}
-            <div className="bg-primary/5 rounded-lg p-6 text-center">
-              <h3 className="text-lg font-semibold mb-2">Still need help?</h3>
-              <p className="text-muted-foreground mb-4">
-                Our support team is here to help you succeed
-              </p>
-              <Button>Contact Support</Button>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          {/* Sidebar - only show on larger screens and when not on homepage */}
+          {!showHomepage && (
+            <div className="hidden md:block md:col-span-3 lg:col-span-3">
+              {isLoadingHelp ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-8 w-full mt-6" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ) : (
+                <HelpSidebar
+                  categories={helpData?.categories || []}
+                  articles={helpData?.articles || []}
+                  activeArticleId={activeArticleId}
+                  onSelectArticle={handleArticleSelect}
+                />
+              )}
             </div>
+          )}
+          
+          {/* Main content */}
+          <div className={`md:col-span-${showHomepage ? '12' : '9'} lg:col-span-${showHomepage ? '12' : '9'}`}>
+            {showHomepage ? (
+              renderHomepage()
+            ) : (
+              <HelpArticle 
+                articleId={activeArticleId} 
+                onBack={() => {
+                  setActiveArticleId(null);
+                  navigate('/help');
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

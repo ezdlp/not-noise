@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ArticleSEO } from "@/components/seo/ArticleSEO";
+import { Footer } from "@/components/landing/Footer";
 
 interface Profile {
   name: string | null;
@@ -283,6 +284,7 @@ const PublicBlogPost = () => {
           </section>
         )}
       </article>
+      <Footer />
     </>
   );
 };
