@@ -12,7 +12,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { OptimizedImage } from "@/components/ui/optimized-image";
+import { SmartImage } from "@/components/ui/smart-image";
 
 const generateMockData = () => {
   const baseViews = 80;
@@ -137,7 +137,7 @@ const SmartLinkShowcase = () => {
               {smartLinks.map((link, index) => (
                 <CarouselItem key={index}>
                   <div className="relative py-4">
-                    <OptimizedImage 
+                    <SmartImage 
                       src={link.image} 
                       alt={`Smart Link Example ${index + 1}`} 
                       className="w-full shadow-sm border border-neutral-200/60 rounded-lg mx-auto max-w-[280px]" 
@@ -179,7 +179,7 @@ const SmartLinkShowcase = () => {
               }}
             >
               <div className="relative transition-all duration-300 group-hover:rotate-0 group-hover:-translate-y-4 group-hover:z-50">
-                <OptimizedImage 
+                <SmartImage 
                   src={link.image} 
                   alt={`Smart Link Example ${index + 1}`} 
                   className="w-full shadow-sm border border-neutral-200/60 rounded-lg" 
@@ -228,7 +228,7 @@ const SocialAssetsShowcase = () => {
 
           <div className="h-[360px] flex items-center justify-center bg-neutral-50/50 p-4">
             <div className={`h-full ${activeFormat === 'post' ? 'w-full' : 'w-[200px]'}`}>
-              <img 
+              <SmartImage 
                 src={activeFormat === 'post' 
                   ? 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-post.jpg' 
                   : 'https://owtufhdsuuyrgmxytclj.supabase.co/storage/v1/object/public/media-library/taylor-story.jpg'
@@ -285,7 +285,7 @@ const MetaPixelSection = () => {
                 <span className="font-medium text-sm text-neutral-600">Conversion Rate</span>
               </div>
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+8.3%</Badge>
-            </div>
+            </CardContent>
             <p className="text-xl font-bold text-neutral-900">24.2%</p>
           </CardContent>
         </Card>
@@ -300,7 +300,7 @@ const MetaPixelSection = () => {
                 <span className="font-medium text-sm text-neutral-600">Cost per Conversion</span>
               </div>
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">-5.2%</Badge>
-            </div>
+            </CardContent>
             <p className="text-xl font-bold text-neutral-900">$2.15</p>
           </CardContent>
         </Card>
@@ -398,7 +398,6 @@ const AnalyticsSection = () => {
     <div className="mt-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h4 className="text-lg font-semibold text-neutral-900">Performance Overview</h4>
-        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -427,7 +426,7 @@ const AnalyticsSection = () => {
                 <span className="font-medium text-sm text-neutral-600">Total Clicks</span>
               </div>
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+8.3%</Badge>
-            </div>
+            </CardContent>
             <p className="text-xl font-bold text-neutral-900">1,249</p>
           </CardContent>
         </Card>
@@ -442,7 +441,7 @@ const AnalyticsSection = () => {
                 <span className="font-medium text-sm text-neutral-600">Click Rate</span>
               </div>
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">+5.2%</Badge>
-            </div>
+            </CardContent>
             <p className="text-xl font-bold text-neutral-900">43.9%</p>
           </CardContent>
         </Card>
