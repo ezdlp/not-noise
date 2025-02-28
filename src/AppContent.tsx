@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
@@ -91,7 +92,18 @@ export default function AppContent() {
         </Suspense>
       } />
       
+      {/* Help Center Routes - Updated to include category and article routes */}
       <Route path="/help" element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <Help />
+        </Suspense>
+      } />
+      <Route path="/help/category/:categoryId" element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <Help />
+        </Suspense>
+      } />
+      <Route path="/help/:slug" element={
         <Suspense fallback={<LoadingSpinner />}>
           <Help />
         </Suspense>
@@ -206,6 +218,7 @@ export default function AppContent() {
         } />
       </Route>
       
+      {/* This catch-all route should come after all specific routes */}
       <Route path="/:slug" element={
         <Suspense fallback={<LoadingSpinner />}>
           <PublicBlogPost />
