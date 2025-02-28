@@ -1,432 +1,217 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { PageSEO } from "@/components/seo/PageSEO";
+import { ComparisonTable } from "@/components/pricing/ComparisonTable";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Crown, Star, Info, Check, ShieldCheck, Lock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { TrustedLabels } from "@/components/landing/TrustedLabels";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCcVisa, faCcMastercard, faCcAmex } from "@fortawesome/free-brands-svg-icons";
-import { useQuery } from "@tanstack/react-query";
-import ComparisonTable from "@/components/pricing/ComparisonTable";
+import { Footer } from "@/components/landing/Footer";
 
 export default function Pricing() {
-  const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const {
-    data: session,
-    isLoading: isSessionLoading
-  } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const {
-        data: {
-          session
-        },
-        error
-      } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Session fetch error:", error);
-        throw error;
-      }
-      return session;
-    }
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [yearly, setYearly] = useState(() => {
+    const initialBilling = searchParams.get("billing");
+    return initialBilling === "yearly";
   });
 
-  const {
-    data: subscription,
-    isLoading: isSubscriptionLoading,
-    error: subscriptionError
-  } = useQuery({
-    queryKey: ["subscription", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user) return null;
-      try {
-        const {
-          data,
-          error
-        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).maybeSingle();
-        if (error) throw error;
-        return data || {
-          tier: 'free'
-        }; // Default to free tier if no subscription found
-      } catch (error) {
-        console.error("Subscription fetch error:", error);
-        throw error;
-      }
-    },
-    enabled: !!session?.user,
-    retry: 2
-  });
-
-  const handleSubscribe = async (priceId: string) => {
-    try {
-      setIsLoading(true);
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          priceId,
-          isSubscription: true
-        }
-      });
-      if (error) {
-        console.error('Checkout error:', error);
-        toast.error("Failed to start checkout process. Please try again.");
-        return;
-      }
-      if (!data?.url) {
-        console.error('No checkout URL received:', data);
-        toast.error("Unable to create checkout session. Please try again.");
-        return;
-      }
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+  // Update URL when billing period changes
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    if (yearly) {
+      newParams.set("billing", "yearly");
+    } else {
+      newParams.set("billing", "monthly");
     }
-  };
+    setSearchParams(newParams, { replace: true });
+  }, [yearly, searchParams, setSearchParams]);
 
-  const handleCustomerPortal = async () => {
-    try {
-      setIsLoading(true);
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('create-portal-link', {
-        body: {}
-      });
-      if (error) {
-        console.error('Portal error:', error);
-        toast.error("Failed to access customer portal. Please try again.");
-        return;
-      }
-      if (!data?.url) {
-        console.error('No portal URL received:', data);
-        toast.error("Unable to access customer portal. Please try again.");
-        return;
-      }
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const renderActionButton = (tier: 'free' | 'pro') => {
-    if (isSessionLoading || isSubscriptionLoading) {
-      return <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md animate-pulse">
-          Loading...
-        </div>;
-    }
-    if (subscriptionError) {
-      return <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
-          Retry
-        </Button>;
-    }
-    if (!session) {
-      return <Button variant={tier === 'free' ? "outline" : "default"} className={tier === 'pro' ? "w-full bg-primary hover:bg-primary/90" : "w-full"} onClick={() => navigate("/login")}>
-          {tier === 'free' ? "Get Started with Free" : "Get Started with Pro"}
-        </Button>;
-    }
-    const userTier = subscription?.tier || 'free';
-    if (userTier === tier) {
-      return <div className="w-full px-4 py-2 text-center text-sm font-medium text-muted-foreground bg-muted rounded-md">
-          Current Plan
-        </div>;
-    }
-    if (userTier === 'free' && tier === 'pro') {
-      return <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => handleSubscribe(billingPeriod === 'monthly' ? 'price_1Qs5ALFx6uwYcH3S96XYib6f' : 'price_1QsQGrFx6uwYcH3SCT6RJsSI')} disabled={isLoading}>
-          {isLoading ? "Preparing..." : "Upgrade to Pro"}
-        </Button>;
-    }
-    if (userTier === 'pro' && tier === 'free') {
-      return <Button variant="outline" onClick={handleCustomerPortal} className="w-full" disabled={isLoading}>
-          {isLoading ? "Preparing..." : "Downgrade to Free"}
-        </Button>;
-    }
-    return null;
-  };
-
-  return <div className="container mx-auto py-12 px-4">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Start with our Free plan or upgrade to Pro for unlimited features
-        </p>
-
-        <div className="flex items-center justify-center gap-4 mb-12">
-          <span className={billingPeriod === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}>
-            Monthly billing
-          </span>
-          <Switch checked={billingPeriod === 'yearly'} onCheckedChange={checked => setBillingPeriod(checked ? 'yearly' : 'monthly')} />
-          <span className={billingPeriod === 'yearly' ? 'text-foreground' : 'text-muted-foreground'}>
-            Annual billing <span className="text-primary text-sm">(Save 17%)</span>
-          </span>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          <Card className="p-8 relative flex flex-col">
-            <div className="flex-1">
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-bold">Free Plan</h3>
-                </div>
-                <p className="text-muted-foreground">
-                  Perfect for emerging artists
-                </p>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$0</span>
-                  <span className="text-muted-foreground">/forever</span>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h4 className="text-sm font-medium">Features included:</h4>
-                  <div className="grid gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
-                      Up to 10 Smart Links
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex items-center gap-2">
-                        Basic Streaming Platforms
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              8 essential platforms: Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, Soundcloud, YouTube, iTunes Store
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex items-center gap-2">
-                        Basic Analytics
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Views, Clicks, and CTR tracking
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-muted-foreground" />
-                      Custom URL Slugs
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              {renderActionButton('free')}
-            </div>
-          </Card>
-
-          <Card className="p-8 border-primary relative flex flex-col">
-            <div className="absolute -top-3 right-4 bg-primary px-3 py-1 rounded-full text-white text-sm">
-              Most Popular
-            </div>
-            <div className="flex-1">
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <Crown className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-bold">Pro Plan</h3>
-                </div>
-                <p className="text-muted-foreground">
-                  For artists who want more
-                </p>
-                <div className="mt-4">
-                  {billingPeriod === 'monthly' ? <>
-                      <span className="text-4xl font-bold">$6</span>
-                      <span className="text-muted-foreground">/month</span>
-                      <div className="text-sm text-muted-foreground mt-1">Cancel anytime</div>
-                    </> : <>
-                      <span className="text-4xl font-bold">$5</span>
-                      <span className="text-muted-foreground">/mo</span>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        <span className="text-primary">Save 17%</span> • $60/year • Cancel anytime
-                      </div>
-                    </>}
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h4 className="text-sm font-medium">Everything in Free, plus:</h4>
-                  <div className="grid gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Unlimited Smart Links
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      <div className="flex items-center gap-2">
-                        All Streaming Platforms + Reordering
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              All included in Free plus: Tidal, Beatport, Bandcamp, Napster, Anghami, Boomplay, Yandex Music, Audius
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      <div className="flex items-center gap-2">
-                        Advanced Analytics
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Platform-specific clicks, daily performance, and fan locations
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Meta Pixel Integration
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Fan Email Collection
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Remove Soundraiser Branding
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Priority Support (24/7 response within 12 hours)
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Bulk Analytics Export
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      <div className="flex items-center gap-2">
-                        Smart Link Social Media Cards
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Transform your music links into eye-catching social cards automatically. Perfect for Instagram, X, Facebook, and more - no design skills needed.
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary" />
-                      Early Access to New Features
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              {renderActionButton('pro')}
-            </div>
-          </Card>
-        </div>
-
-        <div className="mt-8 text-center">
-          <Button variant="link" className="text-muted-foreground hover:text-primary transition-colors" onClick={() => {
-          document.getElementById('compare-plans')?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }}>Need help choosing? Compare plans in detail</Button>
-        </div>
-
-        <div className="mt-16">
-          <TrustedLabels isPricingPage={true} />
-        </div>
-
-        <ComparisonTable />
-
-        <div className="mt-16 max-w-2xl mx-auto">
-          <h3 className="text-xl font-semibold mb-6">Frequently Asked Questions</h3>
-          <div className="space-y-6 text-left">
-            <div>
-              <h4 className="font-medium mb-2">Can I upgrade anytime?</h4>
-              <p className="text-muted-foreground">Yes, you can upgrade to Pro at any time and immediately access all premium features.</p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">What happens if I exceed the free plan limits?</h4>
-              <p className="text-muted-foreground">You'll need to upgrade to Pro to create more smart links, but your existing links will continue to work.</p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Can I cancel anytime?</h4>
-              <p className="text-muted-foreground">Yes, you can cancel your Pro subscription at any time. Your premium features will remain active until the end of your billing period.</p>
-            </div>
+  return (
+    <>
+      <PageSEO 
+        title="Pricing | Soundraiser" 
+        description="Flexible plans to help every musician get their music heard. Choose the plan that fits your needs and budget."
+      />
+      
+      <div className="container px-4 py-12 mx-auto mb-8">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            Choose the plan that best fits your needs. All plans include core features.
+          </p>
+          
+          <div className="flex items-center justify-center space-x-4 mb-8">
+            <span className={yearly ? "text-muted-foreground" : "font-medium"}>Monthly</span>
+            <button
+              onClick={() => setYearly(!yearly)}
+              type="button"
+              role="switch"
+              aria-checked={yearly}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                yearly ? "bg-primary" : "bg-input"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                  yearly ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+            <span className={!yearly ? "text-muted-foreground" : "font-medium"}>
+              Yearly <span className="text-xs text-green-500 font-medium">Save 20%</span>
+            </span>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center space-y-8">
-          <div className="flex items-center gap-6">
-            <FontAwesomeIcon icon={faCcVisa} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
-            <FontAwesomeIcon icon={faCcMastercard} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
-            <FontAwesomeIcon icon={faCcAmex} className="h-8 w-auto text-[#4F4F4F] transition-colors hover:text-[#0F0F0F]" />
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {/* Free Plan */}
+          <div className="border rounded-lg p-6 flex flex-col h-full">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">Free</h2>
+              <p className="text-muted-foreground">For musicians just getting started</p>
+            </div>
+            <div className="mb-6">
+              <div className="text-3xl font-bold">$0</div>
+              <div className="text-muted-foreground">Forever free</div>
+            </div>
+            <ul className="space-y-3 mb-8 flex-grow">
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>3 smart links</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Basic analytics</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Email support</span>
+              </li>
+            </ul>
+            <Button variant="outline" className="w-full" href="/register">
+              Get Started
+            </Button>
           </div>
 
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2 text-success hover:text-success-hover transition-colors">
-              <Lock className="h-5 w-5" />
-              <span className="text-sm font-medium">Secure Payments</span>
+          {/* Pro Plan */}
+          <div className="border border-primary rounded-lg p-6 flex flex-col h-full shadow-sm relative">
+            <div className="absolute top-0 right-0 bg-primary text-white px-3 py-1 text-xs font-medium rounded-bl-lg rounded-tr-lg">
+              POPULAR
             </div>
-            <div className="flex items-center gap-2 text-success hover:text-success-hover transition-colors">
-              <ShieldCheck className="h-5 w-5" />
-              <span className="text-sm font-medium">SSL Encryption</span>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">Pro</h2>
+              <p className="text-muted-foreground">For growing musicians</p>
             </div>
+            <div className="mb-6">
+              <div className="text-3xl font-bold">
+                {yearly ? "$7" : "$9"}
+                <span className="text-base font-normal text-muted-foreground">
+                  /{yearly ? "mo" : "mo"}
+                </span>
+              </div>
+              <div className="text-muted-foreground">
+                {yearly ? "Billed annually ($84/year)" : "Billed monthly"}
+              </div>
+            </div>
+            <ul className="space-y-3 mb-8 flex-grow">
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Unlimited smart links</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Advanced analytics</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Custom domains</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Email capture</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Priority support</span>
+              </li>
+            </ul>
+            <Button className="w-full" href={`/register?plan=pro&billing=${yearly ? 'yearly' : 'monthly'}`}>
+              Get Pro
+            </Button>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Need help choosing?</span>
-            <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/contact")}>
-              Contact our team
+          {/* Business Plan */}
+          <div className="border rounded-lg p-6 flex flex-col h-full">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">Business</h2>
+              <p className="text-muted-foreground">For labels and managers</p>
+            </div>
+            <div className="mb-6">
+              <div className="text-3xl font-bold">
+                {yearly ? "$19" : "$24"}
+                <span className="text-base font-normal text-muted-foreground">
+                  /{yearly ? "mo" : "mo"}
+                </span>
+              </div>
+              <div className="text-muted-foreground">
+                {yearly ? "Billed annually ($228/year)" : "Billed monthly"}
+              </div>
+            </div>
+            <ul className="space-y-3 mb-8 flex-grow">
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Everything in Pro</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Team accounts (up to 5)</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Bulk link creation</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>API access</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Dedicated account manager</span>
+              </li>
+            </ul>
+            <Button variant="outline" className="w-full" href={`/register?plan=business&billing=${yearly ? 'yearly' : 'monthly'}`}>
+              Get Business
             </Button>
           </div>
         </div>
+
+        <ComparisonTable yearly={yearly} />
       </div>
-    </div>;
+      <Footer />
+    </>
+  );
 }
