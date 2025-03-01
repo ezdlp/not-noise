@@ -31,6 +31,7 @@ class Analytics {
     this.measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
     console.log('Initializing GA4 with measurement ID:', this.measurementId);
     
+    // This is key: Only configure the appropriate property based on page type
     gtag('config', this.measurementId, {
       send_page_view: false, // We'll handle page views manually for better SPA support
       anonymize_ip: true
@@ -53,7 +54,7 @@ class Analytics {
   setUserProperties(properties: UserProperties) {
     this.userProperties = { ...this.userProperties, ...properties };
     
-    if (this.userProperties.userId) {
+    if (this.userProperties.userId && this.measurementId) {
       gtag('set', 'user_properties', {
         user_id: this.userProperties.userId,
         user_type: this.userProperties.userType || 'free',
@@ -62,15 +63,19 @@ class Analytics {
     }
   }
 
+  // Fix: Make sure to ONLY track page views in the appropriate property
   trackPageView(path: string, isSmartLink: boolean) {
-    if (!this.initialized) {
-      console.warn('Analytics not initialized when trying to track page view');
-      return;
+    // Critical fix: If not initialized OR initialized with wrong property, reinitialize
+    if (!this.initialized || (isSmartLink && this.measurementId !== MEASUREMENT_IDS.smartLinks) || 
+        (!isSmartLink && this.measurementId !== MEASUREMENT_IDS.main)) {
+      this.initialized = false;
+      this.initialize(isSmartLink);
     }
 
     const measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
     console.log('Tracking page view:', { path, measurementId });
     
+    // Always use the correct measurement ID based on page type
     gtag('config', measurementId, {
       page_path: path,
       user_properties: this.userProperties
@@ -85,6 +90,7 @@ class Analytics {
 
     console.log('Tracking event:', { action, category, label, value, metadata });
 
+    // Use the initialized measurement ID for tracking events
     gtag('event', action, {
       event_category: category,
       event_label: label,

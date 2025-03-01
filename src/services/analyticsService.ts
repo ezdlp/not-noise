@@ -1,4 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "./analytics";
 
 interface AnalyticsEvent {
   event_type: string;
@@ -17,9 +19,12 @@ class AnalyticsService {
   private sessionId: string;
   private locationInfo: LocationInfo | null = null;
   private isInitialized: boolean = false;
+  private isSmartLinkPage: boolean = false;
 
   constructor() {
     this.sessionId = this.getOrCreateSessionId();
+    // Check if current page is a Smart Link page
+    this.isSmartLinkPage = window.location.pathname.startsWith('/link/');
     this.initializeTracking();
   }
 
@@ -40,7 +45,10 @@ class AnalyticsService {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
-    // Track initial page view
+    // Initialize with the correct property based on page type
+    analytics.initialize(this.isSmartLinkPage);
+
+    // Track initial page view with the correct property
     this.trackPageView(window.location.pathname);
 
     // Setup navigation tracking
@@ -65,11 +73,23 @@ class AnalyticsService {
 
     // Listen for navigation events
     window.addEventListener('locationchange', () => {
+      // Check if new page is a smart link before tracking
+      const isCurrentSmartLink = window.location.pathname.startsWith('/link/');
+      if (isCurrentSmartLink !== this.isSmartLinkPage) {
+        this.isSmartLinkPage = isCurrentSmartLink;
+        analytics.initialize(this.isSmartLinkPage);
+      }
       this.trackPageView(window.location.pathname);
     });
 
     // Listen for popstate
     window.addEventListener('popstate', () => {
+      // Check if new page is a smart link before tracking
+      const isCurrentSmartLink = window.location.pathname.startsWith('/link/');
+      if (isCurrentSmartLink !== this.isSmartLinkPage) {
+        this.isSmartLinkPage = isCurrentSmartLink;
+        analytics.initialize(this.isSmartLinkPage);
+      }
       this.trackPageView(window.location.pathname);
     });
   }
@@ -109,29 +129,21 @@ class AnalyticsService {
   }
 
   async trackPageView(url: string) {
-    // Skip tracking for smart links
-    if (url.startsWith('/link/')) {
-      return;
-    }
-
+    const isSmartLink = url.startsWith('/link/');
+    
     try {
-      console.log('Tracking page view for:', url);
+      console.log(`Tracking page view for: ${url} (Smart Link: ${isSmartLink})`);
+      
+      // Track in GA4 with the correct property
+      analytics.trackPageView(url, isSmartLink);
       
       // Track basic page view immediately without waiting for location
       const baseData = {
         url,
         user_agent: navigator.userAgent,
-        session_id: this.sessionId
+        session_id: this.sessionId,
+        is_smart_link: isSmartLink
       };
-
-      // Track in GA4
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'page_view', {
-          page_location: url,
-          page_title: document.title,
-          session_id: this.sessionId
-        });
-      }
 
       // Get location info in the background
       const locationInfo = await this.getLocationInfo();

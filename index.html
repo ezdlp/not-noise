@@ -29,17 +29,13 @@
       type="image/webp"
     />
     
-    <!-- Optimized Google Analytics -->
+    <!-- Fixed Google Analytics - Load script but don't configure by default -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      // Defer configuration and minimize initial load
-      gtag('config', 'G-2CFB508HGL', {
-        'send_page_view': false,
-        'defer_pageview': true,
-        'optimize_id': 'OPT-XXXXXX'
-      });
+      // Don't send page view by default - our Analytics class will handle this
+      // This prevents the wrong property from getting pageviews
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js"></script>
 
