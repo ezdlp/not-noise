@@ -1,4 +1,4 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
-[functions.spotify-search]
+[functions.get-odesli-links]
 verify_jwt = false
