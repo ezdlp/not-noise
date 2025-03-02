@@ -31,22 +31,15 @@ jobs:
         env:
           SUPABASE_PROJECT_ID: owtufhdsuuyrgmxytclj
           
-      - name: Generate Function Deployment Report
+      - name: Generate Simple Function Deployment Report
         run: |
           echo "## Edge Function Deployment Report" > deployment_report.md
           echo "### Deployed Functions" >> deployment_report.md
           supabase functions list -p owtufhdsuuyrgmxytclj | grep -v "^$" | sed 's/^/- /' >> deployment_report.md
-          echo "### JWT Verification Status" >> deployment_report.md
-          echo "| Function | JWT Verification |" >> deployment_report.md
-          echo "|----------|-----------------|" >> deployment_report.md
-          for func in $(supabase functions list -p owtufhdsuuyrgmxytclj); do
-            if [ -n "$func" ]; then
-              status=$(supabase functions inspect $func -p owtufhdsuuyrgmxytclj --json | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
-              echo "| $func | $status |" >> deployment_report.md
-            fi
-          done
+          
+          # Don't inspect functions as it triggers JWT resets - just output deployment status
+          echo "### Deployment Status" >> deployment_report.md
+          echo "Functions were deployed with their respective JWT verification settings according to the .no-verify-jwt markers." >> deployment_report.md
+          echo "See deploy-functions.sh logs for verification details." >> deployment_report.md
           
           cat deployment_report.md
-          
-          echo "::set-output name=report::$(cat deployment_report.md)"
-

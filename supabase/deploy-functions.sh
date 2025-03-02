@@ -46,6 +46,47 @@ function retry_with_backoff() {
   return $exit_code
 }
 
+# Function to verify JWT settings match expected state
+function verify_jwt_setting() {
+  local func_name=$1
+  local expected_jwt_enabled=$2
+  local max_attempts=10
+  local attempt=1
+  local actual_jwt_enabled=""
+  
+  log "1;36" "🔍 Verifying JWT setting for $func_name (expected: $expected_jwt_enabled)"
+  
+  while [[ $attempt -le $max_attempts ]]; do
+    settings=$(supabase functions inspect $func_name --project-ref ${PROJECT_ID} --json 2>/dev/null)
+    actual_jwt_enabled=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
+    
+    # Convert both to lowercase for comparison
+    actual_jwt_enabled=$(echo "$actual_jwt_enabled" | tr '[:upper:]' '[:lower:]')
+    expected_jwt_enabled=$(echo "$expected_jwt_enabled" | tr '[:upper:]' '[:lower:]')
+    
+    if [[ "$actual_jwt_enabled" == "$expected_jwt_enabled" ]]; then
+      log "1;32" "✅ JWT verification for $func_name is correctly set to $actual_jwt_enabled"
+      return 0
+    else
+      log "1;33" "⚠️ Attempt $attempt: JWT verification for $func_name is $actual_jwt_enabled, expected $expected_jwt_enabled. Re-applying..."
+      
+      if [[ "$expected_jwt_enabled" == "true" ]]; then
+        log "1;34" "🔒 Re-deploying $func_name WITH JWT verification..."
+        supabase functions deploy "$func_name" --project-ref ${PROJECT_ID} > /dev/null 2>&1
+      else
+        log "1;33" "🔓 Re-deploying $func_name WITHOUT JWT verification..."
+        supabase functions deploy "$func_name" --project-ref ${PROJECT_ID} --no-verify-jwt > /dev/null 2>&1
+      fi
+      
+      sleep $(( attempt * 2 ))
+      attempt=$(( attempt + 1 ))
+    fi
+  done
+  
+  log "1;31" "❌ Failed to set correct JWT verification for $func_name after $max_attempts attempts!"
+  return 1
+}
+
 log "1;36" "🚀 Starting Supabase Edge Functions deployment..."
 log "1;36" "📂 Functions directory: $FUNCTIONS_DIR"
 log "1;36" "🔑 Project ID: ${PROJECT_ID}"
@@ -115,32 +156,6 @@ for func_name in "${deployed_functions[@]}"; do
       log "1;32" "✅ Successfully deployed $func_name without JWT verification"
       public_count=$((public_count + 1))
       public_functions+=("$func_name")
-      
-      # Double check settings were applied with multiple retries
-      success=false
-      for i in {1..3}; do
-        sleep 2
-        settings=$(supabase functions inspect $func_name --project-ref ${PROJECT_ID} --json 2>/dev/null)
-        verify_jwt=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
-        
-        if [[ "$verify_jwt" == "true" ]]; then
-          log "1;33" "⚠️ Attempt $i: $func_name still has JWT verification enabled despite deployment flags!"
-          if [ $i -lt 3 ]; then
-            log "1;33" "🔄 Re-deploying with explicit --no-verify-jwt flag..."
-            retry_with_backoff supabase functions deploy "$func_name" --project-ref ${PROJECT_ID} --no-verify-jwt
-          fi
-        else
-          log "1;32" "✅ Verified: $func_name correctly has JWT verification disabled"
-          success=true
-          break
-        fi
-      done
-      
-      if [ "$success" != true ]; then
-        log "1;31" "⚠️ Failed to disable JWT verification for $func_name after multiple attempts"
-        error_count=$((error_count + 1))
-        failed_functions+=("$func_name")
-      fi
     else
       log "1;31" "❌ Failed to deploy $func_name"
       error_count=$((error_count + 1))
@@ -152,22 +167,30 @@ for func_name in "${deployed_functions[@]}"; do
       log "1;32" "✅ Successfully deployed $func_name with JWT verification"
       protected_count=$((protected_count + 1))
       protected_functions+=("$func_name")
-      
-      # Verify JWT setting is correctly applied
-      sleep 2
-      settings=$(supabase functions inspect $func_name --project-ref ${PROJECT_ID} --json 2>/dev/null)
-      verify_jwt=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
-      
-      if [[ "$verify_jwt" != "true" ]]; then
-        log "1;33" "⚠️ WARNING: $func_name should have JWT verification enabled but doesn't!"
-        log "1;33" "🔄 Re-deploying with standard settings..."
-        retry_with_backoff supabase functions deploy "$func_name" --project-ref ${PROJECT_ID}
-      fi
     else
       log "1;31" "❌ Failed to deploy $func_name"
       error_count=$((error_count + 1))
       failed_functions+=("$func_name")
     fi
+  fi
+done
+
+# Final verification pass after all deployments
+# This critical step ensures JWT settings are correct after deployment
+log "1;36" "🔍 Final verification of JWT settings..."
+jwt_errors=0
+
+# Verify public functions (no JWT)
+for func_name in "${public_functions[@]}"; do
+  if ! verify_jwt_setting "$func_name" "false"; then
+    jwt_errors=$((jwt_errors + 1))
+  fi
+done
+
+# Verify protected functions (with JWT)
+for func_name in "${protected_functions[@]}"; do
+  if ! verify_jwt_setting "$func_name" "true"; then
+    jwt_errors=$((jwt_errors + 1))
   fi
 done
 
@@ -203,10 +226,16 @@ log_file="supabase/deployment_log_$(date +%Y%m%d_%H%M%S).txt"
   
   echo ""
   echo "📋 VERIFICATION STATUS:"
+  echo "JWT verification errors during final verification: $jwt_errors"
+  
   for func_name in "${deployed_functions[@]}"; do
     settings=$(supabase functions inspect $func_name --project-ref ${PROJECT_ID} --json 2>/dev/null)
     verify_jwt=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
-    echo "   - $func_name: JWT Verification = $verify_jwt"
+    expected_jwt="true"
+    if [[ " ${public_functions[*]} " =~ " ${func_name} " ]]; then
+      expected_jwt="false"
+    fi
+    echo "   - $func_name: JWT Verification = $verify_jwt (Expected: $expected_jwt)"
   done
 } > "$log_file"
 
@@ -215,6 +244,7 @@ log "1;36" "📊 Deployment Summary:"
 log "1;33" "🔓 Public functions deployed: $public_count"
 log "1;34" "🔒 Protected functions deployed: $protected_count"
 log "1;31" "❌ Deployment errors: $error_count"
+log "1;31" "❌ JWT verification errors: $jwt_errors"
 log "1;36" "📝 Detailed log saved to: $log_file"
 
 # Reminder about functions that need manual deletion
@@ -225,10 +255,10 @@ if [ ${#functions_to_delete[@]} -gt 0 ]; then
   done
 fi
 
-if [ $error_count -eq 0 ]; then
-  log "1;32" "✨ All functions deployed successfully!"
+if [ $error_count -eq 0 ] && [ $jwt_errors -eq 0 ]; then
+  log "1;32" "✨ All functions deployed successfully with correct JWT settings!"
   exit 0
 else
-  log "1;31" "⚠️ Some deployments failed. Check logs above for details."
+  log "1;31" "⚠️ Some issues occurred during deployment. Check logs above for details."
   exit 1
 fi
