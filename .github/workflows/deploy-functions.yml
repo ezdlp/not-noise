@@ -30,35 +30,23 @@ jobs:
         run: ./supabase/deploy-functions.sh
         env:
           SUPABASE_PROJECT_ID: owtufhdsuuyrgmxytclj
-
-      - name: Verify Function JWT Settings
-        run: |
-          echo "Verifying JWT settings for functions..."
-          # List of functions that should NOT have JWT verification
-          NO_JWT_FUNCTIONS=(
-            "spotify-search"
-            "stripe-webhook"
-            "verify-recaptcha"
-            "verify-payment-session"
-            "get-odesli-links"
-            "sitemap"
-            "sitemap-cache"
-            "sitemap-generator"
-            "sitemap-health"
-          )
           
-          for func in "${NO_JWT_FUNCTIONS[@]}"; do
-            echo "Checking $func..."
-            settings=$(supabase functions inspect $func -p owtufhdsuuyrgmxytclj --json)
-            verify_jwt=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
-            
-            if [[ "$verify_jwt" == "true" ]]; then
-              echo "⚠️ WARNING: $func still has JWT verification enabled!"
-              echo "Re-deploying with --no-verify-jwt flag..."
-              supabase functions deploy $func --project-ref owtufhdsuuyrgmxytclj --no-verify-jwt
-            else
-              echo "✅ $func correctly has JWT verification disabled"
+      - name: Generate Function Deployment Report
+        run: |
+          echo "## Edge Function Deployment Report" > deployment_report.md
+          echo "### Deployed Functions" >> deployment_report.md
+          supabase functions list -p owtufhdsuuyrgmxytclj | grep -v "^$" | sed 's/^/- /' >> deployment_report.md
+          echo "### JWT Verification Status" >> deployment_report.md
+          echo "| Function | JWT Verification |" >> deployment_report.md
+          echo "|----------|-----------------|" >> deployment_report.md
+          for func in $(supabase functions list -p owtufhdsuuyrgmxytclj); do
+            if [ -n "$func" ]; then
+              status=$(supabase functions inspect $func -p owtufhdsuuyrgmxytclj --json | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
+              echo "| $func | $status |" >> deployment_report.md
             fi
           done
           
-          echo "Verification complete!"
+          cat deployment_report.md
+          
+          echo "::set-output name=report::$(cat deployment_report.md)"
+

@@ -76,6 +76,19 @@ When creating a new Edge Function:
 4. Update config.toml with matching settings (for consistency)
 5. The function will be automatically deployed with the correct settings
 
+## Important: Function Lifecycle Management
+
+### Deleting Functions
+
+**Important:** Supabase Edge Functions are not automatically deleted when removed from the codebase. After removing a function from the code:
+
+1. The deployment script will identify functions that exist in Supabase but not in the codebase
+2. These functions must be manually deleted through the Supabase Dashboard
+3. Navigate to the Edge Functions section in your Supabase project
+4. Delete the obsolete functions manually
+
+Our deployment process will notify you of functions that should be deleted manually.
+
 ## Troubleshooting
 
 If you encounter JWT-related issues:
@@ -86,3 +99,4 @@ If you encounter JWT-related issues:
 4. If issues persist, you can manually deploy using the script
 
 For persistent issues, review the detailed deployment logs saved in the `supabase` directory.
+
