@@ -1,4 +1,3 @@
-
 // Shared utilities for sitemap generation
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -79,3 +78,37 @@ export async function logSitemapEvent(client: any, status: 'success' | 'error' |
 
 export const SITE_URL = 'https://soundraiser.io';
 export const BATCH_SIZE = 1000; // URLs per sitemap file
+
+export function generateSitemapIndexXml(totalUrls: number): string {
+  const baseUrl = 'https://soundraiser.io';
+  const sitemapCount = Math.ceil(totalUrls / 50000); // 50k URLs per sitemap as per protocol
+  const sitemaps = [];
+
+  for (let i = 1; i <= sitemapCount; i++) {
+    sitemaps.push(`
+    <sitemap>
+      <loc>${baseUrl}/sitemap-${i}.xml</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+    </sitemap>`);
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      ${sitemaps.join('')}
+    </sitemapindex>`;
+}
+
+export function generateSitemapXml(urls: Array<{url: string, updated_at: Date, changefreq?: string, priority?: number}>): string {
+  const urlsets = urls.map(({ url, updated_at, changefreq = 'weekly', priority = 0.7 }) => `
+    <url>
+      <loc>${url}</loc>
+      <lastmod>${updated_at.toISOString()}</lastmod>
+      <changefreq>${changefreq}</changefreq>
+      <priority>${priority}</priority>
+    </url>`);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      ${urlsets.join('')}
+    </urlset>`;
+}
