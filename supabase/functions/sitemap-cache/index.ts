@@ -1,238 +1,204 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1'
+import { corsHeaders } from '../_shared/cors.ts'
+import { Database } from '../_shared/database.types.ts'
 
-import { corsHeaders, xmlResponse, xmlErrorResponse, createAdminClient, generateETag } from '../_shared/sitemap-utils.ts';
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const supabase = createClient<Database>(supabaseUrl, supabaseKey)
 
-export const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
-  
+
   try {
-    const authHeader = req.headers.get('Authorization');
+    const url = new URL(req.url)
+    const action = url.searchParams.get('action') || 'get'
+    const key = url.searchParams.get('key')
     
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({
+    console.log(`Sitemap cache ${action} request: ${key || 'all'}`)
+    
+    // GET: Retrieve cached sitemap
+    if (action === 'get' && key) {
+      const { data, error } = await supabase
+        .from('sitemap_cache')
+        .select('content, created_at')
+        .eq('key', key)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching sitemap cache:', error)
+        return new Response(JSON.stringify({
           success: false,
-          message: 'Missing authorization header'
-        }),
-        {
-          status: 401,
+          message: 'Cache miss or error',
+          error: error.message
+        }), {
+          status: 404,
           headers: {
             'Content-Type': 'application/json',
             ...corsHeaders
           }
+        })
+      }
+      
+      // Check if cache entry exists and is not expired
+      if (data) {
+        const MAX_AGE = 86400 * 7 // 7 days in seconds
+        const createdAt = new Date(data.created_at)
+        const now = new Date()
+        const age = (now.getTime() - createdAt.getTime()) / 1000 // in seconds
+        
+        if (age < MAX_AGE) {
+          console.log(`Cache hit for ${key}, age: ${Math.round(age / 3600)} hours`)
+          
+          // If content is XML and requested as XML, return as XML
+          if (req.headers.get('Accept')?.includes('application/xml') && data.content.trim().startsWith('<?xml')) {
+            return new Response(data.content, {
+              headers: {
+                'Content-Type': 'application/xml; charset=UTF-8',
+                'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+                ...corsHeaders
+              }
+            })
+          }
+          
+          // Otherwise return JSON with the content
+          return new Response(JSON.stringify({
+            success: true,
+            data: {
+              content: data.content,
+              created_at: data.created_at
+            }
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          })
+        } else {
+          console.log(`Cache expired for ${key}, age: ${Math.round(age / 3600)} hours`)
         }
-      );
+      } else {
+        console.log(`Cache miss for ${key}`)
+      }
+      
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Cache miss or expired'
+      }), {
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      })
     }
     
-    // Initialize Supabase client with admin access
-    const supabase = createAdminClient();
-    
-    // Parse request to identify the operation
-    const url = new URL(req.url);
-    const operation = url.searchParams.get('operation') || 'status';
-    
-    // GET request: retrieve cache status
-    if (req.method === 'GET') {
-      if (operation === 'status') {
+    // SET: Create or update cache entry
+    if (action === 'set' && key && req.method === 'POST') {
+      try {
+        const { content, ttl } = await req.json()
+        
+        if (!content) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'Content is required'
+          }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          })
+        }
+        
+        // Store in cache
         const { data, error } = await supabase
           .from('sitemap_cache')
-          .select('key, updated_at')
-          .order('updated_at', { ascending: false });
-        
-        if (error) {
-          throw new Error(`Failed to get cache status: ${error.message}`);
-        }
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Sitemap cache status retrieved',
-            data: {
-              count: data?.length || 0,
-              files: data || [],
-              last_updated: data?.length ? data[0].updated_at : null
-            }
-          }),
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          }
-        );
-      }
-      
-      // Operation not recognized
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Operation '${operation}' not recognized`
-        }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        }
-      );
-    }
-    
-    // POST request: perform an action on the cache
-    else if (req.method === 'POST') {
-      const body = await req.json();
-      
-      // Operation: purge
-      if (operation === 'purge') {
-        if (body.key) {
-          // Delete a specific cache entry
-          const { error } = await supabase
-            .from('sitemap_cache')
-            .delete()
-            .eq('key', body.key);
-          
-          if (error) {
-            throw new Error(`Failed to purge cache entry: ${error.message}`);
-          }
-          
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: `Cache entry '${body.key}' purged`,
-            }),
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders
-              }
-            }
-          );
-        } else {
-          // Delete all cache entries
-          const { error } = await supabase
-            .from('sitemap_cache')
-            .delete()
-            .neq('key', 'non-existent-key'); // Delete all rows
-          
-          if (error) {
-            throw new Error(`Failed to purge all cache entries: ${error.message}`);
-          }
-          
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: 'All cache entries purged',
-            }),
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders
-              }
-            }
-          );
-        }
-      }
-      
-      // Operation: add
-      else if (operation === 'add') {
-        if (!body.key || !body.content) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: "Missing required fields 'key' and 'content'"
-            }),
-            {
-              status: 400,
-              headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders
-              }
-            }
-          );
-        }
-        
-        // Generate ETag
-        const etag = await generateETag(body.content);
-        
-        // Insert or update cache entry
-        const { error } = await supabase
-          .from('sitemap_cache')
           .upsert({
-            key: body.key,
-            content: body.content,
-            etag,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'key'
-          });
+            key,
+            content,
+            ttl: ttl || 86400 // Default 1 day in seconds
+          })
+          .select()
         
         if (error) {
-          throw new Error(`Failed to add cache entry: ${error.message}`);
+          throw new Error(`Failed to cache sitemap: ${error.message}`)
         }
         
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: `Cache entry '${body.key}' added/updated`,
-            etag
-          }),
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          }
-        );
-      }
-      
-      // Operation not recognized
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Operation '${operation}' not recognized`
-        }),
-        {
-          status: 400,
+        console.log(`Cache set for ${key}`)
+        
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Cached successfully',
+          data: data?.[0]
+        }), {
           headers: {
             'Content-Type': 'application/json',
             ...corsHeaders
           }
-        }
-      );
+        })
+      } catch (error) {
+        console.error('Error setting cache:', error)
+        return new Response(JSON.stringify({
+          success: false,
+          message: `Error caching sitemap: ${error.message}`
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        })
+      }
     }
     
-    // Method not allowed
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: `Method '${req.method}' not allowed`
-      }),
-      {
-        status: 405,
+    // DELETE: Clear cache entries
+    if (action === 'delete') {
+      const { error } = await supabase
+        .from('sitemap_cache')
+        .delete()
+        .eq(key ? 'key' : 'id', key || 0) // If key is provided, delete specific entry, else delete all
+      
+      if (error) {
+        throw new Error(`Failed to clear cache: ${error.message}`)
+      }
+      
+      console.log(`Cache ${key ? 'entry deleted' : 'cleared'}: ${key || 'all'}`)
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: key ? `Cache entry ${key} deleted` : 'All cache entries cleared'
+      }), {
         headers: {
           'Content-Type': 'application/json',
           ...corsHeaders
         }
-      }
-    );
+      })
+    }
     
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Invalid action'
+    }), {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      }
+    })
   } catch (error) {
-    console.error(`Error in sitemap-cache: ${error.message}`);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: `Error in sitemap-cache: ${error.message}`
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
+    console.error('Cache error:', error)
+    return new Response(JSON.stringify({
+      success: false,
+      message: `Error: ${error.message}`
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
       }
-    );
+    })
   }
-};
+})
