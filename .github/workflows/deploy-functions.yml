@@ -1,0 +1,66 @@
+
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Login to Supabase
+        run: supabase login ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        
+      - name: Make deploy script executable
+        run: chmod +x ./supabase/deploy-functions.sh
+        
+      - name: Deploy functions using custom script
+        run: ./supabase/deploy-functions.sh
+        env:
+          SUPABASE_PROJECT_ID: owtufhdsuuyrgmxytclj
+
+      - name: Verify Function JWT Settings
+        run: |
+          echo "Verifying JWT settings for functions..."
+          # List of functions that should NOT have JWT verification
+          NO_JWT_FUNCTIONS=(
+            "spotify-search"
+            "stripe-webhook"
+            "verify-recaptcha"
+            "verify-payment-session"
+            "get-odesli-links"
+            "regenerate-sitemap"
+            "sitemap"
+            "sitemap-file"
+            "sitemap-cache"
+            "sitemap-health"
+            "ping-search-engines"
+          )
+          
+          for func in "${NO_JWT_FUNCTIONS[@]}"; do
+            echo "Checking $func..."
+            settings=$(supabase functions inspect $func -p owtufhdsuuyrgmxytclj --json)
+            verify_jwt=$(echo $settings | grep -o '"verify_jwt":[^,}]*' | cut -d':' -f2)
+            
+            if [[ "$verify_jwt" == "true" ]]; then
+              echo "⚠️ WARNING: $func still has JWT verification enabled!"
+              echo "Re-deploying with --no-verify-jwt flag..."
+              supabase functions deploy $func --project-ref owtufhdsuuyrgmxytclj --no-verify-jwt
+            else
+              echo "✅ $func correctly has JWT verification disabled"
+            fi
+          done
+          
+          echo "Verification complete!"

@@ -12,6 +12,7 @@ Some functions in this project need to be publicly accessible without JWT verifi
 1. Functions with a `.no-verify-jwt` file in their directory will be deployed without JWT verification.
 2. Functions without this marker will be deployed with standard JWT verification.
 3. The `deploy-functions.sh` script handles this automatically during deployment.
+4. Our GitHub Actions workflow ensures consistent deployment settings across all environments.
 
 ### Public vs Protected Functions
 
@@ -21,6 +22,7 @@ These functions need to be accessible without authentication:
 - **Payment Processing**
   - `stripe-webhook` - Processes incoming Stripe webhooks
   - `verify-payment-session` - Public verification endpoint
+  - `track-password-resets` - Tracks password reset activity
 
 - **SEO/Sitemap**
   - `sitemap` - Main sitemap handler
@@ -44,21 +46,27 @@ These functions require user authentication:
 - `send-notification` - Internal notification system
 - Other admin/user-specific functions
 
-## Deployment Instructions
+## Automated Deployment Process
 
-### Never deploy functions directly using Supabase CLI!
+Our functions are deployed automatically through GitHub Actions when:
+1. Changes are pushed to the `main` branch 
+2. Files in the `supabase/functions` directory are modified
 
-Instead, always use our deployment script:
+The workflow handles:
+- Setting up the Supabase CLI
+- Deploying functions with appropriate JWT verification settings
+- Verifying successful deployment and settings
+- Logging deployment results for auditing
+
+### Manual Deployment Instructions
+
+For local development or manual deployment:
 
 ```bash
 # From project root:
+chmod +x ./supabase/deploy-functions.sh
 ./supabase/deploy-functions.sh
 ```
-
-This script will:
-1. Check each function directory for the presence of a `.no-verify-jwt` marker
-2. Deploy with or without JWT verification accordingly
-3. Provide a detailed summary of the deployment
 
 ### Adding a New Function
 
@@ -68,14 +76,15 @@ When creating a new Edge Function:
 2. For public functions, add a `.no-verify-jwt` file in the function directory
 3. For protected functions, no additional action is needed
 4. Update config.toml with matching settings (for consistency)
-5. Use the deployment script to deploy
+5. The function will be automatically deployed with the correct settings
 
 ## Troubleshooting
 
 If you encounter JWT-related issues:
 
-1. Verify that the function has the correct marker (or lack thereof)
-2. Check that you're using the deployment script and not direct CLI commands
-3. Verify the function's config.toml matches the intended JWT behavior
+1. Check the deployment logs in GitHub Actions
+2. Verify that the function has the correct marker (or lack thereof)
+3. Inspect the function settings in Supabase Console
+4. If issues persist, you can manually deploy using the script
 
-For persistent issues, check the deployment logs for details on which flags were applied.
+For persistent issues, review the detailed deployment logs saved in the `supabase` directory.
