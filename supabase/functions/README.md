@@ -22,14 +22,11 @@ These functions need to be accessible without authentication:
 - **Payment Processing**
   - `stripe-webhook` - Processes incoming Stripe webhooks
   - `verify-payment-session` - Public verification endpoint
-  - `track-password-resets` - Tracks password reset activity
 
 - **SEO/Sitemap**
-  - `sitemap` - Main sitemap handler
-  - `sitemap-file` - Serves individual sitemap files
-  - `regenerate-sitemap` - Triggers sitemap updates
+  - `sitemap` - Universal sitemap handler (both index and files)
+  - `sitemap-generator` - Regenerates and maintains sitemaps
   - `sitemap-cache` - Caches sitemap data
-  - `ping-search-engines` - Notifies search engines of updates
   - `sitemap-health` - Monitors sitemap status
 
 - **Public Services**
@@ -44,6 +41,7 @@ These functions require user authentication:
 - `create-portal-link` - Manages subscription portals
 - `get-analytics-keys` - Retrieves user-specific analytics
 - `send-notification` - Internal notification system
+- `check-existing-users` - Admin-only user verification
 - Other admin/user-specific functions
 
 ## Automated Deployment Process

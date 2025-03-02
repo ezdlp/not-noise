@@ -1,216 +1,205 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import { format } from 'https://deno.land/std@0.202.0/datetime/format.ts'
+import { createClient } from '@supabase/supabase-js'
+import { corsHeaders } from '../_shared/cors.ts'
 
-// Batch size for processing URLs
-const BATCH_SIZE = 1000;
+// Initialize Supabase client with admin privileges
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
 
-// Create XML for a sitemap index
-function createSitemapIndex(sitemapFiles: string[]): string {
-  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-  
-  for (const file of sitemapFiles) {
-    xml += '  <sitemap>\n';
-    xml += `    <loc>https://soundraiser.io/${file}</loc>\n`;
-    xml += `    <lastmod>${format(new Date(), "yyyy-MM-dd")}</lastmod>\n`;
-    xml += '  </sitemap>\n';
+// API security key to prevent unauthorized regeneration
+const API_KEY = Deno.env.get('SITEMAP_WEBHOOK_KEY') || 'default-webhook-key'
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
-  
-  xml += '</sitemapindex>';
-  return xml;
-}
 
-// Create XML for a regular sitemap
-function createSitemap(urls: any[]): string {
-  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-  
-  for (const url of urls) {
-    xml += '  <url>\n';
-    xml += `    <loc>https://soundraiser.io${url.url}</loc>\n`;
+  try {
+    // Verify API key for security
+    const authHeader = req.headers.get('x-api-key')
+    if (!authHeader || authHeader !== API_KEY) {
+      console.error('Unauthorized sitemap regeneration attempt')
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized. Invalid or missing API key' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Process request body if available
+    let source = 'manual'
+    let additionalInfo = {}
     
-    if (url.updated_at) {
-      const date = new Date(url.updated_at);
-      xml += `    <lastmod>${format(date, "yyyy-MM-dd")}</lastmod>\n`;
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json()
+        source = body.source || source
+        additionalInfo = body
+      } catch (e) {
+        // Continue if body parsing fails, use defaults
+        console.warn('Could not parse request body')
+      }
+    }
+
+    // Start the regeneration process
+    console.log(`Starting sitemap regeneration from source: ${source}`)
+    await regenerateSitemap(source, additionalInfo)
+    
+    const response = {
+      success: true,
+      message: 'Sitemap regeneration started',
+      timestamp: new Date().toISOString(),
+      source
     }
     
-    if (url.changefreq) {
-      xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
-    }
-    
-    if (url.priority) {
-      xml += `    <priority>${url.priority}</priority>\n`;
-    }
-    
-    xml += '  </url>\n';
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  } catch (error) {
+    console.error('Sitemap regeneration error:', error)
+    return new Response(JSON.stringify({ 
+      error: 'Failed to regenerate sitemap',
+      message: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
   }
-  
-  xml += '</urlset>';
-  return xml;
-}
+})
 
-// Generate sitemaps and store them in cache
-export async function generateSitemaps(): Promise<string[]> {
-  console.log("Starting sitemap generation");
-  
-  // Create a Supabase client with service role
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    {
-      auth: { persistSession: false }
-    }
-  );
+async function regenerateSitemap(source: string, additionalInfo: any = {}) {
+  const startTime = Date.now()
+  const details = {
+    triggered_by: source,
+    ...additionalInfo,
+    timestamp: new Date().toISOString()
+  }
   
   try {
-    // Get total URL count from database
-    const { data: countData, error: countError } = await supabase.rpc('get_sitemap_url_count');
+    // Log regeneration start
+    await supabaseAdmin
+      .from('sitemap_logs')
+      .insert({
+        status: 'started',
+        message: `Sitemap regeneration started from ${source}`,
+        source,
+        details
+      })
+    
+    // Delete all existing cache entries to force regeneration
+    const { error: deleteError } = await supabaseAdmin
+      .from('sitemap_cache')
+      .delete()
+      .neq('name', 'placeholder')
+    
+    if (deleteError) {
+      throw new Error(`Failed to clear sitemap cache: ${deleteError.message}`)
+    }
+    
+    // Warm up cache by pre-generating index
+    const indexUrl = new URL(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sitemap`)
+    await fetch(indexUrl, { headers: { 'Cache-Control': 'no-cache' } })
+    
+    // Get URL count for sitemap files
+    const { data: countData, error: countError } = await supabaseAdmin
+      .rpc('get_sitemap_url_count')
     
     if (countError) {
-      throw new Error(`Error getting URL count: ${countError.message}`);
+      throw new Error(`Failed to get URL count: ${countError.message}`)
     }
     
-    const totalUrls = countData?.total_urls || 0;
-    console.log(`Found ${totalUrls} URLs to include in sitemap`);
+    const totalUrls = countData?.total_urls || 0
+    const urlsPerFile = 5000
+    const sitemapCount = Math.ceil(totalUrls / urlsPerFile)
     
-    // If no URLs, just create a static sitemap
-    if (totalUrls === 0) {
-      const staticSitemap = createSitemap([
-        { url: '/', changefreq: 'weekly', priority: 1.0 }
-      ]);
-      
-      // Save to cache
-      await supabase
-        .from('sitemap_cache')
-        .upsert({ 
-          key: 'sitemap-static.xml',
-          content: staticSitemap,
-          etag: crypto.randomUUID(),
-          updated_at: new Date().toISOString()
-        });
-      
-      // Create index
-      const sitemapIndex = createSitemapIndex(['sitemap-static.xml']);
-      
-      // Save index to cache
-      await supabase
-        .from('sitemap_cache')
-        .upsert({
-          key: 'sitemap-index.xml',
-          content: sitemapIndex,
-          etag: crypto.randomUUID(),
-          updated_at: new Date().toISOString()
-        });
-      
-      return ['sitemap-static.xml'];
+    // Warm up first few sitemaps (most important ones)
+    const warmupLimit = Math.min(sitemapCount, 3)
+    for (let i = 1; i <= warmupLimit; i++) {
+      const fileUrl = new URL(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sitemap`)
+      fileUrl.searchParams.set('file', i.toString())
+      await fetch(fileUrl, { headers: { 'Cache-Control': 'no-cache' } })
     }
     
-    // Calculate number of sitemap files needed
-    const totalFiles = Math.ceil(totalUrls / BATCH_SIZE);
-    const sitemapFiles: string[] = [];
-    
-    // Process URLs in batches
-    for (let i = 0; i < totalFiles; i++) {
-      const offset = i * BATCH_SIZE;
-      const batch = Math.min(BATCH_SIZE, totalUrls - offset);
-      
-      console.log(`Processing batch ${i+1}/${totalFiles} (offset ${offset}, limit ${batch})`);
-      
-      // Get URLs for this batch using our fixed function
-      const { data: urls, error: urlsError } = await supabase.rpc(
-        'get_sitemap_urls_fixed',
-        { p_offset: offset, p_limit: batch }
-      );
-      
-      if (urlsError) {
-        throw new Error(`Error getting URLs for batch ${i+1}: ${urlsError.message}`);
-      }
-      
-      if (!urls || urls.length === 0) {
-        console.log(`No URLs returned for batch ${i+1}`);
-        continue;
-      }
-      
-      // Determine sitemap type based on URLs in this batch
-      let sitemapType = 'general';
-      if (i === 0) {
-        // Check first URL to see if it's a specific type
-        const firstUrl = urls[0].url;
-        if (firstUrl.startsWith('/blog/')) {
-          sitemapType = 'blog';
-        } else if (firstUrl.startsWith('/link/')) {
-          sitemapType = 'links';
-        } else {
-          sitemapType = 'static';
+    // Log successful completion
+    const duration = Date.now() - startTime
+    await supabaseAdmin
+      .from('sitemap_logs')
+      .insert({
+        status: 'completed',
+        message: `Sitemap regenerated successfully. ${totalUrls} URLs in ${sitemapCount} sitemap files.`,
+        source,
+        details: {
+          ...details,
+          duration_ms: duration,
+          sitemap_count: sitemapCount,
+          total_urls: totalUrls
         }
-      } else {
-        sitemapType = `part${i}`;
-      }
-      
-      // Generate sitemap filename
-      const filename = `sitemap-${sitemapType}.xml`;
-      sitemapFiles.push(filename);
-      
-      // Create and save sitemap for this batch
-      const sitemap = createSitemap(urls);
-      
-      await supabase
-        .from('sitemap_cache')
-        .upsert({
-          key: filename,
-          content: sitemap,
-          etag: crypto.randomUUID(),
-          updated_at: new Date().toISOString()
-        });
-      
-      console.log(`Saved sitemap file: ${filename}`);
-    }
+      })
     
-    // Create and save sitemap index
-    const sitemapIndex = createSitemapIndex(sitemapFiles);
+    console.log(`Sitemap regeneration completed in ${duration}ms`)
     
-    await supabase
-      .from('sitemap_cache')
-      .upsert({
-        key: 'sitemap-index.xml',
-        content: sitemapIndex,
-        etag: crypto.randomUUID(),
-        updated_at: new Date().toISOString()
-      });
+    // Optionally ping search engines here
+    // This replaces the functionality from the standalone ping-search-engines function
+    await pingSearchEngines(totalUrls)
     
-    console.log('Saved sitemap index file');
-    
-    // Return list of generated files
-    return sitemapFiles;
-    
+    return { success: true, sitemapCount, totalUrls, duration }
   } catch (error) {
-    console.error('Error generating sitemaps:', error);
-    
-    // Log the error to the database
-    await supabase
+    // Log error
+    await supabaseAdmin
       .from('sitemap_logs')
       .insert({
         status: 'error',
-        message: `Error generating sitemap: ${error.message}`,
-        source: 'sitemap-generator',
-        details: { 
+        message: `Sitemap regeneration failed: ${error.message}`,
+        source,
+        details: {
+          ...details,
           error: error.message,
-          stack: error.stack
+          stack: error.stack,
+          duration_ms: Date.now() - startTime
         }
-      });
+      })
     
-    throw error;
+    console.error('Error regenerating sitemap:', error)
+    throw error
   }
 }
 
-// If this module is run directly, generate sitemaps
-if (import.meta.main) {
+async function pingSearchEngines(urlCount: number) {
   try {
-    const files = await generateSitemaps();
-    console.log(`Generated ${files.length} sitemap files`);
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io'
+    const sitemapUrl = `${siteUrl}/sitemap.xml`
+    
+    // Only ping if we have a reasonable number of URLs
+    if (urlCount < 10) {
+      console.log('Not pinging search engines, too few URLs')
+      return
+    }
+    
+    // Google
+    try {
+      const googlePingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
+      const googleResponse = await fetch(googlePingUrl)
+      console.log(`Google ping status: ${googleResponse.status}`)
+    } catch (e) {
+      console.warn('Google ping failed:', e)
+    }
+    
+    // Bing
+    try {
+      const bingPingUrl = `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`
+      const bingResponse = await fetch(bingPingUrl)
+      console.log(`Bing ping status: ${bingResponse.status}`)
+    } catch (e) {
+      console.warn('Bing ping failed:', e)
+    }
+    
+    console.log('Search engine ping completed')
   } catch (error) {
-    console.error('Fatal error in sitemap generation:', error);
-    Deno.exit(1);
+    console.warn('Error pinging search engines:', error)
+    // Non-critical error, don't throw
   }
 }

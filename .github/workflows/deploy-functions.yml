@@ -41,12 +41,10 @@ jobs:
             "verify-recaptcha"
             "verify-payment-session"
             "get-odesli-links"
-            "regenerate-sitemap"
             "sitemap"
-            "sitemap-file"
             "sitemap-cache"
+            "sitemap-generator"
             "sitemap-health"
-            "ping-search-engines"
           )
           
           for func in "${NO_JWT_FUNCTIONS[@]}"; do
