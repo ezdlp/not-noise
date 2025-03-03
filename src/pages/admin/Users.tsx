@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,8 +119,7 @@ export default function UsersPage() {
             user_id,
             content_type
           )
-        `, { count: 'exact' })
-        .order('created_at', { ascending: sortDirection === 'asc' });
+        `, { count: 'exact' });
 
       if (filters.subscription !== 'all') {
         query = query.eq('subscriptions.tier', filters.subscription);
@@ -134,6 +134,13 @@ export default function UsersPage() {
         query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,artist_name.ilike.%${searchQuery}%`);
       }
 
+      // Sort by created_at with proper handling for potential nulls
+      // and add a secondary sort by id to ensure consistent ordering
+      query = query.order('created_at', { 
+        ascending: sortDirection === 'asc',
+        nullsFirst: sortDirection === 'asc' 
+      }).order('id', { ascending: sortDirection === 'asc' });
+
       const { data, error: fetchError, count } = await query
         .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
@@ -144,6 +151,14 @@ export default function UsersPage() {
       }
 
       setFilteredCount(count || 0);
+      
+      // For debugging, let's log the created_at dates to verify sorting
+      console.log("User creation dates:", data?.map(user => ({ 
+        id: user.id, 
+        name: user.name, 
+        created_at: user.created_at 
+      })));
+      
       return data as Profile[];
     }
   });
