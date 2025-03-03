@@ -1,3 +1,4 @@
+
 interface LocationInfo {
   isEU: boolean;
   country?: string;
@@ -11,8 +12,11 @@ const EU_COUNTRIES = [
 
 export const getUserLocation = async (): Promise<LocationInfo> => {
   try {
-    const response = await fetch('https://api.ipapi.com/api/check?access_key=YOUR_API_KEY');
-    const data = await response.json();
+    // Use our Supabase edge function instead of external API
+    const { data, error } = await fetch('/api/get-location').then(res => res.json());
+    
+    if (error) throw new Error(error.message);
+    
     return {
       isEU: EU_COUNTRIES.includes(data.country_code),
       country: data.country_code
