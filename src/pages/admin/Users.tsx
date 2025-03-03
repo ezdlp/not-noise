@@ -87,13 +87,12 @@ export default function UsersPage() {
         throw new Error("Not authenticated");
       }
 
-      const { data: userRoles, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin');
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('has_role', {
+        _role: 'admin'
+      });
 
-      if (roleError || !userRoles?.length) {
+      if (adminCheckError || !isAdmin) {
+        console.error("Admin check error:", adminCheckError);
         throw new Error("Not authorized");
       }
 
