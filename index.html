@@ -29,17 +29,12 @@
       type="image/webp"
     />
     
-    <!-- Optimized Google Analytics -->
+    <!-- Optimized Google Analytics - Base initialization only without auto-config -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      // Defer configuration and minimize initial load
-      gtag('config', 'G-2CFB508HGL', {
-        'send_page_view': false,
-        'defer_pageview': true,
-        'optimize_id': 'OPT-XXXXXX'
-      });
+      // Only initialize, don't configure any property yet
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js"></script>
 

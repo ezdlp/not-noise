@@ -22,16 +22,28 @@ interface UserProperties {
 
 class Analytics {
   private initialized = false;
-  private measurementId: string | null = null;
+  private isSmartLink = false;
   private userProperties: UserProperties = {};
 
   initialize(isSmartLink: boolean) {
-    if (this.initialized) return;
+    // If already initialized with the same type, don't reinitialize
+    if (this.initialized && this.isSmartLink === isSmartLink) return;
     
-    this.measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
-    console.log('Initializing GA4 with measurement ID:', this.measurementId);
+    this.isSmartLink = isSmartLink;
+    const measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
+    console.log('Initializing GA4 with measurement ID:', measurementId);
     
-    gtag('config', this.measurementId, {
+    // Clear any existing GA configuration
+    if (this.initialized) {
+      console.log('Re-initializing GA4 with different measurement ID');
+      // Reset GA state
+      window.gtag('config', this.isSmartLink ? MEASUREMENT_IDS.main : MEASUREMENT_IDS.smartLinks, {
+        'send_page_view': false
+      });
+    }
+    
+    // Configure the correct property
+    gtag('config', measurementId, {
       send_page_view: false, // We'll handle page views manually for better SPA support
       anonymize_ip: true
     });
@@ -62,14 +74,14 @@ class Analytics {
     }
   }
 
-  trackPageView(path: string, isSmartLink: boolean) {
+  trackPageView(path: string) {
     if (!this.initialized) {
-      console.warn('Analytics not initialized when trying to track page view');
-      return;
+      const isCurrentPathSmartLink = path.startsWith('/link/');
+      this.initialize(isCurrentPathSmartLink);
     }
 
-    const measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
-    console.log('Tracking page view:', { path, measurementId });
+    const measurementId = this.isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
+    console.log('Tracking page view:', { path, measurementId, isSmartLink: this.isSmartLink });
     
     gtag('config', measurementId, {
       page_path: path,

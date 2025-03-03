@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +7,16 @@ import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
+import { analytics } from "@/services/analytics";
 import { Loader2 } from "lucide-react";
 
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
+
+  useEffect(() => {
+    analytics.initialize(true);
+    analytics.trackPageView(`/link/${slug}`);
+  }, [slug]);
 
   const recordViewMutation = useMutation({
     mutationFn: async (smartLinkId: string) => {
@@ -148,6 +153,8 @@ export default function SmartLink() {
     try {
       console.log('Recording platform click for ID:', platformLinkId);
       
+      analytics.trackPlatformClick(smartLink.platform_name || 'Unknown', smartLink.id);
+      
       await analyticsService.trackPlatformClick(platformLinkId);
       console.log('Platform click recorded successfully');
 
@@ -156,7 +163,6 @@ export default function SmartLink() {
       }
     } catch (error) {
       console.error('Error in handlePlatformClick:', error);
-      // Don't show error toast to end users for analytics
     }
   };
 

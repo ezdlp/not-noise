@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import AppContent from "./AppContent";
 import Header from "@/components/layout/Header";
 import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
+import { analytics } from "@/services/analytics";
 import { analyticsService } from "@/services/analyticsService";
 
 // Create a client
@@ -22,7 +23,14 @@ function AppLayout() {
                      location.pathname === '/update-password';
 
   useEffect(() => {
-    // Track page view for non-smart link routes
+    // Initialize GA with the correct property based on route
+    analytics.initialize(isSmartLinkRoute);
+    
+    // Track page view (this will use the correct measurement ID)
+    analytics.trackPageView(location.pathname);
+    
+    // Continue using analyticsService for internal analytics
+    // but skip the GA tracking in analyticsService for smart links
     if (!isSmartLinkRoute) {
       analyticsService.trackPageView(location.pathname);
     }
