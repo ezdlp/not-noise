@@ -43,7 +43,7 @@ export function CookieConsent() {
         const savedSettings = JSON.parse(hasConsent);
         if (savedSettings.analytics || savedSettings.marketing) {
           // If we have consent, track the page view
-          analytics.trackPageView(location.pathname, isSmartLinkRoute);
+          analytics.trackPageView(location.pathname);
         }
       }
     };
@@ -104,7 +104,7 @@ export function CookieConsent() {
     localStorage.setItem("cookieConsent", JSON.stringify(settings));
     const isSmartLinkRoute = location.pathname.startsWith('/link/');
     if (settings.analytics || settings.marketing) {
-      analytics.trackPageView(location.pathname, isSmartLinkRoute);
+      analytics.trackPageView(location.pathname);
     }
   };
 
