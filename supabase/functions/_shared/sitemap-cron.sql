@@ -9,7 +9,7 @@ SELECT cron.schedule(
   $$
     SELECT
       net.http_post(
-        url:='https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-generator',
+        url:='https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/regenerate-sitemap',
         headers:=json_build_object(
           'Content-Type', 'application/json',
           'x-api-key', (SELECT value FROM app_config WHERE key = 'sitemap_webhook_key')

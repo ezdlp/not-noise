@@ -1,3 +1,0 @@
-
-# This marker file indicates that this function should be deployed without JWT verification.
-# It will be automatically detected by the deploy-functions.sh script.

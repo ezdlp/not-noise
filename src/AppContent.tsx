@@ -33,6 +33,7 @@ const AdminUserLinks = lazy(() => import("@/pages/admin/UserLinks"));
 const AdminUsers = lazy(() => import("@/pages/admin/Users"));
 const AdminContent = lazy(() => import("@/pages/admin/Content"));
 const AdminMediaLibrary = lazy(() => import("@/pages/admin/MediaLibrary"));
+const AdminImport = lazy(() => import("@/pages/admin/Import"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const UpdatePassword = lazy(() => import("@/pages/UpdatePassword"));
 
@@ -208,6 +209,11 @@ export default function AppContent() {
         <Route path="media" element={
           <Suspense fallback={<LoadingSpinner />}>
             <AdminMediaLibrary />
+          </Suspense>
+        } />
+        <Route path="import" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <AdminImport />
           </Suspense>
         } />
       </Route>

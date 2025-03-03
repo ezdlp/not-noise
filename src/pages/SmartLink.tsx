@@ -8,23 +8,15 @@ import { useEffect } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
-import { analytics } from "@/services/analytics";
 import { Loader2 } from "lucide-react";
 
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
 
-  useEffect(() => {
-    // Ensure we initialize analytics with Smart Link flag as true
-    // This fixes cases where analytics might have been initialized incorrectly
-    analytics.initialize(true);
-  }, []);
-
   const recordViewMutation = useMutation({
     mutationFn: async (smartLinkId: string) => {
       try {
-        // Track using the Smart Link property only
-        analytics.trackPageView(`/link/${slug}`, true);
+        await analyticsService.trackPageView(`/link/${slug}`);
         
         const locationInfo = await analyticsService.getLocationInfo();
         

@@ -1,5 +1,0 @@
-
-project_id = "owtufhdsuuyrgmxytclj"
-
-[functions.get-location]
-verify_jwt = false

@@ -10,6 +10,7 @@ import GenerateInitialSitemap from './GenerateInitialSitemap';
 import Users from './Users';
 import UserLinks from './UserLinks';
 import MediaLibrary from './MediaLibrary';
+import Import from './Import';
 
 export {
   Analytics,
@@ -22,5 +23,6 @@ export {
   SmartLinks,
   Users,
   UserLinks,
-  MediaLibrary
+  MediaLibrary,
+  Import
 };

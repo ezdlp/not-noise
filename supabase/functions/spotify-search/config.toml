@@ -1,4 +1,6 @@
 
-project_id = "owtufhdsuuyrgmxytclj"
-[functions.spotify-search]
-verify_jwt = false
+project_id = "your-project-id"
+
+[global.shared_storage]
+size = 20
+type = "kv"

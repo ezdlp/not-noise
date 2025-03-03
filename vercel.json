@@ -23,7 +23,7 @@
     },
     {
       "source": "/sitemap-:file.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap?file=:file"
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-file?file=:file"
     },
     {
       "source": "/(.*)",
@@ -79,9 +79,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "github": {
-    "enabled": true,
-    "silent": false
   }
 }

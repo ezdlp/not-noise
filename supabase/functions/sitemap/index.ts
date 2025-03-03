@@ -1,76 +1,133 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
-import { setupSupabaseClient, generateSitemapIndexXml, generateSitemapXml } from '../_shared/sitemap-utils.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
-console.log('Sitemap function loaded');
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
-    const params = new URLSearchParams(url.search);
-    const type = params.get('type') || 'index';
+    console.log('Serving sitemap index');
     
     // Initialize Supabase client
-    const supabase = setupSupabaseClient();
-    
-    if (type === 'index') {
-      // Get total URL count for sitemap index
-      const { count, error } = await supabase
-        .from('sitemap_urls')
-        .select('*', { count: 'exact', head: true });
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
 
-      if (error) {
-        throw new Error(`Error counting URLs: ${error.message}`);
-      }
+    // Fetch the sitemap index from cache
+    const { data, error } = await supabase
+      .from('sitemap_cache')
+      .select('content, etag')
+      .eq('key', 'sitemap-index.xml')
+      .maybeSingle();
 
-      const xml = generateSitemapIndexXml(count || 0);
+    if (error) {
+      throw new Error(`Error fetching sitemap index: ${error.message}`);
+    }
+
+    if (!data) {
+      console.log('Sitemap index not found, triggering regeneration');
       
-      return new Response(xml, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/xml',
-        },
+      // Log the issue
+      await supabase.from('sitemap_logs').insert({
+        status: 'warning',
+        message: 'Sitemap index not found, triggering regeneration',
+        source: 'sitemap'
       });
-    } else {
-      // Handle numbered sitemap files
-      const sitemapNumber = parseInt(type.replace('sitemap-', ''));
-      if (isNaN(sitemapNumber)) {
-        throw new Error('Invalid sitemap number');
-      }
-
-      const { data, error } = await supabase
-        .from('sitemap_urls')
-        .select('url, updated_at, changefreq, priority')
-        .range((sitemapNumber - 1) * 50000, sitemapNumber * 50000 - 1);
-
-      if (error) {
-        throw new Error(`Error fetching URLs: ${error.message}`);
-      }
-
-      const xml = generateSitemapXml(data || []);
       
-      return new Response(xml, {
+      // Try to trigger regeneration
+      try {
+        const response = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-sitemap`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to trigger regeneration: ${response.statusText}`);
+        }
+        
+        console.log('Regeneration triggered successfully');
+      } catch (regError) {
+        console.error('Error triggering regeneration:', regError);
+      }
+      
+      return new Response('Sitemap is being generated, please try again in a few moments', {
+        status: 503,
         headers: {
           ...corsHeaders,
-          'Content-Type': 'application/xml',
-        },
+          'Content-Type': 'text/plain',
+          'Retry-After': '30'
+        }
       });
     }
-  } catch (error) {
-    console.error('Sitemap error:', error);
-    
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+
+    // Log the successful request
+    await supabase.from('sitemap_logs').insert({
+      status: 'info',
+      message: 'Sitemap index served',
+      source: 'sitemap'
+    });
+
+    // Return the sitemap XML with proper headers
+    return new Response(data.content, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
+        'Content-Type': 'application/xml; charset=UTF-8',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'ETag': data.etag || '""'
+      }
     });
+
+  } catch (error) {
+    console.error('Error serving sitemap index:', error);
+    
+    // Try to log the error
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        { auth: { persistSession: false } }
+      );
+
+      await supabase.from('sitemap_logs').insert({
+        status: 'error',
+        message: 'Error serving sitemap index',
+        source: 'sitemap',
+        details: {
+          error: error.message,
+          stack: error.stack
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: 'Error serving sitemap index',
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 });
