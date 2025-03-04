@@ -1268,6 +1268,35 @@ export type Database = {
           },
         ]
       }
+      spotify_popularity_history: {
+        Row: {
+          id: string
+          measured_at: string
+          popularity_score: number
+          smart_link_id: string
+        }
+        Insert: {
+          id?: string
+          measured_at?: string
+          popularity_score: number
+          smart_link_id: string
+        }
+        Update: {
+          id?: string
+          measured_at?: string
+          popularity_score?: number
+          smart_link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spotify_popularity_history_smart_link_id_fkey"
+            columns: ["smart_link_id"]
+            isOneToOne: false
+            referencedRelation: "smart_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_charges: {
         Row: {
           amount: number | null
@@ -1758,6 +1787,17 @@ export type Database = {
           updated_at: string
           changefreq: string
           priority: number
+        }[]
+      }
+      get_spotify_popularity_history: {
+        Args: {
+          p_smart_link_id: string
+          p_start_date?: string
+          p_end_date?: string
+        }
+        Returns: {
+          measured_at: string
+          popularity_score: number
         }[]
       }
       has_role: {

@@ -25,6 +25,9 @@ import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
 import { useState, useMemo, useEffect } from "react";
 import { analyticsService } from "@/services/analyticsService";
+import { SpotifyPopularityStat } from "@/components/analytics/SpotifyPopularityStat";
+import { SpotifyPopularityChart } from "@/components/analytics/SpotifyPopularityChart";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -47,6 +50,8 @@ export default function SmartLinkAnalytics() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRangeValue>('28d');
+  const { isFeatureEnabled } = useFeatureAccess();
+  const hasSpotifyAccess = isFeatureEnabled('meta_pixel');
 
   const startDate = useMemo(() => {
     const range = timeRanges.find(r => r.value === timeRange);
@@ -203,6 +208,22 @@ export default function SmartLinkAnalytics() {
     enabled: !!id
   });
 
+  const { data: spotifyPopularity, isLoading: isLoadingPopularity } = useQuery({
+    queryKey: ["spotifyPopularity", id, startDate],
+    queryFn: async () => {
+      const response = await supabase.functions.invoke('get-spotify-popularity', {
+        body: { smartLinkId: id, startDate }
+      });
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to fetch Spotify popularity data');
+      }
+      
+      return response.data;
+    },
+    enabled: !!id && hasSpotifyAccess
+  });
+
   useEffect(() => {
     // Track analytics page view
     if (id) {
@@ -245,6 +266,9 @@ export default function SmartLinkAnalytics() {
 
   const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
+  // Check if there's a Spotify link
+  const hasSpotifyLink = smartLink.platform_links?.some(link => link.platform_id === 'spotify');
+
   const platformData = smartLink.platform_links?.map((pl) => ({
     name: pl.platform_name,
     clicks: pl.clicks?.filter(
@@ -270,7 +294,7 @@ export default function SmartLinkAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Total Views"
           value={totalViews}
@@ -291,6 +315,16 @@ export default function SmartLinkAnalytics() {
         />
       </div>
 
+      {hasSpotifyAccess && hasSpotifyLink && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SpotifyPopularityStat
+            popularityScore={spotifyPopularity?.latestScore}
+            trendValue={spotifyPopularity?.trendValue || 0}
+            isLoading={isLoadingPopularity}
+          />
+        </div>
+      )}
+
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Daily Performance</h2>
@@ -298,6 +332,15 @@ export default function SmartLinkAnalytics() {
         </div>
         {id && <DailyStatsChart smartLinkId={id} startDate={startDate} />}
       </Card>
+
+      {hasSpotifyAccess && hasSpotifyLink && (
+        <SpotifyPopularityChart
+          data={spotifyPopularity?.history || []}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          isLoading={isLoadingPopularity}
+        />
+      )}
 
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">

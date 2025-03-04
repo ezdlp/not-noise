@@ -1,5 +1,5 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
 
-[sitemap]
-verify_jwt = false
+[global.env_variables]
+# Add your environment variables here
