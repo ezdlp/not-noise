@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { StatCard } from '@/components/analytics/StatCard';
-import { Music, Info } from 'lucide-react';
+import { BarChart, Info } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -45,7 +45,7 @@ export function SpotifyPopularityStat({
       type="spotify"
       trend={trendValue}
       isLoading={isLoading}
-      customIcon={<Music size={16} className="text-primary" />}
+      customIcon={<BarChart size={16} className="text-primary" />}
     />
   );
 }
