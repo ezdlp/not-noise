@@ -204,16 +204,15 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Extract the filename from the URL
     const url = new URL(req.url);
-    const path = url.pathname;
+    const path = url.pathname.split('/').filter(Boolean);
     
-    // Extract the filename from the path
-    const pathParts = path.split('/').filter(Boolean);
-    let requestedFile = pathParts[pathParts.length - 1];
-    
-    // If no specific file is requested, serve the sitemap index
-    if (!requestedFile || requestedFile === 'sitemap' || requestedFile === 'sitemap.xml') {
-      requestedFile = 'sitemap-index.xml';
+    // If a specific file is requested (e.g., /simplified-sitemap/sitemap-posts.xml)
+    // use that, otherwise default to sitemap-index.xml
+    let requestedFile = 'sitemap-index.xml';
+    if (path.length > 1) {
+      requestedFile = path[path.length - 1];
     }
     
     // If the file doesn't have .xml extension, add it
@@ -228,12 +227,15 @@ Deno.serve(async (req) => {
     
     if (regenerate) {
       console.log('Regenerating all sitemaps...');
-      await generateSitemaps(supabase);
+      const sitemapFiles = await generateSitemaps(supabase);
       console.log('Sitemap regeneration complete');
+      
+      // After regeneration, always serve the requested file or default to sitemap index
+      // This ensures something is returned even after regeneration
     }
     
     // Fetch the requested sitemap from cache
-    const { data, error } = await supabase
+    const { data: initialData, error } = await supabase
       .from('sitemap_cache')
       .select('content, etag, updated_at')
       .eq('key', requestedFile)
@@ -245,8 +247,11 @@ Deno.serve(async (req) => {
     
     // If the sitemap doesn't exist or is older than 24 hours, regenerate it
     const now = new Date();
-    const needsRegeneration = !data || 
-      (data.updated_at && (now.getTime() - new Date(data.updated_at).getTime() > 24 * 60 * 60 * 1000));
+    const needsRegeneration = !initialData || 
+      (initialData.updated_at && (now.getTime() - new Date(initialData.updated_at).getTime() > 24 * 60 * 60 * 1000));
+    
+    // Variable to hold our final data
+    let sitemapData = initialData;
     
     if (needsRegeneration && !regenerate) {
       console.log('Sitemap needs regeneration, generating now...');
@@ -263,39 +268,45 @@ Deno.serve(async (req) => {
         throw new Error(`Error fetching regenerated sitemap: ${newError.message}`);
       }
       
-      if (!newData) {
-        throw new Error(`Sitemap ${requestedFile} not found after regeneration`);
+      // Use the newly generated data if available
+      if (newData) {
+        sitemapData = newData;
+      }
+    }
+    
+    // If the sitemap doesn't exist even after regeneration, return a 404
+    if (!sitemapData) {
+      console.error(`Sitemap ${requestedFile} not found`);
+      
+      // If the requested file is not the index, try to serve the index instead
+      if (requestedFile !== 'sitemap-index.xml') {
+        console.log('Attempting to serve sitemap index instead');
+        const { data: indexData } = await supabase
+          .from('sitemap_cache')
+          .select('content, etag')
+          .eq('key', 'sitemap-index.xml')
+          .maybeSingle();
+          
+        if (indexData) {
+          return new Response(indexData.content, {
+            headers: {
+              'Content-Type': 'application/xml',
+              'Cache-Control': 'public, max-age=3600',
+              'ETag': indexData.etag || '',
+            },
+          });
+        }
       }
       
-      // Return the newly generated sitemap
-      return new Response(newData.content, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/xml; charset=UTF-8',
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-          'ETag': newData.etag || '""'
-        }
-      });
+      return new Response(`Sitemap ${requestedFile} not found`, { status: 404 });
     }
     
-    // If the sitemap still doesn't exist, return a 404
-    if (!data) {
-      return new Response(`Sitemap ${requestedFile} not found`, {
-        status: 404,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/plain'
-        }
-      });
-    }
-    
-    // Return the sitemap
-    return new Response(data.content, {
+    // Return the sitemap with appropriate headers
+    return new Response(sitemapData.content, {
       headers: {
-        ...corsHeaders,
         'Content-Type': 'application/xml; charset=UTF-8',
         'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-        'ETag': data.etag || '""'
+        'ETag': sitemapData.etag || '""'
       }
     });
     
