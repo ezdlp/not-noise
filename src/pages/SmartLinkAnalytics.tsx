@@ -239,8 +239,8 @@ export default function SmartLinkAnalytics() {
             <Skeleton className="h-10 w-10" />
             <Skeleton className="h-8 w-48" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-32 animate-pulse" />
             ))}
           </div>
@@ -294,7 +294,8 @@ export default function SmartLinkAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Main metrics row - optimized to always fit in a single row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Views"
           value={totalViews}
@@ -313,18 +314,16 @@ export default function SmartLinkAnalytics() {
           type="ctr"
           trend={weeklyStats?.ctrTrend}
         />
-      </div>
-
-      {hasSpotifyAccess && hasSpotifyLink && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {hasSpotifyAccess && hasSpotifyLink && (
           <SpotifyPopularityStat
             popularityScore={spotifyPopularity?.latestScore}
             trendValue={spotifyPopularity?.trendValue || 0}
             isLoading={isLoadingPopularity}
           />
-        </div>
-      )}
+        )}
+      </div>
 
+      {/* Daily Performance Chart */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Daily Performance</h2>
@@ -333,15 +332,7 @@ export default function SmartLinkAnalytics() {
         {id && <DailyStatsChart smartLinkId={id} startDate={startDate} />}
       </Card>
 
-      {hasSpotifyAccess && hasSpotifyLink && (
-        <SpotifyPopularityChart
-          data={spotifyPopularity?.history || []}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-          isLoading={isLoadingPopularity}
-        />
-      )}
-
+      {/* Platform Performance Chart - Moved before Spotify Chart */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Platform Performance</h2>
@@ -401,6 +392,17 @@ export default function SmartLinkAnalytics() {
         </div>
       </Card>
 
+      {/* Spotify Popularity Chart - Now after Platform Performance */}
+      {hasSpotifyAccess && hasSpotifyLink && (
+        <SpotifyPopularityChart
+          data={spotifyPopularity?.history || []}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          isLoading={isLoadingPopularity}
+        />
+      )}
+
+      {/* Geographic Breakdown */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Geographic Breakdown</h2>
@@ -409,6 +411,7 @@ export default function SmartLinkAnalytics() {
         <GeoStatsTable data={geoStats || []} />
       </Card>
 
+      {/* Recent Clicks */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Recent Clicks</h2>

@@ -37,7 +37,7 @@ export function StatCard({
   const Icon = iconMap[type];
   
   return (
-    <Card className="p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md bg-white border border-neutral-border">
+    <Card className="p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md bg-white border border-neutral-border h-full flex flex-col justify-between">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-[#6B7280] font-dm-sans">
           {title}
@@ -70,7 +70,7 @@ export function StatCard({
                 {Math.abs(trend)}{type === 'spotify' ? '' : '%'}
               </span>
             </div>
-            <TooltipProvider>
+            <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle size={14} className="text-[#6B7280] hover:text-primary transition-colors" />
