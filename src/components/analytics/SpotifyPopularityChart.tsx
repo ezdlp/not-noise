@@ -64,9 +64,14 @@ export function SpotifyPopularityChart({
 
   return (
     <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-[#111827] font-poppins">Spotify Popularity</h2>
-        <TimeRangeSelect value={timeRange} onChange={onTimeRangeChange} />
+      <div className="flex flex-col mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Spotify Popularity</h2>
+          <TimeRangeSelect value={timeRange} onChange={onTimeRangeChange} />
+        </div>
+        <p className="text-xs text-[#6B7280] font-dm-sans leading-tight">
+          The Spotify Popularity Score (0-100) reflects how well your song is performing relative to others on the platform. It updates daily and is influenced by recent streams, saves, playlist adds, and listener engagement—higher scores increase your chances of being featured in algorithmic playlists like Discover Weekly and Release Radar.
+        </p>
       </div>
       {isLoading ? (
         <div className="h-[400px] flex justify-center items-center">
