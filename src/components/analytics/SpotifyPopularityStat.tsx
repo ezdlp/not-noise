@@ -46,6 +46,7 @@ export function SpotifyPopularityStat({
       trend={trendValue}
       isLoading={isLoading}
       customIcon={<Music size={16} className="text-primary" />}
+      description="The Spotify Popularity Score (0-100) reflects how well your song is performing relative to others on the platform. It updates daily and is influenced by recent streams, saves, playlist adds, and listener engagement—higher scores increase your chances of being featured in algorithmic playlists like Discover Weekly and Release Radar."
     />
   );
 }

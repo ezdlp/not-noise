@@ -17,6 +17,7 @@ interface StatCardProps {
   trend?: number;
   isLoading?: boolean;
   customIcon?: React.ReactNode;
+  description?: string;
 }
 
 const iconMap = {
@@ -32,7 +33,8 @@ export function StatCard({
   type, 
   trend, 
   isLoading = false,
-  customIcon 
+  customIcon,
+  description
 }: StatCardProps) {
   const Icon = iconMap[type];
   
@@ -49,6 +51,12 @@ export function StatCard({
         <Skeleton className="h-8 w-20 mb-2" />
       ) : (
         <p className="text-2xl font-semibold text-[#111827] font-poppins mb-2">{value}</p>
+      )}
+      
+      {description && (
+        <p className="text-xs text-[#6B7280] font-dm-sans mb-2 leading-tight">
+          {description}
+        </p>
       )}
       
       {trend !== undefined && (
