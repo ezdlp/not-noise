@@ -7,6 +7,24 @@ verify_jwt = true
 [functions.sitemap]
 verify_jwt = false
 
+[functions.sitemap-file]
+verify_jwt = false
+
+[functions.sitemap-generator]
+verify_jwt = false
+
+[functions.sitemap-cache]
+verify_jwt = false
+
+[functions.sitemap-health]
+verify_jwt = false
+
+[functions.regenerate-sitemap]
+verify_jwt = false
+
+[functions.simplified-sitemap]
+verify_jwt = false
+
 # Stripe webhook function - MUST REMAIN DISABLED FOR WEBHOOK ACCESS
 [functions.stripe-webhook]
 verify_jwt = false
