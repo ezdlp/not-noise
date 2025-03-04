@@ -1,115 +1,78 @@
-# Sitemap Setup and Migration Plan
+# Sitemap Setup
 
-## Current Situation
+This document outlines the setup and configuration of the sitemap generation system for the website.
 
-The current sitemap implementation consists of 5 separate edge functions:
+## Overview
 
-1. `sitemap` - Serves the sitemap index
-2. `sitemap-file` - Serves individual sitemap files
-3. `sitemap-generator` - Generates sitemap files
-4. `sitemap-cache` - Manages the sitemap cache
-5. `sitemap-health` - Monitors sitemap health
+The sitemap system uses a Supabase Edge Function (`simplified-sitemap`) to generate and serve XML sitemaps for the website. The sitemaps are cached in a Supabase database table to improve performance.
 
-This complex setup has led to issues with JWT verification being re-enabled after deployments, making the sitemap inaccessible to search engines.
+## Components
 
-## New Simplified Solution
+1. **Supabase Edge Function**: `simplified-sitemap` - Handles both generation and serving of sitemaps
+2. **Database Tables**:
+   - `sitemap_cache` - Stores the generated sitemap XML content
+   - `sitemap_logs` - Logs sitemap generation events
 
-A new, simplified sitemap solution has been implemented:
+## URLs
 
-1. `simplified-sitemap` - A single edge function that handles all sitemap functionality:
-   - Serving the sitemap index
-   - Serving individual sitemap files
-   - Generating sitemaps when needed
-   - Automatic regeneration of outdated sitemaps
+The sitemap is accessible at the following URLs:
 
-## Migration Plan
+- Main sitemap index: `https://soundraiser.io/sitemap.xml`
+- Individual sitemaps:
+  - `https://soundraiser.io/sitemap-static.xml`
+  - `https://soundraiser.io/sitemap-blog.xml`
+  - `https://soundraiser.io/sitemap-links-1.xml` (and potentially more numbered link sitemaps)
 
-### Step 1: Deploy the New Solution
+## Regeneration
 
-The new `simplified-sitemap` function has been deployed alongside the existing functions. It uses the same database table (`sitemap_cache`) for storage.
+The sitemap automatically regenerates when:
+1. It doesn't exist in the cache
+2. It's older than 24 hours
 
-### Step 2: Update Your Website Configuration
-
-Update your website to use the new sitemap URL:
-
-1. In your `robots.txt` file, update the sitemap URL to:
-   ```
-   Sitemap: https://soundraiser.io/api/sitemap
-   ```
-
-2. In Google Search Console, add the new sitemap URL:
-   - Go to Google Search Console
-   - Select your property
-   - Navigate to Sitemaps
-   - Remove the old sitemap URL
-   - Add the new sitemap URL: `https://soundraiser.io/api/sitemap`
-
-### Step 3: Configure Vercel Rewrites
-
-Add the following rewrites to your Vercel configuration (in `vercel.json` or your Next.js config):
-
-```json
-{
-  "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
-    },
-    {
-      "source": "/sitemap-:file.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
-    },
-    {
-      "source": "/api/sitemap",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
-    },
-    {
-      "source": "/api/sitemap/:file",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
-    }
-  ]
-}
+To manually force regeneration, access:
+```
+https://soundraiser.io/api/sitemap?regenerate=true
 ```
 
-### Step 4: Verify the New Sitemap
+## Vercel Configuration
 
-1. Visit `https://soundraiser.io/sitemap.xml` to ensure the sitemap index is accessible
-2. Check that individual sitemap files are accessible
-3. Verify in Google Search Console that the sitemap is being properly crawled
+Vercel rewrites are configured to route sitemap requests to the Supabase function. See [vercel-rewrites.md](./vercel-rewrites.md) for the configuration details.
 
-### Step 5: Remove Old Functions (Optional)
+## Deployment
 
-Once you've confirmed the new solution is working correctly, you can optionally remove the old sitemap functions:
-
-1. `sitemap`
-2. `sitemap-file`
-3. `sitemap-generator`
-4. `sitemap-cache`
-5. `sitemap-health`
-6. `regenerate-sitemap`
-
-## Benefits of the New Solution
-
-1. **Simplicity**: A single function handles all sitemap functionality
-2. **Reliability**: Automatic regeneration of outdated sitemaps
-3. **Accessibility**: JWT verification is properly disabled and maintained
-4. **Performance**: Optimized for better performance with caching
-5. **Maintainability**: Easier to maintain and update
+The function is deployed using GitHub Actions. The workflow file is located at `.github/workflows/deploy-sitemap-functions.yml`.
 
 ## Troubleshooting
 
-If you encounter issues with the sitemap:
+If the sitemap is not working correctly:
 
-1. **Sitemap not accessible**: Check that JWT verification is disabled for the `simplified-sitemap` function in the Supabase dashboard
-2. **Outdated sitemap**: Add `?regenerate=true` to the sitemap URL to force regeneration
-3. **Missing URLs**: Check the database tables that provide URLs to the sitemap generator
+1. Check if the function is accessible directly:
+   ```
+   https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap
+   ```
 
-## GitHub Actions Workflow
+2. Check if regeneration works:
+   ```
+   https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap?regenerate=true
+   ```
 
-A GitHub Actions workflow has been set up to ensure that JWT verification remains disabled for all sitemap functions after deployments. This workflow:
+3. Verify the database tables exist and contain data:
+   - `sitemap_cache`
+   - `sitemap_logs`
 
-1. Updates the main `config.toml` file
-2. Updates function-specific `config.toml` files
-3. Deploys all sitemap functions with the `--no-verify-jwt` flag
+4. Check the Vercel rewrites configuration
 
-This ensures that the sitemap remains accessible to search engines even after redeployments. 
+## Migration from Old System
+
+The new simplified sitemap system replaces the previous multi-function approach. After confirming the new system works correctly, the old function files can be removed:
+
+- `supabase/functions/sitemap/`
+- `supabase/functions/sitemap-file/`
+- `supabase/functions/sitemap-generator/`
+- `supabase/functions/sitemap-cache/`
+- `supabase/functions/sitemap-health/`
+- `supabase/functions/regenerate-sitemap/`
+
+Also update:
+- `supabase/config.toml` to remove old function configurations
+- `.github/workflows/deploy-sitemap-functions.yml` to remove old function deployments 
