@@ -1,4 +1,3 @@
-
 project_id = "owtufhdsuuyrgmxytclj"
 
 [functions.generate-social-assets]
@@ -6,5 +5,9 @@ verify_jwt = true
 
 # Sitemap functions configuration - MUST REMAIN DISABLED FOR PUBLIC ACCESS
 [functions.sitemap]
+verify_jwt = false
+
+# Stripe webhook function - MUST REMAIN DISABLED FOR WEBHOOK ACCESS
+[functions.stripe-webhook]
 verify_jwt = false
 
