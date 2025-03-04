@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Starting Spotify popularity tracking job...');
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -31,6 +33,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing Spotify API credentials');
     }
     
+    console.log('Fetching Spotify access token...');
+    
     // Get access token from Spotify
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -44,11 +48,14 @@ Deno.serve(async (req) => {
     });
     
     if (!tokenResponse.ok) {
-      throw new Error('Failed to obtain Spotify access token');
+      const errorText = await tokenResponse.text();
+      throw new Error(`Failed to obtain Spotify access token: ${tokenResponse.status} - ${errorText}`);
     }
     
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    
+    console.log('Successfully obtained Spotify access token');
     
     // Get pro users' smart links with Spotify tracks
     const { data: smartLinks, error: linksError } = await supabase
@@ -75,22 +82,31 @@ Deno.serve(async (req) => {
     
     // Process each smart link
     const updates = [];
+    const errors = [];
     
     for (const link of (smartLinks || [])) {
-      // Find the Spotify platform link
-      const spotifyLink = link.platform_links.find(pl => pl.platform_id === 'spotify');
-      
-      if (!spotifyLink) continue;
-      
-      // Extract Spotify track ID from URL
-      const spotifyUrl = spotifyLink.url;
-      const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
-      
-      if (!trackIdMatch || !trackIdMatch[1]) continue;
-      
-      const trackId = trackIdMatch[1];
-      
       try {
+        // Find the Spotify platform link
+        const spotifyLink = link.platform_links.find(pl => pl.platform_id === 'spotify');
+        
+        if (!spotifyLink) {
+          console.log(`Link ${link.id} does not have a Spotify URL, skipping`);
+          continue;
+        }
+        
+        // Extract Spotify track ID from URL
+        const spotifyUrl = spotifyLink.url;
+        const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
+        
+        if (!trackIdMatch || !trackIdMatch[1]) {
+          console.log(`Could not extract track ID from URL: ${spotifyUrl}`);
+          continue;
+        }
+        
+        const trackId = trackIdMatch[1];
+        
+        console.log(`Processing track ${trackId} for link ${link.id}`);
+        
         // Fetch track details from Spotify API
         const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
           headers: {
@@ -99,12 +115,20 @@ Deno.serve(async (req) => {
         });
         
         if (!response.ok) {
-          console.error(`Error fetching track ${trackId}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error(`Error fetching track ${trackId}: ${response.status} - ${errorText}`);
+          errors.push({
+            linkId: link.id,
+            trackId,
+            error: `${response.status} - ${errorText}`
+          });
           continue;
         }
         
         const track = await response.json();
         const popularityScore = track.popularity;
+        
+        console.log(`Track ${trackId} has popularity score: ${popularityScore}`);
         
         // Store popularity score in the database
         const { error: insertError } = await supabase
@@ -116,14 +140,25 @@ Deno.serve(async (req) => {
           
         if (insertError) {
           console.error(`Error storing popularity for link ${link.id}: ${insertError.message}`);
+          errors.push({
+            linkId: link.id,
+            trackId,
+            error: insertError.message
+          });
         } else {
           updates.push({
             linkId: link.id,
+            trackId,
             score: popularityScore
           });
+          console.log(`Successfully stored popularity score for link ${link.id}`);
         }
       } catch (err) {
         console.error(`Error processing track for link ${link.id}: ${err.message}`);
+        errors.push({
+          linkId: link.id,
+          error: err.message
+        });
       }
     }
     
@@ -131,7 +166,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: `Updated popularity scores for ${updates.length} tracks`,
-        updates 
+        updates,
+        errors: errors.length > 0 ? errors : undefined
       }),
       { 
         headers: { 
