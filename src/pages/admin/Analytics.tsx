@@ -88,8 +88,9 @@ function Analytics() {
   useEffect(() => {
     const range = timeRanges.find((r) => r.value === timeRange);
     if (range) {
-      setStartDate(range.getStartDate());
-      setEndDate(range.getEndDate());
+      // Calculate start date based on the days property
+      setStartDate(subDays(new Date(), range.days));
+      setEndDate(new Date());
     }
   }, [timeRange]);
 
