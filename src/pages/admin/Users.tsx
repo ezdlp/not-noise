@@ -104,7 +104,7 @@ export default function UsersPage() {
             id,
             role
           ),
-          subscriptions!inner (
+          subscriptions (
             tier,
             is_lifetime,
             is_early_adopter,
@@ -143,8 +143,16 @@ export default function UsersPage() {
         throw fetchError;
       }
 
+      // Ensure all users have the expected structure for nested relationships
+      const processedData = data?.map(user => ({
+        ...user,
+        user_roles: user.user_roles || [],
+        subscriptions: user.subscriptions || [],
+        smart_links: user.smart_links || []
+      })) || [];
+
       setFilteredCount(count || 0);
-      return data as Profile[];
+      return processedData as Profile[];
     }
   });
 
@@ -407,14 +415,14 @@ export default function UsersPage() {
                   <TableCell>{user.country}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={user.subscriptions?.[0]?.tier === 'pro' ? 'default' : 'secondary'}
+                      variant={user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'default' : 'secondary'}
                       className={`${
-                        user.subscriptions?.[0]?.tier === 'pro' 
+                        user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' 
                           ? 'bg-primary/10 text-primary hover:bg-primary/20' 
                           : 'bg-muted text-muted-foreground'
                       }`}
                     >
-                      {user.subscriptions?.[0]?.tier === 'pro' ? 'Pro' : 'Free'}
+                      {user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'Pro' : 'Free'}
                     </Badge>
                   </TableCell>
                   <TableCell>
