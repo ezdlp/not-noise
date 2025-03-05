@@ -1,18 +1,16 @@
-name: Deploy Sitemap Functions
+name: Deploy Sitemap Function
 
 on:
   push:
     branches:
       - main  # or your default branch name
     paths:
-      - 'supabase/functions/sitemap/**'
-      - 'supabase/functions/sitemap-*/**'
       - 'supabase/functions/simplified-sitemap/**'
       - 'supabase/config.toml'
       - '.github/workflows/deploy-sitemap-functions.yml'
 
 jobs:
-  deploy-sitemap-functions:
+  deploy-sitemap-function:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -31,71 +29,33 @@ jobs:
       - name: Link to Supabase project
         run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
 
-      - name: Update main config.toml for sitemap functions
+      - name: Update main config.toml for sitemap function
         run: |
-          # Ensure the main config.toml has the sitemap functions with verify_jwt = false
+          # Ensure the main config.toml has the simplified-sitemap function with verify_jwt = false
           if [ -f "supabase/config.toml" ]; then
             # Check if simplified-sitemap config exists in the file
             if ! grep -q "\[functions.simplified-sitemap\]" "supabase/config.toml"; then
               # Add the configuration if it doesn't exist
               echo '' >> supabase/config.toml
+              echo '# Sitemap function configuration - MUST REMAIN DISABLED FOR PUBLIC ACCESS' >> supabase/config.toml
               echo '[functions.simplified-sitemap]' >> supabase/config.toml
-              echo 'verify_jwt = false' >> supabase/config.toml
-            fi
-            
-            # Check if sitemap config exists in the file
-            if ! grep -q "\[functions.sitemap\]" "supabase/config.toml"; then
-              # Add the configuration if it doesn't exist
-              echo '' >> supabase/config.toml
-              echo '# Sitemap functions configuration - MUST REMAIN DISABLED FOR PUBLIC ACCESS' >> supabase/config.toml
-              echo '[functions.sitemap]' >> supabase/config.toml
-              echo 'verify_jwt = false' >> supabase/config.toml
-            fi
-            
-            # Check if sitemap-file config exists in the file
-            if ! grep -q "\[functions.sitemap-file\]" "supabase/config.toml"; then
-              # Add the configuration if it doesn't exist
-              echo '' >> supabase/config.toml
-              echo '[functions.sitemap-file]' >> supabase/config.toml
               echo 'verify_jwt = false' >> supabase/config.toml
             fi
           fi
 
-      - name: Update function-specific config.toml files
+      - name: Update function-specific config.toml file
         run: |
-          # Ensure each sitemap function has its own config.toml with verify_jwt = false
-          for func in sitemap sitemap-file sitemap-generator sitemap-cache sitemap-health regenerate-sitemap simplified-sitemap; do
-            if [ -d "supabase/functions/$func" ]; then
-              mkdir -p "supabase/functions/$func"
-              echo '# IMPORTANT: This is a public function that must remain accessible without authentication' > "supabase/functions/$func/config.toml"
-              echo 'project_id = "${{ secrets.SUPABASE_PROJECT_ID }}"' >> "supabase/functions/$func/config.toml"
-              echo 'verify_jwt = false' >> "supabase/functions/$func/config.toml"
-              echo '' >> "supabase/functions/$func/config.toml"
-            fi
-          done
+          # Ensure the simplified-sitemap function has its own config.toml with verify_jwt = false
+          if [ -d "supabase/functions/simplified-sitemap" ]; then
+            mkdir -p "supabase/functions/simplified-sitemap"
+            echo '# IMPORTANT: This is a public function that must remain accessible without authentication' > "supabase/functions/simplified-sitemap/config.toml"
+            echo 'project_id = "${{ secrets.SUPABASE_PROJECT_ID }}"' >> "supabase/functions/simplified-sitemap/config.toml"
+            echo 'verify_jwt = false' >> "supabase/functions/simplified-sitemap/config.toml"
+            echo '' >> "supabase/functions/simplified-sitemap/config.toml"
+          fi
 
       - name: Deploy simplified sitemap function with JWT verification disabled
         run: |
           if [ -d "supabase/functions/simplified-sitemap" ]; then
             supabase functions deploy simplified-sitemap --no-verify-jwt
-          fi
-
-      - name: Deploy sitemap function with JWT verification disabled
-        run: |
-          if [ -d "supabase/functions/sitemap" ]; then
-            supabase functions deploy sitemap --no-verify-jwt
-          fi
-
-      - name: Deploy sitemap-file function with JWT verification disabled
-        run: |
-          if [ -d "supabase/functions/sitemap-file" ]; then
-            supabase functions deploy sitemap-file --no-verify-jwt
-          fi
-
-      - name: Deploy other sitemap functions
-        run: |
-          for func in sitemap-generator sitemap-cache sitemap-health regenerate-sitemap; do
-            if [ -d "supabase/functions/$func" ]; then
-              supabase functions deploy $func --no-verify-jwt
-            fi
-          done 
+          fi 
