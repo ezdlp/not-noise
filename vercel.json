@@ -1,4 +1,3 @@
-
 {
   "images": {
     "sizes": [304, 760],
@@ -19,11 +18,19 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap"
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
     },
     {
       "source": "/sitemap-:file.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/sitemap-file?file=:file"
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/sitemap-:file.xml"
+    },
+    {
+      "source": "/api/sitemap",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
+    },
+    {
+      "source": "/api/sitemap/:file",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
     },
     {
       "source": "/(.*)",
