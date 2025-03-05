@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, FormEvent, useEffect } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Select,
@@ -41,47 +41,6 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { genres } from "@/lib/genres";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Error boundary component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("Error in Users component:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-8 text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
-          <p className="mb-4">We're sorry, but there was an error loading the users data.</p>
-          <pre className="bg-gray-100 p-4 rounded text-left overflow-auto max-w-full">
-            {this.state.error && this.state.error.toString()}
-          </pre>
-          <Button 
-            onClick={() => {
-              this.setState({ hasError: false });
-              window.location.reload();
-            }}
-            className="mt-4"
-          >
-            Try again
-          </Button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 export default function UsersPage() {
   const navigate = useNavigate();
@@ -117,7 +76,7 @@ export default function UsersPage() {
 
         const uniqueCountries = Array.from(new Set(data.map(p => p.country)))
           .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b));
+          .sort((a, b) => String(a).localeCompare(String(b)));
 
         return uniqueCountries;
       } catch (err) {
@@ -313,357 +272,355 @@ export default function UsersPage() {
     (searchQuery ? 1 : 0);
 
   return (
-    <ErrorBoundary>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-heading font-bold tracking-tight">
-              Users
-            </h1>
-            <p className="text-muted-foreground font-sans">
-              Manage your application users
-            </p>
-          </div>
-          <Button className="bg-primary hover:bg-primary-medium transition-colors">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New User
-          </Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-heading font-bold tracking-tight">
+            Users
+          </h1>
+          <p className="text-muted-foreground font-sans">
+            Manage your application users
+          </p>
         </div>
+        <Button className="bg-primary hover:bg-primary-medium transition-colors">
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add New User
+        </Button>
+      </div>
 
-        <Card className="p-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <motion.span 
-              key={filteredCount}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-semibold"
+      <Card className="p-6">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          <motion.span 
+            key={filteredCount}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-2xl font-semibold"
+          >
+            {filteredCount}
+          </motion.span>
+          <span className="text-muted-foreground text-base font-normal">
+            {activeFiltersCount > 0 ? 'filtered' : 'total'} users
+          </span>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="ml-2 h-8 px-2 text-muted-foreground hover:text-foreground"
             >
-              {filteredCount}
-            </motion.span>
-            <span className="text-muted-foreground text-base font-normal">
-              {activeFiltersCount > 0 ? 'filtered' : 'total'} users
-            </span>
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="ml-2 h-8 px-2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear filters
-              </Button>
-            )}
-          </div>
-        </Card>
+              <X className="h-4 w-4 mr-1" />
+              Clear filters
+            </Button>
+          )}
+        </div>
+      </Card>
 
-        <div className="flex flex-wrap gap-4 items-center mb-4">
-          <form onSubmit={handleSearch} className="relative flex-1 min-w-[250px]">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              value={searchValue || ''}
-              onChange={(e) => setSearchValue(e.target.value || '')}
-              className="pl-8 bg-background border-input focus:border-primary-medium transition-colors"
-            />
-          </form>
+      <div className="flex flex-wrap gap-4 items-center mb-4">
+        <form onSubmit={handleSearch} className="relative flex-1 min-w-[250px]">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or email..."
+            value={searchValue || ''}
+            onChange={(e) => setSearchValue(e.target.value || '')}
+            className="pl-8 bg-background border-input focus:border-primary-medium transition-colors"
+          />
+        </form>
 
-          <Select
-            value={filters?.subscription || 'all'}
-            onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value }))}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Subscription tier" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All tiers</SelectItem>
-              <SelectItem value="pro">Pro users</SelectItem>
-              <SelectItem value="free">Free users</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select
+          value={filters?.subscription || 'all'}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, subscription: value }))}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Subscription tier" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tiers</SelectItem>
+            <SelectItem value="pro">Pro users</SelectItem>
+            <SelectItem value="free">Free users</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Select
-            value={filters?.genre || 'all'}
-            onValueChange={(value) => setFilters(prev => ({ ...prev, genre: value }))}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select genre" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All genres</SelectItem>
-              {genres && genres.map(genre => (
-                <SelectItem key={genre} value={genre}>{genre}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Select
+          value={filters?.genre || 'all'}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, genre: value }))}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select genre" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All genres</SelectItem>
+            {genres && genres.map(genre => (
+              <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Popover open={countryOpen} onOpenChange={setCountryOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={countryOpen}
-                className="w-[180px] justify-between"
-              >
-                {filters?.country === 'all'
-                  ? "Select country"
-                  : filters?.country}
-                <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[180px] p-0">
-              <Command>
-                <CommandInput placeholder="Search country..." />
-                <CommandEmpty>No country found.</CommandEmpty>
-                <CommandGroup>
+        <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={countryOpen}
+              className="w-[180px] justify-between"
+            >
+              {filters?.country === 'all'
+                ? "Select country"
+                : filters?.country}
+              <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[180px] p-0">
+            <Command>
+              <CommandInput placeholder="Search country..." />
+              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    setFilters(prev => ({ ...prev, country: 'all' }));
+                    setCountryOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      filters?.country === 'all' ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  All countries
+                </CommandItem>
+                {!isLoadingCountries && countries && countries.map((country) => (
                   <CommandItem
+                    key={country}
                     onSelect={() => {
-                      setFilters(prev => ({ ...prev, country: 'all' }));
+                      setFilters(prev => ({ ...prev, country }));
                       setCountryOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        filters?.country === 'all' ? "opacity-100" : "opacity-0"
+                        filters?.country === country ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    All countries
+                    {country}
                   </CommandItem>
-                  {!isLoadingCountries && countries && countries.map((country) => (
-                    <CommandItem
-                      key={country}
-                      onSelect={() => {
-                        setFilters(prev => ({ ...prev, country }));
-                        setCountryOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          filters?.country === country ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {country}
-                    </CommandItem>
-                  ))}
-                  {isLoadingCountries && (
-                    <div className="py-6 text-center text-sm text-muted-foreground">
-                      Loading countries...
-                    </div>
-                  )}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
-
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setCurrentPage(0);
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select page size" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="20">20 per page</SelectItem>
-              <SelectItem value="50">50 per page</SelectItem>
-              <SelectItem value="100">100 per page</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-muted/50">
-                <TableHead className="font-heading">Name</TableHead>
-                <TableHead className="font-heading">Email</TableHead>
-                <TableHead className="font-heading">Artist Name</TableHead>
-                <TableHead className="font-heading">Genre</TableHead>
-                <TableHead className="font-heading">Country</TableHead>
-                <TableHead className="font-heading">Plan</TableHead>
-                <TableHead className="font-heading">Smart Links</TableHead>
-                <TableHead 
-                  className="font-heading cursor-pointer group"
-                  onClick={toggleSort}
-                >
-                  <div className="flex items-center gap-2">
-                    Created At
-                    <ArrowUpDown className={`h-4 w-4 transition-colors ${sortDirection === 'desc' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                ))}
+                {isLoadingCountries && (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    Loading countries...
                   </div>
-                </TableHead>
-                <TableHead className="font-heading">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <AnimatePresence mode="wait">
-                {users && users.length > 0 ? users.map((user) => (
-                  <motion.tr
-                    key={user.id}
-                    className="transition-colors hover:bg-muted/50"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                  >
-                    <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
-                    <TableCell>{user.email || 'N/A'}</TableCell>
-                    <TableCell>{user.artist_name || 'N/A'}</TableCell>
-                    <TableCell>{user.music_genre || 'N/A'}</TableCell>
-                    <TableCell>{user.country || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'default' : 'secondary'}
-                        className={`${
-                          user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' 
-                            ? 'bg-primary/10 text-primary hover:bg-primary/20' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'Pro' : 'Free'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="link" 
-                        onClick={() => navigate(`/control-room/smart-links?userId=${user.id}`)}
-                        className="text-primary hover:text-primary-medium transition-colors"
-                      >
-                        {user.smart_links && user.smart_links.length || 0} links
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
-                    </TableCell>
-                    <TableCell className="space-x-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="hover:bg-primary/10 transition-colors"
-                            onClick={() => setSelectedUser(user)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-card">
-                          <DialogHeader>
-                            <DialogTitle className="font-heading">Edit User</DialogTitle>
-                          </DialogHeader>
-                          {selectedUser && (
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                  id="name"
-                                  defaultValue={selectedUser.name || ''}
-                                  onChange={(e) => setSelectedUser(prev => prev ? {...prev, name: e.target.value || ''} : null)}
-                                  className="bg-muted border-input focus:border-primary-medium transition-colors"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="artist_name">Artist Name</Label>
-                                <Input
-                                  id="artist_name"
-                                  defaultValue={selectedUser.artist_name || ''}
-                                  onChange={(e) => setSelectedUser(prev => prev ? {...prev, artist_name: e.target.value || ''} : null)}
-                                  className="bg-muted border-input focus:border-primary-medium transition-colors"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="music_genre">Genre</Label>
-                                <Select
-                                  defaultValue={selectedUser.music_genre || ''}
-                                  onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, music_genre: value} : null)}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select genre" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {genres && genres.map(genre => (
-                                      <SelectItem key={genre} value={genre}>{genre}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="country">Country</Label>
-                                <Select
-                                  defaultValue={selectedUser.country || ''}
-                                  onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, country: value} : null)}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select country" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {countries && countries.map(country => (
-                                      <SelectItem key={country} value={country}>{country}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <Button 
-                                className="w-full bg-primary hover:bg-primary-medium transition-colors"
-                                onClick={() => selectedUser && handleEditUser(selectedUser)}
-                              >
-                                Save Changes
-                              </Button>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="hover:bg-secondary-light hover:text-secondary transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </motion.tr>
-                )) : (
-                  <motion.tr
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <TableCell colSpan={9} className="h-24 text-center">
-                      <p className="text-muted-foreground font-sans">
-                        {filters?.subscription !== 'all' 
-                          ? `No ${filters?.subscription} users found 🎧` 
-                          : "No users found. Try adjusting your filters 🎧"}
-                      </p>
-                    </TableCell>
-                  </motion.tr>
                 )}
-              </AnimatePresence>
-            </TableBody>
-          </Table>
-        </div>
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
 
-        <div className="flex justify-end mt-4 space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            disabled={currentPage === 0}
-            className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            disabled={!users || users.length < pageSize}
-            className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
-          >
-            Next
-          </Button>
-        </div>
+        <Select
+          value={String(pageSize)}
+          onValueChange={(value) => {
+            setPageSize(Number(value));
+            setCurrentPage(0);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select page size" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="20">20 per page</SelectItem>
+            <SelectItem value="50">50 per page</SelectItem>
+            <SelectItem value="100">100 per page</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-    </ErrorBoundary>
+
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-muted/50">
+              <TableHead className="font-heading">Name</TableHead>
+              <TableHead className="font-heading">Email</TableHead>
+              <TableHead className="font-heading">Artist Name</TableHead>
+              <TableHead className="font-heading">Genre</TableHead>
+              <TableHead className="font-heading">Country</TableHead>
+              <TableHead className="font-heading">Plan</TableHead>
+              <TableHead className="font-heading">Smart Links</TableHead>
+              <TableHead 
+                className="font-heading cursor-pointer group"
+                onClick={toggleSort}
+              >
+                <div className="flex items-center gap-2">
+                  Created At
+                  <ArrowUpDown className={`h-4 w-4 transition-colors ${sortDirection === 'desc' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                </div>
+              </TableHead>
+              <TableHead className="font-heading">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <AnimatePresence mode="wait">
+              {users && users.length > 0 ? users.map((user) => (
+                <motion.tr
+                  key={user.id}
+                  className="transition-colors hover:bg-muted/50"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                  <TableCell>{user.email || 'N/A'}</TableCell>
+                  <TableCell>{user.artist_name || 'N/A'}</TableCell>
+                  <TableCell>{user.music_genre || 'N/A'}</TableCell>
+                  <TableCell>{user.country || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline"
+                      className={`${
+                        user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' 
+                          ? 'bg-primary/10 text-primary hover:bg-primary/20' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'Pro' : 'Free'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="link" 
+                      onClick={() => navigate(`/control-room/smart-links?userId=${user.id}`)}
+                      className="text-primary hover:text-primary-medium transition-colors"
+                    >
+                      {user.smart_links && user.smart_links.length || 0} links
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
+                  </TableCell>
+                  <TableCell className="space-x-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="hover:bg-primary/10 transition-colors"
+                          onClick={() => setSelectedUser(user)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-card">
+                        <DialogHeader>
+                          <DialogTitle className="font-heading">Edit User</DialogTitle>
+                        </DialogHeader>
+                        {selectedUser && (
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="name">Name</Label>
+                              <Input
+                                id="name"
+                                defaultValue={selectedUser.name || ''}
+                                onChange={(e) => setSelectedUser(prev => prev ? {...prev, name: e.target.value || ''} : null)}
+                                className="bg-muted border-input focus:border-primary-medium transition-colors"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="artist_name">Artist Name</Label>
+                              <Input
+                                id="artist_name"
+                                defaultValue={selectedUser.artist_name || ''}
+                                onChange={(e) => setSelectedUser(prev => prev ? {...prev, artist_name: e.target.value || ''} : null)}
+                                className="bg-muted border-input focus:border-primary-medium transition-colors"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="music_genre">Genre</Label>
+                              <Select
+                                defaultValue={selectedUser.music_genre || ''}
+                                onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, music_genre: value} : null)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select genre" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {genres && genres.map(genre => (
+                                    <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="country">Country</Label>
+                              <Select
+                                defaultValue={selectedUser.country || ''}
+                                onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, country: value} : null)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {countries && countries.map(country => (
+                                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button 
+                              className="w-full bg-primary hover:bg-primary-medium transition-colors"
+                              onClick={() => selectedUser && handleEditUser(selectedUser)}
+                            >
+                              Save Changes
+                            </Button>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="hover:bg-secondary-light hover:text-secondary transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </motion.tr>
+              )) : (
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <TableCell colSpan={9} className="h-24 text-center">
+                    <p className="text-muted-foreground font-sans">
+                      {filters?.subscription !== 'all' 
+                        ? `No ${filters?.subscription} users found 🎧` 
+                        : "No users found. Try adjusting your filters 🎧"}
+                    </p>
+                  </TableCell>
+                </motion.tr>
+              )}
+            </AnimatePresence>
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-end mt-4 space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+          disabled={currentPage === 0}
+          className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => prev + 1)}
+          disabled={!users || users.length < pageSize}
+          className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
+        >
+          Next
+        </Button>
+      </div>
+    </div>
   );
 }
