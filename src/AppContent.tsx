@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
@@ -30,7 +29,7 @@ const AdminOverview = lazy(() => import("@/pages/admin/Overview"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/Analytics"));
 const AdminSmartLinks = lazy(() => import("@/pages/admin/SmartLinks"));
 const AdminUserLinks = lazy(() => import("@/pages/admin/UserLinks"));
-const AdminUsers = lazy(() => import("@/pages/admin/Users"));
+const AdminUsers = lazy(() => import("@/pages/admin/NewUsers"));
 const AdminContent = lazy(() => import("@/pages/admin/Content"));
 const AdminMediaLibrary = lazy(() => import("@/pages/admin/MediaLibrary"));
 const AdminImport = lazy(() => import("@/pages/admin/Import"));
