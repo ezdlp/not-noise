@@ -28,8 +28,8 @@ export default {
         primary: {
           DEFAULT: "#6851FB",
           foreground: "hsl(var(--primary-foreground))",
-          hover: "#0F0F0F",
-          disabled: "#4A47A5",
+          hover: "#4A47A5",
+          disabled: "#ECE9FF",
           light: "#ECE9FF",
         },
         secondary: {
@@ -67,6 +67,11 @@ export default {
           seasalt: "#FAFAFA",
           night: "#0F0F0F",
           border: "#E6E6E6",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
         },
       },
       fontFamily: {

@@ -1748,6 +1748,27 @@ export type Database = {
           feature_usage: Json
         }[]
       }
+      get_improved_analytics_stats: {
+        Args: {
+          p_start_date: string
+          p_end_date?: string
+        }
+        Returns: {
+          period: string
+          day: string
+          product_page_views: number
+          smart_link_views: number
+          unique_visitors: number
+          registered_users: number
+          active_users: number
+          pro_subscribers: number
+          total_revenue: number
+          smart_links_created: number
+          social_assets_created: number
+          meta_pixels_added: number
+          email_capture_enabled: number
+        }[]
+      }
       get_mau: {
         Args: {
           p_date?: string
@@ -1757,6 +1778,23 @@ export type Database = {
           active_users: number
           pro_users: number
           total_users: number
+        }[]
+      }
+      get_monthly_active_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          month: string
+          active_users: number
+          pro_users: number
+          total_users: number
+        }[]
+      }
+      get_pro_feature_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          feature: string
+          count: number
+          percentage: number
         }[]
       }
       get_sitemap_url_count: {
