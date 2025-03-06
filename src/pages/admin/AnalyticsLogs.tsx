@@ -1,187 +1,199 @@
 
-import React, { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-
-interface LogEntry {
-  id: string;
-  function_name: string;
-  parameters: Record<string, any>;
-  status: string;
-  details: Record<string, any>;
-  start_time: string;
-  end_time: string | null;
-  duration_ms: number | null;
-  created_at: string;
-}
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 
 export default function AnalyticsLogs() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Use rpc to call the database function directly with type assertion
-      const { data, error } = await supabase.rpc(
-        'get_analytics_function_logs' as any, // Type assertion to bypass type checking temporarily
-        { p_limit: 100 }
-      );
+  const { data: logs, isLoading, refetch, error } = useQuery({
+    queryKey: ["analytics-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_analytics_function_logs", {
+        p_limit: 100
+      });
       
       if (error) throw error;
-      
-      // Validate and transform the response data
-      if (Array.isArray(data)) {
-        // Make sure each entry has the expected shape
-        const validatedLogs = data
-          .filter((entry: any) => 
-            typeof entry.id === 'string' && 
-            typeof entry.function_name === 'string'
-          )
-          .map((entry: any) => ({
-            id: entry.id,
-            function_name: entry.function_name,
-            parameters: entry.parameters || {},
-            status: entry.status || 'Unknown',
-            details: entry.details || {},
-            start_time: entry.start_time,
-            end_time: entry.end_time,
-            duration_ms: entry.duration_ms,
-            created_at: entry.created_at
-          }));
-        
-        setLogs(validatedLogs);
-      } else {
-        setLogs([]);
-        setError("Unexpected response format");
-      }
-    } catch (err) {
-      console.error("Error fetching analytics logs:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data || [];
+    },
+  });
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  // Format duration as "X.XX ms" or "X.XX s" depending on value
-  const formatDuration = (duration: number | null) => {
-    if (duration === null) return "N/A";
-    
-    if (duration < 1000) {
-      return `${duration.toFixed(2)} ms`;
+  // Toggle expanded state for a log entry
+  const toggleExpand = (id: string) => {
+    const newSet = new Set(expandedLogIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
     } else {
-      return `${(duration / 1000).toFixed(2)} s`;
+      newSet.add(id);
     }
+    setExpandedLogIds(newSet);
   };
 
-  // Pretty format JSON data
+  // Format the timestamp to a readable format
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  // Format JSON objects for display
   const formatJson = (json: any) => {
+    if (!json) return "None";
     try {
       return JSON.stringify(json, null, 2);
-    } catch (e) {
+    } catch (error) {
       return String(json);
     }
   };
 
-  // Get status color for badges
+  // Get status color
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'success': return 'bg-green-500';
-      case 'error': return 'bg-red-500';
-      case 'fallback': return 'bg-amber-500';
-      default: return 'bg-gray-500';
+    switch (status) {
+      case 'success':
+        return 'bg-green-100 text-green-800';
+      case 'error':
+        return 'bg-red-100 text-red-800';
+      case 'fallback':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Analytics Function Logs</h1>
+          <Skeleton className="h-10 w-20" />
+        </div>
+        <Skeleton className="h-[600px] w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Analytics Function Logs</h1>
+          <Button onClick={() => refetch()} size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+        <Card className="p-6 bg-red-50 border border-red-200">
+          <h2 className="text-lg font-medium text-red-800 mb-2">Error Loading Logs</h2>
+          <p className="text-red-600">
+            {error instanceof Error ? error.message : 'Unknown error occurred'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Analytics Function Logs</h1>
-        <Button 
-          variant="outline" 
-          onClick={fetchLogs} 
-          disabled={loading}
-          className="flex gap-2 items-center"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <Button onClick={() => refetch()} size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Function Execution Logs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24 w-full" />
+
+      {logs && logs.length > 0 ? (
+        <Card className="w-full overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Function Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Start Time</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log: any) => (
+                <React.Fragment key={log.id}>
+                  <TableRow>
+                    <TableCell className="font-medium">{log.function_name}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(log.status)}`}>
+                        {log.status || 'pending'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {log.duration_ms !== null ? `${log.duration_ms.toFixed(2)}ms` : 'N/A'}
+                    </TableCell>
+                    <TableCell>{formatTimestamp(log.start_time)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleExpand(log.id)}
+                      >
+                        {expandedLogIds.has(log.id) ? 'Hide Details' : 'Show Details'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  {expandedLogIds.has(log.id) && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="bg-slate-50 border-t-0">
+                        <div className="p-3 space-y-4">
+                          {log.parameters && (
+                            <div>
+                              <h3 className="text-sm font-semibold mb-1">Parameters:</h3>
+                              <pre className="text-xs bg-slate-100 p-3 rounded overflow-auto max-h-40">
+                                {formatJson(log.parameters)}
+                              </pre>
+                            </div>
+                          )}
+                          {log.details && (
+                            <div>
+                              <h3 className="text-sm font-semibold mb-1">Details:</h3>
+                              <pre className="text-xs bg-slate-100 p-3 rounded overflow-auto max-h-40">
+                                {formatJson(log.details)}
+                              </pre>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="font-semibold">Start Time:</span>{' '}
+                              {formatTimestamp(log.start_time)}
+                            </div>
+                            {log.end_time && (
+                              <div>
+                                <span className="font-semibold">End Time:</span>{' '}
+                                {formatTimestamp(log.end_time)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))}
-            </div>
-          ) : error ? (
-            <div className="text-red-500">
-              <p>Error loading logs: {error}</p>
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No logs found</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {logs.map((log) => (
-                <div key={log.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-lg">{log.function_name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(log.start_time).toLocaleString()}
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(log.status)}>
-                      {log.status || 'Unknown'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium">Duration</p>
-                      <p>{formatDuration(log.duration_ms)}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">Parameters</p>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
-                        {formatJson(log.parameters)}
-                      </pre>
-                    </div>
-                    {log.details && Object.keys(log.details).length > 0 && (
-                      <div className="col-span-1 md:col-span-2">
-                        <p className="font-medium">Details</p>
-                        <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
-                          {formatJson(log.details)}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </TableBody>
+          </Table>
+        </Card>
+      ) : (
+        <Card className="p-6 text-center">
+          <p className="text-gray-500">No logs found. Analytics functions may not have been executed yet.</p>
+        </Card>
+      )}
     </div>
   );
 }
