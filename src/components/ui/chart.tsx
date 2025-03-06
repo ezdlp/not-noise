@@ -1,6 +1,6 @@
 
 import React, { ReactElement } from "react";
-import { Tooltip, TooltipProps as RechartsTooltipProps } from "recharts";
+import { Tooltip, TooltipProps } from "recharts";
 import { cn } from "@/lib/utils";
 
 export type ChartConfig = {
@@ -37,13 +37,17 @@ export function ChartContainer({
   );
 }
 
+interface ChartTooltipProps extends Omit<TooltipProps<number, string>, 'formatter'> {
+  formatter?: (value: number, name: string, props: any, index: number) => React.ReactNode;
+}
+
 export function ChartTooltip({ 
   active, 
   payload, 
   label, 
-  formatter, 
+  formatter,
   ...rest 
-}: RechartsTooltipProps<number, string>) {
+}: ChartTooltipProps) {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm">
