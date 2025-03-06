@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -42,43 +41,12 @@ import {
 // Data
 import { genres } from '@/lib/genres';
 
-// Types
-type SubscriptionTier = 'free' | 'pro' | 'platinum';
-type UserRole = 'admin' | 'user';
-
-interface User {
-  id: string;
-  name: string;
-  artist_name: string;
-  music_genre: string;
-  country: string;
-  email?: string;
-  created_at?: string;
-  updated_at?: string | null;
-  user_roles: { 
-    id?: string;
-    role: UserRole;
-  }[];
-  subscriptions?: {
-    tier: SubscriptionTier;
-    is_lifetime?: boolean;
-    is_early_adopter?: boolean;
-    current_period_end?: string;
-  }[];
-  smart_links?: any[];
-}
-
-interface UsersResponse {
-  users: User[];
-  count: number;
-}
-
 const NewUsersPage = () => {
   // Navigation
   const navigate = useNavigate();
   
   // State
-  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = React.useState<any>(null);
   const [searchValue, setSearchValue] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
@@ -119,11 +87,11 @@ const NewUsersPage = () => {
 
   // Fetch users
   const { 
-    data: usersData, 
+    data: users = [], 
     isLoading, 
     error: queryError,
     refetch,
-  } = useQuery<UsersResponse>({
+  } = useQuery({
     queryKey: ['adminUsers', currentPage, pageSize, sortDirection, filters, searchQuery],
     queryFn: async () => {
       try {
@@ -173,8 +141,7 @@ const NewUsersPage = () => {
 
         // Apply filters
         if (filters.subscription !== 'all') {
-          // Use type assertion for tier to handle all possible subscription tiers
-          query = query.eq('subscriptions.tier', filters.subscription as SubscriptionTier);
+          query = query.eq('subscriptions.tier', filters.subscription);
         }
         if (filters.genre !== 'all') {
           query = query.eq('music_genre', filters.genre);
@@ -204,7 +171,7 @@ const NewUsersPage = () => {
           smart_links: Array.isArray(user.smart_links) ? user.smart_links : []
         }));
 
-        return { users: processedData, count: count || 0 } as UsersResponse;
+        return { users: processedData, count: count || 0 };
       } catch (err) {
         console.error('Error in users query:', err);
         toast.error('An error occurred while loading users');
@@ -221,7 +188,7 @@ const NewUsersPage = () => {
     (searchQuery ? 1 : 0);
 
   // Handle user edit
-  const handleEditUser = async (updatedProfile: User) => {
+  const handleEditUser = async (updatedProfile) => {
     if (!selectedUser) return;
     
     try {
@@ -317,7 +284,7 @@ const NewUsersPage = () => {
         <div className="flex items-center gap-2">
           <UsersIcon className="h-5 w-5 text-primary" />
           <span className="text-2xl font-semibold">
-            {usersData?.count || 0}
+            {users?.count || 0}
           </span>
           <span className="text-muted-foreground text-base font-normal">
             {activeFiltersCount > 0 ? 'filtered' : 'total'} users
@@ -359,7 +326,6 @@ const NewUsersPage = () => {
             <SelectItem value="all">All tiers</SelectItem>
             <SelectItem value="pro">Pro users</SelectItem>
             <SelectItem value="free">Free users</SelectItem>
-            <SelectItem value="platinum">Platinum users</SelectItem>
           </SelectContent>
         </Select>
 
@@ -436,8 +402,8 @@ const NewUsersPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {usersData?.users && usersData.users.length > 0 ? (
-              usersData.users.map((user) => (
+            {users?.users && users.users.length > 0 ? (
+              users.users.map((user) => (
                 <TableRow key={user.id} className="transition-colors hover:bg-muted/50">
                   <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                   <TableCell>{user.email || 'N/A'}</TableCell>
@@ -446,7 +412,7 @@ const NewUsersPage = () => {
                   <TableCell>{user.country || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge className={user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}>
-                      {user.subscriptions && user.subscriptions.length > 0 ? user.subscriptions[0]?.tier : 'Free'}
+                      {user.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0]?.tier === 'pro' ? 'Pro' : 'Free'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -484,7 +450,7 @@ const NewUsersPage = () => {
                               <Input
                                 id="name"
                                 defaultValue={selectedUser.name}
-                                onChange={(e) => setSelectedUser(prev => prev ? {...prev, name: e.target.value} : null)}
+                                onChange={(e) => setSelectedUser(prev => ({...prev, name: e.target.value}))}
                                 className="bg-muted border-input focus:border-primary-medium transition-colors"
                               />
                             </div>
@@ -493,7 +459,7 @@ const NewUsersPage = () => {
                               <Input
                                 id="artist_name"
                                 defaultValue={selectedUser.artist_name}
-                                onChange={(e) => setSelectedUser(prev => prev ? {...prev, artist_name: e.target.value} : null)}
+                                onChange={(e) => setSelectedUser(prev => ({...prev, artist_name: e.target.value}))}
                                 className="bg-muted border-input focus:border-primary-medium transition-colors"
                               />
                             </div>
@@ -501,7 +467,7 @@ const NewUsersPage = () => {
                               <Label htmlFor="music_genre">Genre</Label>
                               <Select
                                 defaultValue={selectedUser.music_genre}
-                                onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, music_genre: value} : null)}
+                                onValueChange={(value) => setSelectedUser(prev => ({...prev, music_genre: value}))}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select genre" />
@@ -517,7 +483,7 @@ const NewUsersPage = () => {
                               <Label htmlFor="country">Country</Label>
                               <Select
                                 defaultValue={selectedUser.country}
-                                onValueChange={(value) => setSelectedUser(prev => prev ? {...prev, country: value} : null)}
+                                onValueChange={(value) => setSelectedUser(prev => ({...prev, country: value}))}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select country" />
@@ -531,7 +497,7 @@ const NewUsersPage = () => {
                             </div>
                             <Button 
                               className="w-full bg-primary hover:bg-primary-medium transition-colors"
-                              onClick={() => selectedUser && handleEditUser(selectedUser)}
+                              onClick={() => handleEditUser(selectedUser)}
                             >
                               Save Changes
                             </Button>
@@ -577,7 +543,7 @@ const NewUsersPage = () => {
         <Button
           variant="outline"
           onClick={() => setCurrentPage(prev => prev + 1)}
-          disabled={!usersData?.users || usersData.users.length < pageSize}
+          disabled={!users?.users || users.users.length < pageSize}
           className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
         >
           Next
@@ -587,4 +553,4 @@ const NewUsersPage = () => {
   );
 };
 
-export default NewUsersPage;
+export default NewUsersPage; 
