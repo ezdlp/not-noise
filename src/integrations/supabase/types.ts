@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analytics_cache: {
+        Row: {
+          cache_data: Json
+          cache_key: string
+          created_at: string | null
+          expires_at: string
+          id: number
+        }
+        Insert: {
+          cache_data: Json
+          cache_key: string
+          created_at?: string | null
+          expires_at: string
+          id?: number
+        }
+        Update: {
+          cache_data?: Json
+          cache_key?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string | null
@@ -1720,6 +1744,27 @@ export type Database = {
           pro_subscribers: number
           total_revenue: number
         }[]
+      }
+      get_basic_analytics_stats: {
+        Args: {
+          p_start_date: string
+          p_end_date?: string
+        }
+        Returns: {
+          period: string
+          day: string
+          product_page_views: number
+          smart_link_views: number
+          unique_visitors: number
+        }[]
+      }
+      get_cached_analytics_stats: {
+        Args: {
+          p_start_date: string
+          p_end_date?: string
+          p_cache_minutes?: number
+        }
+        Returns: Json
       }
       get_daily_stats: {
         Args: {
