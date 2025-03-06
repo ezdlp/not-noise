@@ -94,17 +94,25 @@ function Analytics() {
   const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ["improved-analytics", startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_improved_analytics_stats", {
-        p_start_date: startDate.toISOString(),
-        p_end_date: endDate.toISOString(),
-      });
+      try {
+        const { data, error } = await supabase.rpc("get_improved_analytics_stats", {
+          p_start_date: startDate.toISOString(),
+          p_end_date: endDate.toISOString(),
+        });
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          console.error("Error fetching analytics:", error);
+          throw new Error(error.message);
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch analytics data:", error);
+        toast.error("Failed to load analytics data. Please try again later.");
+        throw error;
       }
-
-      return data as ImprovedAnalyticsStats[];
     },
+    retry: 1, // Only retry once to avoid long wait times
   });
 
   const { data: monthlyUsers } = useQuery({

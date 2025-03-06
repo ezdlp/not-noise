@@ -1,9 +1,9 @@
 -- Fix the get_improved_analytics_stats function to resolve 503 errors
 -- Changes:
--- 1. Streamline date handling by explicitly casting parameters
+-- 1. Keep original parameter types for compatibility
 -- 2. Add function timeout parameter
--- 3. Add indexes to improve performance (except on foreign tables)
--- 4. Add statement timeout settings
+-- 3. Add indexes to improve performance
+-- 4. Fix timestamp handling
 
 -- First, create indexes to improve performance
 CREATE INDEX IF NOT EXISTS idx_analytics_page_views_created_at ON analytics_page_views(created_at);
@@ -11,15 +11,14 @@ CREATE INDEX IF NOT EXISTS idx_link_views_viewed_at ON link_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_smart_links_created_at ON smart_links(created_at);
 CREATE INDEX IF NOT EXISTS idx_social_media_assets_created_at ON social_media_assets(created_at);
--- Removed index on stripe_charges as it's a foreign table and cannot be indexed directly
+-- No index on stripe_charges as it's a foreign table
 
--- Drop the existing function first
+-- Drop and recreate the function with the same parameter types
 DROP FUNCTION IF EXISTS get_improved_analytics_stats(timestamp with time zone, timestamp with time zone);
 
--- Optimize the function with proper date handling
 CREATE OR REPLACE FUNCTION get_improved_analytics_stats(
-  p_start_date TEXT, -- Changed from TIMESTAMP to TEXT for better compatibility
-  p_end_date TEXT DEFAULT NULL -- Changed from TIMESTAMP to TEXT
+  p_start_date TIMESTAMP WITH TIME ZONE,
+  p_end_date TIMESTAMP WITH TIME ZONE DEFAULT NULL
 )
 RETURNS TABLE (
   period TEXT,
@@ -40,25 +39,23 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_start_date TIMESTAMP WITH TIME ZONE;
   v_end_date TIMESTAMP WITH TIME ZONE;
   v_period_length INTEGER;
   v_prev_start_date TIMESTAMP WITH TIME ZONE;
   v_prev_end_date TIMESTAMP WITH TIME ZONE;
 BEGIN
-  -- Set statement timeout to 15 seconds to prevent long-running queries
-  SET LOCAL statement_timeout = '15s';
+  -- Set statement timeout to 30 seconds to prevent long-running queries
+  SET LOCAL statement_timeout = '30s';
   
-  -- Explicitly cast input parameters to timestamps
-  v_start_date := p_start_date::TIMESTAMP WITH TIME ZONE;
-  v_end_date := COALESCE(p_end_date::TIMESTAMP WITH TIME ZONE, CURRENT_TIMESTAMP);
+  -- Use input dates directly since they're already the right type
+  v_end_date := COALESCE(p_end_date, CURRENT_TIMESTAMP);
   
   -- Calculate period length in days
-  v_period_length := EXTRACT(DAY FROM (v_end_date - v_start_date));
+  v_period_length := EXTRACT(DAY FROM (v_end_date - p_start_date));
   
   -- Calculate previous period dates
-  v_prev_end_date := v_start_date - INTERVAL '1 day';
-  v_prev_start_date := v_prev_end_date - (v_end_date - v_start_date);
+  v_prev_end_date := p_start_date - INTERVAL '1 day';
+  v_prev_start_date := v_prev_end_date - (v_end_date - p_start_date);
   
   -- Return combined results from current and previous periods
   RETURN QUERY
@@ -83,7 +80,7 @@ BEGIN
       SELECT 
         date_trunc('day', dd)::date AS day
       FROM generate_series(
-        v_start_date::date,
+        p_start_date::date,
         v_end_date::date,
         '1 day'::interval
       ) dd
@@ -94,7 +91,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(*) as view_count
       FROM analytics_page_views
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
         AND url NOT LIKE '%/link/%'
       GROUP BY 1
     ),
@@ -104,7 +101,7 @@ BEGIN
         date_trunc('day', viewed_at)::date AS day,
         COUNT(*) as view_count
       FROM link_views
-      WHERE viewed_at BETWEEN v_start_date AND v_end_date
+      WHERE viewed_at BETWEEN p_start_date AND v_end_date
       GROUP BY 1
     ),
     -- Unique visitors
@@ -113,7 +110,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(DISTINCT session_id) as visitor_count
       FROM analytics_page_views
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
         AND url NOT LIKE '%/link/%'
       GROUP BY 1
     ),
@@ -123,7 +120,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(*) as user_count
       FROM auth.users
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
       GROUP BY 1
     ),
     -- Active users (users who logged in)
@@ -132,7 +129,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(DISTINCT user_id) as user_count
       FROM analytics_events
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
         AND user_id IS NOT NULL
         AND event_type = 'login'
       GROUP BY 1
@@ -143,7 +140,7 @@ BEGIN
         date_trunc('day', dd)::date AS day,
         COUNT(DISTINCT user_id) as subscriber_count
       FROM generate_series(
-        v_start_date::date,
+        p_start_date::date,
         v_end_date::date,
         '1 day'::interval
       ) dd
@@ -165,7 +162,7 @@ BEGIN
         date_trunc('day', created)::date AS day,
         SUM(amount / 100.0) as total -- Convert amount from cents to euros
       FROM stripe_charges
-      WHERE created BETWEEN v_start_date AND v_end_date
+      WHERE created BETWEEN p_start_date AND v_end_date
         AND status = 'succeeded'
       GROUP BY 1
     ),
@@ -175,7 +172,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(*) as link_count
       FROM smart_links
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
       GROUP BY 1
     ),
     -- Social assets created
@@ -184,7 +181,7 @@ BEGIN
         date_trunc('day', created_at)::date AS day,
         COUNT(*) as asset_count
       FROM social_media_assets
-      WHERE created_at BETWEEN v_start_date AND v_end_date
+      WHERE created_at BETWEEN p_start_date AND v_end_date
       GROUP BY 1
     ),
     -- Meta pixels added
@@ -193,7 +190,7 @@ BEGIN
         date_trunc('day', COALESCE(meta_pixel_added_at, created_at))::date AS day,
         COUNT(*) as pixel_count
       FROM smart_links
-      WHERE COALESCE(meta_pixel_added_at, created_at) BETWEEN v_start_date AND v_end_date
+      WHERE COALESCE(meta_pixel_added_at, created_at) BETWEEN p_start_date AND v_end_date
         AND meta_pixel_id IS NOT NULL
       GROUP BY 1
     ),
@@ -203,7 +200,7 @@ BEGIN
         date_trunc('day', sl.created_at)::date AS day,
         COUNT(*) as capture_count
       FROM smart_links sl
-      WHERE sl.created_at BETWEEN v_start_date AND v_end_date
+      WHERE sl.created_at BETWEEN p_start_date AND v_end_date
         AND sl.email_capture_enabled = TRUE
       GROUP BY 1
     )
@@ -410,4 +407,4 @@ END;
 $$;
 
 -- Grant access to the function
-GRANT EXECUTE ON FUNCTION get_improved_analytics_stats(TEXT, TEXT) TO authenticated; 
+GRANT EXECUTE ON FUNCTION get_improved_analytics_stats(TIMESTAMP WITH TIME ZONE, TIMESTAMP WITH TIME ZONE) TO authenticated; 
