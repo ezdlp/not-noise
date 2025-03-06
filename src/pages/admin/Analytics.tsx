@@ -1,16 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { subDays } from "date-fns";
-import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
-import { ChartContainer, ChartTooltip, ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown } from "lucide-react";
 
-interface ImprovedAnalyticsStats {
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Link } from 'react-router-dom';
+import { ArrowRight, FileSpreadsheet } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Define types for Analytics data
+interface AnalyticsStats {
   period: string;
   day: string;
   product_page_views: number;
@@ -20,523 +23,537 @@ interface ImprovedAnalyticsStats {
   active_users: number;
   pro_subscribers: number;
   total_revenue: number;
-  smart_links_created: number;
-  social_assets_created: number;
-  meta_pixels_added: number;
-  email_capture_enabled: number;
 }
 
-interface MonthlyActiveUsers {
-  month: string;
-  active_users: number;
-  pro_users: number;
-  total_users: number;
+interface AnalyticsData {
+  today: AnalyticsStats;
+  yesterday: AnalyticsStats;
+  weekly: AnalyticsStats[];
+  monthly: AnalyticsStats[];
+  trends: {
+    visitors: number;
+    revenue: number;
+    users: number;
+  };
 }
 
-interface ProFeatureUsage {
-  feature: string;
-  count: number;
-  percentage: number;
-}
+const Analytics = () => {
+  const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('weekly');
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: number;
-  className?: string;
-}
+  // Fetch analytics data
+  const { data: analyticsData, isLoading } = useQuery({
+    queryKey: ['analytics-data'],
+    queryFn: async () => {
+      try {
+        // Fetch analytics stats
+        const { data: statsData, error: statsError } = await supabase.rpc('get_analytics_stats_with_trends');
+        
+        if (statsError) throw statsError;
 
-const chartColors = {
-  primary: "#6851FB",
-  lighter: "#9B87F5",
-  lightest: "#D0C7FF",
-  darker: "#271153",
-  darkest: "#180B33"
-};
+        // Convert to expected format
+        const processedData: AnalyticsData = {
+          today: {
+            period: 'today',
+            day: new Date().toISOString().split('T')[0],
+            product_page_views: 0,
+            smart_link_views: 0,
+            unique_visitors: 0,
+            registered_users: 0,
+            active_users: 0,
+            pro_subscribers: 0,
+            total_revenue: 0,
+          },
+          yesterday: {
+            period: 'yesterday',
+            day: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+            product_page_views: 0,
+            smart_link_views: 0,
+            unique_visitors: 0,
+            registered_users: 0,
+            active_users: 0,
+            pro_subscribers: 0,
+            total_revenue: 0,
+          },
+          weekly: [],
+          monthly: [],
+          trends: {
+            visitors: 0,
+            revenue: 0,
+            users: 0,
+          }
+        };
 
-function StatCard({ title, value, change, className }: StatCardProps) {
-  return (
-    <Card className={cn("p-6 border-none bg-card/50 shadow-none", className)}>
-      <h3 className="font-medium text-muted-foreground">{title}</h3>
-      <p className="text-2xl font-bold text-neutral-night">{value}</p>
-      {change !== undefined && (
-        <div className="flex items-center gap-1 mt-1">
-          {change > 0 ? (
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
-          ) : change < 0 ? (
-            <TrendingDown className="w-4 h-4 text-red-600" />
-          ) : null}
-          <p className={cn(
-            "text-sm",
-            change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
-          )}>
-            {change > 0 ? "+" : ""}{change.toFixed(1)}%
-          </p>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function Analytics() {
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>("7d");
-  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
-  const [endDate, setEndDate] = useState<Date>(new Date());
-
-  useEffect(() => {
-    const range = timeRanges.find((r) => r.value === timeRange);
-    if (range) {
-      setStartDate(subDays(new Date(), range.days));
-      setEndDate(new Date());
+        // Process the data from the RPC function
+        if (Array.isArray(statsData)) {
+          const stats = statsData as any[];
+          
+          // Extract data for the chart
+          const weekly = stats.slice(0, 7).map((day: any) => ({
+            period: 'weekly',
+            day: day.day,
+            product_page_views: day.page_views || 0,
+            smart_link_views: day.link_views || 0,
+            unique_visitors: day.unique_visitors || 0,
+            registered_users: day.registered_users || 0,
+            active_users: day.active_users || 0,
+            pro_subscribers: day.pro_subscribers || 0,
+            total_revenue: day.total_revenue || 0,
+          }));
+          
+          const monthly = stats.slice(0, 30).map((day: any) => ({
+            period: 'monthly',
+            day: day.day,
+            product_page_views: day.page_views || 0,
+            smart_link_views: day.link_views || 0,
+            unique_visitors: day.unique_visitors || 0,
+            registered_users: day.registered_users || 0,
+            active_users: day.active_users || 0,
+            pro_subscribers: day.pro_subscribers || 0,
+            total_revenue: day.total_revenue || 0,
+          }));
+          
+          processedData.weekly = weekly;
+          processedData.monthly = monthly;
+          
+          if (weekly.length > 0) {
+            processedData.today = weekly[0];
+            processedData.yesterday = weekly[1] || processedData.yesterday;
+          }
+          
+          // Calculate trends (% change)
+          if (weekly.length >= 2) {
+            const today = weekly[0];
+            const yesterday = weekly[1];
+            
+            processedData.trends.visitors = calculateTrend(today.unique_visitors, yesterday.unique_visitors);
+            processedData.trends.revenue = calculateTrend(today.total_revenue, yesterday.total_revenue);
+            processedData.trends.users = calculateTrend(today.registered_users, yesterday.registered_users);
+          }
+        }
+        
+        return processedData;
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        throw error;
+      }
     }
-  }, [timeRange]);
-
-  const { data: stats, isLoading, isError, refetch } = useQuery({
-    queryKey: ["improved-analytics", startDate, endDate],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_improved_analytics_stats", {
-        p_start_date: startDate.toISOString(),
-        p_end_date: endDate.toISOString(),
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as ImprovedAnalyticsStats[];
-    },
   });
 
-  const { data: monthlyUsers } = useQuery({
-    queryKey: ["monthly-active-users"],
+  // Fetch recent function logs
+  const { data: recentLogs, isLoading: isLogsLoading } = useQuery({
+    queryKey: ['analytics-recent-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_monthly_active_users");
-
-      if (error) {
-        throw new Error(error.message);
+      try {
+        // Fetch from analytics_events as a fallback
+        const { data, error } = await supabase
+          .from('analytics_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (error) throw error;
+        
+        // Convert to expected format
+        const logs = data.map((log: any) => ({
+          id: log.id || `id-${Math.random()}`,
+          created_at: log.created_at || new Date().toISOString(),
+          function_name: log.event_type || 'analytics',
+          status: 'success' as const,
+          execution_time_ms: 0
+        }));
+        
+        return logs;
+      } catch (error) {
+        console.error('Error fetching recent logs:', error);
+        return [];
       }
-
-      return data as MonthlyActiveUsers[];
-    },
+    }
   });
 
-  const { data: proFeatures } = useQuery({
-    queryKey: ["pro-feature-usage"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_pro_feature_usage");
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as ProFeatureUsage[];
-    },
-  });
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("analytics-updates")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "page_views",
-      }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
-
-  const currentMetrics = useMemo(() => {
-    if (!stats || stats.length === 0) return null;
-
-    const currentPeriodData = stats.filter(s => s.period === "current");
-    const previousPeriodData = stats.filter(s => s.period === "previous");
-
-    const totalProductPageViews = currentPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
-    const totalSmartLinkViews = currentPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
-    const totalUniqueVisitors = currentPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
-    const totalRegisteredUsers = currentPeriodData.reduce((sum, stat) => sum + stat.registered_users, 0);
-    const totalActiveUsers = currentPeriodData.reduce((sum, stat) => sum + stat.active_users, 0);
-    const totalProSubscribers = currentPeriodData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
-    const totalRevenue = currentPeriodData.reduce((sum, stat) => sum + stat.total_revenue, 0);
-    const totalSmartLinksCreated = currentPeriodData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
-    const totalSocialAssetsCreated = currentPeriodData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
-    const totalMetaPixelsAdded = currentPeriodData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
-    const totalEmailCaptureEnabled = currentPeriodData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
-
-    const prevTotalProductPageViews = previousPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
-    const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
-    const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
-    const prevTotalRegisteredUsers = previousPeriodData.reduce((sum, stat) => sum + stat.registered_users, 0);
-    const prevTotalActiveUsers = previousPeriodData.reduce((sum, stat) => sum + stat.active_users, 0);
-    const prevTotalProSubscribers = previousPeriodData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
-    const prevTotalRevenue = previousPeriodData.reduce((sum, stat) => sum + stat.total_revenue, 0);
-    const prevTotalSmartLinksCreated = previousPeriodData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
-    const prevTotalSocialAssetsCreated = previousPeriodData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
-    const prevTotalMetaPixelsAdded = previousPeriodData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
-    const prevTotalEmailCaptureEnabled = previousPeriodData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
-
-    const calculateTrend = (current: number, previous: number) => {
-      if (previous === 0) return current > 0 ? 100 : 0;
-      return ((current - previous) / previous) * 100;
-    };
-
-    return {
-      productPageViews: {
-        total: totalProductPageViews,
-        trend: calculateTrend(totalProductPageViews, prevTotalProductPageViews),
-      },
-      smartLinkViews: {
-        total: totalSmartLinkViews,
-        trend: calculateTrend(totalSmartLinkViews, prevTotalSmartLinkViews),
-      },
-      uniqueVisitors: {
-        total: totalUniqueVisitors,
-        trend: calculateTrend(totalUniqueVisitors, prevTotalUniqueVisitors),
-      },
-      registeredUsers: {
-        total: totalRegisteredUsers,
-        trend: calculateTrend(totalRegisteredUsers, prevTotalRegisteredUsers),
-      },
-      activeUsers: {
-        total: totalActiveUsers,
-        trend: calculateTrend(totalActiveUsers, prevTotalActiveUsers),
-      },
-      proSubscribers: {
-        total: totalProSubscribers,
-        trend: calculateTrend(totalProSubscribers, prevTotalProSubscribers),
-      },
-      revenue: {
-        total: totalRevenue,
-        trend: calculateTrend(totalRevenue, prevTotalRevenue),
-      },
-      smartLinksCreated: {
-        total: totalSmartLinksCreated,
-        trend: calculateTrend(totalSmartLinksCreated, prevTotalSmartLinksCreated),
-      },
-      socialAssetsCreated: {
-        total: totalSocialAssetsCreated,
-        trend: calculateTrend(totalSocialAssetsCreated, prevTotalSocialAssetsCreated),
-      },
-      metaPixelsAdded: {
-        total: totalMetaPixelsAdded,
-        trend: calculateTrend(totalMetaPixelsAdded, prevTotalMetaPixelsAdded),
-      },
-      emailCaptureEnabled: {
-        total: totalEmailCaptureEnabled,
-        trend: calculateTrend(totalEmailCaptureEnabled, prevTotalEmailCaptureEnabled),
-      },
-      visitorToRegisteredRate: {
-        total: totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
-        trend: calculateTrend(
-          totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
-          prevTotalUniqueVisitors > 0 ? (prevTotalRegisteredUsers / prevTotalUniqueVisitors) * 100 : 0
-        ),
-      },
-      registeredToProRate: {
-        total: totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
-        trend: calculateTrend(
-          totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
-          prevTotalRegisteredUsers > 0 ? (prevTotalProSubscribers / prevTotalRegisteredUsers) * 100 : 0
-        ),
-      },
-    };
-  }, [stats]);
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // Helper to calculate trend percentage
+  const calculateTrend = (current: number, previous: number): number => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+  // Format number with commas
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
   };
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+  // Format currency
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
   };
 
-  const trafficData = useMemo(() => {
-    if (!stats) return [];
-    return stats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Product Page Views": stat.product_page_views,
-        "Smart Link Views": stat.smart_link_views,
-        "Unique Visitors": stat.unique_visitors,
-      }));
-  }, [stats]);
-
-  const userJourneyData = useMemo(() => {
-    if (!stats) return [];
-    return stats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Registered Users": stat.registered_users,
-        "Active Users": stat.active_users,
-        "Pro Subscribers": stat.pro_subscribers,
-      }));
-  }, [stats]);
-
-  const revenueData = useMemo(() => {
-    if (!stats) return [];
-    return stats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Revenue": stat.total_revenue,
-      }));
-  }, [stats]);
-
-  const monthlyUsersChartData = useMemo(() => {
-    if (!monthlyUsers) return [];
-    return monthlyUsers.map(data => ({
-      month: data.month,
-      "Active Users": data.active_users,
-      "Pro Users": data.pro_users,
-      "Total Users": data.total_users,
-    }));
-  }, [monthlyUsers]);
-
-  const proFeaturesChartData = useMemo(() => {
-    if (!proFeatures) return [];
-    return proFeatures.map(feature => ({
-      name: feature.feature,
-      value: feature.count,
-      percentage: feature.percentage,
-    }));
-  }, [proFeatures]);
-
-  const defaultChartConfig: ChartConfig = {
-    grid: true,
-    legend: true,
-    xAxis: true,
-    yAxis: true,
-    aspectRatio: "3/2",
-    tooltipType: "standard" as const
+  const renderTrendIndicator = (value: number) => {
+    if (value > 0) {
+      return <span className="text-success-DEFAULT">↑ {value.toFixed(1)}%</span>;
+    } else if (value < 0) {
+      return <span className="text-destructive">↓ {Math.abs(value).toFixed(1)}%</span>;
+    }
+    return <span className="text-muted-foreground">0%</span>;
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="p-6 border-none bg-card/50 shadow-none animate-pulse">
-              <div className="h-4 w-24 bg-muted rounded mb-2"></div>
-              <div className="h-8 w-16 bg-muted rounded"></div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
-        </div>
-        <Card className="p-6">
-          <div className="text-center py-8">
-            <h2 className="text-lg font-medium mb-2">Failed to load analytics data</h2>
-            <p className="text-muted-foreground mb-4">There was an error loading the analytics data.</p>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const chartData = timeRange === 'weekly' 
+    ? analyticsData?.weekly?.slice().reverse() 
+    : analyticsData?.monthly?.slice().reverse();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
+        <Button variant="outline" asChild>
+          <Link to="/control-room/analytics/logs">
+            View Function Logs
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Traffic</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Product Page Views"
-            value={currentMetrics?.productPageViews.total.toLocaleString() || "0"}
-            change={currentMetrics?.productPageViews.trend}
-          />
-          <StatCard
-            title="Smart Link Views"
-            value={currentMetrics?.smartLinkViews.total.toLocaleString() || "0"}
-            change={currentMetrics?.smartLinkViews.trend}
-          />
-          <StatCard
-            title="Unique Visitors"
-            value={currentMetrics?.uniqueVisitors.total.toLocaleString() || "0"}
-            change={currentMetrics?.uniqueVisitors.trend}
-          />
-          <StatCard
-            title="Smart Links Created"
-            value={currentMetrics?.smartLinksCreated.total.toLocaleString() || "0"}
-            change={currentMetrics?.smartLinksCreated.trend}
-          />
+      {/* Key metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard 
+          title="Unique Visitors" 
+          value={isLoading ? null : formatNumber(analyticsData?.today.unique_visitors || 0)} 
+          trend={isLoading ? null : analyticsData?.trends.visitors}
+          description="Today"
+        />
+        <StatCard 
+          title="Page Views" 
+          value={isLoading ? null : formatNumber(analyticsData?.today.product_page_views + (analyticsData?.today.smart_link_views || 0))} 
+          description="Today"
+        />
+        <StatCard 
+          title="Active Users" 
+          value={isLoading ? null : formatNumber(analyticsData?.today.active_users || 0)} 
+          trend={isLoading ? null : analyticsData?.trends.users}
+          description="Today"
+        />
+        <StatCard 
+          title="Revenue" 
+          value={isLoading ? null : formatCurrency(analyticsData?.today.total_revenue || 0)} 
+          trend={isLoading ? null : analyticsData?.trends.revenue}
+          description="Today"
+        />
+      </div>
+
+      {/* Charts */}
+      <Tabs defaultValue="visitors" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="visitors">Visitors</TabsTrigger>
+          <TabsTrigger value="pageviews">Page Views</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+        </TabsList>
+
+        <div className="flex justify-end mb-2">
+          <TabsList>
+            <TabsTrigger 
+              value="weekly" 
+              onClick={() => setTimeRange('weekly')}
+              data-state={timeRange === 'weekly' ? 'active' : ''}
+            >
+              Weekly
+            </TabsTrigger>
+            <TabsTrigger 
+              value="monthly"
+              onClick={() => setTimeRange('monthly')}
+              data-state={timeRange === 'monthly' ? 'active' : ''}
+            >
+              Monthly
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Product Page Views" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Smart Link Views" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Unique Visitors" stroke="#ffc658" />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+        <TabsContent value="visitors" className="space-y-4">
+          <ChartContainer className="h-[400px]">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="visitors" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="day" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="unique_visitors" 
+                    name="Unique Visitors"
+                    stroke="hsl(var(--chart-1))" 
+                    fillOpacity={1} 
+                    fill="url(#visitors)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ChartContainer>
+        </TabsContent>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">User Journey</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Registered Users"
-            value={currentMetrics?.registeredUsers.total.toLocaleString() || "0"}
-            change={currentMetrics?.registeredUsers.trend}
-          />
-          <StatCard
-            title="Active Users"
-            value={currentMetrics?.activeUsers.total.toLocaleString() || "0"}
-            change={currentMetrics?.activeUsers.trend}
-          />
-          <StatCard
-            title="Pro Subscribers"
-            value={currentMetrics?.proSubscribers.total.toLocaleString() || "0"}
-            change={currentMetrics?.proSubscribers.trend}
-          />
-          <StatCard
-            title="Visitor to Registered"
-            value={formatPercentage(currentMetrics?.visitorToRegisteredRate.total || 0)}
-            change={currentMetrics?.visitorToRegisteredRate.trend}
-          />
-        </div>
+        <TabsContent value="pageviews" className="space-y-4">
+          <ChartContainer className="h-[400px]">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="pageviews" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="smartlinks" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="day" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="product_page_views" 
+                    name="Product Page Views"
+                    stroke="hsl(var(--chart-1))" 
+                    fillOpacity={1} 
+                    fill="url(#pageviews)" 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="smart_link_views" 
+                    name="Smart Link Views"
+                    stroke="hsl(var(--chart-2))" 
+                    fillOpacity={1} 
+                    fill="url(#smartlinks)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ChartContainer>
+        </TabsContent>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Registered Users" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Active Users" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Pro Subscribers" stroke="#ffc658" />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+        <TabsContent value="users" className="space-y-4">
+          <ChartContainer className="h-[400px]">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="registered" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="active" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="pro" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="day" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="registered_users" 
+                    name="New Registrations"
+                    stroke="hsl(var(--chart-1))" 
+                    fillOpacity={1} 
+                    fill="url(#registered)" 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="active_users" 
+                    name="Active Users"
+                    stroke="hsl(var(--chart-2))" 
+                    fillOpacity={1} 
+                    fill="url(#active)" 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="pro_subscribers" 
+                    name="Pro Subscribers"
+                    stroke="hsl(var(--chart-3))" 
+                    fillOpacity={1} 
+                    fill="url(#pro)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ChartContainer>
+        </TabsContent>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Revenue</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(currentMetrics?.revenue.total || 0)}
-            change={currentMetrics?.revenue.trend}
-          />
-          <StatCard
-            title="Registered to Pro"
-            value={formatPercentage(currentMetrics?.registeredToProRate.total || 0)}
-            change={currentMetrics?.registeredToProRate.trend}
-          />
-        </div>
+        <TabsContent value="revenue" className="space-y-4">
+          <ChartContainer className="h-[400px]">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="day" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis 
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip 
+                    content={<ChartTooltip formatter={(value) => `$${value}`} />}
+                  />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="total_revenue" 
+                    name="Revenue"
+                    stroke="hsl(var(--chart-1))" 
+                    fillOpacity={1} 
+                    fill="url(#revenue)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ChartContainer>
+        </TabsContent>
+      </Tabs>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Bar dataKey="Revenue" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Pro Features Usage</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Social Assets Created"
-            value={currentMetrics?.socialAssetsCreated.total.toLocaleString() || "0"}
-            change={currentMetrics?.socialAssetsCreated.trend}
-          />
-          <StatCard
-            title="Meta Pixels Added"
-            value={currentMetrics?.metaPixelsAdded.total.toLocaleString() || "0"}
-            change={currentMetrics?.metaPixelsAdded.trend}
-          />
-          <StatCard
-            title="Email Capture Enabled"
-            value={currentMetrics?.emailCaptureEnabled.total.toLocaleString() || "0"}
-            change={currentMetrics?.emailCaptureEnabled.trend}
-          />
-        </div>
-
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <ChartTooltip formatter={(value, name, props) => [
-                `${value} users (${props.payload.percentage.toFixed(1)}%)`,
-                "Usage"
-              ]} />
-              <Bar dataKey="value" fill="#82ca9d" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Monthly User Trends</h2>
-        <ChartContainer config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Active Users" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Pro Users" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Total Users" stroke="#ffc658" />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+      {/* Recent Function Logs */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Recent Function Logs</CardTitle>
+            <CardDescription>Last 5 function calls and their status</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/control-room/analytics/logs">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              View All Logs
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLogsLoading ? (
+            <div className="space-y-2">
+              {Array(5).fill(null).map((_, i) => (
+                <Skeleton key={i} className="w-full h-8" />
+              ))}
+            </div>
+          ) : recentLogs && recentLogs.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Function</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Time (ms)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell>{new Date(log.created_at).toLocaleString()}</TableCell>
+                    <TableCell>{log.function_name}</TableCell>
+                    <TableCell>
+                      <span className={log.status === 'success' ? 'text-success-DEFAULT' : 'text-destructive'}>
+                        {log.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>{log.execution_time_ms}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No recent logs found.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+// Stat card component
+const StatCard = ({ 
+  title, 
+  value, 
+  trend = null, 
+  description 
+}: { 
+  title: string; 
+  value: string | null; 
+  trend?: number | null; 
+  description: string;
+}) => {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">
+          {value === null ? <Skeleton className="h-8 w-20" /> : value}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+          {description}
+          {trend !== null && (
+            <span className="ml-1">
+              {trend > 0 ? (
+                <span className="text-success-DEFAULT">↑ {trend.toFixed(1)}%</span>
+              ) : trend < 0 ? (
+                <span className="text-destructive">↓ {Math.abs(trend).toFixed(1)}%</span>
+              ) : (
+                <span className="text-muted-foreground">0%</span>
+              )}
+            </span>
+          )}
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default Analytics;
