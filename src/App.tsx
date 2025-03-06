@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Route,
@@ -131,16 +132,16 @@ function App() {
               </PrivateRoute>
             }
           />
-          {
-            path: "/control-room/analytics/logs",
-            element: (
+          <Route
+            path="/control-room/analytics/logs"
+            element={
               <PrivateRoute>
                 <AdminLayout>
                   <AnalyticsLogs />
                 </AdminLayout>
               </PrivateRoute>
-            )
-          }
+            }
+          />
         </Routes>
       </AuthProvider>
     </Router>
