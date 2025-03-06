@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -40,6 +41,33 @@ import {
 
 // Data
 import { genres } from '@/lib/genres';
+
+// Types
+interface User {
+  id: string;
+  name: string;
+  artist_name: string;
+  music_genre: string;
+  country: string;
+  email?: string;
+  created_at?: string;
+  user_roles: { 
+    id?: string;
+    role: 'admin' | 'user';
+  }[];
+  subscriptions?: {
+    tier: 'free' | 'pro';
+    is_lifetime?: boolean;
+    is_early_adopter?: boolean;
+    current_period_end?: string;
+  }[];
+  smart_links?: any[];
+}
+
+interface UsersResponse {
+  users: User[];
+  count: number;
+}
 
 const NewUsersPage = () => {
   // Navigation
@@ -87,11 +115,11 @@ const NewUsersPage = () => {
 
   // Fetch users
   const { 
-    data: users = [], 
+    data: usersData, 
     isLoading, 
     error: queryError,
     refetch,
-  } = useQuery({
+  } = useQuery<UsersResponse>({
     queryKey: ['adminUsers', currentPage, pageSize, sortDirection, filters, searchQuery],
     queryFn: async () => {
       try {
@@ -141,7 +169,9 @@ const NewUsersPage = () => {
 
         // Apply filters
         if (filters.subscription !== 'all') {
-          query = query.eq('subscriptions.tier', filters.subscription);
+          // Use type assertion to handle the string to enum conversion
+          const tier = filters.subscription as 'free' | 'pro';
+          query = query.eq('subscriptions.tier', tier);
         }
         if (filters.genre !== 'all') {
           query = query.eq('music_genre', filters.genre);
@@ -188,7 +218,7 @@ const NewUsersPage = () => {
     (searchQuery ? 1 : 0);
 
   // Handle user edit
-  const handleEditUser = async (updatedProfile) => {
+  const handleEditUser = async (updatedProfile: User) => {
     if (!selectedUser) return;
     
     try {
@@ -284,7 +314,7 @@ const NewUsersPage = () => {
         <div className="flex items-center gap-2">
           <UsersIcon className="h-5 w-5 text-primary" />
           <span className="text-2xl font-semibold">
-            {users?.count || 0}
+            {usersData?.count || 0}
           </span>
           <span className="text-muted-foreground text-base font-normal">
             {activeFiltersCount > 0 ? 'filtered' : 'total'} users
@@ -402,8 +432,8 @@ const NewUsersPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.users && users.users.length > 0 ? (
-              users.users.map((user) => (
+            {usersData?.users && usersData.users.length > 0 ? (
+              usersData.users.map((user) => (
                 <TableRow key={user.id} className="transition-colors hover:bg-muted/50">
                   <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                   <TableCell>{user.email || 'N/A'}</TableCell>
@@ -543,7 +573,7 @@ const NewUsersPage = () => {
         <Button
           variant="outline"
           onClick={() => setCurrentPage(prev => prev + 1)}
-          disabled={!users?.users || users.users.length < pageSize}
+          disabled={!usersData?.users || usersData.users.length < pageSize}
           className="border-neutral hover:border-primary-medium hover:bg-primary-light transition-colors"
         >
           Next
@@ -553,4 +583,4 @@ const NewUsersPage = () => {
   );
 };
 
-export default NewUsersPage; 
+export default NewUsersPage;

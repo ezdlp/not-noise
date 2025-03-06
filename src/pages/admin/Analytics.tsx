@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -377,6 +378,15 @@ function Analytics() {
     );
   }
 
+  const defaultChartConfig = {
+    grid: true,
+    legend: true,
+    xAxis: true,
+    yAxis: true,
+    aspectRatio: "3/2",
+    tooltipType: "standard"
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -410,7 +420,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -451,7 +461,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -482,7 +492,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -516,7 +526,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -535,7 +545,7 @@ function Analytics() {
       {/* Monthly Active Users Trend */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Monthly User Trends</h2>
-        <ChartContainer>
+        <ChartContainer config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
