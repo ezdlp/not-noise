@@ -11,7 +11,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAx
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Json } from "@/supabase/functions/_shared/database.types";
+import { Json } from "@/integrations/supabase/types";
 
 // Define the shape of the analytics data
 interface AnalyticsBaseStats {
@@ -154,9 +154,10 @@ function Analytics() {
         try {
           // The data should be a JSON array of stats objects
           if (typeof data === 'string') {
-            parsedData = JSON.parse(data);
+            parsedData = JSON.parse(data) as (AnalyticsBaseStats | AnalyticsFullStats)[];
           } else if (Array.isArray(data)) {
-            parsedData = data as (AnalyticsBaseStats | AnalyticsFullStats)[];
+            // We need to explicitly cast the JSON data to our expected analytics types
+            parsedData = data as unknown as (AnalyticsBaseStats | AnalyticsFullStats)[];
           }
         } catch (e) {
           console.error("Failed to parse analytics data:", e);
@@ -265,8 +266,8 @@ function Analytics() {
     
     // If we have full stats data, add the additional metrics
     if (!fallbackMode && currentPeriodData.length > 0 && isFullStatsData(currentPeriodData[0])) {
-      const fullCurrentData = currentPeriodData as AnalyticsFullStats[];
-      const fullPreviousData = previousPeriodData as AnalyticsFullStats[];
+      const fullCurrentData = currentPeriodData.filter(isFullStatsData);
+      const fullPreviousData = previousPeriodData.filter(isFullStatsData);
       
       const totalRegisteredUsers = fullCurrentData.reduce((sum, stat) => sum + stat.registered_users, 0);
       const totalActiveUsers = fullCurrentData.reduce((sum, stat) => sum + stat.active_users, 0);
@@ -365,6 +366,11 @@ function Analytics() {
     return `${value.toFixed(1)}%`;
   };
 
+  // Type guard to check if currentMetrics is FullMetrics
+  const isFullMetrics = (metrics: Metrics | null): metrics is FullMetrics => {
+    return metrics !== null && 'registeredUsers' in metrics;
+  };
+
   const trafficData = useMemo(() => {
     if (!cachedStats) return [];
     return cachedStats
@@ -427,11 +433,6 @@ function Analytics() {
     yAxis: true,
     aspectRatio: "3/2",
     tooltipType: "standard" as const
-  };
-
-  // Type guard to check if currentMetrics is FullMetrics
-  const isFullMetrics = (metrics: Metrics | null): metrics is FullMetrics => {
-    return metrics !== null && 'registeredUsers' in metrics;
   };
 
   if (isLoading) {
