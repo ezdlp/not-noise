@@ -38,7 +38,9 @@ function isFullStatsData(data: any): data is AnalyticsFullStats {
   return (
     data &&
     typeof data === 'object' &&
-    'registered_users' in data
+    'registered_users' in data &&
+    'active_users' in data &&
+    'pro_subscribers' in data
   );
 }
 
@@ -151,34 +153,61 @@ function Analytics() {
         }
 
         if (!data) {
+          console.error("No data returned from analytics function");
           return [];
         }
 
-        // Parse the returned JSON array
+        console.log("Raw data from function:", data);
+        
+        // Parse the returned data
         let parsedData: (AnalyticsBaseStats | AnalyticsFullStats)[] = [];
         
         try {
-          // The data should be a JSON array of stats objects
           if (typeof data === 'string') {
+            // If data is a JSON string, parse it
             parsedData = JSON.parse(data) as (AnalyticsBaseStats | AnalyticsFullStats)[];
           } else if (Array.isArray(data)) {
-            // We need to explicitly cast the JSON data to our expected analytics types
-            parsedData = data as unknown as (AnalyticsBaseStats | AnalyticsFullStats)[];
+            // If data is already an array, ensure each item has the required properties
+            parsedData = data.map(item => {
+              // Make sure each item has the required base properties
+              if (typeof item === 'object' && item !== null) {
+                const typedItem = item as unknown as (AnalyticsBaseStats | AnalyticsFullStats);
+                // Validate that this is a proper stats object
+                if (typeof typedItem.period === 'string' && 
+                    typeof typedItem.day === 'string' && 
+                    typeof typedItem.product_page_views === 'number') {
+                  return typedItem;
+                }
+              }
+              console.warn("Invalid item in analytics data:", item);
+              // Return a default item with zeros for invalid data
+              return {
+                period: "current",
+                day: new Date().toISOString(),
+                product_page_views: 0,
+                smart_link_views: 0,
+                unique_visitors: 0
+              };
+            });
+          } else {
+            console.error("Unexpected data format:", data);
+            return [];
           }
         } catch (e) {
           console.error("Failed to parse analytics data:", e);
           return [];
         }
 
+        console.log("Parsed data:", parsedData);
+        
         // Check if we got full or basic stats by looking at the first item
         if (parsedData.length > 0) {
-          if (isFullStatsData(parsedData[0])) {
-            console.log("Got full stats data");
-            setFallbackMode(false);
-          } else {
-            console.log("Got basic stats data");
-            setFallbackMode(true);
-          }
+          const hasFullStats = isFullStatsData(parsedData[0]);
+          console.log(hasFullStats ? "Got full stats data" : "Got basic stats data");
+          setFallbackMode(!hasFullStats);
+        } else {
+          console.warn("No data items in response");
+          setFallbackMode(true);
         }
         
         return parsedData;
@@ -241,18 +270,31 @@ function Analytics() {
   }, [refetch]);
 
   const currentMetrics = useMemo<Metrics | null>(() => {
-    if (!cachedStats || cachedStats.length === 0) return null;
+    if (!cachedStats || cachedStats.length === 0) {
+      console.warn("No cached stats available for metrics calculation");
+      return null;
+    }
 
+    console.log("Calculating metrics from", cachedStats.length, "data points");
+    
     const currentPeriodData = cachedStats.filter(s => s.period === "current");
     const previousPeriodData = cachedStats.filter(s => s.period === "previous");
+    
+    console.log("Current period data points:", currentPeriodData.length);
+    console.log("Previous period data points:", previousPeriodData.length);
 
-    const totalProductPageViews = currentPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
-    const totalSmartLinkViews = currentPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
-    const totalUniqueVisitors = currentPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
+    if (currentPeriodData.length === 0) {
+      console.warn("No current period data available");
+      return null;
+    }
 
-    const prevTotalProductPageViews = previousPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
-    const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
-    const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
+    const totalProductPageViews = currentPeriodData.reduce((sum, stat) => sum + (stat.product_page_views || 0), 0);
+    const totalSmartLinkViews = currentPeriodData.reduce((sum, stat) => sum + (stat.smart_link_views || 0), 0);
+    const totalUniqueVisitors = currentPeriodData.reduce((sum, stat) => sum + (stat.unique_visitors || 0), 0);
+
+    const prevTotalProductPageViews = previousPeriodData.reduce((sum, stat) => sum + (stat.product_page_views || 0), 0);
+    const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + (stat.smart_link_views || 0), 0);
+    const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + (stat.unique_visitors || 0), 0);
 
     // Base metrics available in both full and basic stats
     const baseMetrics: BaseMetrics = {
@@ -271,78 +313,86 @@ function Analytics() {
     };
     
     // If we have full stats data, add the additional metrics
-    if (!fallbackMode && currentPeriodData.length > 0 && isFullStatsData(currentPeriodData[0])) {
+    if (!fallbackMode && currentPeriodData.length > 0) {
+      // Filter to only include items that have the full stats properties
       const fullCurrentData = currentPeriodData.filter(isFullStatsData);
       const fullPreviousData = previousPeriodData.filter(isFullStatsData);
       
-      const totalRegisteredUsers = fullCurrentData.reduce((sum, stat) => sum + stat.registered_users, 0);
-      const totalActiveUsers = fullCurrentData.reduce((sum, stat) => sum + stat.active_users, 0);
-      const totalProSubscribers = fullCurrentData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
-      const totalRevenue = fullCurrentData.reduce((sum, stat) => sum + stat.total_revenue, 0);
-      const totalSmartLinksCreated = fullCurrentData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
-      const totalSocialAssetsCreated = fullCurrentData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
-      const totalMetaPixelsAdded = fullCurrentData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
-      const totalEmailCaptureEnabled = fullCurrentData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
+      if (fullCurrentData.length > 0) {
+        console.log("Processing full metrics data");
+        
+        const totalRegisteredUsers = fullCurrentData.reduce((sum, stat) => sum + (stat.registered_users || 0), 0);
+        const totalActiveUsers = fullCurrentData.reduce((sum, stat) => sum + (stat.active_users || 0), 0);
+        const totalProSubscribers = fullCurrentData.reduce((sum, stat) => sum + (stat.pro_subscribers || 0), 0);
+        const totalRevenue = fullCurrentData.reduce((sum, stat) => sum + (stat.total_revenue || 0), 0);
+        const totalSmartLinksCreated = fullCurrentData.reduce((sum, stat) => sum + (stat.smart_links_created || 0), 0);
+        const totalSocialAssetsCreated = fullCurrentData.reduce((sum, stat) => sum + (stat.social_assets_created || 0), 0);
+        const totalMetaPixelsAdded = fullCurrentData.reduce((sum, stat) => sum + (stat.meta_pixels_added || 0), 0);
+        const totalEmailCaptureEnabled = fullCurrentData.reduce((sum, stat) => sum + (stat.email_capture_enabled || 0), 0);
 
-      const prevTotalRegisteredUsers = fullPreviousData.reduce((sum, stat) => sum + stat.registered_users, 0);
-      const prevTotalActiveUsers = fullPreviousData.reduce((sum, stat) => sum + stat.active_users, 0);
-      const prevTotalProSubscribers = fullPreviousData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
-      const prevTotalRevenue = fullPreviousData.reduce((sum, stat) => sum + stat.total_revenue, 0);
-      const prevTotalSmartLinksCreated = fullPreviousData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
-      const prevTotalSocialAssetsCreated = fullPreviousData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
-      const prevTotalMetaPixelsAdded = fullPreviousData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
-      const prevTotalEmailCaptureEnabled = fullPreviousData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
+        const prevTotalRegisteredUsers = fullPreviousData.reduce((sum, stat) => sum + (stat.registered_users || 0), 0);
+        const prevTotalActiveUsers = fullPreviousData.reduce((sum, stat) => sum + (stat.active_users || 0), 0);
+        const prevTotalProSubscribers = fullPreviousData.reduce((sum, stat) => sum + (stat.pro_subscribers || 0), 0);
+        const prevTotalRevenue = fullPreviousData.reduce((sum, stat) => sum + (stat.total_revenue || 0), 0);
+        const prevTotalSmartLinksCreated = fullPreviousData.reduce((sum, stat) => sum + (stat.smart_links_created || 0), 0);
+        const prevTotalSocialAssetsCreated = fullPreviousData.reduce((sum, stat) => sum + (stat.social_assets_created || 0), 0);
+        const prevTotalMetaPixelsAdded = fullPreviousData.reduce((sum, stat) => sum + (stat.meta_pixels_added || 0), 0);
+        const prevTotalEmailCaptureEnabled = fullPreviousData.reduce((sum, stat) => sum + (stat.email_capture_enabled || 0), 0);
 
-      const fullMetrics: FullMetrics = {
-        ...baseMetrics,
-        registeredUsers: {
-          total: totalRegisteredUsers,
-          trend: calculateTrend(totalRegisteredUsers, prevTotalRegisteredUsers),
-        },
-        activeUsers: {
-          total: totalActiveUsers,
-          trend: calculateTrend(totalActiveUsers, prevTotalActiveUsers),
-        },
-        proSubscribers: {
-          total: totalProSubscribers,
-          trend: calculateTrend(totalProSubscribers, prevTotalProSubscribers),
-        },
-        revenue: {
-          total: totalRevenue,
-          trend: calculateTrend(totalRevenue, prevTotalRevenue),
-        },
-        smartLinksCreated: {
-          total: totalSmartLinksCreated,
-          trend: calculateTrend(totalSmartLinksCreated, prevTotalSmartLinksCreated),
-        },
-        socialAssetsCreated: {
-          total: totalSocialAssetsCreated,
-          trend: calculateTrend(totalSocialAssetsCreated, prevTotalSocialAssetsCreated),
-        },
-        metaPixelsAdded: {
-          total: totalMetaPixelsAdded,
-          trend: calculateTrend(totalMetaPixelsAdded, prevTotalMetaPixelsAdded),
-        },
-        emailCaptureEnabled: {
-          total: totalEmailCaptureEnabled,
-          trend: calculateTrend(totalEmailCaptureEnabled, prevTotalEmailCaptureEnabled),
-        },
-        visitorToRegisteredRate: {
-          total: totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
-          trend: calculateTrend(
-            totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
-            prevTotalUniqueVisitors > 0 ? (prevTotalRegisteredUsers / prevTotalUniqueVisitors) * 100 : 0
-          ),
-        },
-        registeredToProRate: {
-          total: totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
-          trend: calculateTrend(
-            totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
-            prevTotalRegisteredUsers > 0 ? (prevTotalProSubscribers / prevTotalRegisteredUsers) * 100 : 0
-          ),
-        },
-      };
-      return fullMetrics;
+        const fullMetrics: FullMetrics = {
+          ...baseMetrics,
+          registeredUsers: {
+            total: totalRegisteredUsers,
+            trend: calculateTrend(totalRegisteredUsers, prevTotalRegisteredUsers),
+          },
+          activeUsers: {
+            total: totalActiveUsers,
+            trend: calculateTrend(totalActiveUsers, prevTotalActiveUsers),
+          },
+          proSubscribers: {
+            total: totalProSubscribers,
+            trend: calculateTrend(totalProSubscribers, prevTotalProSubscribers),
+          },
+          revenue: {
+            total: totalRevenue,
+            trend: calculateTrend(totalRevenue, prevTotalRevenue),
+          },
+          smartLinksCreated: {
+            total: totalSmartLinksCreated,
+            trend: calculateTrend(totalSmartLinksCreated, prevTotalSmartLinksCreated),
+          },
+          socialAssetsCreated: {
+            total: totalSocialAssetsCreated,
+            trend: calculateTrend(totalSocialAssetsCreated, prevTotalSocialAssetsCreated),
+          },
+          metaPixelsAdded: {
+            total: totalMetaPixelsAdded,
+            trend: calculateTrend(totalMetaPixelsAdded, prevTotalMetaPixelsAdded),
+          },
+          emailCaptureEnabled: {
+            total: totalEmailCaptureEnabled,
+            trend: calculateTrend(totalEmailCaptureEnabled, prevTotalEmailCaptureEnabled),
+          },
+          visitorToRegisteredRate: {
+            total: totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
+            trend: calculateTrend(
+              totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
+              prevTotalUniqueVisitors > 0 ? (prevTotalRegisteredUsers / prevTotalUniqueVisitors) * 100 : 0
+            ),
+          },
+          registeredToProRate: {
+            total: totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
+            trend: calculateTrend(
+              totalRegisteredUsers > 0 ? (totalProSubscribers / totalRegisteredUsers) * 100 : 0,
+              prevTotalRegisteredUsers > 0 ? (prevTotalProSubscribers / prevTotalRegisteredUsers) * 100 : 0
+            ),
+          },
+        };
+        return fullMetrics;
+      } else {
+        console.warn("No full stats items found even though fallbackMode is false");
+        setFallbackMode(true);
+      }
     }
     
     // Return only the base metrics for basic stats
@@ -372,21 +422,27 @@ function Analytics() {
   };
 
   const trafficData = useMemo(() => {
-    if (!cachedStats) return [];
-    return cachedStats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Product Page Views": stat.product_page_views,
-        "Smart Link Views": stat.smart_link_views,
-        "Unique Visitors": stat.unique_visitors,
-      }));
+    if (!cachedStats || cachedStats.length === 0) return [];
+    
+    const currentData = cachedStats.filter(s => s.period === "current");
+    if (currentData.length === 0) return [];
+    
+    return currentData.map(stat => ({
+      date: formatDate(stat.day),
+      "Product Page Views": stat.product_page_views || 0,
+      "Smart Link Views": stat.smart_link_views || 0,
+      "Unique Visitors": stat.unique_visitors || 0,
+    }));
   }, [cachedStats]);
 
   const userJourneyData = useMemo(() => {
-    if (!cachedStats || fallbackMode) return [];
+    if (!cachedStats || fallbackMode || cachedStats.length === 0) return [];
     
-    const fullStats = cachedStats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    const fullStats = cachedStats
+      .filter(s => s.period === "current")
+      .filter(isFullStatsData);
+    
+    if (fullStats.length === 0) return [];
     
     return fullStats.map(stat => ({
       date: formatDate(stat.day),
@@ -397,9 +453,13 @@ function Analytics() {
   }, [cachedStats, fallbackMode]);
 
   const revenueData = useMemo(() => {
-    if (!cachedStats || fallbackMode) return [];
+    if (!cachedStats || fallbackMode || cachedStats.length === 0) return [];
     
-    const fullStats = cachedStats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    const fullStats = cachedStats
+      .filter(s => s.period === "current")
+      .filter(isFullStatsData);
+    
+    if (fullStats.length === 0) return [];
     
     return fullStats.map(stat => ({
       date: formatDate(stat.day),
@@ -408,7 +468,7 @@ function Analytics() {
   }, [cachedStats, fallbackMode]);
 
   const monthlyUsersChartData = useMemo(() => {
-    if (!monthlyUsers) return [];
+    if (!monthlyUsers || monthlyUsers.length === 0) return [];
     return monthlyUsers.map(data => ({
       month: data.month,
       "Active Users": data.active_users,
@@ -418,7 +478,7 @@ function Analytics() {
   }, [monthlyUsers]);
 
   const proFeaturesChartData = useMemo(() => {
-    if (!proFeatures) return [];
+    if (!proFeatures || proFeatures.length === 0) return [];
     return proFeatures.map(feature => ({
       name: feature.feature,
       value: feature.count,
@@ -476,6 +536,33 @@ function Analytics() {
     );
   }
 
+  // Show a message if no data is available
+  if (!cachedStats || cachedStats.length === 0 || !currentMetrics) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-primary-foreground">Analytics</h1>
+          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+        </div>
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-lg font-medium mb-2">No analytics data available</h2>
+            <p className="text-muted-foreground mb-4">
+              There is no analytics data available for the selected time period.
+            </p>
+            <Button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+            >
+              Refresh
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -518,19 +605,21 @@ function Analytics() {
           )}
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
-              <Line type="monotone" dataKey="Product Page Views" stroke={chartColors.primary} />
-              <Line type="monotone" dataKey="Smart Link Views" stroke={chartColors.lighter} />
-              <Line type="monotone" dataKey="Unique Visitors" stroke={chartColors.lightest} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        {trafficData.length > 0 && (
+          <ChartContainer className="mt-6" config={defaultChartConfig}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
+                <Line type="monotone" dataKey="Product Page Views" stroke={chartColors.primary} />
+                <Line type="monotone" dataKey="Smart Link Views" stroke={chartColors.lighter} />
+                <Line type="monotone" dataKey="Unique Visitors" stroke={chartColors.lightest} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        )}
       </div>
 
       {!fallbackMode && isFullMetrics(currentMetrics) && (
@@ -560,19 +649,21 @@ function Analytics() {
               />
             </div>
 
-            <ChartContainer className="mt-6" config={defaultChartConfig}>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
-                  <Line type="monotone" dataKey="Registered Users" stroke={chartColors.primary} />
-                  <Line type="monotone" dataKey="Active Users" stroke={chartColors.lighter} />
-                  <Line type="monotone" dataKey="Pro Subscribers" stroke={chartColors.lightest} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {userJourneyData.length > 0 && (
+              <ChartContainer className="mt-6" config={defaultChartConfig}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
+                    <Line type="monotone" dataKey="Registered Users" stroke={chartColors.primary} />
+                    <Line type="monotone" dataKey="Active Users" stroke={chartColors.lighter} />
+                    <Line type="monotone" dataKey="Pro Subscribers" stroke={chartColors.lightest} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
           </div>
 
           <div>
@@ -590,17 +681,19 @@ function Analytics() {
               />
             </div>
 
-            <ChartContainer className="mt-6" config={defaultChartConfig}>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <ChartTooltip formatter={(value: number) => formatCurrency(Number(value))} />
-                  <Bar dataKey="Revenue" fill={chartColors.primary} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {revenueData.length > 0 && (
+              <ChartContainer className="mt-6" config={defaultChartConfig}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip formatter={(value: number) => formatCurrency(Number(value))} />
+                    <Bar dataKey="Revenue" fill={chartColors.primary} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
           </div>
 
           <div>
@@ -623,38 +716,42 @@ function Analytics() {
               />
             </div>
 
-            <ChartContainer className="mt-6" config={defaultChartConfig}>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <ChartTooltip formatter={(value: number, name: string, props: any) => [
-                    `${value} users (${props.payload.percentage.toFixed(1)}%)`,
-                    "Usage"
-                  ]} />
-                  <Bar dataKey="value" fill={chartColors.primary} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {proFeaturesChartData.length > 0 && (
+              <ChartContainer className="mt-6" config={defaultChartConfig}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip formatter={(value: number, name: string, props: any) => [
+                      `${value} users (${props.payload.percentage.toFixed(1)}%)`,
+                      "Usage"
+                    ]} />
+                    <Bar dataKey="value" fill={chartColors.primary} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Monthly User Trends</h2>
-            <ChartContainer config={defaultChartConfig}>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
-                  <Line type="monotone" dataKey="Active Users" stroke={chartColors.primary} />
-                  <Line type="monotone" dataKey="Pro Users" stroke={chartColors.lighter} />
-                  <Line type="monotone" dataKey="Total Users" stroke={chartColors.lightest} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
+          {monthlyUsersChartData.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Monthly User Trends</h2>
+              <ChartContainer config={defaultChartConfig}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
+                    <Line type="monotone" dataKey="Active Users" stroke={chartColors.primary} />
+                    <Line type="monotone" dataKey="Pro Users" stroke={chartColors.lighter} />
+                    <Line type="monotone" dataKey="Total Users" stroke={chartColors.lightest} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+          )}
         </>
       )}
     </div>
