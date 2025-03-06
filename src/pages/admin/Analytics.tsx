@@ -120,6 +120,12 @@ function Analytics() {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
 
+  // Helper function to calculate trend - moved up here to fix the temporal dead zone issue
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
   useEffect(() => {
     const range = timeRanges.find((r) => r.value === timeRange);
     if (range) {
@@ -342,12 +348,6 @@ function Analytics() {
     // Return only the base metrics for basic stats
     return baseMetrics;
   }, [cachedStats, fallbackMode]);
-
-  // Helper function to calculate trend
-  const calculateTrend = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
