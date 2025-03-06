@@ -60,14 +60,6 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
-## Database Access Guidelines
-
-This project uses Supabase as its database backend. To ensure proper database access:
-
-- Always refer to [SUPABASE_ACCESS_GUIDELINES.md](./SUPABASE_ACCESS_GUIDELINES.md) when working with database operations
-- All database queries must use the MCP connection (read-only)
-- Any database modifications require SQL scripts that must be run manually in the Supabase dashboard
-
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/833e19c2-c9f0-449e-9333-5d1b15903c50) and click on Share -> Publish.

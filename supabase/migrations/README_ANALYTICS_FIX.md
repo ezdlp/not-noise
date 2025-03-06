@@ -2,23 +2,19 @@
 
 ## Issue Description
 
-The analytics page in the admin section (control-room/analytics) was experiencing several issues:
+The analytics page in the admin section (control-room/analytics) was failing to load due to SQL errors in the `get_improved_analytics_stats` function. The errors were:
 
-1. **Loading Error**: The page was failing to load due to SQL errors in the `get_improved_analytics_stats` function:
-   - `"column reference \"email_capture_enabled\" is ambiguous"`
-   - `"column reference \"day\" is ambiguous"`
+1. `"column reference \"email_capture_enabled\" is ambiguous"`
+2. `"column reference \"day\" is ambiguous"`
 
-2. **Incorrect Revenue Display**: 
-   - Revenue numbers were not matching Stripe dashboard data
-   - Currency was displayed in USD instead of EUR
+These occurred because:
+- The column `email_capture_enabled` exists in the `smart_links` table and is also used as an output column name in the function
+- The column `day` is used in multiple places in the query and in the UNION ALL operation
+- The SQL query was referencing these columns without proper table qualification, causing ambiguity
 
-3. **Missing Chart Tooltips**: Charts did not have proper tooltips
+## Fix Applied
 
-4. **Design Issues**: The UI did not follow the Soundraiser design system
-
-## Fixes Applied
-
-We've created several migration files to address these issues:
+Two migration files have been created to fix these issues:
 
 ### 1. `20250306000000_fix_analytics_column_ambiguity.sql`
 
@@ -32,20 +28,7 @@ We've created several migration files to address these issues:
 - Adds subquery aliases (`curr` and `prev`) to properly qualify the day column in the UNION ALL operation
 - References the day column as `curr.day` and `prev.day` to avoid ambiguity
 
-### 3. `20250306000002_fix_revenue_calculation.sql`
-
-- Updates the revenue calculation to use actual data from the Stripe charges table
-- Changes revenue calculation from an estimate based on subscription tiers to actual transaction data
-- Converts Stripe amounts from cents to euros (Stripe stores amounts in the smallest currency unit)
-
-### 4. UI Improvements
-
-- Updated the Analytics.tsx component to:
-  - Format currency in EUR instead of USD
-  - Add proper tooltips to all charts
-  - Apply the Soundraiser design system (colors, spacing, typography, etc.)
-
-## How to Apply the Fixes
+## How to Apply the Fix
 
 To apply these fixes to your Supabase instance:
 
@@ -59,18 +42,16 @@ supabase db push
 
 This will apply the new migrations to your Supabase database.
 
-For the UI fixes, pull the latest code changes which include updates to the Analytics.tsx component.
-
 ## Verification
 
 After applying the fixes, you should:
 
 1. Refresh the analytics page in the admin section
 2. Verify that the data loads correctly without errors
-3. Check that revenue numbers match your Stripe dashboard and are displayed in euros
-4. Confirm that charts have proper tooltips when hovering
-5. Verify that the design follows the Soundraiser design system
+3. Check that all charts and metrics are displaying properly
+
+If you continue to experience issues, please check the browser console for any additional error messages.
 
 ## Additional Notes
 
-These fixes maintain all the existing functionality of the analytics feature while addressing the specific issues. The revenue calculation now uses actual transaction data from Stripe, which should be more accurate than the previous estimation method. 
+These fixes maintain all the existing functionality of the analytics function while resolving the column ambiguity issues. No changes to the frontend code were required as the function signature and return values remain the same. 
