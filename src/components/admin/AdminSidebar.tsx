@@ -1,107 +1,73 @@
 
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { Link, useLocation } from "react-router-dom";
-import {
-  BarChart3,
-  FileText,
-  Home,
-  ListIcon,
-  LogOut,
-  Settings,
-  Users,
-  Database,
-  FileCode2
-} from "lucide-react";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  BarChart3, 
+  FileText, 
+  Users, 
+  LayoutGrid, 
+  ImageIcon, 
+  UploadIcon, 
+  Link2, 
+  Globe
+} from 'lucide-react';
 
-const sidebarItems = [
-  {
-    title: "Dashboard",
-    icon: Home,
-    path: "/control-room",
-  },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    path: "/control-room/analytics",
-  },
-  {
-    title: "Analytics Logs",
-    icon: FileCode2,
-    path: "/control-room/analytics/logs",
-  },
-  {
-    title: "Blog",
-    icon: FileText,
-    path: "/control-room/blog",
-  },
-  {
-    title: "Playlists",
-    icon: ListIcon,
-    path: "/control-room/playlists",
-  },
-  {
-    title: "Users",
-    icon: Users,
-    path: "/control-room/users",
-  },
-  {
-    title: "Data Import",
-    icon: Database,
-    path: "/control-room/import",
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    path: "/control-room/settings",
-  },
-];
-
-export function AdminSidebar() {
+export const AdminSidebar: React.FC = () => {
   const location = useLocation();
-
-  const isActive = (path: string) => {
-    if (path === "/control-room" && location.pathname === "/control-room") {
-      return true;
-    }
-    
-    return location.pathname.startsWith(path) && path !== "/control-room";
-  };
+  
+  const menuItems = [
+    { to: '/control-room', icon: <LayoutGrid size={18} />, label: 'Overview' },
+    { to: '/control-room/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+    { to: '/control-room/content', icon: <FileText size={18} />, label: 'Blog Content' },
+    { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
+    { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
+    { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
+    { to: '/control-room/import', icon: <UploadIcon size={18} />, label: 'Import' },
+    { to: '/control-room/sitemap', icon: <Globe size={18} />, label: 'Sitemap Monitor' },
+  ];
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-[#E6E6E6]">
-      <div className="p-6">
-        <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+    <div className="w-64 h-screen bg-gray-50 border-r border-gray-200 pt-4 flex flex-col overflow-y-auto">
+      {/* Admin Menu Header */}
+      <div className="px-6 py-4 mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Control Room</h2>
+        <p className="text-sm text-gray-500">Admin Dashboard</p>
       </div>
-      <ScrollArea className="flex-1 px-4">
-        <nav className="space-y-2">
-          {sidebarItems.map((item, index) => (
-            <Button
-              key={index}
-              variant="ghost"
-              asChild
-              className={cn(
-                "w-full justify-start",
-                isActive(item.path) && "bg-primary/10 text-primary hover:bg-primary/20"
-              )}
-            >
-              <Link to={item.path} className="flex items-center">
-                <item.icon className="h-5 w-5 mr-3" />
-                {item.title}
-              </Link>
-            </Button>
-          ))}
-        </nav>
-      </ScrollArea>
-      <div className="p-6 border-t border-[#E6E6E6]">
-        <Button variant="outline" className="w-full justify-start" asChild>
-          <Link to="/logout">
-            <LogOut className="h-5 w-5 mr-3" />
-            Log Out
-          </Link>
-        </Button>
+      
+      {/* Menu Items */}
+      <nav className="flex-1">
+        <ul className="px-4 space-y-1">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm group ${
+                    isActive
+                      ? 'bg-primary text-white font-medium'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className={`mr-3 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-600'}`}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      
+      {/* Bottom Section */}
+      <div className="px-6 py-4 border-t border-gray-200 mt-auto">
+        <div className="flex items-center">
+          <div className="ml-3">
+            <p className="text-xs text-gray-500">Soundraiser Admin</p>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};

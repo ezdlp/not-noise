@@ -9,30 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      analytics_cache: {
-        Row: {
-          cache_data: Json
-          cache_key: string
-          created_at: string | null
-          expires_at: string
-          id: number
-        }
-        Insert: {
-          cache_data: Json
-          cache_key: string
-          created_at?: string | null
-          expires_at: string
-          id?: number
-        }
-        Update: {
-          cache_data?: Json
-          cache_key?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: number
-        }
-        Relationships: []
-      }
       analytics_events: {
         Row: {
           created_at: string | null
@@ -1745,27 +1721,6 @@ export type Database = {
           total_revenue: number
         }[]
       }
-      get_basic_analytics_stats: {
-        Args: {
-          p_start_date: string
-          p_end_date?: string
-        }
-        Returns: {
-          period: string
-          day: string
-          product_page_views: number
-          smart_link_views: number
-          unique_visitors: number
-        }[]
-      }
-      get_cached_analytics_stats: {
-        Args: {
-          p_start_date: string
-          p_end_date?: string
-          p_cache_minutes?: number
-        }
-        Returns: Json
-      }
       get_daily_stats: {
         Args: {
           p_smart_link_id: string
@@ -1793,27 +1748,6 @@ export type Database = {
           feature_usage: Json
         }[]
       }
-      get_improved_analytics_stats: {
-        Args: {
-          p_start_date: string
-          p_end_date?: string
-        }
-        Returns: {
-          period: string
-          day: string
-          product_page_views: number
-          smart_link_views: number
-          unique_visitors: number
-          registered_users: number
-          active_users: number
-          pro_subscribers: number
-          total_revenue: number
-          smart_links_created: number
-          social_assets_created: number
-          meta_pixels_added: number
-          email_capture_enabled: number
-        }[]
-      }
       get_mau: {
         Args: {
           p_date?: string
@@ -1823,23 +1757,6 @@ export type Database = {
           active_users: number
           pro_users: number
           total_users: number
-        }[]
-      }
-      get_monthly_active_users: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          month: string
-          active_users: number
-          pro_users: number
-          total_users: number
-        }[]
-      }
-      get_pro_feature_usage: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          feature: string
-          count: number
-          percentage: number
         }[]
       }
       get_sitemap_url_count: {

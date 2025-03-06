@@ -8,7 +8,7 @@ import {
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { AdminSidebar } from "./AdminSidebar";
 
-export function AdminLayout({ children }: { children?: React.ReactNode }) {
+export function AdminLayout() {
   const [defaultSize, setDefaultSize] = useLocalStorage("admin-sidebar-size", 12);
 
   return (
@@ -26,7 +26,7 @@ export function AdminLayout({ children }: { children?: React.ReactNode }) {
         <ResizableHandle withHandle />
         <ResizablePanel>
           <main className="flex-1 p-8">
-            {children ? children : <Outlet />}
+            <Outlet />
           </main>
         </ResizablePanel>
       </ResizablePanelGroup>
