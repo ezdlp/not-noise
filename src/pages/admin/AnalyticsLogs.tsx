@@ -23,8 +23,8 @@ interface AnalyticsLog {
   status: string;
   details: any;
   start_time: string;
-  end_time: string;
-  duration_ms: number;
+  end_time?: string;
+  duration_ms?: number;
   created_at: string;
 }
 
@@ -32,15 +32,16 @@ export default function AnalyticsLogs() {
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
   const { data: logs, isLoading, refetch, error } = useQuery({
-    queryKey: ["analytics-logs"],
+    queryKey: ["analytics-logs-data"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('analytics_function_logs')
+      const { data, error } = await supabase
+        .from('analytics_function_logs')
         .select('*')
         .order('start_time', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data as AnalyticsLog[];
+      return data as unknown as AnalyticsLog[];
     },
   });
 
@@ -149,7 +150,8 @@ export default function AnalyticsLogs() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {log.duration_ms !== null ? `${log.duration_ms.toFixed(2)}ms` : 'N/A'}
+                      {log.duration_ms !== null && log.duration_ms !== undefined ? 
+                        `${log.duration_ms.toFixed(2)}ms` : 'N/A'}
                     </TableCell>
                     <TableCell>{formatTimestamp(log.start_time)}</TableCell>
                     <TableCell>

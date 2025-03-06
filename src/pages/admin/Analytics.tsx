@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, AlertCircle, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Json } from "supabase/functions/_shared/database.types";
 
 interface AnalyticsStats {
   period: string;
@@ -42,8 +44,8 @@ interface AnalyticsLog {
   status: string;
   details: any;
   start_time: string;
-  end_time: string;
-  duration_ms: number;
+  end_time?: string;
+  duration_ms?: number;
   created_at: string;
 }
 
@@ -136,7 +138,7 @@ function Analytics() {
         }
 
         console.log("Raw data from function:", data);
-        return data as unknown as AnalyticsStats[];
+        return data as AnalyticsStats[];
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
         toast.error("Failed to load analytics data. Please try again later.");
@@ -149,16 +151,17 @@ function Analytics() {
   });
 
   const { data: analyticsLogs } = useQuery({
-    queryKey: ["analytics-logs"],
+    queryKey: ["analytics-logs-data"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.from('analytics_function_logs')
+        const { data, error } = await supabase
+          .from('analytics_function_logs')
           .select('*')
           .order('start_time', { ascending: false })
           .limit(10);
         
         if (error) throw error;
-        return data as AnalyticsLog[];
+        return data as unknown as AnalyticsLog[];
       } catch (error) {
         console.warn("Failed to fetch analytics logs:", error);
         return [];
