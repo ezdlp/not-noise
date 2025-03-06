@@ -5,12 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-// Updated interface to match our new SQL function
 interface ImprovedAnalyticsStats {
   period: string;
   day: string;
@@ -48,11 +47,11 @@ interface StatCardProps {
 }
 
 const chartColors = {
-  primary: "#6851FB",    // Majorelle Blue (Base)
-  lighter: "#9B87F5",    // 20% lighter
-  lightest: "#D0C7FF",   // 40% lighter
-  darker: "#271153",     // 20% darker
-  darkest: "#180B33"     // 40% darker
+  primary: "#6851FB",
+  lighter: "#9B87F5",
+  lightest: "#D0C7FF",
+  darker: "#271153",
+  darkest: "#180B33"
 };
 
 function StatCard({ title, value, change, className }: StatCardProps) {
@@ -84,17 +83,14 @@ function Analytics() {
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
 
-  // Update time range and dates when selection changes
   useEffect(() => {
     const range = timeRanges.find((r) => r.value === timeRange);
     if (range) {
-      // Calculate start date based on the days property
       setStartDate(subDays(new Date(), range.days));
       setEndDate(new Date());
     }
   }, [timeRange]);
 
-  // Fetch improved analytics stats
   const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ["improved-analytics", startDate, endDate],
     queryFn: async () => {
@@ -111,7 +107,6 @@ function Analytics() {
     },
   });
 
-  // Fetch monthly active users
   const { data: monthlyUsers } = useQuery({
     queryKey: ["monthly-active-users"],
     queryFn: async () => {
@@ -125,7 +120,6 @@ function Analytics() {
     },
   });
 
-  // Fetch pro feature usage
   const { data: proFeatures } = useQuery({
     queryKey: ["pro-feature-usage"],
     queryFn: async () => {
@@ -139,7 +133,6 @@ function Analytics() {
     },
   });
 
-  // Set up Supabase channel to listen for new page views
   useEffect(() => {
     const channel = supabase
       .channel("analytics-updates")
@@ -157,14 +150,12 @@ function Analytics() {
     };
   }, [refetch]);
 
-  // Calculate current metrics
   const currentMetrics = useMemo(() => {
     if (!stats || stats.length === 0) return null;
 
     const currentPeriodData = stats.filter(s => s.period === "current");
     const previousPeriodData = stats.filter(s => s.period === "previous");
 
-    // Calculate totals for current period
     const totalProductPageViews = currentPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
     const totalSmartLinkViews = currentPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
     const totalUniqueVisitors = currentPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
@@ -177,7 +168,6 @@ function Analytics() {
     const totalMetaPixelsAdded = currentPeriodData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
     const totalEmailCaptureEnabled = currentPeriodData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
 
-    // Calculate totals for previous period
     const prevTotalProductPageViews = previousPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
     const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
     const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
@@ -190,7 +180,6 @@ function Analytics() {
     const prevTotalMetaPixelsAdded = previousPeriodData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
     const prevTotalEmailCaptureEnabled = previousPeriodData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
 
-    // Calculate trends
     const calculateTrend = (current: number, previous: number) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
@@ -241,7 +230,6 @@ function Analytics() {
         total: totalEmailCaptureEnabled,
         trend: calculateTrend(totalEmailCaptureEnabled, prevTotalEmailCaptureEnabled),
       },
-      // Calculate conversion rates
       visitorToRegisteredRate: {
         total: totalUniqueVisitors > 0 ? (totalRegisteredUsers / totalUniqueVisitors) * 100 : 0,
         trend: calculateTrend(
@@ -259,12 +247,10 @@ function Analytics() {
     };
   }, [stats]);
 
-  // Format date for display
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  // Format currency for display
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -274,12 +260,10 @@ function Analytics() {
     }).format(value);
   };
 
-  // Format percentage for display
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
 
-  // Prepare chart data
   const trafficData = useMemo(() => {
     if (!stats) return [];
     return stats
@@ -333,7 +317,15 @@ function Analytics() {
     }));
   }, [proFeatures]);
 
-  // Show loading state
+  const defaultChartConfig: ChartConfig = {
+    grid: true,
+    legend: true,
+    xAxis: true,
+    yAxis: true,
+    aspectRatio: "3/2",
+    tooltipType: "standard" as const
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -353,7 +345,6 @@ function Analytics() {
     );
   }
 
-  // Show error state
   if (isError) {
     return (
       <div className="space-y-8">
@@ -384,7 +375,6 @@ function Analytics() {
         <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
       </div>
 
-      {/* Traffic Metrics */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Traffic</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -410,7 +400,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -425,7 +415,6 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {/* User Journey Metrics */}
       <div>
         <h2 className="text-xl font-semibold mb-4">User Journey</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -451,7 +440,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -466,7 +455,6 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {/* Revenue Metrics */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Revenue</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -482,7 +470,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -495,7 +483,6 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {/* Pro Features Usage */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Pro Features Usage</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -516,7 +503,7 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6">
+        <ChartContainer className="mt-6" config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -532,10 +519,9 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {/* Monthly Active Users Trend */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Monthly User Trends</h2>
-        <ChartContainer>
+        <ChartContainer config={defaultChartConfig}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
