@@ -1,10 +1,10 @@
 
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Table, 
@@ -15,18 +15,32 @@ import {
   TableRow 
 } from "@/components/ui/table";
 
+// Interface for analyticsLogs data
+interface AnalyticsLog {
+  id: string;
+  function_name: string;
+  parameters: any;
+  status: string;
+  details: any;
+  start_time: string;
+  end_time: string;
+  duration_ms: number;
+  created_at: string;
+}
+
 export default function AnalyticsLogs() {
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
   const { data: logs, isLoading, refetch, error } = useQuery({
     queryKey: ["analytics-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_analytics_function_logs", {
-        p_limit: 100
-      });
+      const { data, error } = await supabase.from('analytics_function_logs')
+        .select('*')
+        .order('start_time', { ascending: false })
+        .limit(100);
       
       if (error) throw error;
-      return data || [];
+      return data as AnalyticsLog[];
     },
   });
 
@@ -125,7 +139,7 @@ export default function AnalyticsLogs() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log: any) => (
+              {logs.map((log: AnalyticsLog) => (
                 <React.Fragment key={log.id}>
                   <TableRow>
                     <TableCell className="font-medium">{log.function_name}</TableCell>

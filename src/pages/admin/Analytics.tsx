@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { TrendingUp, TrendingDown, AlertCircle, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Define the shape of the analytics data
 interface AnalyticsStats {
   period: string;
   day: string;
@@ -22,7 +20,6 @@ interface AnalyticsStats {
   unique_visitors: number;
 }
 
-// Base metrics type
 interface BaseMetrics {
   productPageViews: { total: number; trend: number };
   smartLinkViews: { total: number; trend: number };
@@ -36,6 +33,18 @@ interface StatCardProps {
   className?: string;
   isLoading?: boolean;
   icon?: React.ReactNode;
+}
+
+interface AnalyticsLog {
+  id: string;
+  function_name: string;
+  parameters: any;
+  status: string;
+  details: any;
+  start_time: string;
+  end_time: string;
+  duration_ms: number;
+  created_at: string;
 }
 
 const chartColors = {
@@ -92,7 +101,6 @@ function Analytics() {
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
 
-  // Helper function to calculate trend
   const calculateTrend = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return ((current - previous) / previous) * 100;
@@ -128,7 +136,7 @@ function Analytics() {
         }
 
         console.log("Raw data from function:", data);
-        return data as AnalyticsStats[];
+        return data as unknown as AnalyticsStats[];
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
         toast.error("Failed to load analytics data. Please try again later.");
@@ -140,16 +148,17 @@ function Analytics() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch analytics logs for debugging
   const { data: analyticsLogs } = useQuery({
     queryKey: ["analytics-logs"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc("get_analytics_function_logs", {
-          p_limit: 10
-        });
+        const { data, error } = await supabase.from('analytics_function_logs')
+          .select('*')
+          .order('start_time', { ascending: false })
+          .limit(10);
+        
         if (error) throw error;
-        return data;
+        return data as AnalyticsLog[];
       } catch (error) {
         console.warn("Failed to fetch analytics logs:", error);
         return [];
@@ -185,7 +194,6 @@ function Analytics() {
     const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + (Number(stat.smart_link_views) || 0), 0);
     const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + (Number(stat.unique_visitors) || 0), 0);
 
-    // Base metrics
     return {
       productPageViews: {
         total: totalProductPageViews,
@@ -261,7 +269,7 @@ function Analytics() {
               <div className="mt-8 text-left">
                 <h3 className="text-md font-medium mb-2">Recent Function Logs</h3>
                 <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-[300px]">
-                  {analyticsLogs.map((log: any) => (
+                  {analyticsLogs.map((log: AnalyticsLog) => (
                     <div key={log.id} className="mb-4 border-b pb-2 text-xs">
                       <div className="flex justify-between">
                         <span className="font-medium">{log.function_name}</span>
@@ -288,7 +296,6 @@ function Analytics() {
     );
   }
 
-  // Show a message if no data is available
   if (!cachedStats || cachedStats.length === 0 || !currentMetrics) {
     return (
       <div className="space-y-8">
