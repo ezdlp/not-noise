@@ -11,6 +11,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAx
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Json } from "@/supabase/functions/_shared/database.types";
 
 // Define the shape of the analytics data
 interface AnalyticsBaseStats {
@@ -33,9 +34,36 @@ interface AnalyticsFullStats extends AnalyticsBaseStats {
 }
 
 // Type guard to check if the data has the full stats properties
-function isFullStatsData(data: AnalyticsBaseStats): data is AnalyticsFullStats {
-  return (data as AnalyticsFullStats).registered_users !== undefined;
+function isFullStatsData(data: any): data is AnalyticsFullStats {
+  return (
+    data &&
+    typeof data === 'object' &&
+    'registered_users' in data
+  );
 }
+
+// Base metrics type - always available
+interface BaseMetrics {
+  productPageViews: { total: number; trend: number };
+  smartLinkViews: { total: number; trend: number };
+  uniqueVisitors: { total: number; trend: number };
+}
+
+// Full metrics type - available only in full stats mode
+interface FullMetrics extends BaseMetrics {
+  registeredUsers: { total: number; trend: number };
+  activeUsers: { total: number; trend: number };
+  proSubscribers: { total: number; trend: number };
+  revenue: { total: number; trend: number };
+  smartLinksCreated: { total: number; trend: number };
+  socialAssetsCreated: { total: number; trend: number };
+  metaPixelsAdded: { total: number; trend: number };
+  emailCaptureEnabled: { total: number; trend: number };
+  visitorToRegisteredRate: { total: number; trend: number };
+  registeredToProRate: { total: number; trend: number };
+}
+
+type Metrics = BaseMetrics | FullMetrics;
 
 interface StatCardProps {
   title: string;
@@ -100,12 +128,12 @@ function Analytics() {
     }
   }, [timeRange]);
 
-  const { data: stats, isLoading, isError, error, refetch } = useQuery({
+  const { data: cachedStats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["analytics-stats", startDate, endDate],
     queryFn: async () => {
       try {
         console.log("Fetching analytics data with cached function...");
-        const { data: cachedData, error: cachedError } = await supabase.rpc("get_cached_analytics_stats", {
+        const { data, error: cachedError } = await supabase.rpc("get_cached_analytics_stats", {
           p_start_date: startDate.toISOString(),
           p_end_date: endDate.toISOString(),
           p_cache_minutes: 60
@@ -116,41 +144,37 @@ function Analytics() {
           throw new Error(cachedError.message);
         }
 
-        if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-          // Check if we got full or basic stats by looking at the first item
-          if (!isFullStatsData(cachedData[0])) {
-            console.log("Got basic stats data");
-            setFallbackMode(true);
-          } else {
+        if (!data) {
+          return [];
+        }
+
+        // Parse the returned JSON array
+        let parsedData: (AnalyticsBaseStats | AnalyticsFullStats)[] = [];
+        
+        try {
+          // The data should be a JSON array of stats objects
+          if (typeof data === 'string') {
+            parsedData = JSON.parse(data);
+          } else if (Array.isArray(data)) {
+            parsedData = data as (AnalyticsBaseStats | AnalyticsFullStats)[];
+          }
+        } catch (e) {
+          console.error("Failed to parse analytics data:", e);
+          return [];
+        }
+
+        // Check if we got full or basic stats by looking at the first item
+        if (parsedData.length > 0) {
+          if (isFullStatsData(parsedData[0])) {
             console.log("Got full stats data");
             setFallbackMode(false);
+          } else {
+            console.log("Got basic stats data");
+            setFallbackMode(true);
           }
-          return cachedData as (AnalyticsBaseStats | AnalyticsFullStats)[];
         }
-
-        const { data, error } = await supabase.rpc("get_improved_analytics_stats", {
-          p_start_date: startDate.toISOString(),
-          p_end_date: endDate.toISOString(),
-        });
-
-        if (error) {
-          console.warn("Improved analytics function failed:", error);
-          
-          const { data: basicData, error: basicError } = await supabase.rpc("get_basic_analytics_stats", {
-            p_start_date: startDate.toISOString(),
-            p_end_date: endDate.toISOString(),
-          });
-          
-          if (basicError) {
-            throw new Error(`All analytics functions failed: ${basicError.message}`);
-          }
-          
-          setFallbackMode(true);
-          return basicData as AnalyticsBaseStats[];
-        }
-
-        setFallbackMode(false);
-        return data as AnalyticsFullStats[];
+        
+        return parsedData;
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
         toast.error("Failed to load analytics data. Please try again later.");
@@ -209,11 +233,11 @@ function Analytics() {
     };
   }, [refetch]);
 
-  const currentMetrics = useMemo(() => {
-    if (!stats || stats.length === 0) return null;
+  const currentMetrics = useMemo<Metrics | null>(() => {
+    if (!cachedStats || cachedStats.length === 0) return null;
 
-    const currentPeriodData = stats.filter(s => s.period === "current");
-    const previousPeriodData = stats.filter(s => s.period === "previous");
+    const currentPeriodData = cachedStats.filter(s => s.period === "current");
+    const previousPeriodData = cachedStats.filter(s => s.period === "previous");
 
     const totalProductPageViews = currentPeriodData.reduce((sum, stat) => sum + stat.product_page_views, 0);
     const totalSmartLinkViews = currentPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
@@ -224,7 +248,7 @@ function Analytics() {
     const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
 
     // Base metrics available in both full and basic stats
-    const baseMetrics = {
+    const baseMetrics: BaseMetrics = {
       productPageViews: {
         total: totalProductPageViews,
         trend: calculateTrend(totalProductPageViews, prevTotalProductPageViews),
@@ -262,7 +286,7 @@ function Analytics() {
       const prevTotalMetaPixelsAdded = fullPreviousData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
       const prevTotalEmailCaptureEnabled = fullPreviousData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
 
-      return {
+      const fullMetrics: FullMetrics = {
         ...baseMetrics,
         registeredUsers: {
           total: totalRegisteredUsers,
@@ -311,11 +335,12 @@ function Analytics() {
           ),
         },
       };
+      return fullMetrics;
     }
     
     // Return only the base metrics for basic stats
     return baseMetrics;
-  }, [stats, fallbackMode]);
+  }, [cachedStats, fallbackMode]);
 
   // Helper function to calculate trend
   const calculateTrend = (current: number, previous: number) => {
@@ -341,8 +366,8 @@ function Analytics() {
   };
 
   const trafficData = useMemo(() => {
-    if (!stats) return [];
-    return stats
+    if (!cachedStats) return [];
+    return cachedStats
       .filter(s => s.period === "current")
       .map(stat => ({
         date: formatDate(stat.day),
@@ -350,12 +375,12 @@ function Analytics() {
         "Smart Link Views": stat.smart_link_views,
         "Unique Visitors": stat.unique_visitors,
       }));
-  }, [stats]);
+  }, [cachedStats]);
 
   const userJourneyData = useMemo(() => {
-    if (!stats || fallbackMode) return [];
+    if (!cachedStats || fallbackMode) return [];
     
-    const fullStats = stats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    const fullStats = cachedStats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
     
     return fullStats.map(stat => ({
       date: formatDate(stat.day),
@@ -363,18 +388,18 @@ function Analytics() {
       "Active Users": stat.active_users,
       "Pro Subscribers": stat.pro_subscribers,
     }));
-  }, [stats, fallbackMode]);
+  }, [cachedStats, fallbackMode]);
 
   const revenueData = useMemo(() => {
-    if (!stats || fallbackMode) return [];
+    if (!cachedStats || fallbackMode) return [];
     
-    const fullStats = stats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    const fullStats = cachedStats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
     
     return fullStats.map(stat => ({
       date: formatDate(stat.day),
       "Revenue": stat.total_revenue,
     }));
-  }, [stats, fallbackMode]);
+  }, [cachedStats, fallbackMode]);
 
   const monthlyUsersChartData = useMemo(() => {
     if (!monthlyUsers) return [];
@@ -402,6 +427,11 @@ function Analytics() {
     yAxis: true,
     aspectRatio: "3/2",
     tooltipType: "standard" as const
+  };
+
+  // Type guard to check if currentMetrics is FullMetrics
+  const isFullMetrics = (metrics: Metrics | null): metrics is FullMetrics => {
+    return metrics !== null && 'registeredUsers' in metrics;
   };
 
   if (isLoading) {
@@ -478,7 +508,7 @@ function Analytics() {
             value={currentMetrics?.uniqueVisitors.total.toLocaleString() || "0"}
             change={currentMetrics?.uniqueVisitors.trend}
           />
-          {!fallbackMode && currentMetrics?.smartLinksCreated && (
+          {!fallbackMode && isFullMetrics(currentMetrics) && (
             <StatCard
               title="Smart Links Created"
               value={currentMetrics.smartLinksCreated.total.toLocaleString() || "0"}
@@ -502,7 +532,7 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {!fallbackMode && currentMetrics?.registeredUsers && (
+      {!fallbackMode && isFullMetrics(currentMetrics) && (
         <>
           <div>
             <h2 className="text-xl font-semibold mb-4 text-primary-foreground">User Journey</h2>
