@@ -31,7 +31,7 @@ export default function AnalyticsLogs() {
     setError(null);
     
     try {
-      // Use rpc to call the database function directly
+      // Use rpc to call the database function directly with type assertion
       const { data, error } = await supabase.rpc(
         'get_analytics_function_logs' as any, // Type assertion to bypass type checking temporarily
         { p_limit: 100 }
@@ -39,13 +39,25 @@ export default function AnalyticsLogs() {
       
       if (error) throw error;
       
-      // Type check and safely cast the response
+      // Validate and transform the response data
       if (Array.isArray(data)) {
         // Make sure each entry has the expected shape
-        const validatedLogs = data.filter((entry: any) => 
-          typeof entry.id === 'string' && 
-          typeof entry.function_name === 'string'
-        ) as LogEntry[];
+        const validatedLogs = data
+          .filter((entry: any) => 
+            typeof entry.id === 'string' && 
+            typeof entry.function_name === 'string'
+          )
+          .map((entry: any) => ({
+            id: entry.id,
+            function_name: entry.function_name,
+            parameters: entry.parameters || {},
+            status: entry.status || 'Unknown',
+            details: entry.details || {},
+            start_time: entry.start_time,
+            end_time: entry.end_time,
+            duration_ms: entry.duration_ms,
+            created_at: entry.created_at
+          }));
         
         setLogs(validatedLogs);
       } else {
@@ -95,83 +107,81 @@ export default function AnalyticsLogs() {
   };
 
   return (
-    <AdminLayout>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Analytics Function Logs</h1>
-          <Button 
-            variant="outline" 
-            onClick={fetchLogs} 
-            disabled={loading}
-            className="flex gap-2 items-center"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Function Execution Logs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-24 w-full" />
-                ))}
-              </div>
-            ) : error ? (
-              <div className="text-red-500">
-                <p>Error loading logs: {error}</p>
-              </div>
-            ) : logs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No logs found</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {logs.map((log) => (
-                  <div key={log.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg">{log.function_name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(log.start_time).toLocaleString()}
-                        </p>
-                      </div>
-                      <Badge className={getStatusColor(log.status)}>
-                        {log.status || 'Unknown'}
-                      </Badge>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Analytics Function Logs</h1>
+        <Button 
+          variant="outline" 
+          onClick={fetchLogs} 
+          disabled={loading}
+          className="flex gap-2 items-center"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Function Execution Logs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-red-500">
+              <p>Error loading logs: {error}</p>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No logs found</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {logs.map((log) => (
+                <div key={log.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-lg">{log.function_name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(log.start_time).toLocaleString()}
+                      </p>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="font-medium">Duration</p>
-                        <p>{formatDuration(log.duration_ms)}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Parameters</p>
+                    <Badge className={getStatusColor(log.status)}>
+                      {log.status || 'Unknown'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="font-medium">Duration</p>
+                      <p>{formatDuration(log.duration_ms)}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Parameters</p>
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
+                        {formatJson(log.parameters)}
+                      </pre>
+                    </div>
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <div className="col-span-1 md:col-span-2">
+                        <p className="font-medium">Details</p>
                         <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
-                          {formatJson(log.parameters)}
+                          {formatJson(log.details)}
                         </pre>
                       </div>
-                      {log.details && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="font-medium">Details</p>
-                          <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
-                            {formatJson(log.details)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </AdminLayout>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
