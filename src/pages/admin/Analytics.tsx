@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -11,12 +12,16 @@ import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface AnalyticsStats {
+// Define the shape of the analytics data
+interface AnalyticsBaseStats {
   period: string;
   day: string;
   product_page_views: number;
   smart_link_views: number;
   unique_visitors: number;
+}
+
+interface AnalyticsFullStats extends AnalyticsBaseStats {
   registered_users: number;
   active_users: number;
   pro_subscribers: number;
@@ -27,17 +32,9 @@ interface AnalyticsStats {
   email_capture_enabled: number;
 }
 
-interface MonthlyActiveUsers {
-  month: string;
-  active_users: number;
-  pro_users: number;
-  total_users: number;
-}
-
-interface ProFeatureUsage {
-  feature: string;
-  count: number;
-  percentage: number;
+// Type guard to check if the data has the full stats properties
+function isFullStatsData(data: AnalyticsBaseStats): data is AnalyticsFullStats {
+  return (data as AnalyticsFullStats).registered_users !== undefined;
 }
 
 interface StatCardProps {
@@ -120,12 +117,15 @@ function Analytics() {
         }
 
         if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-          if (!cachedData[0].hasOwnProperty('pro_subscribers')) {
+          // Check if we got full or basic stats by looking at the first item
+          if (!isFullStatsData(cachedData[0])) {
+            console.log("Got basic stats data");
             setFallbackMode(true);
           } else {
+            console.log("Got full stats data");
             setFallbackMode(false);
           }
-          return cachedData;
+          return cachedData as (AnalyticsBaseStats | AnalyticsFullStats)[];
         }
 
         const { data, error } = await supabase.rpc("get_improved_analytics_stats", {
@@ -146,11 +146,11 @@ function Analytics() {
           }
           
           setFallbackMode(true);
-          return basicData;
+          return basicData as AnalyticsBaseStats[];
         }
 
         setFallbackMode(false);
-        return data;
+        return data as AnalyticsFullStats[];
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
         toast.error("Failed to load analytics data. Please try again later.");
@@ -168,7 +168,7 @@ function Analytics() {
       try {
         const { data, error } = await supabase.rpc("get_monthly_active_users");
         if (error) throw error;
-        return data as MonthlyActiveUsers[];
+        return data as { month: string; active_users: number; pro_users: number; total_users: number }[];
       } catch (error) {
         console.warn("Failed to fetch monthly users:", error);
         return [];
@@ -183,7 +183,7 @@ function Analytics() {
       try {
         const { data, error } = await supabase.rpc("get_pro_feature_usage");
         if (error) throw error;
-        return data as ProFeatureUsage[];
+        return data as { feature: string; count: number; percentage: number }[];
       } catch (error) {
         console.warn("Failed to fetch pro features:", error);
         return [];
@@ -223,30 +223,8 @@ function Analytics() {
     const prevTotalSmartLinkViews = previousPeriodData.reduce((sum, stat) => sum + stat.smart_link_views, 0);
     const prevTotalUniqueVisitors = previousPeriodData.reduce((sum, stat) => sum + stat.unique_visitors, 0);
 
-    const totalRegisteredUsers = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.registered_users || 0), 0);
-    const totalActiveUsers = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.active_users || 0), 0);
-    const totalProSubscribers = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.pro_subscribers || 0), 0);
-    const totalRevenue = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.total_revenue || 0), 0);
-    const totalSmartLinksCreated = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.smart_links_created || 0), 0);
-    const totalSocialAssetsCreated = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.social_assets_created || 0), 0);
-    const totalMetaPixelsAdded = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.meta_pixels_added || 0), 0);
-    const totalEmailCaptureEnabled = fallbackMode ? 0 : currentPeriodData.reduce((sum, stat) => sum + (stat.email_capture_enabled || 0), 0);
-
-    const prevTotalRegisteredUsers = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.registered_users || 0), 0);
-    const prevTotalActiveUsers = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.active_users || 0), 0);
-    const prevTotalProSubscribers = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.pro_subscribers || 0), 0);
-    const prevTotalRevenue = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.total_revenue || 0), 0);
-    const prevTotalSmartLinksCreated = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.smart_links_created || 0), 0);
-    const prevTotalSocialAssetsCreated = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.social_assets_created || 0), 0);
-    const prevTotalMetaPixelsAdded = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.meta_pixels_added || 0), 0);
-    const prevTotalEmailCaptureEnabled = fallbackMode ? 0 : previousPeriodData.reduce((sum, stat) => sum + (stat.email_capture_enabled || 0), 0);
-
-    const calculateTrend = (current: number, previous: number) => {
-      if (previous === 0) return current > 0 ? 100 : 0;
-      return ((current - previous) / previous) * 100;
-    };
-
-    return {
+    // Base metrics available in both full and basic stats
+    const baseMetrics = {
       productPageViews: {
         total: totalProductPageViews,
         trend: calculateTrend(totalProductPageViews, prevTotalProductPageViews),
@@ -258,8 +236,34 @@ function Analytics() {
       uniqueVisitors: {
         total: totalUniqueVisitors,
         trend: calculateTrend(totalUniqueVisitors, prevTotalUniqueVisitors),
-      },
-      ...(fallbackMode ? {} : {
+      }
+    };
+    
+    // If we have full stats data, add the additional metrics
+    if (!fallbackMode && currentPeriodData.length > 0 && isFullStatsData(currentPeriodData[0])) {
+      const fullCurrentData = currentPeriodData as AnalyticsFullStats[];
+      const fullPreviousData = previousPeriodData as AnalyticsFullStats[];
+      
+      const totalRegisteredUsers = fullCurrentData.reduce((sum, stat) => sum + stat.registered_users, 0);
+      const totalActiveUsers = fullCurrentData.reduce((sum, stat) => sum + stat.active_users, 0);
+      const totalProSubscribers = fullCurrentData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
+      const totalRevenue = fullCurrentData.reduce((sum, stat) => sum + stat.total_revenue, 0);
+      const totalSmartLinksCreated = fullCurrentData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
+      const totalSocialAssetsCreated = fullCurrentData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
+      const totalMetaPixelsAdded = fullCurrentData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
+      const totalEmailCaptureEnabled = fullCurrentData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
+
+      const prevTotalRegisteredUsers = fullPreviousData.reduce((sum, stat) => sum + stat.registered_users, 0);
+      const prevTotalActiveUsers = fullPreviousData.reduce((sum, stat) => sum + stat.active_users, 0);
+      const prevTotalProSubscribers = fullPreviousData.reduce((sum, stat) => sum + stat.pro_subscribers, 0);
+      const prevTotalRevenue = fullPreviousData.reduce((sum, stat) => sum + stat.total_revenue, 0);
+      const prevTotalSmartLinksCreated = fullPreviousData.reduce((sum, stat) => sum + stat.smart_links_created, 0);
+      const prevTotalSocialAssetsCreated = fullPreviousData.reduce((sum, stat) => sum + stat.social_assets_created, 0);
+      const prevTotalMetaPixelsAdded = fullPreviousData.reduce((sum, stat) => sum + stat.meta_pixels_added, 0);
+      const prevTotalEmailCaptureEnabled = fullPreviousData.reduce((sum, stat) => sum + stat.email_capture_enabled, 0);
+
+      return {
+        ...baseMetrics,
         registeredUsers: {
           total: totalRegisteredUsers,
           trend: calculateTrend(totalRegisteredUsers, prevTotalRegisteredUsers),
@@ -306,9 +310,18 @@ function Analytics() {
             prevTotalRegisteredUsers > 0 ? (prevTotalProSubscribers / prevTotalRegisteredUsers) * 100 : 0
           ),
         },
-      }),
-    };
+      };
+    }
+    
+    // Return only the base metrics for basic stats
+    return baseMetrics;
   }, [stats, fallbackMode]);
+
+  // Helper function to calculate trend
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -341,24 +354,26 @@ function Analytics() {
 
   const userJourneyData = useMemo(() => {
     if (!stats || fallbackMode) return [];
-    return stats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Registered Users": stat.registered_users,
-        "Active Users": stat.active_users,
-        "Pro Subscribers": stat.pro_subscribers,
-      }));
+    
+    const fullStats = stats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    
+    return fullStats.map(stat => ({
+      date: formatDate(stat.day),
+      "Registered Users": stat.registered_users,
+      "Active Users": stat.active_users,
+      "Pro Subscribers": stat.pro_subscribers,
+    }));
   }, [stats, fallbackMode]);
 
   const revenueData = useMemo(() => {
     if (!stats || fallbackMode) return [];
-    return stats
-      .filter(s => s.period === "current")
-      .map(stat => ({
-        date: formatDate(stat.day),
-        "Revenue": stat.total_revenue,
-      }));
+    
+    const fullStats = stats.filter(s => s.period === "current" && isFullStatsData(s)) as AnalyticsFullStats[];
+    
+    return fullStats.map(stat => ({
+      date: formatDate(stat.day),
+      "Revenue": stat.total_revenue,
+    }));
   }, [stats, fallbackMode]);
 
   const monthlyUsersChartData = useMemo(() => {
@@ -463,11 +478,11 @@ function Analytics() {
             value={currentMetrics?.uniqueVisitors.total.toLocaleString() || "0"}
             change={currentMetrics?.uniqueVisitors.trend}
           />
-          {!fallbackMode && (
+          {!fallbackMode && currentMetrics?.smartLinksCreated && (
             <StatCard
               title="Smart Links Created"
-              value={currentMetrics?.smartLinksCreated?.total.toLocaleString() || "0"}
-              change={currentMetrics?.smartLinksCreated?.trend}
+              value={currentMetrics.smartLinksCreated.total.toLocaleString() || "0"}
+              change={currentMetrics.smartLinksCreated.trend}
             />
           )}
         </div>
@@ -478,7 +493,7 @@ function Analytics() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <ChartTooltip formatter={(value) => value.toLocaleString()} />
+              <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
               <Line type="monotone" dataKey="Product Page Views" stroke={chartColors.primary} />
               <Line type="monotone" dataKey="Smart Link Views" stroke={chartColors.lighter} />
               <Line type="monotone" dataKey="Unique Visitors" stroke={chartColors.lightest} />
@@ -487,30 +502,30 @@ function Analytics() {
         </ChartContainer>
       </div>
 
-      {!fallbackMode && (
+      {!fallbackMode && currentMetrics?.registeredUsers && (
         <>
           <div>
             <h2 className="text-xl font-semibold mb-4 text-primary-foreground">User Journey</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Registered Users"
-                value={currentMetrics?.registeredUsers?.total.toLocaleString() || "0"}
-                change={currentMetrics?.registeredUsers?.trend}
+                value={currentMetrics.registeredUsers.total.toLocaleString() || "0"}
+                change={currentMetrics.registeredUsers.trend}
               />
               <StatCard
                 title="Active Users"
-                value={currentMetrics?.activeUsers?.total.toLocaleString() || "0"}
-                change={currentMetrics?.activeUsers?.trend}
+                value={currentMetrics.activeUsers.total.toLocaleString() || "0"}
+                change={currentMetrics.activeUsers.trend}
               />
               <StatCard
                 title="Pro Subscribers"
-                value={currentMetrics?.proSubscribers?.total.toLocaleString() || "0"}
-                change={currentMetrics?.proSubscribers?.trend}
+                value={currentMetrics.proSubscribers.total.toLocaleString() || "0"}
+                change={currentMetrics.proSubscribers.trend}
               />
               <StatCard
                 title="Visitor to Registered"
-                value={formatPercentage(currentMetrics?.visitorToRegisteredRate?.total || 0)}
-                change={currentMetrics?.visitorToRegisteredRate?.trend}
+                value={formatPercentage(currentMetrics.visitorToRegisteredRate.total || 0)}
+                change={currentMetrics.visitorToRegisteredRate.trend}
               />
             </div>
 
@@ -520,7 +535,7 @@ function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <ChartTooltip formatter={(value) => value.toLocaleString()} />
+                  <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
                   <Line type="monotone" dataKey="Registered Users" stroke={chartColors.primary} />
                   <Line type="monotone" dataKey="Active Users" stroke={chartColors.lighter} />
                   <Line type="monotone" dataKey="Pro Subscribers" stroke={chartColors.lightest} />
@@ -534,13 +549,13 @@ function Analytics() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Total Revenue"
-                value={formatCurrency(currentMetrics?.revenue?.total || 0)}
-                change={currentMetrics?.revenue?.trend}
+                value={formatCurrency(currentMetrics.revenue.total || 0)}
+                change={currentMetrics.revenue.trend}
               />
               <StatCard
                 title="Registered to Pro"
-                value={formatPercentage(currentMetrics?.registeredToProRate?.total || 0)}
-                change={currentMetrics?.registeredToProRate?.trend}
+                value={formatPercentage(currentMetrics.registeredToProRate.total || 0)}
+                change={currentMetrics.registeredToProRate.trend}
               />
             </div>
 
@@ -550,7 +565,7 @@ function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <ChartTooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <ChartTooltip formatter={(value: number) => formatCurrency(Number(value))} />
                   <Bar dataKey="Revenue" fill={chartColors.primary} />
                 </BarChart>
               </ResponsiveContainer>
@@ -562,18 +577,18 @@ function Analytics() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Social Assets Created"
-                value={currentMetrics?.socialAssetsCreated?.total.toLocaleString() || "0"}
-                change={currentMetrics?.socialAssetsCreated?.trend}
+                value={currentMetrics.socialAssetsCreated.total.toLocaleString() || "0"}
+                change={currentMetrics.socialAssetsCreated.trend}
               />
               <StatCard
                 title="Meta Pixels Added"
-                value={currentMetrics?.metaPixelsAdded?.total.toLocaleString() || "0"}
-                change={currentMetrics?.metaPixelsAdded?.trend}
+                value={currentMetrics.metaPixelsAdded.total.toLocaleString() || "0"}
+                change={currentMetrics.metaPixelsAdded.trend}
               />
               <StatCard
                 title="Email Capture Enabled"
-                value={currentMetrics?.emailCaptureEnabled?.total.toLocaleString() || "0"}
-                change={currentMetrics?.emailCaptureEnabled?.trend}
+                value={currentMetrics.emailCaptureEnabled.total.toLocaleString() || "0"}
+                change={currentMetrics.emailCaptureEnabled.trend}
               />
             </div>
 
@@ -583,7 +598,7 @@ function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <ChartTooltip formatter={(value, name, props) => [
+                  <ChartTooltip formatter={(value: number, name: string, props: any) => [
                     `${value} users (${props.payload.percentage.toFixed(1)}%)`,
                     "Usage"
                   ]} />
@@ -601,7 +616,7 @@ function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <ChartTooltip formatter={(value) => value.toLocaleString()} />
+                  <ChartTooltip formatter={(value: number) => value.toLocaleString()} />
                   <Line type="monotone" dataKey="Active Users" stroke={chartColors.primary} />
                   <Line type="monotone" dataKey="Pro Users" stroke={chartColors.lighter} />
                   <Line type="monotone" dataKey="Total Users" stroke={chartColors.lightest} />
