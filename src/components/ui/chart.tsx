@@ -1,6 +1,6 @@
 
 import React, { ReactElement } from "react";
-import { Tooltip, TooltipProps } from "recharts";
+import { Tooltip, TooltipProps as RechartsTooltipProps } from "recharts";
 import { cn } from "@/lib/utils";
 
 export type ChartConfig = {
@@ -43,7 +43,7 @@ export function ChartTooltip({
   label, 
   formatter, 
   ...rest 
-}: TooltipProps) {
+}: RechartsTooltipProps<number, string>) {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm">
