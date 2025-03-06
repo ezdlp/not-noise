@@ -56,9 +56,9 @@ const chartColors = {
 
 function StatCard({ title, value, change, className }: StatCardProps) {
   return (
-    <Card className={cn("p-6 border-none bg-card/50 shadow-none", className)}>
-      <h3 className="font-medium text-muted-foreground">{title}</h3>
-      <p className="text-2xl font-bold text-neutral-night">{value}</p>
+    <Card className={cn("p-6 border border-[#E6E6E6] bg-white rounded-lg shadow-sm", className)}>
+      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+      <p className="text-2xl font-semibold text-primary-foreground">{value}</p>
       {change !== undefined && (
         <div className="flex items-center gap-1 mt-1">
           {change > 0 ? (
@@ -67,7 +67,7 @@ function StatCard({ title, value, change, className }: StatCardProps) {
             <TrendingDown className="w-4 h-4 text-red-600" />
           ) : null}
           <p className={cn(
-            "text-sm",
+            "text-xs",
             change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
           )}>
             {change > 0 ? "+" : ""}{change.toFixed(1)}%
@@ -252,9 +252,9 @@ function Analytics() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("de-DE", {
       style: "currency",
-      currency: "USD",
+      currency: "EUR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -371,12 +371,12 @@ function Analytics() {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Analytics</h1>
+        <h1 className="text-2xl font-bold text-primary-foreground">Analytics</h1>
         <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">Traffic</h2>
+        <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Traffic</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Product Page Views"
@@ -400,23 +400,30 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
+        <ChartContainer className="mt-6" config={{
+          grid: true,
+          legend: true,
+          xAxis: true,
+          yAxis: true,
+          aspectRatio: "3/2",
+          tooltipType: "standard"
+        }}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trafficData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Product Page Views" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Smart Link Views" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Unique Visitors" stroke="#ffc658" />
+              <ChartTooltip formatter={(value) => value.toLocaleString()} />
+              <Line type="monotone" dataKey="Product Page Views" stroke="#6851FB" />
+              <Line type="monotone" dataKey="Smart Link Views" stroke="#9B87F5" />
+              <Line type="monotone" dataKey="Unique Visitors" stroke="#D0C7FF" />
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">User Journey</h2>
+        <h2 className="text-xl font-semibold mb-4 text-primary-foreground">User Journey</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Registered Users"
@@ -440,23 +447,30 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
+        <ChartContainer className="mt-6" config={{
+          grid: true,
+          legend: true,
+          xAxis: true,
+          yAxis: true,
+          aspectRatio: "3/2",
+          tooltipType: "standard"
+        }}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={userJourneyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Registered Users" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Active Users" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Pro Subscribers" stroke="#ffc658" />
+              <ChartTooltip formatter={(value) => value.toLocaleString()} />
+              <Line type="monotone" dataKey="Registered Users" stroke="#6851FB" />
+              <Line type="monotone" dataKey="Active Users" stroke="#9B87F5" />
+              <Line type="monotone" dataKey="Pro Subscribers" stroke="#D0C7FF" />
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">Revenue</h2>
+        <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Revenue</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Revenue"
@@ -470,21 +484,28 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
+        <ChartContainer className="mt-6" config={{
+          grid: true,
+          legend: true,
+          xAxis: true,
+          yAxis: true,
+          aspectRatio: "3/2",
+          tooltipType: "standard"
+        }}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
               <ChartTooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Bar dataKey="Revenue" fill="#8884d8" />
+              <Bar dataKey="Revenue" fill="#6851FB" />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">Pro Features Usage</h2>
+        <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Pro Features Usage</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Social Assets Created"
@@ -503,7 +524,14 @@ function Analytics() {
           />
         </div>
 
-        <ChartContainer className="mt-6" config={defaultChartConfig}>
+        <ChartContainer className="mt-6" config={{
+          grid: true,
+          legend: true,
+          xAxis: true,
+          yAxis: true,
+          aspectRatio: "3/2",
+          tooltipType: "standard"
+        }}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={proFeaturesChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -513,24 +541,31 @@ function Analytics() {
                 `${value} users (${props.payload.percentage.toFixed(1)}%)`,
                 "Usage"
               ]} />
-              <Bar dataKey="value" fill="#82ca9d" />
+              <Bar dataKey="value" fill="#6851FB" />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">Monthly User Trends</h2>
-        <ChartContainer config={defaultChartConfig}>
+        <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Monthly User Trends</h2>
+        <ChartContainer config={{
+          grid: true,
+          legend: true,
+          xAxis: true,
+          yAxis: true,
+          aspectRatio: "3/2",
+          tooltipType: "standard"
+        }}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyUsersChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <ChartTooltip />
-              <Line type="monotone" dataKey="Active Users" stroke="#8884d8" />
-              <Line type="monotone" dataKey="Pro Users" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="Total Users" stroke="#ffc658" />
+              <ChartTooltip formatter={(value) => value.toLocaleString()} />
+              <Line type="monotone" dataKey="Active Users" stroke="#6851FB" />
+              <Line type="monotone" dataKey="Pro Users" stroke="#9B87F5" />
+              <Line type="monotone" dataKey="Total Users" stroke="#D0C7FF" />
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
