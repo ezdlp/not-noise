@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -40,7 +39,12 @@ function isFullStatsData(data: any): data is AnalyticsFullStats {
     typeof data === 'object' &&
     'registered_users' in data &&
     'active_users' in data &&
-    'pro_subscribers' in data
+    'pro_subscribers' in data &&
+    'total_revenue' in data &&
+    'smart_links_created' in data &&
+    'social_assets_created' in data &&
+    'meta_pixels_added' in data &&
+    'email_capture_enabled' in data
   );
 }
 
@@ -148,7 +152,7 @@ function Analytics() {
         });
 
         if (cachedError) {
-          console.warn("Cached analytics function failed:", cachedError);
+          console.error("Cached analytics function failed:", cachedError);
           throw new Error(cachedError.message);
         }
 
@@ -172,10 +176,49 @@ function Analytics() {
               // Make sure each item has the required base properties
               if (typeof item === 'object' && item !== null) {
                 const typedItem = item as unknown as (AnalyticsBaseStats | AnalyticsFullStats);
+                
+                // Ensure all numeric properties are actually numbers
+                if (typedItem.product_page_views && typeof typedItem.product_page_views !== 'number') {
+                  typedItem.product_page_views = Number(typedItem.product_page_views);
+                }
+                if (typedItem.smart_link_views && typeof typedItem.smart_link_views !== 'number') {
+                  typedItem.smart_link_views = Number(typedItem.smart_link_views);
+                }
+                if (typedItem.unique_visitors && typeof typedItem.unique_visitors !== 'number') {
+                  typedItem.unique_visitors = Number(typedItem.unique_visitors);
+                }
+                
+                // If we have full stats, ensure those properties are numbers too
+                if (isFullStatsData(typedItem)) {
+                  if (typedItem.registered_users && typeof typedItem.registered_users !== 'number') {
+                    typedItem.registered_users = Number(typedItem.registered_users);
+                  }
+                  if (typedItem.active_users && typeof typedItem.active_users !== 'number') {
+                    typedItem.active_users = Number(typedItem.active_users);
+                  }
+                  if (typedItem.pro_subscribers && typeof typedItem.pro_subscribers !== 'number') {
+                    typedItem.pro_subscribers = Number(typedItem.pro_subscribers);
+                  }
+                  if (typedItem.total_revenue && typeof typedItem.total_revenue !== 'number') {
+                    typedItem.total_revenue = Number(typedItem.total_revenue);
+                  }
+                  if (typedItem.smart_links_created && typeof typedItem.smart_links_created !== 'number') {
+                    typedItem.smart_links_created = Number(typedItem.smart_links_created);
+                  }
+                  if (typedItem.social_assets_created && typeof typedItem.social_assets_created !== 'number') {
+                    typedItem.social_assets_created = Number(typedItem.social_assets_created);
+                  }
+                  if (typedItem.meta_pixels_added && typeof typedItem.meta_pixels_added !== 'number') {
+                    typedItem.meta_pixels_added = Number(typedItem.meta_pixels_added);
+                  }
+                  if (typedItem.email_capture_enabled && typeof typedItem.email_capture_enabled !== 'number') {
+                    typedItem.email_capture_enabled = Number(typedItem.email_capture_enabled);
+                  }
+                }
+                
                 // Validate that this is a proper stats object
                 if (typeof typedItem.period === 'string' && 
-                    typeof typedItem.day === 'string' && 
-                    typeof typedItem.product_page_views === 'number') {
+                    typeof typedItem.day === 'string') {
                   return typedItem;
                 }
               }
@@ -189,6 +232,10 @@ function Analytics() {
                 unique_visitors: 0
               };
             });
+          } else if (typeof data === 'object' && data !== null) {
+            // Handle case where data might be a single object
+            console.warn("Data is an object but not an array, trying to convert:", data);
+            parsedData = [data as unknown as (AnalyticsBaseStats | AnalyticsFullStats)];
           } else {
             console.error("Unexpected data format:", data);
             return [];
@@ -397,7 +444,7 @@ function Analytics() {
     
     // Return only the base metrics for basic stats
     return baseMetrics;
-  }, [cachedStats, fallbackMode]);
+  }, [cachedStats, fallbackMode, calculateTrend]);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
