@@ -89,8 +89,10 @@ const Analytics = () => {
           const previousPeriod = dashboardStats.find(period => period.period === 'previous');
           
           if (currentPeriod && previousPeriod) {
-            // Get the RPC data for analytics_stats_with_trends for time series data
-            const { data: timeSeriesData, error: timeSeriesError } = await supabase.rpc('get_analytics_stats');
+            // Get the RPC data for analytics_stats for time series data
+            const { data: timeSeriesData, error: timeSeriesError } = await supabase.rpc('get_analytics_stats', {
+              p_start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            });
             
             if (timeSeriesError) throw timeSeriesError;
 
