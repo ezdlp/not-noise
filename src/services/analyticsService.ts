@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -17,9 +18,13 @@ class AnalyticsService {
   private sessionId: string;
   private locationInfo: LocationInfo | null = null;
   private isInitialized: boolean = false;
+  private lastTrackedPath: string | null = null;
+  private lastTrackedTime: number = 0;
+  private pageViewCount: number = 0;
 
   constructor() {
     this.sessionId = this.getOrCreateSessionId();
+    console.log('Analytics session initialized with ID:', this.sessionId);
     this.initializeTracking();
   }
 
@@ -27,18 +32,24 @@ class AnalyticsService {
     // Try to get existing session ID from storage
     const existingSession = sessionStorage.getItem('analytics_session_id');
     if (existingSession) {
+      console.log('[Analytics] Using existing session ID:', existingSession);
       return existingSession;
     }
 
     // Create new session ID if none exists
     const newSession = Math.random().toString(36).substring(2) + Date.now().toString(36);
     sessionStorage.setItem('analytics_session_id', newSession);
+    console.log('[Analytics] Created new session ID:', newSession);
     return newSession;
   }
 
   private initializeTracking() {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      console.log('[Analytics] Tracking already initialized, skipping');
+      return;
+    }
     this.isInitialized = true;
+    console.log('[Analytics] Initializing tracking for session:', this.sessionId);
 
     // Track initial page view
     this.trackPageView(window.location.pathname);
@@ -49,15 +60,17 @@ class AnalyticsService {
     }
 
     // Get location info in the background
-    this.getLocationInfo().catch(console.error);
+    this.getLocationInfo().catch(error => console.error('[Analytics] Failed to get location info:', error));
   }
 
   private setupHistoryTracking() {
+    console.log('[Analytics] Setting up history change tracking');
     // Track navigation changes
     ['pushState', 'replaceState'].forEach(method => {
       const original = window.history[method];
       window.history[method] = function(...args) {
         const result = original.apply(this, args);
+        console.log(`[Analytics] History ${method} detected, dispatching locationchange event`);
         window.dispatchEvent(new Event('locationchange'));
         return result;
       };
@@ -65,11 +78,13 @@ class AnalyticsService {
 
     // Listen for navigation events
     window.addEventListener('locationchange', () => {
+      console.log('[Analytics] Location change event detected, path:', window.location.pathname);
       this.trackPageView(window.location.pathname);
     });
 
     // Listen for popstate
     window.addEventListener('popstate', () => {
+      console.log('[Analytics] Popstate event detected, path:', window.location.pathname);
       this.trackPageView(window.location.pathname);
     });
   }
@@ -81,15 +96,16 @@ class AnalyticsService {
     }
 
     try {
+      console.log('[Analytics] Fetching location info');
       const { data, error } = await supabase.functions.invoke('get-location');
       
       if (error) {
-        console.error('Error invoking get-location function:', error);
+        console.error('[Analytics] Error invoking get-location function:', error);
         return null;
       }
 
       if (!data.country || !data.country_code) {
-        console.error('Invalid location data received:', data);
+        console.error('[Analytics] Invalid location data received:', data);
         return null;
       }
 
@@ -101,9 +117,10 @@ class AnalyticsService {
         ip_hash: ipHash
       };
 
+      console.log('[Analytics] Location info retrieved:', this.locationInfo);
       return this.locationInfo;
     } catch (error) {
-      console.error('Error getting location info:', error);
+      console.error('[Analytics] Error getting location info:', error);
       return null;
     }
   }
@@ -111,12 +128,26 @@ class AnalyticsService {
   async trackPageView(url: string) {
     // Skip tracking for smart links
     if (url.startsWith('/link/')) {
+      console.log('[Analytics] Skipping page view tracking for smart link:', url);
       return;
     }
 
-    try {
-      console.log('Tracking page view for:', url);
-      
+    // Implement de-duplication logic
+    const now = Date.now();
+    const isDuplicate = url === this.lastTrackedPath && (now - this.lastTrackedTime < 2000);
+    
+    if (isDuplicate) {
+      console.log('[Analytics] Skipping duplicate page view within 2 seconds:', url);
+      return;
+    }
+
+    this.pageViewCount++;
+    this.lastTrackedPath = url;
+    this.lastTrackedTime = now;
+
+    console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', this.sessionId);
+    
+    try {      
       // Track basic page view immediately without waiting for location
       const baseData = {
         url,
@@ -126,6 +157,7 @@ class AnalyticsService {
 
       // Track in GA4
       if (typeof gtag !== 'undefined') {
+        console.log('[Analytics] Sending page_view event to GA4:', url);
         gtag('event', 'page_view', {
           page_location: url,
           page_title: document.title,
@@ -137,7 +169,8 @@ class AnalyticsService {
       const locationInfo = await this.getLocationInfo();
       
       // Track in Supabase with location info if available
-      await supabase.from('analytics_page_views').insert({
+      console.log('[Analytics] Inserting page view into analytics_page_views table');
+      const { data, error } = await supabase.from('analytics_page_views').insert({
         ...baseData,
         ...(locationInfo && {
           country: locationInfo.country,
@@ -146,9 +179,13 @@ class AnalyticsService {
         })
       });
 
-      console.log('Page view tracked successfully');
+      if (error) {
+        console.error('[Analytics] Error inserting page view:', error);
+      } else {
+        console.log('[Analytics] Page view tracked successfully in Supabase');
+      }
     } catch (error) {
-      console.error('Error tracking page view:', error);
+      console.error('[Analytics] Error tracking page view:', error);
       // Don't throw error to prevent breaking the app
       // but log it for debugging
     }
@@ -235,7 +272,7 @@ class AnalyticsService {
   }
 
   async trackLogin(metadata: Record<string, any> = {}) {
-    console.log('Tracking login event');
+    console.log('[Analytics] Tracking login event with metadata:', metadata);
     await this.trackEvent({
       event_type: 'login',
       event_data: metadata

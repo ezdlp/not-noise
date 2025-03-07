@@ -24,18 +24,24 @@ class Analytics {
   private initialized = false;
   private isSmartLink = false;
   private userProperties: UserProperties = {};
+  private lastTrackedPath: string | null = null;
+  private lastTrackedTime: number = 0;
+  private pageViewCount: number = 0;
 
   initialize(isSmartLink: boolean) {
     // If already initialized with the same type, don't reinitialize
-    if (this.initialized && this.isSmartLink === isSmartLink) return;
+    if (this.initialized && this.isSmartLink === isSmartLink) {
+      console.log('[GA4 Analytics] Already initialized, skipping');
+      return;
+    }
     
     this.isSmartLink = isSmartLink;
     const measurementId = isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
-    console.log('Initializing GA4 with measurement ID:', measurementId);
+    console.log('[GA4 Analytics] Initializing GA4 with measurement ID:', measurementId);
     
     // Clear any existing GA configuration
     if (this.initialized) {
-      console.log('Re-initializing GA4 with different measurement ID');
+      console.log('[GA4 Analytics] Re-initializing GA4 with different measurement ID');
       // Reset GA state
       window.gtag('config', this.isSmartLink ? MEASUREMENT_IDS.main : MEASUREMENT_IDS.smartLinks, {
         'send_page_view': false
@@ -56,16 +62,20 @@ class Analytics {
     const isFirstVisit = !localStorage.getItem('sr_first_visit');
     if (isFirstVisit) {
       localStorage.setItem('sr_first_visit', new Date().toISOString());
+      console.log('[GA4 Analytics] First visit detected and recorded');
     }
 
     this.userProperties.firstVisit = isFirstVisit;
     this.userProperties.referrer = document.referrer;
+    console.log('[GA4 Analytics] Session initialized with properties:', this.userProperties);
   }
 
   setUserProperties(properties: UserProperties) {
     this.userProperties = { ...this.userProperties, ...properties };
+    console.log('[GA4 Analytics] User properties updated:', this.userProperties);
     
     if (this.userProperties.userId) {
+      console.log('[GA4 Analytics] Setting user_id in GA4:', this.userProperties.userId);
       gtag('set', 'user_properties', {
         user_id: this.userProperties.userId,
         user_type: this.userProperties.userType || 'free',
@@ -77,11 +87,25 @@ class Analytics {
   trackPageView(path: string) {
     if (!this.initialized) {
       const isCurrentPathSmartLink = path.startsWith('/link/');
+      console.log('[GA4 Analytics] Not initialized, initializing now for path:', path);
       this.initialize(isCurrentPathSmartLink);
     }
 
+    // Implement de-duplication logic
+    const now = Date.now();
+    const isDuplicate = path === this.lastTrackedPath && (now - this.lastTrackedTime < 2000);
+    
+    if (isDuplicate) {
+      console.log('[GA4 Analytics] Skipping duplicate page view within 2 seconds:', path);
+      return;
+    }
+
+    this.pageViewCount++;
+    this.lastTrackedPath = path;
+    this.lastTrackedTime = now;
+
     const measurementId = this.isSmartLink ? MEASUREMENT_IDS.smartLinks : MEASUREMENT_IDS.main;
-    console.log('Tracking page view:', { path, measurementId, isSmartLink: this.isSmartLink });
+    console.log('[GA4 Analytics] Tracking page view #' + this.pageViewCount + ' for:', path, 'to measurement ID:', measurementId);
     
     gtag('config', measurementId, {
       page_path: path,
