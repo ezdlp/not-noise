@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { analyticsService } from "@/services/analyticsService";
+import { trackEvent } from "@/services/ga4";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -43,11 +44,14 @@ const Login = () => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        // Track login event for analytics when user is authenticated
+        // Track login event using both systems (internal analytics and simplified GA4)
         analyticsService.trackEvent({
           event_type: 'login',
           event_data: { method: 'password' }
         }).catch(err => console.error('Failed to track login event:', err));
+        
+        // Track in GA4
+        trackEvent('login', { method: 'password' });
         
         toast({
           title: "Welcome back!",

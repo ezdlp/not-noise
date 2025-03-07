@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -155,16 +154,6 @@ class AnalyticsService {
         session_id: this.sessionId
       };
 
-      // Track in GA4
-      if (typeof gtag !== 'undefined') {
-        console.log('[Analytics] Sending page_view event to GA4:', url);
-        gtag('event', 'page_view', {
-          page_location: url,
-          page_title: document.title,
-          session_id: this.sessionId
-        });
-      }
-
       // Get location info in the background
       const locationInfo = await this.getLocationInfo();
       
@@ -202,15 +191,6 @@ class AnalyticsService {
         user_id: user?.id,
         session_id: this.sessionId
       });
-
-      // Track in GA4
-      if (typeof gtag !== 'undefined') {
-        gtag('event', event.event_type, {
-          ...event.event_data,
-          user_id: user?.id,
-          session_id: this.sessionId
-        });
-      }
     } catch (error) {
       console.error('Error tracking event:', error);
       throw error;
