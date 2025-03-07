@@ -6,7 +6,8 @@ import {
   FileText, 
   Users, 
   ImageIcon, 
-  Link2
+  Link2,
+  Music2
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -18,6 +19,7 @@ export const AdminSidebar: React.FC = () => {
     { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
     { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
     { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
+    { to: '/control-room/promotions', icon: <Music2 size={18} />, label: 'Playlist Promotions' },
   ];
 
   return (
