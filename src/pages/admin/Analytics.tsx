@@ -4,11 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Link } from 'react-router-dom';
-import { ArrowRight, FileSpreadsheet, TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays } from 'date-fns';
 
@@ -272,31 +270,13 @@ const Analytics = () => {
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
-        <div className="flex gap-2">
+        <Tabs defaultValue={timeRange} onValueChange={(value) => setTimeRange(value as 'week' | 'month' | 'quarter')}>
           <TabsList className="bg-muted">
-            <TabsTrigger 
-              value="week" 
-              onClick={() => setTimeRange('week')}
-              className={timeRange === 'week' ? 'bg-background' : ''}
-            >
-              7 Days
-            </TabsTrigger>
-            <TabsTrigger 
-              value="month" 
-              onClick={() => setTimeRange('month')}
-              className={timeRange === 'month' ? 'bg-background' : ''}
-            >
-              30 Days
-            </TabsTrigger>
-            <TabsTrigger 
-              value="quarter" 
-              onClick={() => setTimeRange('quarter')}
-              className={timeRange === 'quarter' ? 'bg-background' : ''}
-            >
-              90 Days
-            </TabsTrigger>
+            <TabsTrigger value="week">7 Days</TabsTrigger>
+            <TabsTrigger value="month">30 Days</TabsTrigger>
+            <TabsTrigger value="quarter">90 Days</TabsTrigger>
           </TabsList>
-        </div>
+        </Tabs>
       </div>
 
       {/* Section 1: Traffic & User Acquisition Metrics */}
