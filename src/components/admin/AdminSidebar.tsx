@@ -6,7 +6,6 @@ import {
   FileText, 
   Users, 
   ImageIcon, 
-  UploadIcon, 
   Link2
 } from 'lucide-react';
 
@@ -19,7 +18,6 @@ export const AdminSidebar: React.FC = () => {
     { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
     { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
     { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
-    { to: '/control-room/import', icon: <UploadIcon size={18} />, label: 'Import' },
   ];
 
   return (
