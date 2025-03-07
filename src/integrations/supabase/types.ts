@@ -465,6 +465,48 @@ export type Database = {
           },
         ]
       }
+      custom_stripe_charges: {
+        Row: {
+          amount: number | null
+          attrs: Json | null
+          created: string | null
+          currency: string | null
+          customer: string | null
+          description: string | null
+          id: string
+          invoice: string | null
+          last_updated: string | null
+          payment_intent: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          attrs?: Json | null
+          created?: string | null
+          currency?: string | null
+          customer?: string | null
+          description?: string | null
+          id: string
+          invoice?: string | null
+          last_updated?: string | null
+          payment_intent?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          attrs?: Json | null
+          created?: string | null
+          currency?: string | null
+          customer?: string | null
+          description?: string | null
+          id?: string
+          invoice?: string | null
+          last_updated?: string | null
+          payment_intent?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       early_adopter_counter: {
         Row: {
           created_at: string | null

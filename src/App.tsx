@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useEffect } from "react";
 import AppContent from "./AppContent";
 import Header from "@/components/layout/Header";
 import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
@@ -22,16 +21,15 @@ function AppLayout() {
                      location.pathname === '/reset-password' ||
                      location.pathname === '/update-password';
 
+  // Track page views only on route change
   useEffect(() => {
     // Handle smart link tracking by switching to the appropriate GA4 property
     if (isSmartLinkRoute) {
       switchToSmartLinkTracking();
     }
     
-    // Use analytics service for internal tracking (but skip for smart links)
-    if (!isSmartLinkRoute) {
-      analyticsService.trackPageView(location.pathname);
-    }
+    // Use analytics service for internal tracking
+    analyticsService.trackPageView(location.pathname);
   }, [location.pathname, isSmartLinkRoute]);
 
   return (

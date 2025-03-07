@@ -24,7 +24,6 @@ class AnalyticsService {
   constructor() {
     this.sessionId = this.getOrCreateSessionId();
     console.log('Analytics session initialized with ID:', this.sessionId);
-    this.initializeTracking();
   }
 
   private getOrCreateSessionId(): string {
@@ -50,42 +49,8 @@ class AnalyticsService {
     this.isInitialized = true;
     console.log('[Analytics] Initializing tracking for session:', this.sessionId);
 
-    // Track initial page view
-    this.trackPageView(window.location.pathname);
-
-    // Setup navigation tracking
-    if (typeof window !== 'undefined') {
-      this.setupHistoryTracking();
-    }
-
     // Get location info in the background
     this.getLocationInfo().catch(error => console.error('[Analytics] Failed to get location info:', error));
-  }
-
-  private setupHistoryTracking() {
-    console.log('[Analytics] Setting up history change tracking');
-    // Track navigation changes
-    ['pushState', 'replaceState'].forEach(method => {
-      const original = window.history[method];
-      window.history[method] = function(...args) {
-        const result = original.apply(this, args);
-        console.log(`[Analytics] History ${method} detected, dispatching locationchange event`);
-        window.dispatchEvent(new Event('locationchange'));
-        return result;
-      };
-    });
-
-    // Listen for navigation events
-    window.addEventListener('locationchange', () => {
-      console.log('[Analytics] Location change event detected, path:', window.location.pathname);
-      this.trackPageView(window.location.pathname);
-    });
-
-    // Listen for popstate
-    window.addEventListener('popstate', () => {
-      console.log('[Analytics] Popstate event detected, path:', window.location.pathname);
-      this.trackPageView(window.location.pathname);
-    });
   }
 
   async getLocationInfo(): Promise<LocationInfo | null> {
@@ -125,6 +90,11 @@ class AnalyticsService {
   }
 
   async trackPageView(url: string) {
+    // Initialize tracking if not already done
+    if (!this.isInitialized) {
+      this.initializeTracking();
+    }
+    
     // Skip tracking for smart links
     if (url.startsWith('/link/')) {
       console.log('[Analytics] Skipping page view tracking for smart link:', url);
