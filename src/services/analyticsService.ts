@@ -156,6 +156,7 @@ class AnalyticsService {
 
   async trackEvent(event: AnalyticsEvent) {
     try {
+      console.log('Tracking event:', event.event_type, event.event_data);
       const { data: { user } } = await supabase.auth.getUser();
       
       // Track in Supabase
@@ -231,6 +232,14 @@ class AnalyticsService {
       console.error('Error tracking platform click:', error);
       throw error;
     }
+  }
+
+  async trackLogin(metadata: Record<string, any> = {}) {
+    console.log('Tracking login event');
+    await this.trackEvent({
+      event_type: 'login',
+      event_data: metadata
+    });
   }
 
   private async hashIP(ip: string): Promise<string> {

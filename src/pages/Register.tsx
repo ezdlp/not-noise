@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { analyticsService } from "@/services/analyticsService";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -60,9 +60,7 @@ export default function Register() {
     },
   });
 
-  // Check if reCAPTCHA is ready
   useEffect(() => {
-    // Simple direct check if grecaptcha exists and is ready
     if (window.grecaptcha) {
       window.grecaptcha.ready(() => {
         console.log("reCAPTCHA is ready");
@@ -70,7 +68,6 @@ export default function Register() {
       });
     } else {
       console.log("Waiting for reCAPTCHA to load...");
-      // Set up a listener to check every 100ms
       const checkRecaptchaInterval = setInterval(() => {
         if (window.grecaptcha) {
           window.grecaptcha.ready(() => {
@@ -80,8 +77,6 @@ export default function Register() {
           clearInterval(checkRecaptchaInterval);
         }
       }, 100);
-
-      // Clean up interval on unmount
       return () => clearInterval(checkRecaptchaInterval);
     }
   }, []);
@@ -90,6 +85,11 @@ export default function Register() {
     if (!registrationComplete) {
       const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user && event === 'SIGNED_IN') {
+          analyticsService.trackEvent({
+            event_type: 'login',
+            event_data: { method: 'password', is_new_user: true }
+          }).catch(err => console.error('Failed to track login event:', err));
+          
           const redirectPath = sessionStorage.getItem('redirectAfterAuth');
           if (redirectPath) {
             sessionStorage.removeItem('redirectAfterAuth');
@@ -168,7 +168,6 @@ export default function Register() {
       if (authError) {
         console.error("Auth error:", authError);
         if (authError instanceof AuthApiError) {
-          // The key change is here - properly handling the email exists error
           if (authError.message.includes("User already registered")) {
             setError("This email is already registered. Please sign in instead.");
             return;
@@ -193,13 +192,17 @@ export default function Register() {
         return;
       }
 
-      // Only show success state if we actually created a new user
       if (authData.user && !authData.user.identities?.length) {
         setError("This email is already registered. Please sign in instead.");
         return;
       }
 
       if (authData.user) {
+        analyticsService.trackEvent({
+          event_type: 'user_registered',
+          event_data: { method: 'password' }
+        }).catch(err => console.error('Failed to track registration event:', err));
+        
         setRegistrationComplete(true);
         toast({
           title: "Registration successful!",
