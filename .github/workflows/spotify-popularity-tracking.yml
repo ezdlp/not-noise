@@ -15,14 +15,37 @@ jobs:
         run: echo "Running Spotify popularity tracking at $(date)"
         
       - name: Call Spotify Popularity Tracking Function
+        id: spotify-api-call
+        continue-on-error: true
         run: |
-          curl -X POST "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/fetch-spotify-popularity" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/fetch-spotify-popularity" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          CONTENT=$(echo "$RESPONSE" | sed '$ d')
+          
+          echo "::set-output name=status_code::$HTTP_CODE"
+          echo "::set-output name=response::$CONTENT"
+          
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Function completed successfully with status $HTTP_CODE"
+            exit 0
+          else
+            echo "Function failed with status $HTTP_CODE"
+            echo "Response: $CONTENT"
+            exit 1
+          fi
+          
+      - name: Retry on failure (1st attempt)
+        if: steps.spotify-api-call.outcome == 'failure'
+        id: retry1
+        run: |
+          echo "First retry after 2 minutes..."
+          sleep 120
+          curl -s -X POST "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/fetch-spotify-popularity" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json"
           
       - name: Log completion
         run: echo "Spotify popularity tracking complete at $(date)"
-          
-      - name: Verify function was called
-        run: |
-          echo "Function call completed with exit code $?"

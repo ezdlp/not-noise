@@ -3,8 +3,8 @@ import React, { useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import imageCompression from 'browser-image-compression';
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/utils/imageCompression";
 
 interface ArtworkUploaderProps {
   currentArtwork: string;
@@ -40,12 +40,8 @@ export function ArtworkUploader({ currentArtwork, onArtworkChange, smartLinkId }
       setIsUploading(true);
       console.log('Starting image upload process...');
 
-      // Compress image
-      const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true
-      });
+      // Compress image using our utility
+      const { compressedFile } = await compressImage(file, 'medium');
       console.log('Image compressed successfully');
 
       // Generate unique filename

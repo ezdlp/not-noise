@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
+import BackfillSpotifyPopularity from './components/BackfillSpotifyPopularity';
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
@@ -120,6 +121,7 @@ export default function Promotions() {
         <TabsContent value="tools">
           <div className="grid grid-cols-1 gap-6">
             <SpotifyPopularityBackfill />
+            <BackfillSpotifyPopularity />
           </div>
         </TabsContent>
       </Tabs>
