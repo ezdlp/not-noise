@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -41,73 +42,37 @@ class AnalyticsService {
     return newSession;
   }
 
-  private initializeTracking() {
-    if (this.isInitialized) {
-      console.log('[Analytics] Tracking already initialized, skipping');
+  async trackPageView(url: string) {
+    // Skip tracking for non-URL values or empty paths
+    if (!url || typeof url !== 'string') {
+      console.log('[Analytics] Invalid URL provided for tracking:', url);
       return;
     }
-    this.isInitialized = true;
-    console.log('[Analytics] Initializing tracking for session:', this.sessionId);
-
-    // Get location info in the background
-    this.getLocationInfo().catch(error => console.error('[Analytics] Failed to get location info:', error));
-  }
-
-  async getLocationInfo(): Promise<LocationInfo | null> {
-    // If we already have location info, return it
-    if (this.locationInfo) {
-      return this.locationInfo;
-    }
-
-    try {
-      console.log('[Analytics] Fetching location info');
-      const { data, error } = await supabase.functions.invoke('get-location');
-      
-      if (error) {
-        console.error('[Analytics] Error invoking get-location function:', error);
-        return null;
-      }
-
-      if (!data.country || !data.country_code) {
-        console.error('[Analytics] Invalid location data received:', data);
-        return null;
-      }
-
-      const ipHash = await this.hashIP(data.ip);
-      
-      this.locationInfo = {
-        country: data.country,
-        country_code: data.country_code,
-        ip_hash: ipHash
-      };
-
-      console.log('[Analytics] Location info retrieved:', this.locationInfo);
-      return this.locationInfo;
-    } catch (error) {
-      console.error('[Analytics] Error getting location info:', error);
-      return null;
-    }
-  }
-
-  async trackPageView(url: string) {
-    // Initialize tracking if not already done
-    if (!this.isInitialized) {
-      this.initializeTracking();
-    }
     
-    // Skip tracking for smart links
+    // Skip tracking for smart links at this level (they're tracked separately)
     if (url.startsWith('/link/')) {
       console.log('[Analytics] Skipping page view tracking for smart link:', url);
       return;
     }
 
-    // Implement de-duplication logic
+    // Implement de-duplication logic with a more robust approach
     const now = Date.now();
     const isDuplicate = url === this.lastTrackedPath && (now - this.lastTrackedTime < 2000);
     
     if (isDuplicate) {
       console.log('[Analytics] Skipping duplicate page view within 2 seconds:', url);
       return;
+    }
+
+    // Initialize tracking if first view
+    if (!this.isInitialized) {
+      this.isInitialized = true;
+      console.log('[Analytics] Initializing tracking for session:', this.sessionId);
+      
+      // Get location info in the background without blocking
+      this.getLocationInfo().catch(error => 
+        console.error('[Analytics] Failed to get location info:', error)
+      );
     }
 
     this.pageViewCount++;
@@ -147,6 +112,42 @@ class AnalyticsService {
       console.error('[Analytics] Error tracking page view:', error);
       // Don't throw error to prevent breaking the app
       // but log it for debugging
+    }
+  }
+
+  async getLocationInfo(): Promise<LocationInfo | null> {
+    // If we already have location info, return it
+    if (this.locationInfo) {
+      return this.locationInfo;
+    }
+
+    try {
+      console.log('[Analytics] Fetching location info');
+      const { data, error } = await supabase.functions.invoke('get-location');
+      
+      if (error) {
+        console.error('[Analytics] Error invoking get-location function:', error);
+        return null;
+      }
+
+      if (!data.country || !data.country_code) {
+        console.error('[Analytics] Invalid location data received:', data);
+        return null;
+      }
+
+      const ipHash = await this.hashIP(data.ip);
+      
+      this.locationInfo = {
+        country: data.country,
+        country_code: data.country_code,
+        ip_hash: ipHash
+      };
+
+      console.log('[Analytics] Location info retrieved:', this.locationInfo);
+      return this.locationInfo;
+    } catch (error) {
+      console.error('[Analytics] Error getting location info:', error);
+      return null;
     }
   }
 
