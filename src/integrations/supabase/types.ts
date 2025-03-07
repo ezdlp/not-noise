@@ -1715,6 +1715,25 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_analytics_dashboard_stats: {
+        Args: {
+          p_start_date?: string
+          p_end_date?: string
+          p_previous_period?: boolean
+        }
+        Returns: {
+          period: string
+          product_visits: number
+          smart_link_visits: number
+          signups: number
+          active_users: number
+          pro_subscribers: number
+          revenue: number
+          social_cards_usage: number
+          meta_pixel_usage: number
+          email_capture_usage: number
+        }[]
+      }
       get_analytics_stats: {
         Args: {
           p_start_date: string
@@ -1832,6 +1851,16 @@ export type Database = {
           active_users: number
           pro_users: number
           total_users: number
+        }[]
+      }
+      get_monthly_active_users_trend: {
+        Args: {
+          p_months?: number
+        }
+        Returns: {
+          month: string
+          active_users: number
+          pro_users: number
         }[]
       }
       get_pro_feature_usage: {

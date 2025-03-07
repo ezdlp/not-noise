@@ -45,8 +45,8 @@ const Analytics = () => {
     queryKey: ['analytics-data'],
     queryFn: async () => {
       try {
-        // Fetch analytics stats
-        const { data: statsData, error: statsError } = await supabase.rpc('get_analytics_stats_with_trends');
+        // Fetch analytics dashboard stats
+        const { data: dashboardStats, error: statsError } = await supabase.rpc('get_analytics_dashboard_stats');
         
         if (statsError) throw statsError;
 
@@ -83,51 +83,67 @@ const Analytics = () => {
           }
         };
 
-        // Process the data from the RPC function
-        if (Array.isArray(statsData)) {
-          const stats = statsData as any[];
+        // Process the data from the get_analytics_dashboard_stats function
+        if (Array.isArray(dashboardStats)) {
+          const currentPeriod = dashboardStats.find(period => period.period === 'current');
+          const previousPeriod = dashboardStats.find(period => period.period === 'previous');
           
-          // Extract data for the chart
-          const weekly = stats.slice(0, 7).map((day: any) => ({
-            period: 'weekly',
-            day: day.day,
-            product_page_views: day.page_views || 0,
-            smart_link_views: day.link_views || 0,
-            unique_visitors: day.unique_visitors || 0,
-            registered_users: day.registered_users || 0,
-            active_users: day.active_users || 0,
-            pro_subscribers: day.pro_subscribers || 0,
-            total_revenue: day.total_revenue || 0,
-          }));
-          
-          const monthly = stats.slice(0, 30).map((day: any) => ({
-            period: 'monthly',
-            day: day.day,
-            product_page_views: day.page_views || 0,
-            smart_link_views: day.link_views || 0,
-            unique_visitors: day.unique_visitors || 0,
-            registered_users: day.registered_users || 0,
-            active_users: day.active_users || 0,
-            pro_subscribers: day.pro_subscribers || 0,
-            total_revenue: day.total_revenue || 0,
-          }));
-          
-          processedData.weekly = weekly;
-          processedData.monthly = monthly;
-          
-          if (weekly.length > 0) {
-            processedData.today = weekly[0];
-            processedData.yesterday = weekly[1] || processedData.yesterday;
-          }
-          
-          // Calculate trends (% change)
-          if (weekly.length >= 2) {
-            const today = weekly[0];
-            const yesterday = weekly[1];
+          if (currentPeriod && previousPeriod) {
+            // Get the RPC data for analytics_stats_with_trends for time series data
+            const { data: timeSeriesData, error: timeSeriesError } = await supabase.rpc('get_analytics_stats_with_trends');
             
-            processedData.trends.visitors = calculateTrend(today.unique_visitors, yesterday.unique_visitors);
-            processedData.trends.revenue = calculateTrend(today.total_revenue, yesterday.total_revenue);
-            processedData.trends.users = calculateTrend(today.registered_users, yesterday.registered_users);
+            if (timeSeriesError) throw timeSeriesError;
+
+            // Extract data for the charts
+            if (Array.isArray(timeSeriesData)) {
+              const weekly = timeSeriesData.slice(0, 7).map((day: any) => ({
+                period: 'weekly',
+                day: day.day,
+                product_page_views: day.page_views || 0,
+                smart_link_views: day.smart_link_views || 0,
+                unique_visitors: day.unique_visitors || 0,
+                registered_users: day.registered_users || 0,
+                active_users: day.active_users || 0,
+                pro_subscribers: day.pro_subscribers || 0,
+                total_revenue: day.total_revenue || 0,
+              }));
+              
+              const monthly = timeSeriesData.slice(0, 30).map((day: any) => ({
+                period: 'monthly',
+                day: day.day,
+                product_page_views: day.page_views || 0,
+                smart_link_views: day.smart_link_views || 0,
+                unique_visitors: day.unique_visitors || 0,
+                registered_users: day.registered_users || 0,
+                active_users: day.active_users || 0,
+                pro_subscribers: day.pro_subscribers || 0,
+                total_revenue: day.total_revenue || 0,
+              }));
+              
+              processedData.weekly = weekly;
+              processedData.monthly = monthly;
+              
+              if (weekly.length > 0) {
+                processedData.today = weekly[0];
+                processedData.yesterday = weekly[1] || processedData.yesterday;
+              }
+              
+              // Calculate trends
+              processedData.trends.visitors = calculateTrend(
+                currentPeriod.product_visits + currentPeriod.smart_link_visits,
+                previousPeriod.product_visits + previousPeriod.smart_link_visits
+              );
+              
+              processedData.trends.revenue = calculateTrend(
+                currentPeriod.revenue, 
+                previousPeriod.revenue
+              );
+              
+              processedData.trends.users = calculateTrend(
+                currentPeriod.signups, 
+                previousPeriod.signups
+              );
+            }
           }
         }
         
@@ -135,6 +151,33 @@ const Analytics = () => {
       } catch (error) {
         console.error('Error fetching analytics data:', error);
         throw error;
+      }
+    }
+  });
+
+  // Fetch pro feature usage data
+  const { data: proFeatureUsage, isLoading: isFeatureUsageLoading } = useQuery({
+    queryKey: ['analytics-feature-usage'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_analytics_dashboard_stats');
+        
+        if (error) throw error;
+        
+        const current = data?.find((d: any) => d.period === 'current');
+        
+        return {
+          social_cards: current?.social_cards_usage || 0,
+          meta_pixel: current?.meta_pixel_usage || 0,
+          email_capture: current?.email_capture_usage || 0
+        };
+      } catch (error) {
+        console.error('Error fetching pro feature usage:', error);
+        return {
+          social_cards: 0,
+          meta_pixel: 0,
+          email_capture: 0
+        };
       }
     }
   });
@@ -165,6 +208,23 @@ const Analytics = () => {
         return logs;
       } catch (error) {
         console.error('Error fetching recent logs:', error);
+        return [];
+      }
+    }
+  });
+
+  // Fetch monthly active users trend
+  const { data: mauTrend, isLoading: isMauLoading } = useQuery({
+    queryKey: ['analytics-mau-trend'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_monthly_active_users_trend');
+        
+        if (error) throw error;
+        
+        return data;
+      } catch (error) {
+        console.error('Error fetching MAU trend:', error);
         return [];
       }
     }
