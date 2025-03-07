@@ -47,5 +47,15 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json"
           
+      - name: Retry on failure (2nd attempt)
+        if: steps.retry1.outcome == 'failure'
+        id: retry2
+        run: |
+          echo "Second retry after 5 minutes..."
+          sleep 300
+          curl -s -X POST "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/fetch-spotify-popularity" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json"
+          
       - name: Log completion
         run: echo "Spotify popularity tracking complete at $(date)"

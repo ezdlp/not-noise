@@ -57,7 +57,38 @@ Deno.serve(async (req) => {
     
     console.log('Successfully obtained Spotify access token');
     
-    // Get pro users' smart links with Spotify tracks (both current and historical pro users)
+    // Get all pro user IDs (both current and previous pro users)
+    console.log('Fetching Pro user IDs...');
+    const { data: proUserIds, error: userError } = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('tier', 'pro');
+      
+    if (userError) {
+      throw new Error(`Failed to fetch pro users: ${userError.message}`);
+    }
+    
+    if (!proUserIds || proUserIds.length === 0) {
+      console.log('No Pro users found');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No Pro users found, nothing to track'
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+    
+    console.log(`Found ${proUserIds.length} Pro users`);
+    
+    // Get smart links with Spotify tracks belonging to Pro users
+    console.log('Fetching smart links with Spotify tracks belonging to Pro users...');
+    
     const { data: smartLinks, error: linksError } = await supabase
       .from('smart_links')
       .select(`
@@ -69,26 +100,78 @@ Deno.serve(async (req) => {
         ),
         user_id
       `)
-      .in('user_id', (await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('tier', 'pro')
-        .is('status', null)
-        .or('status.eq.active')
-        .then(result => result.data?.map(sub => sub.user_id) || [])
-      ));
+      .in('user_id', proUserIds.map(u => u.user_id))
+      .filter('platform_links.platform_id', 'eq', 'spotify');
     
     if (linksError) {
       throw new Error(`Failed to fetch smart links: ${linksError.message}`);
     }
     
-    console.log(`Found ${smartLinks?.length || 0} smart links belonging to current or previous Pro users`);
+    console.log(`Found ${smartLinks?.length || 0} smart links with Spotify tracks`);
     
-    // Process each smart link
+    if (!smartLinks || smartLinks.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No smart links with Spotify tracks found'
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+    
+    // Check which links need updating (haven't been updated in the last 3 days)
+    console.log('Checking which links need popularity tracking updates...');
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    const { data: recentlyTrackedLinks, error: recentError } = await supabase
+      .from('spotify_popularity_history')
+      .select('smart_link_id')
+      .gte('measured_at', threeDaysAgo.toISOString());
+      
+    if (recentError) {
+      console.warn(`Error checking recent popularity data: ${recentError.message}`);
+    }
+    
+    // Create a set of links that have been recently tracked
+    const recentlyTrackedSet = new Set(recentlyTrackedLinks?.map(item => item.smart_link_id) || []);
+    
+    // Filter links that need updating
+    const linksToUpdate = smartLinks.filter(link => !recentlyTrackedSet.has(link.id));
+    
+    console.log(`Found ${linksToUpdate.length} links that need popularity updates`);
+    
+    if (linksToUpdate.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'All links have been recently tracked, nothing to update'
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+    
+    // Process each smart link that needs updating
     const updates = [];
     const errors = [];
     
-    for (const link of (smartLinks || [])) {
+    // Use a reasonable batch size
+    const batchSize = 25;
+    const linksToProcess = linksToUpdate.slice(0, batchSize);
+    
+    console.log(`Processing up to ${batchSize} links in this run: ${linksToProcess.length} links selected`);
+    
+    for (const link of linksToProcess) {
       try {
         // Find the Spotify platform link
         const spotifyLink = link.platform_links.find(pl => pl.platform_id === 'spotify');
@@ -110,24 +193,6 @@ Deno.serve(async (req) => {
         const trackId = trackIdMatch[1];
         
         console.log(`Processing track ${trackId} for link ${link.id}`);
-
-        // Check if we already have recent data for this track (within the last 2 days)
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        
-        const { data: existingData, error: existingDataError } = await supabase
-          .from('spotify_popularity_history')
-          .select('id')
-          .eq('smart_link_id', link.id)
-          .gte('measured_at', twoDaysAgo.toISOString())
-          .limit(1);
-          
-        if (existingDataError) {
-          console.error(`Error checking existing data: ${existingDataError.message}`);
-        } else if (existingData && existingData.length > 0) {
-          console.log(`Recent data already exists for link ${link.id}, skipping`);
-          continue;
-        }
         
         // Fetch track details from Spotify API
         const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -182,12 +247,22 @@ Deno.serve(async (req) => {
           error: err.message
         });
       }
+      
+      // Add a small delay to avoid hitting Spotify API rate limits
+      await new Promise(resolve => setTimeout(resolve, 250));
     }
+    
+    const remainingLinks = linksToUpdate.length - linksToProcess.length;
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Updated popularity scores for ${updates.length} tracks`,
+        message: `Updated popularity scores for ${updates.length} tracks, with ${errors.length} errors`,
+        totalProUsers: proUserIds.length,
+        totalSmartLinks: smartLinks.length,
+        linksNeedingUpdates: linksToUpdate.length,
+        linksProcessed: linksToProcess.length,
+        remainingLinks: remainingLinks,
         updates,
         errors: errors.length > 0 ? errors : undefined
       }),
