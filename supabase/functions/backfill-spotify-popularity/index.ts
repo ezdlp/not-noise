@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Starting Spotify popularity tracking job...');
+    console.log('Starting Spotify popularity backfill job...');
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -33,6 +33,10 @@ Deno.serve(async (req) => {
       throw new Error('Missing Spotify API credentials');
     }
     
+    // Parse request body for specific parameters
+    const { batchSize = 50, startFromId, skipIds = [] } = await req.json().catch(() => ({}));
+    
+    console.log(`Backfill parameters: batchSize=${batchSize}, startFromId=${startFromId || 'none'}, skipIds count=${skipIds.length}`);
     console.log('Fetching Spotify access token...');
     
     // Get access token from Spotify
@@ -57,8 +61,21 @@ Deno.serve(async (req) => {
     
     console.log('Successfully obtained Spotify access token');
     
-    // Get pro users' smart links with Spotify tracks (both current and historical pro users)
-    const { data: smartLinks, error: linksError } = await supabase
+    // Get all historical pro user IDs
+    const { data: proUserIds, error: userError } = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('tier', 'pro');
+      
+    if (userError) {
+      throw new Error(`Failed to fetch pro users: ${userError.message}`);
+    }
+    
+    // Get a batch of smart links that:
+    // 1. Belong to users who have/had a pro subscription
+    // 2. Don't already have popularity data
+    // 3. Have a Spotify platform link
+    let query = supabase
       .from('smart_links')
       .select(`
         id,
@@ -66,30 +83,62 @@ Deno.serve(async (req) => {
           id,
           platform_id,
           url
-        ),
-        user_id
+        )
       `)
-      .in('user_id', (await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('tier', 'pro')
-        .is('status', null)
-        .or('status.eq.active')
-        .then(result => result.data?.map(sub => sub.user_id) || [])
+      .in('user_id', proUserIds.map(u => u.user_id))
+      .not('id', 'in', (
+        // Subquery to get smart links that already have popularity data
+        await supabase
+          .from('spotify_popularity_history')
+          .select('smart_link_id')
+          .then(result => result.data?.map(h => h.smart_link_id) || [])
       ));
+      
+    // Add conditions based on parameters
+    if (startFromId) {
+      query = query.gt('id', startFromId);
+    }
+    
+    if (skipIds.length > 0) {
+      query = query.not('id', 'in', skipIds);
+    }
+    
+    // Get the links and limit the batch size
+    const { data: smartLinks, error: linksError } = await query
+      .limit(batchSize)
+      .order('id', { ascending: true });
     
     if (linksError) {
       throw new Error(`Failed to fetch smart links: ${linksError.message}`);
     }
     
-    console.log(`Found ${smartLinks?.length || 0} smart links belonging to current or previous Pro users`);
+    console.log(`Found ${smartLinks?.length || 0} smart links to backfill`);
+    
+    if (!smartLinks || smartLinks.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No more links to process', 
+          complete: true 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
     
     // Process each smart link
     const updates = [];
     const errors = [];
+    const processedIds = [];
     
-    for (const link of (smartLinks || [])) {
+    for (const link of smartLinks) {
       try {
+        processedIds.push(link.id);
+        
         // Find the Spotify platform link
         const spotifyLink = link.platform_links.find(pl => pl.platform_id === 'spotify');
         
@@ -109,25 +158,7 @@ Deno.serve(async (req) => {
         
         const trackId = trackIdMatch[1];
         
-        console.log(`Processing track ${trackId} for link ${link.id}`);
-
-        // Check if we already have recent data for this track (within the last 2 days)
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        
-        const { data: existingData, error: existingDataError } = await supabase
-          .from('spotify_popularity_history')
-          .select('id')
-          .eq('smart_link_id', link.id)
-          .gte('measured_at', twoDaysAgo.toISOString())
-          .limit(1);
-          
-        if (existingDataError) {
-          console.error(`Error checking existing data: ${existingDataError.message}`);
-        } else if (existingData && existingData.length > 0) {
-          console.log(`Recent data already exists for link ${link.id}, skipping`);
-          continue;
-        }
+        console.log(`Backfilling track ${trackId} for link ${link.id}`);
         
         // Fetch track details from Spotify API
         const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -182,14 +213,23 @@ Deno.serve(async (req) => {
           error: err.message
         });
       }
+      
+      // Add a small delay to avoid hitting Spotify API rate limits
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
+    
+    // Determine the last processed ID for pagination
+    const lastProcessedId = processedIds.length > 0 ? processedIds[processedIds.length - 1] : null;
     
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Updated popularity scores for ${updates.length} tracks`,
         updates,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
+        lastProcessedId: lastProcessedId,
+        complete: smartLinks.length < batchSize,
+        processedCount: processedIds.length
       }),
       { 
         headers: { 

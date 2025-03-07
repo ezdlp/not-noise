@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeRangeSelect, TimeRangeValue } from '@/components/analytics/TimeRangeSelect';
@@ -14,6 +14,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import { format } from 'date-fns';
+import { analyticsService } from '@/services/analyticsService';
 
 interface PopularityDataPoint {
   measured_at: string;
@@ -25,19 +26,22 @@ interface SpotifyPopularityChartProps {
   timeRange: TimeRangeValue;
   onTimeRangeChange: (value: TimeRangeValue) => void;
   isLoading: boolean;
+  smartLinkId: string;
 }
 
 export function SpotifyPopularityChart({
   data,
   timeRange,
   onTimeRangeChange,
-  isLoading
+  isLoading,
+  smartLinkId
 }: SpotifyPopularityChartProps) {
   // Format data for the chart
   const chartData = data.map(point => ({
     date: format(new Date(point.measured_at), 'MMM dd'),
     score: point.popularity_score,
     timestamp: new Date(point.measured_at).getTime(),
+    fullDate: format(new Date(point.measured_at), 'MMM dd, yyyy'),
   })).sort((a, b) => a.timestamp - b.timestamp);
 
   // Calculate average for reference line
@@ -45,11 +49,19 @@ export function SpotifyPopularityChart({
     ? Math.round(chartData.reduce((sum, item) => sum + item.score, 0) / chartData.length)
     : 0;
 
+  // Track feature usage
+  useEffect(() => {
+    if (smartLinkId && !isLoading && data.length > 0) {
+      analyticsService.trackSpotifyPopularityView(smartLinkId)
+        .catch(err => console.error('Error tracking Spotify popularity view:', err));
+    }
+  }, [smartLinkId, isLoading, data.length]);
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="rounded-lg border border-neutral-border bg-white p-4 shadow-md animate-fade-in">
-          <p className="mb-2 text-sm font-medium text-[#111827] font-poppins">{payload[0].payload.date}</p>
+          <p className="mb-2 text-sm font-medium text-[#111827] font-poppins">{payload[0].payload.fullDate}</p>
           <div className="text-sm font-dm-sans">
             <span className="font-medium text-primary">
               Popularity Score:
@@ -70,7 +82,7 @@ export function SpotifyPopularityChart({
           <TimeRangeSelect value={timeRange} onChange={onTimeRangeChange} />
         </div>
         <p className="text-xs text-[#6B7280] font-dm-sans leading-tight">
-          The Spotify Popularity Score (0-100) reflects how well your song is performing relative to others on the platform. It updates daily and is influenced by recent streams, saves, playlist adds, and listener engagement—higher scores increase your chances of being featured in algorithmic playlists like Discover Weekly and Release Radar.
+          The Spotify Popularity Score (0-100) reflects how well your song is performing relative to others on the platform. It updates every 3 days and is influenced by recent streams, saves, playlist adds, and listener engagement—higher scores increase your chances of being featured in algorithmic playlists like Discover Weekly and Release Radar.
         </p>
       </div>
       {isLoading ? (

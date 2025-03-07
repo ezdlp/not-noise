@@ -230,6 +230,16 @@ class AnalyticsService {
     });
   }
 
+  async trackSpotifyPopularityView(smartLinkId: string) {
+    console.log('[Analytics] Tracking Spotify popularity view for link:', smartLinkId);
+    await this.trackEvent({
+      event_type: 'spotify_popularity_view',
+      event_data: {
+        smart_link_id: smartLinkId
+      }
+    });
+  }
+
   private async hashIP(ip: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(ip);

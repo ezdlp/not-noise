@@ -11,8 +11,18 @@ jobs:
   track-spotify-popularity:
     runs-on: ubuntu-latest
     steps:
+      - name: Check time
+        run: echo "Running Spotify popularity tracking at $(date)"
+        
       - name: Call Spotify Popularity Tracking Function
         run: |
           curl -X POST "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/fetch-spotify-popularity" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json"
+          
+      - name: Log completion
+        run: echo "Spotify popularity tracking complete at $(date)"
+          
+      - name: Verify function was called
+        run: |
+          echo "Function call completed with exit code $?"

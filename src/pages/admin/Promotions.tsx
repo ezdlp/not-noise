@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Table,
   TableBody,
@@ -14,8 +15,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
+import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 
 export default function Promotions() {
+  const [activeTab, setActiveTab] = useState("promotions");
+  
   const { data: promotions, isLoading } = useQuery({
     queryKey: ["admin-promotions"],
     queryFn: async () => {
@@ -44,66 +48,81 @@ export default function Promotions() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Playlist Promotions</h1>
         <p className="text-muted-foreground">
-          Manage and monitor user playlist promotion campaigns
+          Manage promotions and related data collection
         </p>
       </div>
 
-      <Card className="overflow-hidden">
-        <Table>
-          <TableCaption>
-            {isLoading ? "Loading promotions..." : `Showing ${promotions?.length || 0} promotions`}
-          </TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Track</TableHead>
-              <TableHead>Artist</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Genre</TableHead>
-              <TableHead>Submissions</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
-                  Loading promotions...
-                </TableCell>
-              </TableRow>
-            ) : promotions?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
-                  No promotions found
-                </TableCell>
-              </TableRow>
-            ) : (
-              promotions?.map((promo: any) => (
-                <TableRow key={promo.id}>
-                  <TableCell className="font-medium">{promo.track_name}</TableCell>
-                  <TableCell>{promo.track_artist}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      className={getStatusColor(promo.status)}
-                      variant="outline"
-                    >
-                      {promo.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{promo.genre}</TableCell>
-                  <TableCell>{promo.submission_count}</TableCell>
-                  <TableCell>
-                    {formatDistance(new Date(promo.created_at), new Date(), { 
-                      addSuffix: true 
-                    })}
-                  </TableCell>
-                  <TableCell>${promo.total_cost}</TableCell>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="promotions">Promotion Campaigns</TabsTrigger>
+          <TabsTrigger value="tools">Admin Tools</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="promotions">
+          <Card className="overflow-hidden">
+            <Table>
+              <TableCaption>
+                {isLoading ? "Loading promotions..." : `Showing ${promotions?.length || 0} promotions`}
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Track</TableHead>
+                  <TableHead>Artist</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Genre</TableHead>
+                  <TableHead>Submissions</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Total</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      Loading promotions...
+                    </TableCell>
+                  </TableRow>
+                ) : promotions?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      No promotions found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  promotions?.map((promo: any) => (
+                    <TableRow key={promo.id}>
+                      <TableCell className="font-medium">{promo.track_name}</TableCell>
+                      <TableCell>{promo.track_artist}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={getStatusColor(promo.status)}
+                          variant="outline"
+                        >
+                          {promo.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{promo.genre}</TableCell>
+                      <TableCell>{promo.submission_count}</TableCell>
+                      <TableCell>
+                        {formatDistance(new Date(promo.created_at), new Date(), { 
+                          addSuffix: true 
+                        })}
+                      </TableCell>
+                      <TableCell>${promo.total_cost}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="tools">
+          <div className="grid grid-cols-1 gap-6">
+            <SpotifyPopularityBackfill />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

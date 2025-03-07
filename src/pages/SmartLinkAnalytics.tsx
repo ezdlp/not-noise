@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -225,7 +224,6 @@ export default function SmartLinkAnalytics() {
   });
 
   useEffect(() => {
-    // Track analytics page view
     if (id) {
       analyticsService.trackPageView(`/links/${id}/analytics`);
     }
@@ -266,7 +264,6 @@ export default function SmartLinkAnalytics() {
 
   const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
 
-  // Check if there's a Spotify link
   const hasSpotifyLink = smartLink.platform_links?.some(link => link.platform_id === 'spotify');
 
   const platformData = smartLink.platform_links?.map((pl) => ({
@@ -399,6 +396,7 @@ export default function SmartLinkAnalytics() {
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           isLoading={isLoadingPopularity}
+          smartLinkId={id}
         />
       )}
 
@@ -462,3 +460,4 @@ export default function SmartLinkAnalytics() {
     </div>
   );
 }
+

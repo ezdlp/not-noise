@@ -6,21 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Handle getSpotifyPopularity
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
-    const requestBody = await req.json().catch(() => ({}));
-    const { smartLinkId, startDate } = requestBody;
+    // Extract parameters from request
+    const { smartLinkId, startDate } = await req.json();
     
     if (!smartLinkId) {
-      throw new Error('Smart link ID is required');
+      throw new Error('Missing smart_link_id parameter');
     }
-    
-    console.log(`Fetching Spotify popularity data for link ${smartLinkId}`);
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -32,56 +31,85 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get popularity history for this smart link
-    const defaultStartDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(); // 90 days ago by default
-    const { data, error } = await supabase.rpc('get_spotify_popularity_history', { 
-      p_smart_link_id: smartLinkId,
-      p_start_date: startDate || defaultStartDate
-    });
-    
-    if (error) {
-      console.error(`Failed to fetch popularity history: ${error.message}`);
-      throw new Error(`Failed to fetch popularity history: ${error.message}`);
+    // Fetch popularity history
+    const { data: history, error: historyError } = await supabase
+      .from('spotify_popularity_history')
+      .select('measured_at, popularity_score')
+      .eq('smart_link_id', smartLinkId)
+      .gte('measured_at', startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('measured_at', { ascending: true });
+      
+    if (historyError) {
+      throw new Error(`Failed to fetch popularity history: ${historyError.message}`);
     }
     
-    console.log(`Retrieved ${data?.length || 0} popularity records`);
-    
-    // If no data, trigger a fetch for this specific link
-    if (!data || data.length === 0) {
-      console.log('No popularity data found, triggering immediate fetch for this link');
+    // Get the latest score and calculate trend
+    const latestScore = history && history.length > 0 
+      ? history[history.length - 1].popularity_score 
+      : null;
       
-      try {
-        // Get Spotify link information
-        const { data: linkData, error: linkError } = await supabase
-          .from('smart_links')
-          .select(`
+    // Calculate trend based on first and last measurements (if we have at least 2)
+    let trendValue = 0;
+    if (history && history.length >= 2) {
+      const firstScore = history[0].popularity_score;
+      const lastScore = history[history.length - 1].popularity_score;
+      
+      if (firstScore > 0) {
+        trendValue = Math.round(((lastScore - firstScore) / firstScore) * 100);
+      } else if (lastScore > 0) {
+        // If first score was 0, but now we have a score, that's positive
+        trendValue = 100;
+      }
+    }
+    
+    // Check if we need to track now (if we don't have recent data)
+    let needsTracking = true;
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    
+    if (history && history.length > 0) {
+      const latestMeasurement = new Date(history[history.length - 1].measured_at);
+      needsTracking = latestMeasurement < twentyFourHoursAgo;
+    }
+    
+    if (needsTracking) {
+      console.log(`Need to track popularity for smart link ${smartLinkId} now`);
+      // Find Spotify track ID for this smart link
+      const { data: linkData, error: linkError } = await supabase
+        .from('smart_links')
+        .select(`
+          id,
+          platform_links (
             id,
-            platform_links (
-              id, 
-              platform_id,
-              url
-            ),
-            profiles!inner (id)
-          `)
-          .eq('id', smartLinkId)
-          .single();
+            platform_id,
+            url
+          )
+        `)
+        .eq('id', smartLinkId)
+        .single();
+        
+      if (linkError) {
+        console.error(`Error fetching link data: ${linkError.message}`);
+      } else {
+        const spotifyLink = linkData.platform_links.find(pl => pl.platform_id === 'spotify');
+        
+        if (spotifyLink) {
+          // Extract track ID
+          const trackIdMatch = spotifyLink.url.match(/track\/([a-zA-Z0-9]+)/);
           
-        if (linkError || !linkData) {
-          console.error(`Failed to fetch link data: ${linkError?.message || 'No data found'}`);
-        } else {
-          const spotifyLink = linkData.platform_links.find(pl => pl.platform_id === 'spotify');
-          
-          if (spotifyLink) {
-            console.log(`Found Spotify link, triggering fetch for track in URL: ${spotifyLink.url}`);
+          if (trackIdMatch && trackIdMatch[1]) {
+            const trackId = trackIdMatch[1];
             
-            // Get Spotify API credentials
-            const spotifyClientId = Deno.env.get('SPOTIFY_CLIENT_ID') || '';
-            const spotifyClientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET') || '';
-            
-            if (!spotifyClientId || !spotifyClientSecret) {
-              console.error('Missing Spotify API credentials, cannot trigger immediate fetch');
-            } else {
-              // Get Spotify access token
+            try {
+              // Get Spotify API credentials
+              const spotifyClientId = Deno.env.get('SPOTIFY_CLIENT_ID') || '';
+              const spotifyClientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET') || '';
+              
+              if (!spotifyClientId || !spotifyClientSecret) {
+                throw new Error('Missing Spotify API credentials');
+              }
+              
+              // Get access token
               const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: {
@@ -94,86 +122,55 @@ Deno.serve(async (req) => {
               });
               
               if (!tokenResponse.ok) {
-                console.error(`Failed to obtain Spotify access token: ${tokenResponse.status}`);
-              } else {
-                const tokenData = await tokenResponse.json();
-                const accessToken = tokenData.access_token;
+                throw new Error(`Failed to obtain Spotify access token: ${tokenResponse.status}`);
+              }
+              
+              const tokenData = await tokenResponse.json();
+              const accessToken = tokenData.access_token;
+              
+              // Fetch track popularity
+              const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`
+                }
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Error fetching track ${trackId}: ${response.status}`);
+              }
+              
+              const track = await response.json();
+              const popularityScore = track.popularity;
+              
+              console.log(`Track ${trackId} has popularity score: ${popularityScore}`);
+              
+              // Store in database
+              await supabase
+                .from('spotify_popularity_history')
+                .insert({
+                  smart_link_id: smartLinkId,
+                  popularity_score: popularityScore
+                });
                 
-                // Extract track ID
-                const trackIdMatch = spotifyLink.url.match(/track\/([a-zA-Z0-9]+)/);
+              // Add to our history array for immediate display
+              history.push({
+                measured_at: new Date().toISOString(),
+                popularity_score: popularityScore
+              });
+              
+              // Update latest score and trend
+              if (history.length >= 2) {
+                const firstScore = history[0].popularity_score;
+                const lastScore = popularityScore;
                 
-                if (!trackIdMatch || !trackIdMatch[1]) {
-                  console.error(`Could not extract track ID from URL: ${spotifyLink.url}`);
-                } else {
-                  const trackId = trackIdMatch[1];
-                  
-                  // Fetch track details
-                  const trackResponse = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-                    headers: {
-                      'Authorization': `Bearer ${accessToken}`
-                    }
-                  });
-                  
-                  if (!trackResponse.ok) {
-                    console.error(`Error fetching track ${trackId}: ${trackResponse.status}`);
-                  } else {
-                    const track = await trackResponse.json();
-                    const popularityScore = track.popularity;
-                    
-                    // Store popularity score
-                    const { error: insertError } = await supabase
-                      .from('spotify_popularity_history')
-                      .insert({
-                        smart_link_id: smartLinkId,
-                        popularity_score: popularityScore
-                      });
-                      
-                    if (insertError) {
-                      console.error(`Error storing popularity: ${insertError.message}`);
-                    } else {
-                      console.log(`Successfully stored popularity score ${popularityScore} for link ${smartLinkId}`);
-                      
-                      // Add the newly created record to the results
-                      data.push({
-                        measured_at: new Date().toISOString(),
-                        popularity_score: popularityScore
-                      });
-                    }
-                  }
+                if (firstScore > 0) {
+                  trendValue = Math.round(((lastScore - firstScore) / firstScore) * 100);
                 }
               }
+            } catch (err) {
+              console.error(`Error tracking popularity: ${err.message}`);
             }
-          } else {
-            console.log('No Spotify link found for this smart link');
           }
-        }
-      } catch (fetchError) {
-        console.error(`Error during immediate popularity fetch: ${fetchError.message}`);
-      }
-    }
-    
-    // Calculate trend (last 7 days vs previous 7 days)
-    const sortedData = [...(data || [])].sort((a, b) => 
-      new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
-    );
-    
-    let trendValue = 0;
-    let latestScore = null;
-    
-    if (sortedData.length > 0) {
-      // Get latest score
-      latestScore = sortedData[sortedData.length - 1].popularity_score;
-      
-      // Calculate trend if we have enough data
-      if (sortedData.length > 7) {
-        const last7Days = sortedData.slice(-7);
-        const previous7Days = sortedData.slice(-14, -7);
-        
-        if (previous7Days.length > 0) {
-          const last7DaysAvg = last7Days.reduce((sum, item) => sum + item.popularity_score, 0) / last7Days.length;
-          const previous7DaysAvg = previous7Days.reduce((sum, item) => sum + item.popularity_score, 0) / previous7Days.length;
-          
-          trendValue = Math.round(last7DaysAvg - previous7DaysAvg);
         }
       }
     }
@@ -181,7 +178,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        history: sortedData,
+        history: history || [],
         latestScore,
         trendValue
       }),
