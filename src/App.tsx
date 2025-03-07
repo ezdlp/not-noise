@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, useLocation, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppContent from "./AppContent";
@@ -31,6 +31,11 @@ function AppLayout() {
     // Use analytics service for internal tracking
     analyticsService.trackPageView(location.pathname);
   }, [location.pathname, isSmartLinkRoute]);
+
+  // Redirect from /control-room to /control-room/analytics
+  if (location.pathname === '/control-room') {
+    return <Navigate to="/control-room/analytics" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">

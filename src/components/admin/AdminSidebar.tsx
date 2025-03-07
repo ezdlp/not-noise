@@ -5,25 +5,21 @@ import {
   BarChart3, 
   FileText, 
   Users, 
-  LayoutGrid, 
   ImageIcon, 
   UploadIcon, 
-  Link2, 
-  Globe
+  Link2
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
   const location = useLocation();
   
   const menuItems = [
-    { to: '/control-room', icon: <LayoutGrid size={18} />, label: 'Overview' },
     { to: '/control-room/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
     { to: '/control-room/content', icon: <FileText size={18} />, label: 'Blog Content' },
     { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
     { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
     { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
     { to: '/control-room/import', icon: <UploadIcon size={18} />, label: 'Import' },
-    { to: '/control-room/sitemap', icon: <Globe size={18} />, label: 'Sitemap Monitor' },
   ];
 
   return (
