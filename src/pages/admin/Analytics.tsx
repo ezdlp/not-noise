@@ -90,7 +90,7 @@ const Analytics = () => {
           
           if (currentPeriod && previousPeriod) {
             // Get the RPC data for analytics_stats_with_trends for time series data
-            const { data: timeSeriesData, error: timeSeriesError } = await supabase.rpc('get_analytics_stats_with_trends');
+            const { data: timeSeriesData, error: timeSeriesError } = await supabase.rpc('get_analytics_stats');
             
             if (timeSeriesError) throw timeSeriesError;
 
