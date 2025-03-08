@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
@@ -38,8 +39,8 @@ serve(async (req) => {
     
     let event
     try {
-      // With the 2025-02-24.acacia API version, we need to ensure proper signature verification
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      // IMPORTANT: Use constructEventAsync instead of constructEvent with API version 2025-02-24.acacia
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
       console.log(`✅ Webhook signature verified: ${event.id} - Type: ${event.type}`)
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed: ${err.message}`)
