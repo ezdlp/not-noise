@@ -78,7 +78,20 @@ serve(async (req) => {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId)
           
           if (userId) {
+            // First check if there's already an active subscription for this user
+            const { data: existingSubscription } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('status', 'active')
+              .single()
+              
+            if (existingSubscription) {
+              console.log(`⚠️ User ${userId} already has an active subscription. Will update it.`)
+            }
+            
             // Update the user's subscription in our database
+            // Using explicit column names and onConflict on user_id AND stripe_subscription_id to resolve the upsert issue
             const { error: subscriptionError } = await supabase
               .from('subscriptions')
               .upsert({
@@ -92,7 +105,10 @@ serve(async (req) => {
                 cancel_at_period_end: subscription.cancel_at_period_end,
                 billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
                 updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' })
+              }, { 
+                onConflict: 'user_id, stripe_subscription_id',
+                ignoreDuplicates: false
+              })
               
             if (subscriptionError) {
               console.error(`❌ Error updating subscription for user ${userId}: ${subscriptionError.message}`)
@@ -213,7 +229,7 @@ serve(async (req) => {
             subscriptionData.user_id = userId
             await supabase
               .from('subscriptions')
-              .upsert(subscriptionData, { onConflict: 'user_id' })
+              .upsert(subscriptionData, { onConflict: 'user_id, stripe_subscription_id' })
               
             console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
           } else {

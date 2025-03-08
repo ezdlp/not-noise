@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -113,35 +112,64 @@ serve(async (req) => {
       });
     }
     
-    // Process each subscription and find the most recent active one
+    // Process subscriptions - identify yearly vs monthly and find the active ones
+    let yearlySubscription = null;
+    let monthlySubscriptions = [];
     let activeSubscription = null;
-    let newestSubscription = null;
     
     for (const subscription of subscriptions.data) {
-      if (!newestSubscription || subscription.created > newestSubscription.created) {
-        newestSubscription = subscription;
+      const interval = subscription.items.data[0]?.plan.interval;
+      
+      if (interval === 'year') {
+        yearlySubscription = subscription;
+      } else if (interval === 'month') {
+        monthlySubscriptions.push(subscription);
       }
       
-      if (subscription.status === 'active' && (!activeSubscription || subscription.created > activeSubscription.created)) {
+      if (subscription.status === 'active' && !activeSubscription) {
         activeSubscription = subscription;
       }
     }
     
-    const subscriptionToUse = activeSubscription || newestSubscription;
+    // Prioritize yearly subscription if available, else use the oldest active one
+    const subscriptionToKeep = yearlySubscription || activeSubscription || subscriptions.data[0];
     
-    // Update the user's subscription in our database
+    // Cancel other subscriptions (but don't refund automatically - that will be handled manually)
+    const cancelationResults = [];
+    for (const subscription of subscriptions.data) {
+      if (subscription.id !== subscriptionToKeep.id && subscription.status === 'active') {
+        try {
+          await stripe.subscriptions.update(subscription.id, {
+            cancel_at_period_end: true
+          });
+          cancelationResults.push({
+            id: subscription.id,
+            status: 'marked_for_cancellation',
+            type: subscription.items.data[0]?.plan.interval
+          });
+        } catch (error) {
+          cancelationResults.push({
+            id: subscription.id,
+            status: 'error',
+            error: error.message
+          });
+        }
+      }
+    }
+    
+    // Update the user's subscription in our database to use the one we're keeping
     const { error: subscriptionError } = await supabase
       .from('subscriptions')
       .upsert({
         user_id: userId,
-        stripe_subscription_id: subscriptionToUse.id,
+        stripe_subscription_id: subscriptionToKeep.id,
         stripe_customer_id: customerId,
-        tier: subscriptionToUse.status === 'active' ? 'pro' : 'free',
-        status: subscriptionToUse.status,
-        current_period_start: new Date(subscriptionToUse.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscriptionToUse.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: subscriptionToUse.cancel_at_period_end,
-        billing_period: subscriptionToUse.items.data[0]?.plan.interval || 'monthly',
+        tier: subscriptionToKeep.status === 'active' ? 'pro' : 'free',
+        status: subscriptionToKeep.status,
+        current_period_start: new Date(subscriptionToKeep.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscriptionToKeep.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: subscriptionToKeep.cancel_at_period_end,
+        billing_period: subscriptionToKeep.items.data[0]?.plan.interval || 'monthly',
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
       
@@ -154,13 +182,16 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Subscription updated for user ${userId}`,
-      subscription: {
-        id: subscriptionToUse.id,
-        status: subscriptionToUse.status,
-        tier: subscriptionToUse.status === 'active' ? 'pro' : 'free',
-        current_period_end: new Date(subscriptionToUse.current_period_end * 1000).toISOString(),
-      }
+      message: `Subscription fixed for user ${userId}`,
+      kept_subscription: {
+        id: subscriptionToKeep.id,
+        status: subscriptionToKeep.status,
+        tier: subscriptionToKeep.status === 'active' ? 'pro' : 'free',
+        billing_period: subscriptionToKeep.items.data[0]?.plan.interval || 'monthly',
+        current_period_end: new Date(subscriptionToKeep.current_period_end * 1000).toISOString(),
+      },
+      cancelled_subscriptions: cancelationResults,
+      total_subscriptions_found: subscriptions.data.length
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
