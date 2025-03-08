@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -158,9 +159,17 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
     try {
       setIsProcessing(true);
+      
+      console.log('Creating checkout session for:', {
+        tier: tier.name,
+        price: tier.price,
+        track: selectedTrack.title
+      });
+      
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId: tier.priceId,
+          isSubscription: false, // Explicitly mark as non-subscription
           promotionData: {
             trackName: selectedTrack.title,
             trackArtist: selectedTrack.artist,
@@ -174,15 +183,20 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       });
 
       if (error) {
-        throw error;
+        console.error('Error response from function:', error);
+        throw new Error(`Checkout error: ${error.message}`);
       }
       
-      if (!data?.session_url) {
+      if (!data?.url) {
+        console.error('Invalid response:', data);
         throw new Error('No checkout URL received');
       }
 
+      // Log success before redirect
+      console.log('Redirecting to Stripe checkout:', data.url.substring(0, 50) + '...');
+
       // Redirect to Stripe Checkout
-      window.location.href = data.session_url;
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({

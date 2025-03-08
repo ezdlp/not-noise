@@ -1,10 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@12.18.0' // Updated to latest v12 version
+import Stripe from 'https://esm.sh/stripe@14.21.0'
 
 // Initialize Stripe
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16', // Changed to match the version Stripe is actually sending
+  apiVersion: '2025-02-24.acacia',
+  httpClient: Stripe.createFetchHttpClient(),
+  maxNetworkRetries: 3
 })
 
 // Initialize Supabase client
@@ -36,7 +38,9 @@ serve(async (req) => {
     
     let event
     try {
+      // With the 2025-02-24.acacia API version, we need to ensure proper signature verification
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      console.log(`✅ Webhook signature verified: ${event.id} - Type: ${event.type}`)
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed: ${err.message}`)
       console.error(`⚠️ Headers received: ${JSON.stringify(Object.fromEntries(req.headers))}`)
@@ -47,20 +51,23 @@ serve(async (req) => {
       })
     }
 
-    // Initialize Supabase client with service role key
+    // Initialize Supabase client with service role key (needed for admin access)
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    console.log(`✅ Received event: ${event.type}`)
+    console.log(`✅ Received event: ${event.type} (ID: ${event.id})`)
     
     // Handle different event types
     try {
       // Extract user ID for subscription events
       let userId = null
+      let checkoutSession = null
+      
       if (event.type === 'checkout.session.completed') {
         // Extract userId from metadata in checkout session events
-        const checkoutSession = event.data.object
+        checkoutSession = event.data.object
         userId = checkoutSession.metadata?.userId || null
+        const eventType = checkoutSession.metadata?.type || null
         
-        console.log(`📝 Checkout completed for user ${userId || 'unknown'}`)
+        console.log(`📝 Checkout completed for user ${userId || 'unknown'}, type: ${eventType || 'unknown'}`)
         
         // If this is a subscription checkout, handle it
         if (checkoutSession.mode === 'subscription') {
@@ -95,6 +102,37 @@ serve(async (req) => {
           } else {
             console.error(`⚠️ No user ID found in checkout.session.completed metadata`)
           }
+        } else if (checkoutSession.mode === 'payment' && checkoutSession.metadata?.type === 'promotion') {
+          // Handle promotion payments (one-time payments)
+          console.log(`💰 Processing promotion payment for user ${userId || 'unknown'}`)
+          
+          // Check if we need to create a promotion record
+          if (userId && checkoutSession.payment_status === 'paid') {
+            const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre } = checkoutSession.metadata
+            
+            // Create promotion record
+            const { error: promotionError } = await supabase
+              .from('promotions')
+              .insert({
+                user_id: userId,
+                track_name: trackName,
+                track_artist: trackArtist,
+                spotify_track_id: spotifyTrackId,
+                spotify_artist_id: spotifyArtistId,
+                submission_count: parseInt(submissionCount || '0'),
+                estimated_additions: parseInt(estimatedAdditions || '0'),
+                genre: genre || 'other',
+                total_cost: checkoutSession.amount_total / 100, // Convert from cents to dollars
+                status: 'pending'
+              })
+              
+            if (promotionError) {
+              console.error(`❌ Error creating promotion record: ${promotionError.message}`)
+              throw promotionError
+            }
+            
+            console.log(`✅ Successfully created promotion record for track "${trackName}"`)
+          }
         }
       }
       
@@ -106,6 +144,8 @@ serve(async (req) => {
             .from('custom_stripe_customers')
             .delete()
             .eq('id', customer.id)
+            
+          console.log(`🗑️ Deleted customer record: ${customer.id}`)
         } else {
           await supabase
             .from('custom_stripe_customers')
@@ -118,6 +158,8 @@ serve(async (req) => {
               metadata: customer.metadata,
               last_updated: new Date().toISOString()
             }, { onConflict: 'id' })
+            
+          console.log(`✅ Updated customer record: ${customer.id}`)
         }
       }
         
@@ -125,7 +167,7 @@ serve(async (req) => {
       if (event.type.startsWith('customer.subscription.')) {
         const subscription = event.data.object
         
-        // Try to find the user ID from the custom_stripe_customers table if not already set
+        // Try to find the user ID from the subscription table if not already set
         if (!userId) {
           const { data: customerData } = await supabase
             .from('subscriptions')
@@ -134,6 +176,7 @@ serve(async (req) => {
             .single()
             
           userId = customerData?.user_id
+          console.log(`🔍 Found user ID ${userId || 'unknown'} for subscription ${subscription.id}`)
         }
         
         if (event.type === 'customer.subscription.deleted') {
@@ -170,15 +213,17 @@ serve(async (req) => {
             await supabase
               .from('subscriptions')
               .upsert(subscriptionData, { onConflict: 'user_id' })
+              
+            console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
           } else {
             // Otherwise try to update by stripe_subscription_id
             await supabase
               .from('subscriptions')
               .update(subscriptionData)
               .eq('stripe_subscription_id', subscription.id)
+              
+            console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status}`)
           }
-          
-          console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status}`)
         }
       }
         
@@ -275,18 +320,20 @@ serve(async (req) => {
       }
     } catch (error) {
       console.error(`❌ Error processing event ${event.type}: ${error.message}`)
+      console.error(error.stack)
       return new Response(JSON.stringify({ error: `Error processing event: ${error.message}` }), { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
     
-    return new Response(JSON.stringify({ received: true }), {
+    return new Response(JSON.stringify({ received: true, event_id: event.id }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
     console.error(`❌ Unhandled error processing webhook: ${error.message}`)
+    console.error(error.stack)
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
