@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
@@ -18,6 +19,18 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+}
+
+// Helper function to map Stripe interval to DB billing_period enum
+function mapStripeToBillingPeriod(stripeInterval) {
+  // Map Stripe's interval value to our database enum
+  const intervalMap = {
+    'month': 'monthly',
+    'year': 'annual',
+    // Add other mappings if needed
+  }
+  
+  return intervalMap[stripeInterval] || 'monthly' // Default to monthly if unknown
 }
 
 serve(async (req) => {
@@ -78,6 +91,14 @@ serve(async (req) => {
           
           if (userId) {
             console.log(`🔍 Processing subscription ${subscriptionId} for user ${userId}`)
+            
+            // Get the subscription interval (month or year) from Stripe
+            const stripeInterval = subscription.items.data[0]?.plan.interval || 'month'
+            console.log(`📊 Stripe interval: ${stripeInterval}`)
+            
+            // Map it to our database enum values (monthly or annual)
+            const billingPeriod = mapStripeToBillingPeriod(stripeInterval)
+            console.log(`📊 Mapped to DB billing_period: ${billingPeriod}`)
 
             // First check if user already has this subscription in the database
             const { data: existingSubscription, error: checkError } = await supabase
@@ -106,7 +127,7 @@ serve(async (req) => {
               current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
               cancel_at_period_end: subscription.cancel_at_period_end,
-              billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
+              billing_period: billingPeriod, // Use mapped value instead of direct Stripe value
               updated_at: new Date().toISOString()
             }
             
@@ -220,6 +241,14 @@ serve(async (req) => {
           console.log(`🔍 Found user ID ${userId || 'unknown'} for subscription ${subscription.id}`)
         }
         
+        // Get the subscription interval (month or year) from Stripe
+        const stripeInterval = subscription.items.data[0]?.plan.interval || 'month'
+        console.log(`📊 Subscription ${subscription.id} interval from Stripe: ${stripeInterval}`)
+            
+        // Map it to our database enum values (monthly or annual)
+        const billingPeriod = mapStripeToBillingPeriod(stripeInterval)
+        console.log(`📊 Mapped to DB billing_period: ${billingPeriod}`)
+        
         if (event.type === 'customer.subscription.deleted') {
           // Don't actually delete the record, just mark it as canceled
           await supabase
@@ -244,7 +273,7 @@ serve(async (req) => {
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             cancel_at_period_end: subscription.cancel_at_period_end,
-            billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
+            billing_period: billingPeriod, // Use mapped value
             updated_at: new Date().toISOString()
           }
           

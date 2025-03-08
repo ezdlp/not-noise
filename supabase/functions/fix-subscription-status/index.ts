@@ -8,6 +8,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to map Stripe interval to DB billing_period enum
+function mapStripeToBillingPeriod(stripeInterval) {
+  // Map Stripe's interval value to our database enum
+  const intervalMap = {
+    'month': 'monthly',
+    'year': 'annual',
+    // Add other mappings if needed
+  }
+  
+  return intervalMap[stripeInterval] || 'monthly' // Default to monthly if unknown
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -139,6 +151,14 @@ serve(async (req) => {
     // Prioritize yearly subscription if available, else use the oldest active one
     const subscriptionToKeep = yearlySubscription || activeSubscription || subscriptions.data[0];
     
+    // Get the subscription interval (month or year) from Stripe
+    const stripeInterval = subscriptionToKeep.items.data[0]?.plan.interval || 'month';
+    console.log(`Subscription to keep (${subscriptionToKeep.id}) interval from Stripe: ${stripeInterval}`);
+        
+    // Map it to our database enum values (monthly or annual)
+    const billingPeriod = mapStripeToBillingPeriod(stripeInterval);
+    console.log(`Mapped to DB billing_period: ${billingPeriod}`);
+    
     // Cancel other subscriptions (but don't refund automatically - that will be handled manually)
     const cancelationResults = [];
     for (const subscription of subscriptions.data) {
@@ -150,7 +170,7 @@ serve(async (req) => {
           cancelationResults.push({
             id: subscription.id,
             status: 'marked_for_cancellation',
-            type: subscription.items.data[0]?.plan.interval
+            type: mapStripeToBillingPeriod(subscription.items.data[0]?.plan.interval || 'month')
           });
         } catch (error) {
           cancelationResults.push({
@@ -174,7 +194,7 @@ serve(async (req) => {
         current_period_start: new Date(subscriptionToKeep.current_period_start * 1000).toISOString(),
         current_period_end: new Date(subscriptionToKeep.current_period_end * 1000).toISOString(),
         cancel_at_period_end: subscriptionToKeep.cancel_at_period_end,
-        billing_period: subscriptionToKeep.items.data[0]?.plan.interval || 'monthly',
+        billing_period: billingPeriod,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
       
@@ -192,7 +212,7 @@ serve(async (req) => {
         id: subscriptionToKeep.id,
         status: subscriptionToKeep.status,
         tier: subscriptionToKeep.status === 'active' ? 'pro' : 'free',
-        billing_period: subscriptionToKeep.items.data[0]?.plan.interval || 'monthly',
+        billing_period: billingPeriod,
         current_period_end: new Date(subscriptionToKeep.current_period_end * 1000).toISOString(),
       },
       cancelled_subscriptions: cancelationResults,
