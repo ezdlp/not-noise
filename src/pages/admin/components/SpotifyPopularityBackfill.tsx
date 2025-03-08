@@ -56,7 +56,8 @@ export default function SpotifyPopularityBackfill() {
       const { data: trackedLinks, error: trackedError } = await supabase
         .from('spotify_popularity_history')
         .select('smart_link_id', { count: 'exact', head: true })
-        .is('smart_link_id', 'not.null');
+        // Fix: Using isNull instead of is
+        .not('smart_link_id', 'is', null);
         
       const { data: scores, error: scoresError } = await supabase
         .from('spotify_popularity_history')
@@ -276,7 +277,7 @@ export default function SpotifyPopularityBackfill() {
             )}
             
             {isComplete && !error && (
-              <Alert variant="success" className="bg-green-50 border-green-200">
+              <Alert>
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <AlertTitle className="text-green-800">Success</AlertTitle>
                 <AlertDescription className="text-green-700">
