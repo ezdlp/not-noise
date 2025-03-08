@@ -1,10 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@12.0.0'
+import Stripe from 'https://esm.sh/stripe@12.18.0' // Updated to latest v12 version
 
 // Initialize Stripe
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2023-10-16', // Changed to match the version Stripe is actually sending
 })
 
 // Initialize Supabase client
@@ -12,20 +12,38 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
 
+// CORS headers for browser requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+}
+
 serve(async (req) => {
   try {
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { 
+        status: 204,
+        headers: corsHeaders 
+      })
+    }
+
     // Verify Stripe webhook signature
     const signature = req.headers.get('stripe-signature') || ''
     const body = await req.text()
+    
+    console.log(`⏳ Verifying webhook signature for event...`)
     
     let event
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed: ${err.message}`)
+      console.error(`⚠️ Headers received: ${JSON.stringify(Object.fromEntries(req.headers))}`)
+      console.error(`⚠️ Signature received: ${signature.substring(0, 20)}...`)
       return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), { 
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -34,11 +52,54 @@ serve(async (req) => {
     console.log(`✅ Received event: ${event.type}`)
     
     // Handle different event types
-    switch (event.type) {
+    try {
+      // Extract user ID for subscription events
+      let userId = null
+      if (event.type === 'checkout.session.completed') {
+        // Extract userId from metadata in checkout session events
+        const checkoutSession = event.data.object
+        userId = checkoutSession.metadata?.userId || null
+        
+        console.log(`📝 Checkout completed for user ${userId || 'unknown'}`)
+        
+        // If this is a subscription checkout, handle it
+        if (checkoutSession.mode === 'subscription') {
+          const subscriptionId = checkoutSession.subscription
+          
+          // Fetch the subscription to get its details
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          
+          if (userId) {
+            // Update the user's subscription in our database
+            const { error: subscriptionError } = await supabase
+              .from('subscriptions')
+              .upsert({
+                user_id: userId,
+                stripe_subscription_id: subscription.id,
+                stripe_customer_id: subscription.customer,
+                tier: 'pro', // Set to pro tier for paid subscriptions
+                status: subscription.status,
+                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                cancel_at_period_end: subscription.cancel_at_period_end,
+                billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+              
+            if (subscriptionError) {
+              console.error(`❌ Error updating subscription for user ${userId}: ${subscriptionError.message}`)
+              throw subscriptionError
+            }
+            
+            console.log(`✅ Successfully updated subscription status for user ${userId}`)
+          } else {
+            console.error(`⚠️ No user ID found in checkout.session.completed metadata`)
+          }
+        }
+      }
+      
       // Customer events
-      case 'customer.created':
-      case 'customer.updated':
-      case 'customer.deleted':
+      if (event.type.startsWith('customer.')) {
         const customer = event.data.object
         if (event.type === 'customer.deleted') {
           await supabase
@@ -58,37 +119,71 @@ serve(async (req) => {
               last_updated: new Date().toISOString()
             }, { onConflict: 'id' })
         }
-        break
+      }
         
       // Subscription events
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
+      if (event.type.startsWith('customer.subscription.')) {
         const subscription = event.data.object
-        if (event.type === 'customer.subscription.deleted') {
-          await supabase
-            .from('custom_stripe_subscriptions')
-            .delete()
-            .eq('id', subscription.id)
-        } else {
-          await supabase
-            .from('custom_stripe_subscriptions')
-            .upsert({
-              id: subscription.id,
-              customer: subscription.customer,
-              status: subscription.status,
-              current_period_start: subscription.current_period_start,
-              current_period_end: subscription.current_period_end,
-              cancel_at_period_end: subscription.cancel_at_period_end,
-              last_updated: new Date().toISOString()
-            }, { onConflict: 'id' })
+        
+        // Try to find the user ID from the custom_stripe_customers table if not already set
+        if (!userId) {
+          const { data: customerData } = await supabase
+            .from('subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', subscription.id)
+            .single()
+            
+          userId = customerData?.user_id
         }
-        break
+        
+        if (event.type === 'customer.subscription.deleted') {
+          // Don't actually delete the record, just mark it as canceled
+          await supabase
+            .from('subscriptions')
+            .update({
+              status: 'canceled',
+              updated_at: new Date().toISOString(),
+              tier: 'free' // Downgrade to free tier when subscription is canceled
+            })
+            .eq('stripe_subscription_id', subscription.id)
+            
+          console.log(`✅ Marked subscription ${subscription.id} as canceled`)
+        } else {
+          // For created or updated subscriptions
+          const tier = subscription.status === 'active' ? 'pro' : 'free'
+          
+          const subscriptionData = {
+            stripe_subscription_id: subscription.id,
+            stripe_customer_id: subscription.customer,
+            status: subscription.status,
+            tier: tier,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
+            updated_at: new Date().toISOString()
+          }
+          
+          // If we have a user ID, use it for the upsert
+          if (userId) {
+            subscriptionData.user_id = userId
+            await supabase
+              .from('subscriptions')
+              .upsert(subscriptionData, { onConflict: 'user_id' })
+          } else {
+            // Otherwise try to update by stripe_subscription_id
+            await supabase
+              .from('subscriptions')
+              .update(subscriptionData)
+              .eq('stripe_subscription_id', subscription.id)
+          }
+          
+          console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status}`)
+        }
+      }
         
       // Product events
-      case 'product.created':
-      case 'product.updated':
-      case 'product.deleted':
+      if (event.type.startsWith('product.')) {
         const product = event.data.object
         if (event.type === 'product.deleted') {
           await supabase
@@ -106,12 +201,10 @@ serve(async (req) => {
               last_updated: new Date().toISOString()
             }, { onConflict: 'id' })
         }
-        break
+      }
         
       // Price events
-      case 'price.created':
-      case 'price.updated':
-      case 'price.deleted':
+      if (event.type.startsWith('price.')) {
         const price = event.data.object
         if (event.type === 'price.deleted') {
           await supabase
@@ -133,12 +226,10 @@ serve(async (req) => {
               last_updated: new Date().toISOString()
             }, { onConflict: 'id' })
         }
-        break
+      }
         
       // Invoice events
-      case 'invoice.created':
-      case 'invoice.updated':
-      case 'invoice.deleted':
+      if (event.type.startsWith('invoice.')) {
         const invoice = event.data.object
         if (event.type === 'invoice.deleted') {
           await supabase
@@ -161,13 +252,10 @@ serve(async (req) => {
               last_updated: new Date().toISOString()
             }, { onConflict: 'id' })
         }
-        break
+      }
         
       // Charge events
-      case 'charge.succeeded':
-      case 'charge.updated':
-      case 'charge.refunded':
-      case 'charge.captured':
+      if (event.type.startsWith('charge.')) {
         const charge = event.data.object
         await supabase
           .from('custom_stripe_charges')
@@ -184,19 +272,24 @@ serve(async (req) => {
             attrs: charge.metadata || {},
             last_updated: new Date().toISOString()
           }, { onConflict: 'id' })
-        break
+      }
+    } catch (error) {
+      console.error(`❌ Error processing event ${event.type}: ${error.message}`)
+      return new Response(JSON.stringify({ error: `Error processing event: ${error.message}` }), { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
     
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
-    console.error(`❌ Error processing webhook: ${error.message}`)
+    console.error(`❌ Unhandled error processing webhook: ${error.message}`)
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
-
