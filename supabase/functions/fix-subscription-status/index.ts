@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -130,6 +131,10 @@ serve(async (req) => {
         activeSubscription = subscription;
       }
     }
+    
+    console.log(`Found ${subscriptions.data.length} total subscriptions`);
+    console.log(`Yearly subscription: ${yearlySubscription ? yearlySubscription.id : 'none'}`);
+    console.log(`Monthly subscriptions: ${monthlySubscriptions.length}`);
     
     // Prioritize yearly subscription if available, else use the oldest active one
     const subscriptionToKeep = yearlySubscription || activeSubscription || subscriptions.data[0];

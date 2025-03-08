@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
@@ -78,44 +77,69 @@ serve(async (req) => {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId)
           
           if (userId) {
-            // First check if there's already an active subscription for this user
-            const { data: existingSubscription } = await supabase
+            console.log(`🔍 Processing subscription ${subscriptionId} for user ${userId}`)
+
+            // First check if user already has this subscription in the database
+            const { data: existingSubscription, error: checkError } = await supabase
               .from('subscriptions')
               .select('*')
               .eq('user_id', userId)
-              .eq('status', 'active')
+              .eq('stripe_subscription_id', subscriptionId)
               .single()
               
+            if (checkError && checkError.code !== 'PGRST116') {
+              console.error(`❌ Error checking existing subscription: ${checkError.message}`)
+              // Continue anyway, as we'll try to upsert
+            }
+            
             if (existingSubscription) {
-              console.log(`⚠️ User ${userId} already has an active subscription. Will update it.`)
+              console.log(`⚠️ User ${userId} already has subscription ${subscriptionId} in database. Will update it.`)
             }
             
-            // Update the user's subscription in our database
-            // Using explicit column names and onConflict on user_id AND stripe_subscription_id to resolve the upsert issue
-            const { error: subscriptionError } = await supabase
-              .from('subscriptions')
-              .upsert({
-                user_id: userId,
-                stripe_subscription_id: subscription.id,
-                stripe_customer_id: subscription.customer,
-                tier: 'pro', // Set to pro tier for paid subscriptions
-                status: subscription.status,
-                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                cancel_at_period_end: subscription.cancel_at_period_end,
-                billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
-                updated_at: new Date().toISOString()
-              }, { 
-                onConflict: 'user_id, stripe_subscription_id',
-                ignoreDuplicates: false
-              })
+            // Prepare subscription data
+            const subscriptionData = {
+              user_id: userId,
+              stripe_subscription_id: subscription.id,
+              stripe_customer_id: subscription.customer,
+              tier: 'pro', // Set to pro tier for paid subscriptions
+              status: subscription.status,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              billing_period: subscription.items.data[0]?.plan.interval || 'monthly',
+              updated_at: new Date().toISOString()
+            }
+            
+            console.log(`🔄 Updating/inserting subscription data: ${JSON.stringify(subscriptionData)}`)
+            
+            // First try to update if record exists
+            if (existingSubscription) {
+              const { error: updateError } = await supabase
+                .from('subscriptions')
+                .update(subscriptionData)
+                .eq('user_id', userId)
+                .eq('stripe_subscription_id', subscriptionId)
               
-            if (subscriptionError) {
-              console.error(`❌ Error updating subscription for user ${userId}: ${subscriptionError.message}`)
-              throw subscriptionError
+              if (updateError) {
+                console.error(`❌ Error updating subscription: ${updateError.message}`)
+                throw updateError
+              } else {
+                console.log(`✅ Successfully updated subscription ${subscriptionId} for user ${userId}`)
+              }
+            } else {
+              // Insert new record
+              const { error: insertError } = await supabase
+                .from('subscriptions')
+                .insert(subscriptionData)
+              
+              if (insertError) {
+                console.error(`❌ Error inserting subscription: ${insertError.message}`)
+                console.error(`❌ Error details: ${JSON.stringify(insertError)}`)
+                throw insertError
+              } else {
+                console.log(`✅ Successfully inserted new subscription ${subscriptionId} for user ${userId}`)
+              }
             }
-            
-            console.log(`✅ Successfully updated subscription status for user ${userId}`)
           } else {
             console.error(`⚠️ No user ID found in checkout.session.completed metadata`)
           }
@@ -226,12 +250,37 @@ serve(async (req) => {
           
           // If we have a user ID, use it for the upsert
           if (userId) {
-            subscriptionData.user_id = userId
-            await supabase
+            // First check if record exists
+            const { data: existingData, error: checkError } = await supabase
               .from('subscriptions')
-              .upsert(subscriptionData, { onConflict: 'user_id, stripe_subscription_id' })
+              .select('*')
+              .eq('user_id', userId)
+              .eq('stripe_subscription_id', subscription.id)
+              .maybeSingle()
+            
+            // Complete subscription data with user_id
+            const fullSubscriptionData = {
+              ...subscriptionData,
+              user_id: userId
+            }
               
-            console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
+            if (existingData) {
+              // Update existing record
+              await supabase
+                .from('subscriptions')
+                .update(fullSubscriptionData)
+                .eq('user_id', userId)
+                .eq('stripe_subscription_id', subscription.id)
+                
+              console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
+            } else {
+              // Insert new record
+              await supabase
+                .from('subscriptions')
+                .insert(fullSubscriptionData)
+                
+              console.log(`✅ Inserted subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
+            }
           } else {
             // Otherwise try to update by stripe_subscription_id
             await supabase
