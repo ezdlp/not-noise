@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,6 +37,7 @@ const UpdatePassword = () => {
     hasLowercase: false,
     hasNumber: false,
   });
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -50,22 +50,50 @@ const UpdatePassword = () => {
   });
 
   useEffect(() => {
-    // Check if we have the access token in the URL (password reset flow)
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token")) {
-      // The presence of an access_token indicates a valid reset link
-      const accessToken = hash.split("access_token=")[1].split("&")[0];
-      if (accessToken) {
-        supabase.auth.onAuthStateChange(async (event, session) => {
-          if (event === "PASSWORD_RECOVERY") {
-            // User is in password recovery mode
-          }
-        });
+    // Parse the URL hash or search parameters to extract the recovery token
+    const parseRecoveryToken = () => {
+      // Check if we have access token in the URL hash (password reset flow)
+      const hash = window.location.hash;
+      let token = null;
+      
+      if (hash && hash.includes("access_token")) {
+        token = hash.split("access_token=")[1].split("&")[0];
+      } else {
+        // Check URL search params for token in case it's not in the hash
+        const searchParams = new URLSearchParams(window.location.search);
+        token = searchParams.get("token");
       }
+      
+      return token;
+    };
+
+    const token = parseRecoveryToken();
+    if (token) {
+      setRecoveryToken(token);
     } else {
-      // No access token found, redirect to login
+      // No token found, redirect to login
       navigate("/login");
+      return;
     }
+
+    // Listen for password recovery event
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        // This event fires when a user clicks on a password recovery link
+        // We just need to acknowledge it - we'll handle the actual password update when they submit the form
+      } else if (event === "SIGNED_IN" && !session?.user.email_confirmed_at) {
+        // If they somehow got signed in but haven't confirmed their email yet, 
+        // keep them on this page to update their password
+      } else if (event === "SIGNED_IN") {
+        // For any other sign-in events, redirect to dashboard
+        navigate("/dashboard");
+      }
+    });
+
+    // Cleanup
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const checkPasswordRequirements = (password: string) => {
@@ -97,6 +125,7 @@ const UpdatePassword = () => {
     setError(null);
 
     try {
+      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: values.password
       });
@@ -108,7 +137,7 @@ const UpdatePassword = () => {
         description: "Your password has been successfully updated.",
       });
 
-      // Redirect to login after successful password update
+      // After successful password update, redirect to login
       setTimeout(() => navigate("/login"), 2000);
       
     } catch (error) {
