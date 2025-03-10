@@ -4,7 +4,7 @@
  * This file helps transition from the old analytics implementation to the new simplified GA4 setup
  * along with the internal analyticsService.
  */
-import { analyticsService } from "@/services/analyticsService";
+import { analyticsService } from "@/features/analytics/services/analyticsService";
 import { trackEvent, switchToSmartLinkTracking } from "@/services/ga4";
 
 // Create a simplified version of the old analytics service API

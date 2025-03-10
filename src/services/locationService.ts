@@ -1,57 +1,69 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
-interface LocationInfo {
-  country: string;
-  country_code: string;
-  ip_hash: string;
-}
-
+/**
+ * Service for IP-based location detection
+ */
 class LocationService {
-  private locationInfo: LocationInfo | null = null;
-
-  async getLocationInfo(): Promise<LocationInfo | null> {
-    // If we already have location info, return it
-    if (this.locationInfo) {
-      return this.locationInfo;
+  private cachedLocation: {
+    country: string;
+    country_code: string;
+    ip_hash: string;
+  } | null = null;
+  
+  /**
+   * Get location information based on the client's IP address
+   * Uses IP geolocation services to determine country information
+   */
+  async getLocationInfo() {
+    // Return cached location if available
+    if (this.cachedLocation) {
+      return this.cachedLocation;
     }
-
+    
     try {
-      console.log('[LocationService] Fetching location info');
-      const { data, error } = await supabase.functions.invoke('get-location');
+      // Use a simple public API to get location info
+      const response = await fetch('https://ipapi.co/json/');
       
-      if (error) {
-        console.error('[LocationService] Error invoking get-location function:', error);
-        return null;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch location: ${response.status}`);
       }
-
-      if (!data.country || !data.country_code) {
-        console.error('[LocationService] Invalid location data received:', data);
-        return null;
-      }
-
-      const ipHash = await this.hashIP(data.ip);
       
-      this.locationInfo = {
-        country: data.country,
-        country_code: data.country_code,
+      const data = await response.json();
+      
+      // Hash the IP for privacy
+      const ipHash = await this.hashIp(data.ip);
+      
+      this.cachedLocation = {
+        country: data.country_name || 'Unknown',
+        country_code: data.country_code || 'XX',
         ip_hash: ipHash
       };
-
-      console.log('[LocationService] Location info retrieved:', this.locationInfo);
-      return this.locationInfo;
+      
+      return this.cachedLocation;
     } catch (error) {
-      console.error('[LocationService] Error getting location info:', error);
+      console.error('Error getting location info:', error);
       return null;
     }
   }
-
-  async hashIP(ip: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(ip);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  /**
+   * Create a one-way hash of an IP address for privacy
+   */
+  private async hashIp(ip: string): Promise<string> {
+    try {
+      // Use Web Crypto API to create a SHA-256 hash
+      const encoder = new TextEncoder();
+      const data = encoder.encode(ip + 'soundraiser-salt');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      
+      // Convert hash to hex string
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      return hashHex;
+    } catch (error) {
+      console.error('Error hashing IP:', error);
+      return 'hash-error';
+    }
   }
 }
 

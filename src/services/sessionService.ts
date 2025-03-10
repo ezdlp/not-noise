@@ -1,29 +1,70 @@
 
+/**
+ * Service for handling browser session identifiers
+ */
 class SessionService {
-  private sessionId: string;
-
+  private sessionId: string | null = null;
+  private readonly SESSION_ID_KEY = 'soundraiser_session_id';
+  
   constructor() {
-    this.sessionId = this.getOrCreateSessionId();
-    console.log('[SessionService] Session initialized with ID:', this.sessionId);
+    // Initialize session ID when the service is created
+    this.initSessionId();
   }
-
-  private getOrCreateSessionId(): string {
-    // Try to get existing session ID from storage
-    const existingSession = sessionStorage.getItem('analytics_session_id');
-    if (existingSession) {
-      console.log('[SessionService] Using existing session ID:', existingSession);
-      return existingSession;
-    }
-
-    // Create new session ID if none exists
-    const newSession = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    sessionStorage.setItem('analytics_session_id', newSession);
-    console.log('[SessionService] Created new session ID:', newSession);
-    return newSession;
-  }
-
+  
+  /**
+   * Get the current session ID
+   */
   getSessionId(): string {
-    return this.sessionId;
+    if (!this.sessionId) {
+      this.initSessionId();
+    }
+    
+    return this.sessionId as string;
+  }
+  
+  /**
+   * Initialize or retrieve an existing session ID
+   */
+  private initSessionId(): void {
+    try {
+      // Try to get the session ID from sessionStorage
+      let id = sessionStorage.getItem(this.SESSION_ID_KEY);
+      
+      // Create a new session ID if one doesn't exist
+      if (!id) {
+        id = this.generateSessionId();
+        sessionStorage.setItem(this.SESSION_ID_KEY, id);
+      }
+      
+      this.sessionId = id;
+    } catch (error) {
+      // Fallback in case sessionStorage is not available (e.g., private browsing mode)
+      console.error('Error accessing sessionStorage:', error);
+      this.sessionId = this.generateSessionId();
+    }
+  }
+  
+  /**
+   * Generate a new random session ID
+   */
+  private generateSessionId(): string {
+    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+  
+  /**
+   * Clear the current session ID
+   */
+  clearSession(): void {
+    try {
+      sessionStorage.removeItem(this.SESSION_ID_KEY);
+      this.sessionId = null;
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
   }
 }
 

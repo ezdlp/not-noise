@@ -1,85 +1,180 @@
 
-import { DeviceInfo } from "@/models/deviceInfo";
+/**
+ * Service for device detection and information
+ */
+export class DeviceInfoService {
+  /**
+   * Get device information from the current browser
+   */
+  getDeviceInfo() {
+    if (typeof window === 'undefined') {
+      return {
+        user_agent: '',
+        browser_name: '',
+        browser_version: '',
+        os_name: '',
+        os_version: '',
+        device_type: '',
+        screen_width: 0,
+        screen_height: 0
+      };
+    }
 
-class DeviceInfoService {
-  getDeviceInfo(): DeviceInfo {
     const userAgent = navigator.userAgent;
-    const deviceInfo: DeviceInfo = {
-      user_agent: userAgent
+    const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+    const screenHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+    
+    // Simple browser detection
+    const browserInfo = this.detectBrowser(userAgent);
+    const osInfo = this.detectOS(userAgent);
+    const deviceType = this.detectDeviceType(userAgent, screenWidth);
+
+    return {
+      user_agent: userAgent,
+      browser_name: browserInfo.name,
+      browser_version: browserInfo.version,
+      os_name: osInfo.name,
+      os_version: osInfo.version,
+      device_type: deviceType,
+      screen_width: screenWidth,
+      screen_height: screenHeight
     };
+  }
 
-    // Extract browser information
-    if (userAgent.indexOf("Chrome") > -1) {
-      deviceInfo.browser_name = "Chrome";
-      const match = userAgent.match(/Chrome\/([0-9.]+)/);
-      if (match) deviceInfo.browser_version = match[1];
-    } else if (userAgent.indexOf("Safari") > -1) {
-      deviceInfo.browser_name = "Safari";
-      const match = userAgent.match(/Version\/([0-9.]+)/);
-      if (match) deviceInfo.browser_version = match[1];
-    } else if (userAgent.indexOf("Firefox") > -1) {
-      deviceInfo.browser_name = "Firefox";
-      const match = userAgent.match(/Firefox\/([0-9.]+)/);
-      if (match) deviceInfo.browser_version = match[1];
-    } else if (userAgent.indexOf("MSIE") > -1 || userAgent.indexOf("Trident/") > -1) {
-      deviceInfo.browser_name = "Internet Explorer";
-      const match = userAgent.match(/(?:MSIE |rv:)([0-9.]+)/);
-      if (match) deviceInfo.browser_version = match[1];
-    } else if (userAgent.indexOf("Edge") > -1) {
-      deviceInfo.browser_name = "Edge";
-      const match = userAgent.match(/Edge\/([0-9.]+)/);
-      if (match) deviceInfo.browser_version = match[1];
+  /**
+   * Detect browser name and version
+   */
+  private detectBrowser(userAgent: string) {
+    // Simple detection for common browsers
+    if (userAgent.indexOf('Firefox') > -1) {
+      return {
+        name: 'Firefox',
+        version: this.extractVersion(userAgent, 'Firefox/')
+      };
+    } else if (userAgent.indexOf('Chrome') > -1) {
+      return {
+        name: 'Chrome',
+        version: this.extractVersion(userAgent, 'Chrome/')
+      };
+    } else if (userAgent.indexOf('Safari') > -1) {
+      return {
+        name: 'Safari',
+        version: this.extractVersion(userAgent, 'Version/')
+      };
+    } else if (userAgent.indexOf('Edge') > -1) {
+      return {
+        name: 'Edge',
+        version: this.extractVersion(userAgent, 'Edge/')
+      };
+    } else if (userAgent.indexOf('Edg') > -1) {
+      return {
+        name: 'Edge',
+        version: this.extractVersion(userAgent, 'Edg/')
+      };
+    } else if (userAgent.indexOf('MSIE') > -1 || userAgent.indexOf('Trident/') > -1) {
+      return {
+        name: 'Internet Explorer',
+        version: this.extractVersion(userAgent, 'MSIE ')
+      };
     }
+    
+    return {
+      name: 'Unknown',
+      version: 'Unknown'
+    };
+  }
 
-    // Extract OS information
-    if (userAgent.indexOf("Windows") > -1) {
-      deviceInfo.os_name = "Windows";
-      const match = userAgent.match(/Windows NT ([0-9.]+)/);
-      if (match) {
-        const version = match[1];
-        switch (version) {
-          case "10.0": deviceInfo.os_version = "10"; break;
-          case "6.3": deviceInfo.os_version = "8.1"; break;
-          case "6.2": deviceInfo.os_version = "8"; break;
-          case "6.1": deviceInfo.os_version = "7"; break;
-          case "6.0": deviceInfo.os_version = "Vista"; break;
-          default: deviceInfo.os_version = version;
-        }
+  /**
+   * Detect operating system name and version
+   */
+  private detectOS(userAgent: string) {
+    // Detect common operating systems
+    if (userAgent.indexOf('Windows') > -1) {
+      return {
+        name: 'Windows',
+        version: this.extractWindowsVersion(userAgent)
+      };
+    } else if (userAgent.indexOf('Mac OS X') > -1) {
+      return {
+        name: 'macOS',
+        version: this.extractVersion(userAgent, 'Mac OS X ')
+          .replace(/_/g, '.')
+          .replace(/;/g, '')
+      };
+    } else if (userAgent.indexOf('Android') > -1) {
+      return {
+        name: 'Android',
+        version: this.extractVersion(userAgent, 'Android ')
+      };
+    } else if (userAgent.indexOf('iOS') > -1 || userAgent.indexOf('iPhone OS') > -1) {
+      return {
+        name: 'iOS',
+        version: this.extractVersion(userAgent, 'iPhone OS ')
+          .replace(/_/g, '.')
+          .replace(/;/g, '')
+      };
+    } else if (userAgent.indexOf('Linux') > -1) {
+      return {
+        name: 'Linux',
+        version: 'Unknown'
+      };
+    }
+    
+    return {
+      name: 'Unknown',
+      version: 'Unknown'
+    };
+  }
+
+  /**
+   * Extract Windows version from user agent
+   */
+  private extractWindowsVersion(userAgent: string) {
+    if (userAgent.indexOf('Windows NT 10.0') > -1) return '10';
+    if (userAgent.indexOf('Windows NT 6.3') > -1) return '8.1';
+    if (userAgent.indexOf('Windows NT 6.2') > -1) return '8';
+    if (userAgent.indexOf('Windows NT 6.1') > -1) return '7';
+    if (userAgent.indexOf('Windows NT 6.0') > -1) return 'Vista';
+    if (userAgent.indexOf('Windows NT 5.1') > -1) return 'XP';
+    return 'Unknown';
+  }
+
+  /**
+   * Detect device type (mobile, tablet, desktop)
+   */
+  private detectDeviceType(userAgent: string, screenWidth: number) {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(userAgent);
+    
+    if (isMobile) {
+      if (
+        /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent) || 
+        (screenWidth >= 768 && /Android|iPhone|iPod/i.test(userAgent))
+      ) {
+        return 'tablet';
       }
-    } else if (userAgent.indexOf("Mac") > -1) {
-      deviceInfo.os_name = "MacOS";
-      const match = userAgent.match(/Mac OS X ([0-9_]+)/);
-      if (match) deviceInfo.os_version = match[1].replace(/_/g, ".");
-    } else if (userAgent.indexOf("Android") > -1) {
-      deviceInfo.os_name = "Android";
-      const match = userAgent.match(/Android ([0-9.]+)/);
-      if (match) deviceInfo.os_version = match[1];
-    } else if (userAgent.indexOf("iOS") > -1 || /iPhone|iPad|iPod/.test(userAgent)) {
-      deviceInfo.os_name = "iOS";
-      const match = userAgent.match(/OS ([0-9_]+)/);
-      if (match) deviceInfo.os_version = match[1].replace(/_/g, ".");
-    } else if (userAgent.indexOf("Linux") > -1) {
-      deviceInfo.os_name = "Linux";
+      return 'mobile';
     }
+    
+    return 'desktop';
+  }
 
-    // Determine device type
-    if (/Mobi|Android|iPhone|iPad|iPod|IEMobile|BlackBerry|Opera Mini/i.test(userAgent)) {
-      if (/iPad|tablet|Tablet/i.test(userAgent)) {
-        deviceInfo.device_type = 'tablet';
-      } else {
-        deviceInfo.device_type = 'mobile';
-      }
-    } else {
-      deviceInfo.device_type = 'desktop';
+  /**
+   * Extract version number from user agent string
+   */
+  private extractVersion(userAgent: string, versionMark: string) {
+    const idx = userAgent.indexOf(versionMark);
+    if (idx === -1) return 'Unknown';
+    
+    let version = userAgent.substring(idx + versionMark.length);
+    const endIdx = version.indexOf(' ');
+    if (endIdx !== -1) {
+      version = version.substring(0, endIdx);
     }
-
-    // Add screen dimensions if available
-    if (window.screen) {
-      deviceInfo.screen_width = window.screen.width;
-      deviceInfo.screen_height = window.screen.height;
-    }
-
-    return deviceInfo;
+    
+    // Clean up the version string
+    version = version.replace(/;/g, '').replace(/_/g, '.');
+    
+    return version;
   }
 }
 

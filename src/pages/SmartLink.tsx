@@ -1,81 +1,71 @@
 
-import React from "react";
-import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
-import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
-import SmartLinkLoader from "@/components/smart-link/SmartLinkLoader";
-import SmartLinkError from "@/components/smart-link/SmartLinkError";
+import React, { useEffect } from "react";
 import SmartLinkContainer from "@/components/smart-link/SmartLinkContainer";
 import PlatformButtonList from "@/components/smart-link/PlatformButtonList";
-import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
+import SmartLinkLoader from "@/components/smart-link/SmartLinkLoader";
+import SmartLinkError from "@/components/smart-link/SmartLinkError";
 import { useSmartLink } from "@/hooks/useSmartLink";
-import { useSmartLinkTracking } from "@/hooks/useSmartLinkTracking";
-import { useMetaPixel } from "@/hooks/useMetaPixel";
+import { useSmartLinkTracking } from "@/features/smart-links/hooks/useSmartLinkTracking";
 
-export default function SmartLink() {
-  // Use custom hooks to fetch and manage data
-  const { smartLink, isLoading, error, slug } = useSmartLink();
-  const { handlePlatformClick } = useSmartLinkTracking(slug, smartLink?.id);
+const SmartLink = () => {
+  const { smartLink, isLoading, error } = useSmartLink();
+  const { trackPlatformClick } = useSmartLinkTracking(smartLink);
   
-  // Initialize Meta Pixel if available
-  useMetaPixel(smartLink?.meta_pixel_id, smartLink?.meta_view_event);
+  // Set the page title based on the smart link data
+  useEffect(() => {
+    if (smartLink) {
+      document.title = `${smartLink.title} by ${smartLink.artist} | Soundraiser`;
+    }
+  }, [smartLink]);
+
+  // Handle platform button clicks
+  const handlePlatformClick = async (platformLinkId: string) => {
+    try {
+      await trackPlatformClick(platformLinkId);
+    } catch (error) {
+      console.error("Error tracking platform click:", error);
+    }
+  };
 
   // Show loading state
   if (isLoading) {
-    console.log("Smart link is loading...");
     return <SmartLinkLoader />;
   }
 
-  // Show error state
+  // Show error state if link not found or other error
   if (error || !smartLink) {
-    console.error("Smart link error or not found:", error);
     return <SmartLinkError />;
   }
 
-  // Prepare streaming platforms data for SEO
-  const streamingPlatforms = smartLink.platform_links?.map(pl => ({
-    name: pl.platform_name,
-    url: pl.url
-  })) || [];
-
-  // Handle platform click with smart link context
-  const onPlatformClick = (platformLinkId: string) => {
-    return handlePlatformClick(platformLinkId, smartLink);
-  };
-
   return (
     <SmartLinkContainer 
-      artworkUrl={smartLink.artwork_url}
+      artworkUrl={smartLink.artwork_url} 
       hideBranding={smartLink.profiles?.hide_branding}
     >
-      <SmartLinkSEO
-        title={smartLink.title}
-        artistName={smartLink.artist_name}
-        artworkUrl={smartLink.artwork_url}
-        description={smartLink.description}
-        releaseDate={smartLink.release_date}
-        streamingPlatforms={streamingPlatforms}
-      />
-      
-      <SmartLinkHeader
-        title={smartLink.title}
-        artistName={smartLink.artist_name}
-        artworkUrl={smartLink.artwork_url}
-        description={smartLink.description}
-        contentType={smartLink.content_type}
-      />
-      
-      <PlatformButtonList 
-        platformLinks={smartLink.platform_links}
-        onPlatformClick={onPlatformClick}
-      />
-
-      {smartLink.email_capture_enabled && (
-        <EmailSubscribeForm
-          smartLinkId={smartLink.id}
-          title={smartLink.email_capture_title}
-          description={smartLink.email_capture_description}
+      <div className="space-y-6">
+        {/* Artist and title information */}
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-medium text-gray-700">{smartLink.artist}</h2>
+          <h1 className="text-3xl font-bold text-gray-900">{smartLink.title}</h1>
+        </div>
+        
+        {/* Album artwork */}
+        <div className="flex justify-center">
+          <img 
+            src={smartLink.artwork_url} 
+            alt={`${smartLink.title} by ${smartLink.artist}`}
+            className="w-full max-w-[300px] h-auto rounded-xl shadow-md"
+          />
+        </div>
+        
+        {/* Platform links */}
+        <PlatformButtonList 
+          platformLinks={smartLink.platform_links || []}
+          onPlatformClick={handlePlatformClick}
         />
-      )}
+      </div>
     </SmartLinkContainer>
   );
-}
+};
+
+export default SmartLink;
