@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,49 +51,62 @@ const UpdatePassword = () => {
   });
 
   useEffect(() => {
-    // Extract token from URL
-    const extractTokenFromUrl = () => {
-      // First check for URL params
-      const params = new URLSearchParams(window.location.search);
-      let token = params.get('token');
-      let type = params.get('type');
-      
-      // If not in params, check hash fragment (for some auth providers)
-      if (!token) {
-        const hash = window.location.hash;
-        if (hash) {
-          const hashParams = new URLSearchParams(hash.substring(1));
-          if (hashParams.has('access_token')) {
-            token = hashParams.get('access_token');
-            type = 'recovery';
-          }
+    const extractTokenFromHash = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        if (params.has('access_token') || params.has('token')) {
+          const token = params.get('access_token') || params.get('token');
+          console.log("Found token in hash:", token ? "Present" : "Not found");
+          return { token, type: 'recovery' };
         }
       }
       
-      console.log("Extracted token:", token ? "Found" : "Not found");
-      console.log("Token type:", type);
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const type = urlParams.get('type');
+      
+      console.log("URL params extraction result:", token ? "Token found" : "No token found", type);
       
       return { token, type };
     };
 
-    const handlePasswordRecovery = async () => {
+    const checkSession = async () => {
       setIsVerifying(true);
+      setError(null);
       
       try {
-        // First make sure user is signed out
-        await supabase.auth.signOut();
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Current session:", session ? "Active" : "None");
         
-        const { token, type } = extractTokenFromUrl();
+        if (session?.access_token) {
+          const { error: sessionError } = await supabase.auth.updateUser({
+            password: form.getValues('password') || 'temporary_value_to_check_token'
+          });
+          
+          if (!sessionError) {
+            console.log("User is already logged in, not recovery");
+            setIsVerifying(false);
+            return;
+          }
+        }
         
-        if (!token || type !== 'recovery') {
-          setError("Invalid or missing recovery token. Please request a new password reset link.");
+        const { token, type } = extractTokenFromHash();
+        
+        if (!token) {
+          setError("No recovery token found. Please request a new password reset link.");
+          setIsVerifying(false);
+          return;
+        }
+        
+        if (type !== 'recovery') {
+          setError("Invalid token type. Please request a new password reset link.");
           setIsVerifying(false);
           return;
         }
         
         setRecoveryToken(token);
         
-        // Verify the token is valid but don't update password yet
         const { error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: token,
           type: 'recovery'
@@ -109,37 +121,37 @@ const UpdatePassword = () => {
         
         console.log("Token verified successfully");
         setIsVerifying(false);
-      } catch (err) {
-        console.error("Password recovery handling error:", err);
-        setError("Error processing password reset. Please try again or request a new link.");
+      } catch (err: any) {
+        console.error("Error in token validation:", err);
+        setError(`Error processing password reset: ${err.message}. Please try again or request a new link.`);
         setIsVerifying(false);
       }
     };
 
-    handlePasswordRecovery();
+    checkSession();
     
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth event:", event);
       
       if (event === "PASSWORD_RECOVERY") {
-        // This event indicates we're in password recovery flow
         console.log("PASSWORD_RECOVERY event detected");
+        
+        const { token } = extractTokenFromHash();
+        if (token) {
+          setRecoveryToken(token);
+          setIsVerifying(false);
+        }
       } else if (event === "SIGNED_IN") {
-        // If they somehow got signed in without updating password,
-        // sign them out and keep them on this page
-        if (!form.getValues('password')) {
+        if (form.getValues('password')) {
+          console.log("Password updated and signed in, redirecting to dashboard");
+          navigate("/dashboard");
+        } else {
           console.log("Signed in without password update, signing out");
           await supabase.auth.signOut();
-        } else {
-          // If they've set a password and then got signed in, that means
-          // the password update succeeded, so redirect to dashboard
-          navigate("/dashboard");
         }
       }
     });
 
-    // Cleanup
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -179,7 +191,6 @@ const UpdatePassword = () => {
     setError(null);
 
     try {
-      // Use the verifyOtp method first to ensure the token is still valid
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: recoveryToken,
         type: 'recovery'
@@ -189,7 +200,6 @@ const UpdatePassword = () => {
         throw new Error("Token verification failed: " + verifyError.message);
       }
       
-      // Now update the password
       const { error: updateError } = await supabase.auth.updateUser({
         password: values.password
       });
@@ -203,10 +213,8 @@ const UpdatePassword = () => {
         description: "Your password has been successfully updated. You can now log in with your new password.",
       });
 
-      // Sign out after updating password to ensure clean login state
       await supabase.auth.signOut();
       
-      // After successful password update, redirect to login
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
       console.error("Update password error:", error);
