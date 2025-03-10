@@ -16,18 +16,17 @@ class MetricsService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(period));
       
-      // Fetch stats from the database using daily_stats function (if it exists in your Supabase)
-      const { data, error } = await supabase
+      // Fetch views from the database
+      const { data: viewsData, error: viewsError } = await supabase
         .from('link_views')
         .select('*')
         .eq('smart_link_id', linkId)
         .gte('viewed_at', startDate.toISOString())
         .lte('viewed_at', endDate.toISOString());
       
-      if (error) throw error;
+      if (viewsError) throw viewsError;
       
-      // Process the stats data
-      const totalViews = data?.length || 0;
+      const totalViews = viewsData?.length || 0;
       
       // Get click data
       const { data: clickData, error: clickError } = await supabase
@@ -117,36 +116,35 @@ class MetricsService {
    */
   async getGeoStats(linkId: string): Promise<GeoStats[]> {
     try {
-      // Get views by country
-      const { data: viewData, error: viewError } = await supabase
+      // Get views by country - fixed query to use simple select and filter
+      const { data: viewsData, error: viewsError } = await supabase
         .from('link_views')
-        .select('country_code, count(*)')
+        .select('country_code')
         .eq('smart_link_id', linkId)
-        .not('country_code', 'is', null)
-        .select('country_code, count(*)')
-        
-      if (viewError) throw viewError;
+        .not('country_code', 'is', null);
       
-      // Transform view data
+      if (viewsError) throw viewsError;
+      
+      // Transform view data manually since we can't use group
       const viewsByCountry: Record<string, number> = {};
-      viewData?.forEach((item) => {
+      viewsData?.forEach((item) => {
         if (item.country_code) {
-          viewsByCountry[item.country_code] = parseInt(item.count);
+          viewsByCountry[item.country_code] = (viewsByCountry[item.country_code] || 0) + 1;
         }
       });
       
-      // Get clicks by country
-      const { data: clickData, error: clickError } = await supabase
+      // Get clicks by country - fixed query to use simple select and filter
+      const { data: clicksData, error: clicksError } = await supabase
         .from('platform_clicks')
-        .select('*, platform_links!inner(*)')
-        .eq('platform_links.smart_link_id', linkId)
+        .select('country_code')
+        .eq('platform_link_id', linkId)
         .not('country_code', 'is', null);
       
-      if (clickError) throw clickError;
+      if (clicksError) throw clicksError;
       
-      // Transform click data
+      // Transform click data manually
       const clicksByCountry: Record<string, number> = {};
-      clickData?.forEach((item) => {
+      clicksData?.forEach((item) => {
         if (item.country_code) {
           clicksByCountry[item.country_code] = (clicksByCountry[item.country_code] || 0) + 1;
         }
