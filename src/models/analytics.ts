@@ -4,6 +4,12 @@ export interface AnalyticsEvent {
   event_data?: Record<string, any>;
   user_id?: string;
   session_id?: string;
+  browser_name?: string;
+  browser_version?: string;
+  os_name?: string;
+  os_version?: string;
+  device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+  screen_dimensions?: string;
 }
 
 export interface PageViewData {
@@ -13,4 +19,11 @@ export interface PageViewData {
   country?: string;
   country_code?: string;
   ip_hash?: string;
+  browser_name?: string;
+  browser_version?: string;
+  os_name?: string;
+  os_version?: string;
+  device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+  screen_width?: number;
+  screen_height?: number;
 }

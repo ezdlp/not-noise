@@ -10,6 +10,7 @@ import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
 import { analytics } from "@/services/analytics";
 import { locationService } from "@/services/locationService";
+import { deviceInfoService } from "@/services/deviceInfoService";
 import { Loader2 } from "lucide-react";
 
 export default function SmartLink() {
@@ -26,15 +27,23 @@ export default function SmartLink() {
         await analyticsService.trackPageView(`/link/${slug}`);
         
         const locationInfo = await locationService.getLocationInfo();
+        const deviceInfo = deviceInfoService.getDeviceInfo();
         
         await supabase.from('link_views').insert({
           smart_link_id: smartLinkId,
-          user_agent: navigator.userAgent,
+          user_agent: deviceInfo.user_agent,
           country_code: locationInfo?.country_code,
-          ip_hash: locationInfo?.ip_hash
+          ip_hash: locationInfo?.ip_hash,
+          browser_name: deviceInfo.browser_name,
+          browser_version: deviceInfo.browser_version,
+          os_name: deviceInfo.os_name,
+          os_version: deviceInfo.os_version,
+          device_type: deviceInfo.device_type,
+          screen_width: deviceInfo.screen_width,
+          screen_height: deviceInfo.screen_height
         });
 
-        console.log('View recorded successfully with location:', locationInfo?.country_code);
+        console.log('View recorded successfully with location:', locationInfo?.country_code, 'and device:', deviceInfo.device_type);
       } catch (error) {
         console.error('Error recording view:', error);
       }

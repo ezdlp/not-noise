@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnalyticsEvent, PageViewData } from "@/models/analytics";
 import { locationService } from "./locationService";
 import { sessionService } from "./sessionService";
+import { deviceInfoService } from "./deviceInfoService";
 
 class AnalyticsService {
   private isInitialized: boolean = false;
@@ -48,11 +49,14 @@ class AnalyticsService {
 
     console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', sessionService.getSessionId());
     
-    try {      
+    try {
+      // Get device information
+      const deviceInfo = deviceInfoService.getDeviceInfo();
+      
       // Track basic page view immediately without waiting for location
       const baseData: PageViewData = {
         url,
-        user_agent: navigator.userAgent,
+        user_agent: deviceInfo.user_agent,
         session_id: sessionService.getSessionId()
       };
 
@@ -67,7 +71,14 @@ class AnalyticsService {
           country: locationInfo.country,
           country_code: locationInfo.country_code,
           ip_hash: locationInfo.ip_hash
-        })
+        }),
+        browser_name: deviceInfo.browser_name,
+        browser_version: deviceInfo.browser_version,
+        os_name: deviceInfo.os_name,
+        os_version: deviceInfo.os_version,
+        device_type: deviceInfo.device_type,
+        screen_width: deviceInfo.screen_width,
+        screen_height: deviceInfo.screen_height
       });
 
       if (error) {
@@ -86,12 +97,21 @@ class AnalyticsService {
     try {
       console.log('Tracking event:', event.event_type, event.event_data);
       const { data: { user } } = await supabase.auth.getUser();
+      const deviceInfo = deviceInfoService.getDeviceInfo();
       
       // Track in Supabase
       await supabase.from('analytics_events').insert({
         ...event,
         user_id: user?.id,
-        session_id: sessionService.getSessionId()
+        session_id: sessionService.getSessionId(),
+        browser_name: deviceInfo.browser_name,
+        browser_version: deviceInfo.browser_version,
+        os_name: deviceInfo.os_name,
+        os_version: deviceInfo.os_version,
+        device_type: deviceInfo.device_type,
+        screen_dimensions: deviceInfo.screen_width && deviceInfo.screen_height 
+          ? `${deviceInfo.screen_width}x${deviceInfo.screen_height}` 
+          : null
       });
     } catch (error) {
       console.error('Error tracking event:', error);
@@ -130,14 +150,22 @@ class AnalyticsService {
   async trackPlatformClick(platformLinkId: string) {
     try {
       const locationInfo = await locationService.getLocationInfo();
+      const deviceInfo = deviceInfoService.getDeviceInfo();
       
       // Track in Supabase platform_clicks table
       await supabase.from('platform_clicks').insert({
         platform_link_id: platformLinkId,
-        user_agent: navigator.userAgent,
+        user_agent: deviceInfo.user_agent,
         country_code: locationInfo?.country_code,
         ip_hash: locationInfo?.ip_hash,
-        session_id: sessionService.getSessionId()
+        session_id: sessionService.getSessionId(),
+        browser_name: deviceInfo.browser_name,
+        browser_version: deviceInfo.browser_version,
+        os_name: deviceInfo.os_name,
+        os_version: deviceInfo.os_version,
+        device_type: deviceInfo.device_type,
+        screen_width: deviceInfo.screen_width,
+        screen_height: deviceInfo.screen_height
       });
 
       // Track as a general analytics event
