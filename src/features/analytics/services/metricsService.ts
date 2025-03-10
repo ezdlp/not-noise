@@ -1,83 +1,59 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AnalyticsPeriod } from '@/models/analytics';
-import { 
-  GeoStats, 
-  DashboardStats,
-  PlatformStat,
-  ActivityItem,
-  SmartLinkStatsResponse,
-  DashboardStatsResponse
-} from '../types/analyticsTypes';
+import { GeoStats, DashboardStats, PlatformStat, ActivityItem } from '@/models/analytics';
 
 /**
- * Service for retrieving analytics metrics
+ * Service for fetching analytics metrics from the database
  */
 class MetricsService {
-  
   /**
-   * Get smart link stats for a specific link
+   * Get analytics data for a smart link
    */
-  async getSmartLinkStats(smartLinkId: string, period: AnalyticsPeriod): Promise<{
-    views: number;
-    clicks: number;
-    visitors: number;
-    clickRate: number;
-    platforms: PlatformStat[];
-  }> {
+  async getSmartLinkAnalytics(linkId: string, period: '7d' | '30d' | '90d' | 'all' = '30d') {
+    const startDate = this.getStartDateFromPeriod(period);
+    
     try {
-      // Call the appropriate Supabase stored procedure or direct query
-      const { data, error } = await supabase.rpc('get_basic_analytics_stats', {
-        p_start_date: this.getPeriodStartDate(period),
-        p_end_date: new Date().toISOString()
+      const { data, error } = await supabase.rpc('get_smart_link_stats', {
+        p_start_date: startDate.toISOString(),
+        p_smart_link_id: linkId
       });
-
+      
       if (error) throw error;
       
-      // Transform and aggregate the data
-      const statsData = data as SmartLinkStatsResponse[];
-      
-      // Default return structure
-      const result = {
-        views: 0,
-        clicks: 0,
-        visitors: 0,
-        clickRate: 0,
-        platforms: [] as PlatformStat[]
+      return {
+        totalViews: data?.[0]?.total_views || 0,
+        totalClicks: data?.[0]?.total_clicks || 0,
+        uniqueVisitors: data?.[0]?.unique_visitors || 0,
+        clickRate: data?.[0]?.click_rate || 0,
+        platforms: data?.[0]?.platforms || []
       };
-      
-      if (statsData && statsData.length > 0) {
-        // Calculate aggregate metrics from the data
-        // For now we're using placeholder calculations
-        result.views = statsData.reduce((sum, item) => sum + item.smart_link_views, 0);
-        result.clicks = 0; // This would need actual platform clicks data
-        result.visitors = statsData.reduce((sum, item) => sum + item.unique_visitors, 0);
-        result.clickRate = result.views > 0 ? (result.clicks / result.views) * 100 : 0;
-      }
-      
-      return result;
     } catch (error) {
-      console.error('Error getting smart link stats:', error);
-      throw error;
+      console.error('[MetricsService] Error getting smart link analytics:', error);
+      return {
+        totalViews: 0,
+        totalClicks: 0,
+        uniqueVisitors: 0,
+        clickRate: 0,
+        platforms: []
+      };
     }
   }
-
+  
   /**
-   * Get dashboard analytics stats
+   * Get dashboard analytics statistics
    */
-  async getDashboardStats(period: AnalyticsPeriod): Promise<DashboardStats> {
+  async getDashboardStats(period: '7d' | '30d' | '90d' | 'all' = '30d'): Promise<DashboardStats> {
+    const startDate = this.getStartDateFromPeriod(period);
+    
     try {
       const { data, error } = await supabase.rpc('get_analytics_dashboard_stats', {
-        p_start_date: this.getPeriodStartDate(period),
-        p_end_date: new Date().toISOString()
+        p_start_date: startDate.toISOString()
       });
-
+      
       if (error) throw error;
       
-      const statsData = data as DashboardStatsResponse[];
-      
-      // Default return value
-      const result: DashboardStats = {
+      // Default values if data is missing
+      const defaultStats: DashboardStats = {
         totalSmartLinks: 0,
         totalViews: 0,
         totalClicks: 0,
@@ -86,172 +62,154 @@ class MetricsService {
         recentActivity: []
       };
       
-      if (statsData && statsData.length > 0) {
-        const currentPeriod = statsData.find(item => item.period === 'current');
-        
-        if (currentPeriod) {
-          // Use the values from the database that actually exist
-          result.totalViews = currentPeriod.smart_link_visits;
-          result.totalClicks = 0; // Need actual platform clicks data
-          result.averageCTR = result.totalViews > 0 ? (result.totalClicks / result.totalViews) * 100 : 0;
-          
-          // We need to query these separately as they're not in the dashboard stats
-          await this.populatePlatformsAndActivity(result);
-        }
-      }
-      
-      return result;
+      // Return data or default values
+      return {
+        totalSmartLinks: data?.[0]?.total_smart_links || defaultStats.totalSmartLinks,
+        totalViews: data?.[0]?.total_views || defaultStats.totalViews,
+        totalClicks: data?.[0]?.total_clicks || defaultStats.totalClicks,
+        averageCTR: data?.[0]?.average_ctr || defaultStats.averageCTR,
+        topPlatforms: data?.[0]?.top_platforms || defaultStats.topPlatforms,
+        recentActivity: data?.[0]?.recent_activity || defaultStats.recentActivity
+      };
     } catch (error) {
-      console.error('Error getting dashboard stats:', error);
-      throw error;
+      console.error('[MetricsService] Error getting dashboard stats:', error);
+      
+      // Return default values in case of error
+      return {
+        totalSmartLinks: 0,
+        totalViews: 0,
+        totalClicks: 0,
+        averageCTR: 0,
+        topPlatforms: [],
+        recentActivity: []
+      };
     }
   }
   
   /**
-   * Get geographic stats for analytics
+   * Get geographic statistics for a smart link
    */
-  async getGeoStats(period: AnalyticsPeriod): Promise<GeoStats[]> {
+  async getGeoStats(linkId?: string, period: '7d' | '30d' | '90d' | 'all' = '30d'): Promise<GeoStats[]> {
+    const startDate = this.getStartDateFromPeriod(period);
+    
     try {
-      // Query link views by country for the period
-      const { data: viewsData, error: viewsError } = await supabase
-        .from('link_views')
-        .select('country_code, count(*)')
-        .gte('viewed_at', this.getPeriodStartDate(period))
-        .not('country_code', 'is', null)
-        .select('country_code, count(*)')
-        .group('country_code');
-        
+      let query;
+      
+      if (linkId) {
+        // For a specific smart link, get geographic data for that link
+        query = supabase
+          .from('link_views')
+          .select(`
+            country_code,
+            count(*) as views,
+            platform_clicks:platform_clicks!inner(country_code, count)
+          `)
+          .eq('smart_link_id', linkId)
+          .gte('viewed_at', startDate.toISOString());
+      } else {
+        // For all links, aggregate the data across all links
+        query = supabase
+          .from('link_views')
+          .select(`
+            country_code, 
+            count(*) as views
+          `)
+          .gte('viewed_at', startDate.toISOString());
+      }
+      
+      const { data: viewsData, error: viewsError } = await query;
+      
       if (viewsError) throw viewsError;
       
-      // Query platform clicks by country for the period
-      const { data: clicksData, error: clicksError } = await supabase
-        .from('platform_clicks')
-        .select('country_code, count(*)')
-        .gte('clicked_at', this.getPeriodStartDate(period))
-        .not('country_code', 'is', null)
-        .select('country_code, count(*)')
-        .group('country_code');
+      // For getting click data, we need to do a separate query since we need to join tables
+      let clicksData: any[] = [];
+      
+      if (linkId) {
+        const { data, error } = await supabase
+          .from('platform_clicks')
+          .select(`
+            country_code, 
+            count(*) as clicks,
+            platform_links!inner(smart_link_id)
+          `)
+          .eq('platform_links.smart_link_id', linkId)
+          .gte('clicked_at', startDate.toISOString());
+          
+        if (error) throw error;
+        clicksData = data;
+      } else {
+        const { data, error } = await supabase
+          .from('platform_clicks')
+          .select(`
+            country_code, 
+            count(*) as clicks
+          `)
+          .gte('clicked_at', startDate.toISOString());
+          
+        if (error) throw error;
+        clicksData = data;
+      }
+      
+      // Combine the views and clicks data
+      const geoStats: GeoStats[] = viewsData.map((viewData) => {
+        const countryCode = viewData.country_code;
+        const views = parseInt(viewData.views, 10);
         
-      if (clicksError) throw clicksError;
+        // Find matching click data for this country
+        const clickData = clicksData.find(c => c.country_code === countryCode);
+        const clicks = clickData ? parseInt(clickData.clicks, 10) : 0;
+        
+        // Calculate CTR (Click-Through Rate)
+        const ctr = views > 0 ? clicks / views : 0;
+        
+        return {
+          countryCode,
+          views,
+          clicks,
+          ctr
+        };
+      });
       
-      // Combine the data
-      const geoStatsMap = new Map<string, GeoStats>();
-      
-      // Process views data
-      (viewsData || []).forEach((item: any) => {
-        if (item && item.country_code) {
-          geoStatsMap.set(item.country_code, {
-            countryCode: item.country_code,
-            views: parseInt(item.count, 10) || 0,
-            clicks: 0
+      // Add any countries that have clicks but no views
+      clicksData.forEach((clickData) => {
+        const countryCode = clickData.country_code;
+        
+        // Check if this country is already in the geoStats array
+        if (!geoStats.some(gs => gs.countryCode === countryCode)) {
+          geoStats.push({
+            countryCode,
+            views: 0,
+            clicks: parseInt(clickData.clicks, 10),
+            ctr: 1 // 100% CTR since all views resulted in clicks
           });
         }
       });
       
-      // Process clicks data
-      (clicksData || []).forEach((item: any) => {
-        if (item && item.country_code) {
-          const existing = geoStatsMap.get(item.country_code);
-          
-          if (existing) {
-            existing.clicks = parseInt(item.count, 10) || 0;
-          } else {
-            geoStatsMap.set(item.country_code, {
-              countryCode: item.country_code,
-              views: 0,
-              clicks: parseInt(item.count, 10) || 0
-            });
-          }
-        }
-      });
-      
-      return Array.from(geoStatsMap.values());
+      return geoStats;
     } catch (error) {
-      console.error('Error getting geo stats:', error);
-      throw error;
+      console.error('[MetricsService] Error getting geo stats:', error);
+      return [];
     }
   }
   
   /**
-   * Helper method to populate platforms and activity data
+   * Calculate the start date based on period
    */
-  private async populatePlatformsAndActivity(result: DashboardStats): Promise<void> {
-    try {
-      // Get top platforms by clicks
-      const { data: platformsData, error: platformsError } = await supabase
-        .from('platform_links')
-        .select(`
-          platform_name,
-          platform_clicks:platform_clicks(count)
-        `)
-        .order('platform_clicks', { ascending: false })
-        .limit(5);
-        
-      if (platformsError) throw platformsError;
-      
-      // Process platform data
-      result.topPlatforms = (platformsData || []).map((item: any) => ({
-        platform_name: item.platform_name,
-        clicks: item.platform_clicks?.length || 0,
-        percentage: 0 // Calculate this if needed
-      }));
-      
-      // Calculate percentages
-      const totalClicks = result.topPlatforms.reduce((sum, item) => sum + item.clicks, 0);
-      result.topPlatforms.forEach(platform => {
-        platform.percentage = totalClicks > 0 ? (platform.clicks / totalClicks) * 100 : 0;
-      });
-      
-      // Get recent activity (views and clicks)
-      const { data: activityData, error: activityError } = await supabase
-        .from('link_views')
-        .select(`
-          id,
-          viewed_at,
-          smart_link_id,
-          smart_links(title, artist_name)
-        `)
-        .order('viewed_at', { ascending: false })
-        .limit(5);
-        
-      if (activityError) throw activityError;
-      
-      // Process activity data
-      result.recentActivity = (activityData || []).map((item: any) => ({
-        type: 'view',
-        timestamp: item.viewed_at,
-        smart_link_id: item.smart_link_id,
-        title: item.smart_links?.title || '',
-        artist: item.smart_links?.artist_name || ''
-      }));
-    } catch (error) {
-      console.error('Error populating platforms and activity:', error);
-    }
-  }
-  
-  /**
-   * Helper to get the start date based on the period
-   */
-  private getPeriodStartDate(period: AnalyticsPeriod): string {
+  private getStartDateFromPeriod(period: '7d' | '30d' | '90d' | 'all'): Date {
     const now = new Date();
     
-    switch(period) {
+    switch (period) {
       case '7d':
-        now.setDate(now.getDate() - 7);
-        break;
+        return new Date(now.setDate(now.getDate() - 7));
       case '30d':
-        now.setDate(now.getDate() - 30);
-        break;
+        return new Date(now.setDate(now.getDate() - 30));
       case '90d':
-        now.setDate(now.getDate() - 90);
-        break;
+        return new Date(now.setDate(now.getDate() - 90));
       case 'all':
-        // Use a far past date for "all time"
-        now.setFullYear(2020, 0, 1);
-        break;
+        return new Date(2020, 0, 1); // Start from January 1, 2020 as a reasonable "all time" date
+      default:
+        return new Date(now.setDate(now.getDate() - 30));
     }
-    
-    return now.toISOString();
   }
 }
 
