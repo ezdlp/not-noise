@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
 import { analytics } from "@/services/analytics";
+import { locationService } from "@/services/locationService";
 import { Loader2 } from "lucide-react";
 
 export default function SmartLink() {
@@ -23,7 +25,7 @@ export default function SmartLink() {
       try {
         await analyticsService.trackPageView(`/link/${slug}`);
         
-        const locationInfo = await analyticsService.getLocationInfo();
+        const locationInfo = await locationService.getLocationInfo();
         
         await supabase.from('link_views').insert({
           smart_link_id: smartLinkId,
