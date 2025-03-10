@@ -1,13 +1,12 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { AuthLayout } from "@/components/auth/AuthLayout";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -15,20 +14,16 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
+import { usePasswordReset } from "@/features/auth/hooks/usePasswordReset";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email"),
 });
 
 const ResetPassword = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { loading, error, resetSent, sendResetLink, setResetSent } = usePasswordReset();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,31 +33,7 @@ const ResetPassword = () => {
   });
 
   const handleResetPassword = async (values: z.infer<typeof formSchema>) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Create a proper URL with query parameters instead of hash fragments
-      const redirectUrl = `${window.location.origin}/update-password?type=recovery&recovery=true`;
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: redirectUrl,
-      });
-
-      if (error) throw error;
-
-      setResetSent(true);
-      toast({
-        title: "Reset email sent",
-        description: "Check your email for the password reset link.",
-      });
-      
-    } catch (error) {
-      console.error("Reset password error:", error);
-      setError("Error sending reset email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    await sendResetLink(values.email);
   };
 
   if (resetSent) {
