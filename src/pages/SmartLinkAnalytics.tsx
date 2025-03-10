@@ -2,52 +2,23 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { DailyStatsChart } from "@/components/dashboard/DailyStatsChart";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LabelList,
-} from "recharts";
-import { StatCard } from "@/components/analytics/StatCard";
-import { formatDistanceToNow } from "date-fns";
-import { subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
-import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
+import { subDays } from "date-fns";
 import { useState, useMemo, useEffect } from "react";
-import { analyticsService } from "@/services/analyticsService";
-import { SpotifyPopularityStat } from "@/components/analytics/SpotifyPopularityStat";
-import { SpotifyPopularityChart } from "@/components/analytics/SpotifyPopularityChart";
+import { analyticsService } from "@/features/analytics/services/analyticsService";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border border-neutral-border bg-white p-4 shadow-md animate-fade-in">
-        <p className="mb-2 text-sm font-medium text-[#111827] font-poppins">{label}</p>
-        <div className="text-sm font-dm-sans">
-          <span className="font-medium text-primary">
-            Clicks:
-          </span>{" "}
-          <span className="text-[#6B7280]">{payload[0].value}</span>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
+import { StatCard } from "@/components/analytics/StatCard";
+import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
+import { DailyStatsChart } from "@/components/dashboard/DailyStatsChart";
+import { TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
+import { SpotifyPopularityChart } from "@/components/analytics/SpotifyPopularityChart";
+import { SpotifyPopularityStat } from "@/components/analytics/SpotifyPopularityStat";
+import { SmartLinkAnalyticsHeader } from "@/features/analytics/components/SmartLinkAnalyticsHeader";
+import { PlatformPerformanceChart } from "@/features/analytics/components/PlatformPerformanceChart";
+import { RecentClicksList } from "@/features/analytics/components/RecentClicksList";
 
 export default function SmartLinkAnalytics() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRangeValue>('28d');
   const { isFeatureEnabled } = useFeatureAccess();
   const hasSpotifyAccess = isFeatureEnabled('meta_pixel');
@@ -275,23 +246,18 @@ export default function SmartLinkAnalytics() {
 
   platformData.sort((a, b) => b.clicks - a.clicks);
 
+  const allClicks = smartLink.platform_links?.flatMap((pl) =>
+    (pl.clicks || []).map((click) => ({
+      ...click,
+      platform_name: pl.platform_name,
+      platform_id: pl.platform_id,
+    }))
+  ) || [];
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6 animate-fade-in bg-[#FAFAFA] min-h-screen">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4 border-b border-neutral-border">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate("/dashboard")}
-            className="hover:bg-neutral-seasalt transition-colors"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-semibold text-[#111827] font-poppins">{smartLink.title} Analytics</h1>
-        </div>
-      </div>
+      <SmartLinkAnalyticsHeader title={smartLink.title} />
 
-      {/* Main metrics row - optimized to always fit in a single row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Views"
@@ -320,7 +286,6 @@ export default function SmartLinkAnalytics() {
         )}
       </div>
 
-      {/* Daily Performance Chart */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Daily Performance</h2>
@@ -329,67 +294,12 @@ export default function SmartLinkAnalytics() {
         {id && <DailyStatsChart smartLinkId={id} startDate={startDate} />}
       </Card>
 
-      {/* Platform Performance Chart - Moved before Spotify Chart */}
-      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Platform Performance</h2>
-          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
-        </div>
-        <div className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={platformData}>
-              <defs>
-                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6851FB" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="#4A47A5" stopOpacity={1}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#E6E6E6"
-                opacity={0.4}
-                vertical={false}
-              />
-              <XAxis 
-                dataKey="name" 
-                stroke="#374151"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                dy={10}
-                tick={{ fill: '#374151' }}
-                className="font-dm-sans"
-              />
-              <YAxis 
-                stroke="#374151"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                dx={-10}
-                tick={{ fill: '#374151' }}
-                className="font-dm-sans"
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                dataKey="clicks" 
-                fill="url(#barGradient)"
-                radius={[4, 4, 0, 0]}
-                className="transition-all duration-300"
-              >
-                <LabelList 
-                  dataKey="clicks" 
-                  position="top" 
-                  fill="#374151"
-                  fontSize={11}
-                  className="font-dm-sans"
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      <PlatformPerformanceChart 
+        data={platformData} 
+        timeRange={timeRange} 
+        onTimeRangeChange={setTimeRange} 
+      />
 
-      {/* Spotify Popularity Chart - Now after Platform Performance */}
       {hasSpotifyAccess && hasSpotifyLink && (
         <SpotifyPopularityChart
           data={spotifyPopularity?.history || []}
@@ -400,7 +310,6 @@ export default function SmartLinkAnalytics() {
         />
       )}
 
-      {/* Geographic Breakdown */}
       <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[#111827] font-poppins">Geographic Breakdown</h2>
@@ -409,55 +318,7 @@ export default function SmartLinkAnalytics() {
         <GeoStatsTable data={geoStats || []} />
       </Card>
 
-      {/* Recent Clicks */}
-      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Recent Clicks</h2>
-          <Button variant="outline" size="sm">View all</Button>
-        </div>
-        <div className="space-y-4">
-          {smartLink.platform_links
-            ?.flatMap((pl) =>
-              (pl.clicks || [])
-                .filter(click => new Date(click.clicked_at) >= new Date(startDate))
-                .map((click) => ({
-                  ...click,
-                  platform_name: pl.platform_name,
-                  platform_id: pl.platform_id,
-                }))
-            )
-            .sort(
-              (a, b) =>
-                new Date(b.clicked_at).getTime() -
-                new Date(a.clicked_at).getTime()
-            )
-            .slice(0, 5)
-            .map((click) => (
-              <div
-                key={click.id}
-                className="flex items-center justify-between border-b border-neutral-border pb-4 hover:bg-neutral-seasalt/5 transition-all duration-200 -mx-2 px-2 rounded-lg"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <img 
-                      src={`/lovable-uploads/${click.platform_id.toLowerCase()}.png`}
-                      alt={click.platform_name}
-                      className="w-4 h-4 object-contain"
-                    />
-                    <p className="text-sm font-medium text-[#111827] font-dm-sans">{click.platform_name}</p>
-                  </div>
-                  <p className="text-sm text-[#6B7280] font-dm-sans mt-1">
-                    {formatDistanceToNow(new Date(click.clicked_at), { addSuffix: true })}
-                  </p>
-                </div>
-                <div className="text-sm text-[#374151] font-dm-sans">
-                  {click.country || "Unknown location"}
-                </div>
-              </div>
-            ))}
-        </div>
-      </Card>
+      <RecentClicksList clicks={allClicks} startDate={startDate} />
     </div>
   );
 }
-
