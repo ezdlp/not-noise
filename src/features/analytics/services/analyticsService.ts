@@ -1,200 +1,132 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { AnalyticsEvent, PageViewData } from "@/models/analytics";
-import { locationService } from "@/services/locationService";
-import { sessionService } from "@/services/sessionService";
-import { deviceInfoService } from "@/services/deviceInfoService";
+import { supabase } from '@/integrations/supabase/client';
+import { AnalyticsEvent, PageViewData, PlatformClickData } from '@/models/analytics';
+import { sessionService } from '@/services/sessionService';
+import { locationService } from '@/services/locationService';
+import { browserDetectionService } from '@/services/browserDetectionService';
 
+/**
+ * Service for tracking and managing analytics data
+ */
 class AnalyticsService {
-  private isInitialized: boolean = false;
-  private lastTrackedPath: string | null = null;
-  private lastTrackedTime: number = 0;
-  private pageViewCount: number = 0;
-
-  constructor() {
-    console.log('Analytics service initialized');
-  }
-
-  async trackPageView(url: string) {
-    // Skip tracking for non-URL values or empty paths
-    if (!url || typeof url !== 'string') {
-      console.log('[Analytics] Invalid URL provided for tracking:', url);
-      return;
-    }
-    
-    // Skip tracking for smart links at this level (they're tracked separately)
-    if (url.startsWith('/link/')) {
-      console.log('[Analytics] Skipping page view tracking for smart link:', url);
-      return;
-    }
-
-    // Implement de-duplication logic with a more robust approach
-    const now = Date.now();
-    const isDuplicate = url === this.lastTrackedPath && (now - this.lastTrackedTime < 2000);
-    
-    if (isDuplicate) {
-      console.log('[Analytics] Skipping duplicate page view within 2 seconds:', url);
-      return;
-    }
-
-    // Initialize tracking if first view
-    if (!this.isInitialized) {
-      this.isInitialized = true;
-      console.log('[Analytics] Initializing tracking for session:', sessionService.getSessionId());
-    }
-
-    this.pageViewCount++;
-    this.lastTrackedPath = url;
-    this.lastTrackedTime = now;
-
-    console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', sessionService.getSessionId());
-    
+  /**
+   * Track a page view
+   */
+  async trackPageView(url: string): Promise<void> {
     try {
-      // Get device information
-      const deviceInfo = deviceInfoService.getDeviceInfo();
+      // Get session ID
+      const sessionId = sessionService.getSessionId();
       
-      // Track basic page view immediately without waiting for location
-      const baseData: PageViewData = {
-        url,
-        user_agent: deviceInfo.user_agent,
-        session_id: sessionService.getSessionId()
-      };
-
-      // Get location info in the background
+      // Get browser and device info
+      const browserInfo = browserDetectionService.getBrowserInfo();
+      
+      // Get location info if available
       const locationInfo = await locationService.getLocationInfo();
       
-      // Track in Supabase with location info if available
       console.log('[Analytics] Inserting page view into analytics_page_views table');
-      const { data, error } = await supabase.from('analytics_page_views').insert({
-        ...baseData,
-        ...(locationInfo && {
-          country: locationInfo.country,
-          country_code: locationInfo.country_code,
-          ip_hash: locationInfo.ip_hash
-        }),
-        browser_name: deviceInfo.browser_name,
-        browser_version: deviceInfo.browser_version,
-        os_name: deviceInfo.os_name,
-        os_version: deviceInfo.os_version,
-        device_type: deviceInfo.device_type,
-        screen_width: deviceInfo.screen_width,
-        screen_height: deviceInfo.screen_height
-      });
-
+      
+      const pageViewData: PageViewData = {
+        url,
+        session_id: sessionId,
+        user_agent: navigator.userAgent,
+        ...browserInfo,
+        ...locationInfo
+      };
+      
+      const { error } = await supabase
+        .from('analytics_page_views')
+        .insert(pageViewData);
+      
       if (error) {
         console.error('[Analytics] Error inserting page view:', error);
-      } else {
-        console.log('[Analytics] Page view tracked successfully in Supabase');
       }
     } catch (error) {
       console.error('[Analytics] Error tracking page view:', error);
-      // Don't throw error to prevent breaking the app
-      // but log it for debugging
     }
   }
-
-  async trackEvent(event: AnalyticsEvent) {
+  
+  /**
+   * Track a custom event
+   */
+  async trackEvent(event: AnalyticsEvent): Promise<void> {
     try {
-      console.log('Tracking event:', event.event_type, event.event_data);
-      const { data: { user } } = await supabase.auth.getUser();
-      const deviceInfo = deviceInfoService.getDeviceInfo();
+      const sessionId = sessionService.getSessionId();
       
-      // Track in Supabase
-      await supabase.from('analytics_events').insert({
-        ...event,
-        user_id: user?.id,
-        session_id: sessionService.getSessionId(),
-        browser_name: deviceInfo.browser_name,
-        browser_version: deviceInfo.browser_version,
-        os_name: deviceInfo.os_name,
-        os_version: deviceInfo.os_version,
-        device_type: deviceInfo.device_type,
-        screen_dimensions: deviceInfo.screen_width && deviceInfo.screen_height 
-          ? `${deviceInfo.screen_width}x${deviceInfo.screen_height}` 
-          : null
-      });
+      const { error } = await supabase
+        .from('analytics_events')
+        .insert({
+          event_type: event.event_type,
+          event_data: event.event_data,
+          session_id: sessionId
+        });
+      
+      if (error) {
+        console.error('[Analytics] Error tracking event:', error);
+      }
     } catch (error) {
-      console.error('Error tracking event:', error);
-      throw error;
+      console.error('[Analytics] Error in trackEvent:', error);
     }
   }
-
-  async trackUserAction(action: string, metadata: Record<string, any> = {}) {
-    await this.trackEvent({
-      event_type: action,
-      event_data: metadata
-    });
-  }
-
-  async trackFeatureUsage(feature: string, metadata: Record<string, any> = {}) {
-    await this.trackEvent({
-      event_type: 'feature_usage',
-      event_data: {
-        feature,
-        ...metadata
-      }
-    });
-  }
-
-  async trackSubscriptionEvent(event: string, tier: string, metadata: Record<string, any> = {}) {
-    await this.trackEvent({
-      event_type: 'subscription_event',
-      event_data: {
-        event,
-        tier,
-        ...metadata
-      }
-    });
-  }
-
-  async trackPlatformClick(platformLinkId: string) {
+  
+  /**
+   * Track platform link click
+   */
+  async trackPlatformClick(platformLinkId: string, smartLinkId?: string): Promise<void> {
     try {
+      // Get session ID
+      const sessionId = sessionService.getSessionId();
+      
+      // Get browser and device info
+      const browserInfo = browserDetectionService.getBrowserInfo();
+      
+      // Get location info if available
       const locationInfo = await locationService.getLocationInfo();
-      const deviceInfo = deviceInfoService.getDeviceInfo();
       
-      // Track in Supabase platform_clicks table
-      await supabase.from('platform_clicks').insert({
+      const clickData: PlatformClickData = {
         platform_link_id: platformLinkId,
-        user_agent: deviceInfo.user_agent,
-        country_code: locationInfo?.country_code,
-        ip_hash: locationInfo?.ip_hash,
-        session_id: sessionService.getSessionId(),
-        browser_name: deviceInfo.browser_name,
-        browser_version: deviceInfo.browser_version,
-        os_name: deviceInfo.os_name,
-        os_version: deviceInfo.os_version,
-        device_type: deviceInfo.device_type,
-        screen_width: deviceInfo.screen_width,
-        screen_height: deviceInfo.screen_height
-      });
-
-      // Track as a general analytics event
-      await this.trackEvent({
-        event_type: 'platform_click',
-        event_data: {
-          platform_link_id: platformLinkId
-        }
-      });
+        smart_link_id: smartLinkId,
+        session_id: sessionId,
+        user_agent: navigator.userAgent,
+        ...browserInfo,
+        ...locationInfo
+      };
+      
+      const { error } = await supabase
+        .from('platform_clicks')
+        .insert(clickData);
+      
+      if (error) {
+        console.error('[Analytics] Error tracking platform click:', error);
+      }
     } catch (error) {
-      console.error('Error tracking platform click:', error);
-      throw error;
+      console.error('[Analytics] Error in trackPlatformClick:', error);
     }
   }
-
-  async trackLogin(metadata: Record<string, any> = {}) {
-    console.log('[Analytics] Tracking login event with metadata:', metadata);
-    await this.trackEvent({
-      event_type: 'login',
-      event_data: metadata
+  
+  /**
+   * Track feature usage
+   */
+  async trackFeatureUsage(featureName: string, metadata: Record<string, any> = {}): Promise<void> {
+    return this.trackEvent({
+      event_type: 'feature_usage',
+      event_data: { 
+        feature: featureName,
+        ...metadata
+      }
     });
   }
-
-  async trackSpotifyPopularityView(smartLinkId: string) {
-    console.log('[Analytics] Tracking Spotify popularity view for link:', smartLinkId);
-    await this.trackEvent({
-      event_type: 'spotify_popularity_view',
+  
+  /**
+   * Record a successful or failed payment event
+   */
+  async trackPaymentEvent(successful: boolean, amount: number, productId: string, metadata: Record<string, any> = {}): Promise<void> {
+    return this.trackEvent({
+      event_type: 'payment_event',
       event_data: {
-        smart_link_id: smartLinkId
+        successful,
+        amount,
+        product_id: productId,
+        ...metadata
       }
     });
   }

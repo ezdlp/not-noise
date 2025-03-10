@@ -39,3 +39,50 @@ export interface PlatformClickData {
   screen_width?: number;
   screen_height?: number;
 }
+
+/**
+ * Dashboard analytics stats structure
+ */
+export interface DashboardStats {
+  totalSmartLinks: number;
+  totalViews: number;
+  totalClicks: number;
+  averageCTR: number;
+  topPlatforms: PlatformStat[];
+  recentActivity: ActivityItem[];
+}
+
+/**
+ * Statistics for a single platform
+ */
+export interface PlatformStat {
+  platform_name: string;
+  clicks: number;
+  percentage: number;
+}
+
+/**
+ * Recent activity item
+ */
+export interface ActivityItem {
+  type: 'view' | 'click';
+  timestamp: string;
+  platform?: string;
+  smart_link_id: string;
+  title?: string;
+  artist?: string;
+}
+
+/**
+ * Geographic statistics
+ */
+export interface GeoStats {
+  countryCode: string;
+  views: number;
+  clicks: number;
+}
+
+/**
+ * Time-based analytics period
+ */
+export type AnalyticsPeriod = '7d' | '30d' | '90d' | 'all';

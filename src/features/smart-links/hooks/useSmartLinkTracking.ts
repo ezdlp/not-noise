@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useMetaPixel } from '@/hooks/useMetaPixel';
 import { analyticsService } from '@/features/analytics/services/analyticsService';
-import { switchToSmartLinkTracking, trackEvent } from '@/services/ga4';
+import { trackEvent, switchToSmartLinkTracking } from '@/services/ga4';
 
 /**
  * Hook to handle all tracking related to a smart link view
@@ -57,7 +57,7 @@ export function useSmartLinkTracking(smartLink: any) {
     
     try {
       // Track in Supabase
-      await analyticsService.trackPlatformClick(platformLinkId);
+      await analyticsService.trackPlatformClick(platformLinkId, smartLink.id);
       
       // Track in GA4
       trackEvent('platform_click', { 
