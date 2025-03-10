@@ -2,21 +2,13 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { subDays } from "date-fns";
 import { useState, useMemo, useEffect } from "react";
 import { analyticsService } from "@/features/analytics/services/analyticsService";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { StatCard } from "@/components/analytics/StatCard";
-import { GeoStatsTable } from "@/components/analytics/GeoStatsTable";
-import { DailyStatsChart } from "@/components/dashboard/DailyStatsChart";
 import { TimeRangeSelect, TimeRangeValue, timeRanges } from "@/components/analytics/TimeRangeSelect";
-import { SpotifyPopularityChart } from "@/components/analytics/SpotifyPopularityChart";
-import { SpotifyPopularityStat } from "@/components/analytics/SpotifyPopularityStat";
-import { SmartLinkAnalyticsHeader } from "@/features/analytics/components/SmartLinkAnalyticsHeader";
-import { PlatformPerformanceChart } from "@/features/analytics/components/PlatformPerformanceChart";
-import { RecentClicksList } from "@/features/analytics/components/RecentClicksList";
+import { SmartLinkAnalyticsView } from "@/features/analytics/components/SmartLinkAnalyticsView";
 
 export default function SmartLinkAnalytics() {
   const { id } = useParams();
@@ -223,103 +215,17 @@ export default function SmartLinkAnalytics() {
 
   if (!smartLink) return null;
 
-  const totalViews = smartLink.link_views?.filter(
-    view => new Date(view.viewed_at) >= new Date(startDate)
-  ).length || 0;
-
-  const totalClicks = smartLink.platform_links?.reduce(
-    (acc, pl) => acc + (pl.clicks?.filter(
-      click => new Date(click.clicked_at) >= new Date(startDate)
-    ).length || 0),
-    0
-  ) || 0;
-
-  const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
-
-  const hasSpotifyLink = smartLink.platform_links?.some(link => link.platform_id === 'spotify');
-
-  const platformData = smartLink.platform_links?.map((pl) => ({
-    name: pl.platform_name,
-    clicks: pl.clicks?.filter(
-      click => new Date(click.clicked_at) >= new Date(startDate)
-    ).length || 0,
-  })) || [];
-
-  platformData.sort((a, b) => b.clicks - a.clicks);
-
-  const allClicks = smartLink.platform_links?.flatMap((pl) =>
-    (pl.clicks || []).map((click) => ({
-      ...click,
-      platform_name: pl.platform_name,
-      platform_id: pl.platform_id,
-    }))
-  ) || [];
-
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6 animate-fade-in bg-[#FAFAFA] min-h-screen">
-      <SmartLinkAnalyticsHeader title={smartLink.title} />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Views"
-          value={totalViews}
-          type="views"
-          trend={weeklyStats?.viewsTrend}
-        />
-        <StatCard
-          title="Total Clicks"
-          value={totalClicks}
-          type="clicks"
-          trend={weeklyStats?.clicksTrend}
-        />
-        <StatCard
-          title="CTR"
-          value={`${ctr.toFixed(1)}%`}
-          type="ctr"
-          trend={weeklyStats?.ctrTrend}
-        />
-        {hasSpotifyAccess && hasSpotifyLink && (
-          <SpotifyPopularityStat
-            popularityScore={spotifyPopularity?.latestScore}
-            trendValue={spotifyPopularity?.trendValue || 0}
-            isLoading={isLoadingPopularity}
-          />
-        )}
-      </div>
-
-      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Daily Performance</h2>
-          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
-        </div>
-        {id && <DailyStatsChart smartLinkId={id} startDate={startDate} />}
-      </Card>
-
-      <PlatformPerformanceChart 
-        data={platformData} 
-        timeRange={timeRange} 
-        onTimeRangeChange={setTimeRange} 
-      />
-
-      {hasSpotifyAccess && hasSpotifyLink && (
-        <SpotifyPopularityChart
-          data={spotifyPopularity?.history || []}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-          isLoading={isLoadingPopularity}
-          smartLinkId={id}
-        />
-      )}
-
-      <Card className="p-6 transition-all duration-300 hover:shadow-md border border-neutral-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-[#111827] font-poppins">Geographic Breakdown</h2>
-          <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
-        </div>
-        <GeoStatsTable data={geoStats || []} />
-      </Card>
-
-      <RecentClicksList clicks={allClicks} startDate={startDate} />
-    </div>
+    <SmartLinkAnalyticsView
+      smartLink={smartLink}
+      weeklyStats={weeklyStats}
+      timeRange={timeRange}
+      startDate={startDate}
+      geoStats={geoStats}
+      spotifyPopularity={spotifyPopularity}
+      isLoadingPopularity={isLoadingPopularity}
+      hasSpotifyAccess={hasSpotifyAccess}
+      onTimeRangeChange={setTimeRange}
+    />
   );
 }
