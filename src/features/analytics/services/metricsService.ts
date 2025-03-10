@@ -1,6 +1,4 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
 /**
  * Service for fetching analytics metrics from the database
  */
@@ -68,17 +66,20 @@ export const metricsService = {
    */
   async getClicksByCountry(): Promise<GeoStats[]> {
     try {
-      // Fix: Update the RPC function name to match what's available in Supabase
+      // Use custom SQL query as a workaround since we don't have the exact RPC function
       const { data, error } = await supabase
-        .rpc('get_clicks_by_country_code');
+        .from('platform_clicks')
+        .select('country_code, count(*)')
+        .not('country_code', 'is', null)
+        .group('country_code');
       
       if (error) throw error;
       
       // Transform the data to match the GeoStats interface
-      return (data as CountryClicksResponse[]).map(item => ({
+      return data.map(item => ({
         countryCode: item.country_code,
         views: 0, // We'll need to update this if views data becomes available
-        clicks: item.count,
+        clicks: parseInt(item.count || '0'),
         ctr: 0 // Calculate CTR if views data becomes available
       }));
     } catch (error) {
