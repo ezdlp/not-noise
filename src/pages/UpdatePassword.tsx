@@ -40,7 +40,8 @@ const UpdatePassword = () => {
   });
   const [isVerifying, setIsVerifying] = useState(true);
   const [recoveryFlow, setRecoveryFlow] = useState(false);
-  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -53,56 +54,105 @@ const UpdatePassword = () => {
     },
   });
 
-  // Function to extract recovery token from URL in different formats
-  const extractRecoveryToken = () => {
-    // Check for recovery in URL hash
-    if (window.location.hash.includes('recovery=true')) {
-      console.log("[Recovery] Found recovery flag in URL hash");
-      return true;
+  // Extract parameters from URL and handle various formats
+  const parseUrlParameters = () => {
+    const url = window.location.href;
+    console.log("[UpdatePassword] Parsing URL:", url);
+    
+    // Get the search params
+    const searchParams = new URLSearchParams(location.search);
+    
+    // Check for recovery in query params (new format)
+    const isRecovery = searchParams.get('recovery') === 'true' || searchParams.get('type') === 'recovery';
+    if (isRecovery) {
+      console.log("[Recovery] Found recovery indicator in query params");
+      setRecoveryFlow(true);
+    }
+
+    // Extract access token from URL or query params
+    let token = null;
+    
+    // First, try to get from query params
+    token = searchParams.get('access_token');
+    
+    // If not found, try to extract from hash part  
+    if (!token && window.location.hash) {
+      // Handle double hash issue (#recovery=true#access_token=...)
+      const hashContent = window.location.hash.replace(/^#/, '');
+      
+      // Check if there's a double hash
+      if (hashContent.includes('#')) {
+        // Split by the second hash and get the access_token part
+        const parts = hashContent.split('#');
+        if (parts.length > 1) {
+          const tokenPart = parts[1];
+          if (tokenPart.startsWith('access_token=')) {
+            // Extract access_token from the hash value
+            const tokenParams = new URLSearchParams(tokenPart);
+            token = tokenParams.get('access_token');
+            console.log("[Recovery] Extracted access token from malformed hash");
+          }
+        }
+      } else {
+        // Standard hash parameters
+        const hashParams = new URLSearchParams(hashContent);
+        token = hashParams.get('access_token');
+      }
     }
     
-    // Check for recovery type in query params
-    const params = new URLSearchParams(location.search);
-    if (params.get('type') === 'recovery') {
-      console.log("[Recovery] Found recovery type in URL params");
-      return true;
+    if (token) {
+      console.log("[Recovery] Found access token");
+      setAccessToken(token);
+      return { isRecovery: true, token };
     }
 
-    // Look for access_token in query params that might be a recovery token
-    const accessToken = params.get('access_token');
-    const tokenType = params.get('token_type');
-    if (accessToken && tokenType === 'recovery') {
-      console.log("[Recovery] Found recovery token in URL params");
-      setRecoveryToken(accessToken);
-      return true;
-    }
-
-    return false;
+    return { isRecovery, token: null };
   };
 
   useEffect(() => {
-    console.log("[UpdatePassword] Component mounted, current URL:", window.location.href);
-    
-    // First check if this is a recovery flow based on URL
-    const isRecoveryFlow = extractRecoveryToken();
-    setRecoveryFlow(isRecoveryFlow);
-    
-    const verifySession = async () => {
-      try {
-        // Try to extract and use access token from URL if present
-        const urlParams = new URLSearchParams(window.location.search);
-        const accessToken = urlParams.get('access_token');
+    const initializeComponent = async () => {
+      console.log("[UpdatePassword] Component mounted, current URL:", window.location.href);
+      
+      // Parse all parameters from URL
+      const { isRecovery, token } = parseUrlParameters();
+      setRecoveryFlow(isRecovery);
+      
+      // Listen for auth state changes
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("[Recovery] Auth event:", event, "Session:", session ? "exists" : "none");
         
-        if (accessToken) {
-          console.log("[Recovery] Found access_token in URL, attempting to exchange for session");
+        if (event === "PASSWORD_RECOVERY") {
+          console.log("[Recovery] PASSWORD_RECOVERY event detected");
+          setRecoveryFlow(true);
+          setSession(session);
+          setIsVerifying(false);
+        } 
+        else if (event === "SIGNED_IN") {
+          console.log("[Recovery] User signed in, session is available");
+          setSession(session);
+          setIsVerifying(false);
+        }
+        else if (event === "INITIAL_SESSION") {
+          console.log("[Recovery] Initial session event, checking session");
+          if (session && isRecovery) {
+            setSession(session);
+            setIsVerifying(false);
+          }
+        }
+      });
+
+      try {
+        // Try to handle the recovery token if present
+        if (token) {
+          console.log("[Recovery] Attempting to exchange access token for session");
           try {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
+            const { data, error } = await supabase.auth.exchangeCodeForSession(token);
             if (error) {
               console.error("[Recovery] Failed to exchange token:", error);
               throw error;
             }
-            console.log("[Recovery] Successfully exchanged token for session");
-            setRecoveryFlow(true);
+            console.log("[Recovery] Successfully exchanged token for session", data);
+            setSession(data.session);
             setIsVerifying(false);
             return;
           } catch (tokenError) {
@@ -111,64 +161,41 @@ const UpdatePassword = () => {
         }
         
         // Check if we have an active session
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("[Recovery] Current session:", session ? "Active" : "None");
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("[Recovery] Current session:", currentSession ? "Active" : "None");
         
-        // If we have a session and it's a recovery flow, proceed
-        if (session && isRecoveryFlow) {
+        if (currentSession && isRecovery) {
           console.log("[Recovery] Valid recovery session found");
+          setSession(currentSession);
           setIsVerifying(false);
-          return;
         } 
-        // If we have a session but not in recovery flow, redirect to dashboard
-        else if (session && !isRecoveryFlow) {
+        else if (currentSession && !isRecovery) {
           console.log("[Recovery] Not in recovery flow but has session, redirecting");
           navigate("/dashboard");
-          return;
         }
-        // If we're in recovery flow but no session, still allow to proceed (might be using token)
-        else if (isRecoveryFlow) {
+        else if (isRecovery) {
           console.log("[Recovery] In recovery flow but no session yet");
           setIsVerifying(false);
-          return;
         }
-        // No session and not in recovery flow
         else {
           console.log("[Recovery] No active recovery session");
           setError("No active recovery session found. Please request a new password reset link.");
           setIsVerifying(false);
-          return;
         }
       } catch (error) {
         console.error("[Recovery] Verification error:", error);
         setError("Error checking authentication state. Please request a new password reset link.");
         setIsVerifying(false);
       }
-    };
-    
-    // Listen for auth state changes, particularly for PASSWORD_RECOVERY event
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[Recovery] Auth event:", event, "Session:", session ? "exists" : "none");
-      
-      if (event === "PASSWORD_RECOVERY") {
-        console.log("[Recovery] PASSWORD_RECOVERY event detected");
-        setRecoveryFlow(true);
-        setIsVerifying(false);
-      }
-      // If user signs in but not via recovery, redirect them
-      else if (event === "SIGNED_IN" && !isRecoveryFlow) {
-        console.log("[Recovery] User signed in but not in recovery flow");
-        navigate("/dashboard");
-      }
-    });
 
-    verifySession();
-
-    return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
+      return () => {
+        if (authListener && authListener.subscription) {
+          authListener.subscription.unsubscribe();
+        }
+      };
     };
+
+    initializeComponent();
   }, [navigate, location]);
 
   const checkPasswordRequirements = (password: string) => {
@@ -202,21 +229,27 @@ const UpdatePassword = () => {
     try {
       console.log("[Recovery] Updating password...");
       
-      // Exchange recovery token if we have one but no session
-      if (recoveryToken) {
-        console.log("[Recovery] Attempting to use recovery token directly");
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(recoveryToken);
-        if (exchangeError) {
-          console.error("[Recovery] Failed to use recovery token:", exchangeError);
-        } else {
-          console.log("[Recovery] Successfully used recovery token");
-        }
-      }
-
-      // Get the current session to check if we're authenticated
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if we have a session
       if (!session) {
-        throw new Error("Auth session missing!");
+        console.log("[Recovery] No session available, checking if we can get one");
+        
+        // If we have an access token but no session, try to exchange it
+        if (accessToken) {
+          console.log("[Recovery] Trying to exchange access token for session");
+          const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
+          if (error) {
+            console.error("[Recovery] Failed to exchange token:", error);
+            throw new Error("Unable to establish auth session. Please request a new password reset link.");
+          }
+          setSession(data.session);
+        } else {
+          // Try to get current session as a last resort
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (!currentSession) {
+            throw new Error("Auth session missing! Please request a new password reset link.");
+          }
+          setSession(currentSession);
+        }
       }
 
       // Update the password
@@ -239,7 +272,7 @@ const UpdatePassword = () => {
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
       console.error("[Recovery] Update password error:", error);
-      setError(`Error updating password: ${error.message}. Please try again or request a new password reset link.`);
+      setError(`Error updating password: ${error.message}`);
     } finally {
       setLoading(false);
     }
