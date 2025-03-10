@@ -1,45 +1,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
-
-interface AnalyticsEvent {
-  event_type: string;
-  event_data?: Record<string, any>;
-  user_id?: string;
-  session_id?: string;
-}
-
-interface LocationInfo {
-  country: string;
-  country_code: string;
-  ip_hash: string;
-}
+import { AnalyticsEvent, PageViewData } from "@/models/analytics";
+import { locationService } from "./locationService";
+import { sessionService } from "./sessionService";
 
 class AnalyticsService {
-  private sessionId: string;
-  private locationInfo: LocationInfo | null = null;
   private isInitialized: boolean = false;
   private lastTrackedPath: string | null = null;
   private lastTrackedTime: number = 0;
   private pageViewCount: number = 0;
 
   constructor() {
-    this.sessionId = this.getOrCreateSessionId();
-    console.log('Analytics session initialized with ID:', this.sessionId);
-  }
-
-  private getOrCreateSessionId(): string {
-    // Try to get existing session ID from storage
-    const existingSession = sessionStorage.getItem('analytics_session_id');
-    if (existingSession) {
-      console.log('[Analytics] Using existing session ID:', existingSession);
-      return existingSession;
-    }
-
-    // Create new session ID if none exists
-    const newSession = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    sessionStorage.setItem('analytics_session_id', newSession);
-    console.log('[Analytics] Created new session ID:', newSession);
-    return newSession;
+    console.log('Analytics service initialized');
   }
 
   async trackPageView(url: string) {
@@ -67,30 +39,25 @@ class AnalyticsService {
     // Initialize tracking if first view
     if (!this.isInitialized) {
       this.isInitialized = true;
-      console.log('[Analytics] Initializing tracking for session:', this.sessionId);
-      
-      // Get location info in the background without blocking
-      this.getLocationInfo().catch(error => 
-        console.error('[Analytics] Failed to get location info:', error)
-      );
+      console.log('[Analytics] Initializing tracking for session:', sessionService.getSessionId());
     }
 
     this.pageViewCount++;
     this.lastTrackedPath = url;
     this.lastTrackedTime = now;
 
-    console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', this.sessionId);
+    console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', sessionService.getSessionId());
     
     try {      
       // Track basic page view immediately without waiting for location
-      const baseData = {
+      const baseData: PageViewData = {
         url,
         user_agent: navigator.userAgent,
-        session_id: this.sessionId
+        session_id: sessionService.getSessionId()
       };
 
       // Get location info in the background
-      const locationInfo = await this.getLocationInfo();
+      const locationInfo = await locationService.getLocationInfo();
       
       // Track in Supabase with location info if available
       console.log('[Analytics] Inserting page view into analytics_page_views table');
@@ -115,42 +82,6 @@ class AnalyticsService {
     }
   }
 
-  async getLocationInfo(): Promise<LocationInfo | null> {
-    // If we already have location info, return it
-    if (this.locationInfo) {
-      return this.locationInfo;
-    }
-
-    try {
-      console.log('[Analytics] Fetching location info');
-      const { data, error } = await supabase.functions.invoke('get-location');
-      
-      if (error) {
-        console.error('[Analytics] Error invoking get-location function:', error);
-        return null;
-      }
-
-      if (!data.country || !data.country_code) {
-        console.error('[Analytics] Invalid location data received:', data);
-        return null;
-      }
-
-      const ipHash = await this.hashIP(data.ip);
-      
-      this.locationInfo = {
-        country: data.country,
-        country_code: data.country_code,
-        ip_hash: ipHash
-      };
-
-      console.log('[Analytics] Location info retrieved:', this.locationInfo);
-      return this.locationInfo;
-    } catch (error) {
-      console.error('[Analytics] Error getting location info:', error);
-      return null;
-    }
-  }
-
   async trackEvent(event: AnalyticsEvent) {
     try {
       console.log('Tracking event:', event.event_type, event.event_data);
@@ -160,7 +91,7 @@ class AnalyticsService {
       await supabase.from('analytics_events').insert({
         ...event,
         user_id: user?.id,
-        session_id: this.sessionId
+        session_id: sessionService.getSessionId()
       });
     } catch (error) {
       console.error('Error tracking event:', error);
@@ -198,7 +129,7 @@ class AnalyticsService {
 
   async trackPlatformClick(platformLinkId: string) {
     try {
-      const locationInfo = await this.getLocationInfo();
+      const locationInfo = await locationService.getLocationInfo();
       
       // Track in Supabase platform_clicks table
       await supabase.from('platform_clicks').insert({
@@ -206,7 +137,7 @@ class AnalyticsService {
         user_agent: navigator.userAgent,
         country_code: locationInfo?.country_code,
         ip_hash: locationInfo?.ip_hash,
-        session_id: this.sessionId
+        session_id: sessionService.getSessionId()
       });
 
       // Track as a general analytics event
@@ -238,14 +169,6 @@ class AnalyticsService {
         smart_link_id: smartLinkId
       }
     });
-  }
-
-  private async hashIP(ip: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(ip);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 }
 
