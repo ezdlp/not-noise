@@ -2,6 +2,8 @@
 /**
  * Service for fetching analytics metrics from the database
  */
+import { supabase } from "@/integrations/supabase/client";
+
 export interface DashboardStats {
   period: string;
   day: string;
