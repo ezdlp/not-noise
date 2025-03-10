@@ -80,7 +80,7 @@ export interface GeoStats {
   countryCode: string;
   views: number;
   clicks: number;
-  ctr: number; // Adding this property to fix the type error
+  ctr: number;
 }
 
 /**
@@ -102,4 +102,10 @@ export interface AnalyticsDashboardStatsResult {
   social_cards_usage: number;
   meta_pixel_usage: number;
   email_capture_usage: number;
+  total_smart_links?: number;
+  total_views?: number;
+  total_clicks?: number;
+  average_ctr?: number;
+  top_platforms?: PlatformStat[];
+  recent_activity?: ActivityItem[];
 }
