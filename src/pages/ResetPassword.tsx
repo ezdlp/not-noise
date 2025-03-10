@@ -42,9 +42,11 @@ const ResetPassword = () => {
     setError(null);
 
     try {
-      // Use the explicit type=recovery parameter along with hash for redundancy
+      // Include multiple recovery indicators for redundancy
+      const redirectUrl = `${window.location.origin}/update-password?type=recovery#recovery=true`;
+      
       const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/update-password?type=recovery#recovery=true`,
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
