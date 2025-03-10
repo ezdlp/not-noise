@@ -30,14 +30,14 @@ const SmartLinkContainer = ({ children, artworkUrl, hideBranding }: SmartLinkCon
               href="https://soundraiser.io" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
+              className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors group"
             >
               <img 
-                src="/lovable-uploads/soundraiser-logo/Iso D.svg"
+                src="/lovable-uploads/soundraiser-logo/Iso A.svg"
                 alt="Soundraiser"
-                className="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
+                className="h-5 w-5 opacity-80 group-hover:opacity-100 transition-opacity"
               />
-              <span className="text-sm">Powered by Soundraiser</span>
+              <span className="text-sm font-medium">Powered by Soundraiser</span>
             </a>
           </div>
         )}
