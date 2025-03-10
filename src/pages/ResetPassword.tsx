@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ const ResetPassword = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: `${window.location.origin}/update-password#recovery=true`,
       });
 
       if (error) throw error;

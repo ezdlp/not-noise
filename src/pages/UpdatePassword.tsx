@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -37,8 +38,8 @@ const UpdatePassword = () => {
     hasLowercase: false,
     hasNumber: false,
   });
-  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
+  const [recoveryFlow, setRecoveryFlow] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,111 +52,75 @@ const UpdatePassword = () => {
   });
 
   useEffect(() => {
-    const extractTokenFromHash = () => {
-      const hash = window.location.hash;
-      if (hash) {
-        const params = new URLSearchParams(hash.substring(1));
-        if (params.has('access_token') || params.has('token')) {
-          const token = params.get('access_token') || params.get('token');
-          console.log("Found token in hash:", token ? "Present" : "Not found");
-          return { token, type: 'recovery' };
-        }
+    // This function now checks multiple sources for the token
+    const detectRecoveryFlow = () => {
+      // First check if we have a valid recovery flag in the URL hash
+      if (window.location.hash.includes('recovery=true')) {
+        console.log("Recovery flag found in URL hash");
+        return true;
       }
       
+      // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
       const type = urlParams.get('type');
-      
-      console.log("URL params extraction result:", token ? "Token found" : "No token found", type);
-      
-      return { token, type };
-    };
-
-    const checkSession = async () => {
-      setIsVerifying(true);
-      setError(null);
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Current session:", session ? "Active" : "None");
-        
-        if (session?.access_token) {
-          const { error: sessionError } = await supabase.auth.updateUser({
-            password: form.getValues('password') || 'temporary_value_to_check_token'
-          });
-          
-          if (!sessionError) {
-            console.log("User is already logged in, not recovery");
-            setIsVerifying(false);
-            return;
-          }
-        }
-        
-        const { token, type } = extractTokenFromHash();
-        
-        if (!token) {
-          setError("No recovery token found. Please request a new password reset link.");
-          setIsVerifying(false);
-          return;
-        }
-        
-        if (type !== 'recovery') {
-          setError("Invalid token type. Please request a new password reset link.");
-          setIsVerifying(false);
-          return;
-        }
-        
-        setRecoveryToken(token);
-        
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'recovery'
-        });
-        
-        if (verifyError) {
-          console.error("Token verification error:", verifyError);
-          setError("Invalid or expired recovery token. Please request a new password reset link.");
-          setIsVerifying(false);
-          return;
-        }
-        
-        console.log("Token verified successfully");
-        setIsVerifying(false);
-      } catch (err: any) {
-        console.error("Error in token validation:", err);
-        setError(`Error processing password reset: ${err.message}. Please try again or request a new link.`);
-        setIsVerifying(false);
+      if (type === 'recovery') {
+        console.log("Recovery type found in URL parameters");
+        return true;
       }
+      
+      return false;
     };
 
-    checkSession();
+    // Initialize recovery flow detection
+    setRecoveryFlow(detectRecoveryFlow());
     
+    // Set up auth state change listener for recovery event
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth event:", event);
-      
       if (event === "PASSWORD_RECOVERY") {
         console.log("PASSWORD_RECOVERY event detected");
-        
-        const { token } = extractTokenFromHash();
-        if (token) {
-          setRecoveryToken(token);
-          setIsVerifying(false);
-        }
-      } else if (event === "SIGNED_IN") {
-        if (form.getValues('password')) {
-          console.log("Password updated and signed in, redirecting to dashboard");
-          navigate("/dashboard");
-        } else {
-          console.log("Signed in without password update, signing out");
-          await supabase.auth.signOut();
-        }
+        setRecoveryFlow(true);
+        setIsVerifying(false);
+      } else if (event === "SIGNED_IN" && !form.getValues('password')) {
+        // If user is already logged in but hasn't set a password, consider them not in recovery flow
+        setRecoveryFlow(false);
+        setIsVerifying(false);
+        navigate("/dashboard");
       }
     });
+
+    // Check if user has an active recovery session
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        console.log("Current session:", data.session ? "Active" : "None");
+        
+        if (data.session && !recoveryFlow) {
+          // User is signed in but not in recovery flow
+          setIsVerifying(false);
+          setRecoveryFlow(false);
+        } else if (recoveryFlow) {
+          // In recovery flow, ready for password update
+          setIsVerifying(false);
+        } else {
+          // No active session and not in recovery flow
+          setError("No active recovery session found. Please request a new password reset link.");
+          setIsVerifying(false);
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        setError("Error checking authentication state. Please try again.");
+        setIsVerifying(false);
+      }
+    };
+
+    // Run the session check
+    checkSession();
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, form]);
+  }, [navigate, form, recoveryFlow]);
 
   const checkPasswordRequirements = (password: string) => {
     const requirements = {
@@ -182,24 +147,11 @@ const UpdatePassword = () => {
       return;
     }
 
-    if (!recoveryToken) {
-      setError("No recovery token found. Please request a new password reset link.");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: recoveryToken,
-        type: 'recovery'
-      });
-      
-      if (verifyError) {
-        throw new Error("Token verification failed: " + verifyError.message);
-      }
-      
+      // Update user's password
       const { error: updateError } = await supabase.auth.updateUser({
         password: values.password
       });
@@ -213,8 +165,10 @@ const UpdatePassword = () => {
         description: "Your password has been successfully updated. You can now log in with your new password.",
       });
 
+      // Sign out after successful password update
       await supabase.auth.signOut();
       
+      // Redirect to login page after a short delay
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
       console.error("Update password error:", error);
@@ -233,6 +187,32 @@ const UpdatePassword = () => {
           <div className="flex justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  if (!recoveryFlow) {
+    return (
+      <AuthLayout>
+        <div className="w-full space-y-6 text-center">
+          <h2 className="text-2xl font-semibold">Password Reset Error</h2>
+          <p className="text-sm text-muted-foreground">
+            {error || "No active recovery session found. Please request a new password reset link."}
+          </p>
+          <Button
+            className="w-full"
+            onClick={() => navigate("/reset-password")}
+          >
+            Request New Reset Link
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate("/login")}
+          >
+            Back to Login
+          </Button>
         </div>
       </AuthLayout>
     );
