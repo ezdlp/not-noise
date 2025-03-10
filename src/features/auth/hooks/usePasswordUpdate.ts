@@ -1,170 +1,113 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { extractAuthParamsFromUrl } from "../utils/tokenHelpers";
+import { useNavigate } from "react-router-dom";
 
 export function usePasswordUpdate() {
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [passwordRequirements, setPasswordRequirements] = useState({
-    minLength: false,
-    hasUppercase: false,
-    hasLowercase: false,
-    hasNumber: false,
-  });
-  const [isVerifying, setIsVerifying] = useState(true);
-  const [recoveryFlow, setRecoveryFlow] = useState(false);
-  const [session, setSession] = useState<any>(null);
-  const navigate = useNavigate();
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isValidToken, setIsValidToken] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const checkPasswordRequirements = (password: string) => {
-    const requirements = {
-      minLength: password.length >= 8,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-    };
-    setPasswordRequirements(requirements);
+  // Validate the token when the component mounts
+  useEffect(() => {
+    const validateToken = async () => {
+      setIsValidatingToken(true);
+      setError(null);
 
-    let strength = 0;
-    if (requirements.minLength) strength += 25;
-    if (requirements.hasUppercase) strength += 25;
-    if (requirements.hasLowercase) strength += 25;
-    if (requirements.hasNumber) strength += 25;
-    setPasswordStrength(strength);
-
-    return requirements;
-  };
-
-  const initializeRecoveryFlow = async () => {
-    console.log("[PasswordUpdate] Initializing recovery flow");
-    setIsVerifying(true);
-    
-    try {
-      // Parse all parameters from URL
-      const { accessToken, recoveryFlow } = extractAuthParamsFromUrl();
-      setRecoveryFlow(recoveryFlow);
-      
-      // Set up auth state listener
-      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("[Recovery] Auth event:", event, "Session:", session ? "exists" : "none");
+      try {
+        const { accessToken, isRecovery } = extractAuthParamsFromUrl();
         
-        if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          if (session && recoveryFlow) {
-            console.log("[Recovery] Valid session detected for recovery flow");
-            setSession(session);
-            setIsVerifying(false);
-          }
-        }
-      });
+        console.log("[usePasswordUpdate] Token validation:", { 
+          hasToken: !!accessToken, 
+          isRecovery 
+        });
 
-      // Try to exchange token if present
-      if (accessToken) {
-        console.log("[Recovery] Attempting to exchange access token for session");
-        try {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
-          if (error) {
-            console.error("[Recovery] Failed to exchange token:", error);
-            throw error;
-          }
-          console.log("[Recovery] Successfully exchanged token for session", data);
-          setSession(data.session);
-          setIsVerifying(false);
+        if (!isRecovery) {
+          setError("Invalid password reset link. Please request a new one.");
+          setIsValidToken(false);
           return;
-        } catch (tokenError) {
-          console.error("[Recovery] Token exchange error:", tokenError);
         }
+
+        if (!accessToken) {
+          setError("Authentication token is missing. Please request a new password reset link.");
+          setIsValidToken(false);
+          return;
+        }
+
+        // Verify the token by getting the user session
+        const { data, error } = await supabase.auth.getUser(accessToken);
+        
+        if (error || !data.user) {
+          console.error("[usePasswordUpdate] Token validation error:", error);
+          setError("Your reset link has expired or is invalid. Please request a new one.");
+          setIsValidToken(false);
+          return;
+        }
+
+        setIsValidToken(true);
+      } catch (error: any) {
+        console.error("[usePasswordUpdate] Error validating token:", error);
+        setError("An unexpected error occurred. Please try again or request a new password reset link.");
+        setIsValidToken(false);
+      } finally {
+        setIsValidatingToken(false);
       }
-      
-      // Check for existing session if no token exchange
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      console.log("[Recovery] Current session:", currentSession ? "Active" : "None");
-      
-      if (currentSession && recoveryFlow) {
-        console.log("[Recovery] Valid recovery session found");
-        setSession(currentSession);
-        setIsVerifying(false);
-      } 
-      else if (currentSession && !recoveryFlow) {
-        console.log("[Recovery] Not in recovery flow but has session, redirecting");
-        navigate("/dashboard");
-      }
-      else if (recoveryFlow) {
-        console.log("[Recovery] In recovery flow but no session yet");
-        setIsVerifying(false);
-      }
-      else {
-        console.log("[Recovery] No active recovery session");
-        setError("No active recovery session found. Please request a new password reset link.");
-        setIsVerifying(false);
-      }
-    } catch (error) {
-      console.error("[Recovery] Verification error:", error);
-      setError("Error checking authentication state. Please request a new password reset link.");
-      setIsVerifying(false);
-    }
-  };
+    };
+
+    validateToken();
+  }, []);
 
   const updatePassword = async (password: string) => {
-    if (passwordStrength < 75) {
-      setError("Password is not strong enough");
-      return;
-    }
-
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
-
+    
     try {
-      console.log("[Recovery] Updating password...");
+      const { accessToken } = extractAuthParamsFromUrl();
       
-      // Check if we have a session
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const activeSession = session || currentSession;
+      if (!accessToken) {
+        throw new Error("Missing authentication token");
+      }
       
-      if (!activeSession) {
-        console.error("[Recovery] No active session found");
-        throw new Error("Auth session missing! Please request a new password reset link.");
-      }
+      const { error } = await supabase.auth.updateUser(
+        { password }
+      );
 
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
-      });
+      if (error) throw error;
 
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-
+      setIsSuccess(true);
       toast({
-        title: "Password updated",
-        description: "Your password has been successfully updated. You can now log in with your new password.",
+        title: "Success!",
+        description: "Your password has been updated successfully.",
       });
-
-      console.log("[Recovery] Password updated successfully, signing out...");
-      await supabase.auth.signOut();
       
-      setTimeout(() => navigate("/login"), 2000);
+      // Clear URL parameters for security
+      window.history.replaceState({}, "", window.location.pathname);
+      
     } catch (error: any) {
-      console.error("[Recovery] Update password error:", error);
-      setError(`Error updating password: ${error.message}`);
+      console.error("[usePasswordUpdate] Error updating password:", error);
+      setError(error.message || "Failed to update password. Please try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
+  };
+
+  const redirectToLogin = () => {
+    navigate("/login");
   };
 
   return {
-    loading,
+    isLoading,
+    isValidatingToken,
     error,
-    passwordStrength,
-    passwordRequirements,
-    isVerifying,
-    recoveryFlow,
-    checkPasswordRequirements,
-    initializeRecoveryFlow,
+    isSuccess,
+    isValidToken,
     updatePassword,
+    redirectToLogin
   };
 }

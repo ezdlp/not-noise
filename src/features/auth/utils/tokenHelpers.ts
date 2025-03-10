@@ -52,6 +52,15 @@ export function extractAuthParamsFromUrl(): {
     }
   }
 
+  // Extra logging for debugging
+  console.log("[Auth] Extracted parameters:", {
+    accessToken: accessToken ? "Present" : "Missing",
+    isRecovery,
+    recoveryFlow,
+    searchParams: Object.fromEntries(searchParams.entries()),
+    hashPresent: !!window.location.hash
+  });
+
   return {
     accessToken,
     isRecovery,

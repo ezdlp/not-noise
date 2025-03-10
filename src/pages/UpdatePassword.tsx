@@ -1,13 +1,13 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -15,167 +15,196 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { AuthLayout } from "@/features/auth/components/AuthLayout";
-import { usePasswordUpdate } from "@/features/auth/hooks/usePasswordUpdate";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { PasswordRequirements } from "@/features/auth/components/PasswordRequirements";
+import { usePasswordUpdate } from "@/features/auth/hooks/usePasswordUpdate";
+import { PasswordResetSuccess } from "@/features/auth/components/PasswordResetSuccess";
 
-const formSchema = z.object({
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const passwordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .refine((val) => /[A-Z]/.test(val), {
+        message: "Password must include at least one uppercase letter",
+      })
+      .refine((val) => /[a-z]/.test(val), {
+        message: "Password must include at least one lowercase letter",
+      })
+      .refine((val) => /[0-9]/.test(val), {
+        message: "Password must include at least one number",
+      }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const UpdatePassword = () => {
-  const navigate = useNavigate();
-  const {
-    loading,
-    error,
-    passwordStrength,
-    passwordRequirements,
-    isVerifying,
-    recoveryFlow,
-    checkPasswordRequirements,
-    initializeRecoveryFlow,
+  const { 
+    isLoading, 
+    isValidatingToken, 
+    error, 
+    isSuccess, 
+    isValidToken, 
     updatePassword,
+    redirectToLogin
   } = usePasswordUpdate();
+  
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+  });
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
     },
   });
 
-  useEffect(() => {
-    initializeRecoveryFlow();
-  }, []);
-
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: PasswordFormValues) => {
     await updatePassword(values.password);
   };
 
-  if (isVerifying) {
-    return (
-      <AuthLayout>
-        <div className="w-full space-y-6 text-center">
-          <h2 className="text-2xl font-semibold">Verifying Your Link</h2>
-          <p className="text-sm text-muted-foreground">Please wait while we verify your password reset link...</p>
-          <div className="flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </AuthLayout>
-    );
-  }
+  const calculatePasswordStrength = (password: string) => {
+    // Initialize strength score
+    let strength = 0;
+    
+    // Check each requirement
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    };
+    
+    // Update state with current requirements status
+    setPasswordRequirements(requirements);
+    
+    // Calculate strength score (25% for each requirement)
+    Object.values(requirements).forEach(isValid => {
+      if (isValid) strength += 25;
+    });
+    
+    setPasswordStrength(strength);
+  };
 
-  if (!recoveryFlow) {
-    return (
-      <AuthLayout>
-        <div className="w-full space-y-6 text-center">
-          <h2 className="text-2xl font-semibold">Password Reset Error</h2>
-          <p className="text-sm text-muted-foreground">
-            {error || "No active recovery session found. Please request a new password reset link."}
-          </p>
-          <Button
-            className="w-full"
-            onClick={() => navigate("/reset-password")}
-          >
-            Request New Reset Link
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => navigate("/login")}
-          >
-            Back to Login
-          </Button>
-        </div>
-      </AuthLayout>
-    );
-  }
+  // Calculate password strength on input
+  useEffect(() => {
+    const password = form.watch("password");
+    calculatePasswordStrength(password);
+  }, [form.watch("password")]);
 
   return (
     <AuthLayout>
-      <div className="w-full space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold">Update Password</h2>
-          <p className="text-sm text-muted-foreground">
-            Enter your new password
-          </p>
+      {isSuccess ? (
+        <PasswordResetSuccess onGoToLogin={redirectToLogin} />
+      ) : (
+        <div className="w-full space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold">Update Your Password</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter a new password for your account
+            </p>
+          </div>
+
+          {(isValidatingToken || (isLoading && !error)) && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {!isValidatingToken && !error && isValidToken && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="password">New Password</Label>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          id="password"
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <PasswordRequirements 
+                  passwordRequirements={passwordRequirements}
+                  passwordStrength={passwordStrength}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          id="confirmPassword"
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="link"
+                    className="w-full"
+                    onClick={redirectToLogin}
+                    type="button"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Login
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
         </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="New password"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        checkPasswordRequirements(e.target.value);
-                      }}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <PasswordRequirements 
-                    passwordRequirements={passwordRequirements}
-                    passwordStrength={passwordStrength}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Confirm new password"
-                      {...field}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Password'
-              )}
-            </Button>
-          </form>
-        </Form>
-      </div>
+      )}
     </AuthLayout>
   );
 };
