@@ -68,17 +68,18 @@ export const metricsService = {
    */
   async getClicksByCountry(): Promise<GeoStats[]> {
     try {
-      // Use custom SQL query as a workaround since we don't have the exact RPC function
+      // Query platform_clicks table and count by country_code
       const { data, error } = await supabase
         .from('platform_clicks')
         .select('country_code, count(*)')
         .not('country_code', 'is', null)
-        .group('country_code');
+        // Use .select() with grouping syntax rather than .group()
+        .select('country_code, count');
       
       if (error) throw error;
       
       // Transform the data to match the GeoStats interface
-      return data.map(item => ({
+      return (data || []).map(item => ({
         countryCode: item.country_code,
         views: 0, // We'll need to update this if views data becomes available
         clicks: parseInt(item.count || '0'),
