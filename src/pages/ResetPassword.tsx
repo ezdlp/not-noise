@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,9 @@ const ResetPassword = () => {
     setError(null);
 
     try {
+      // Use the explicit type=recovery parameter along with hash for redundancy
       const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/update-password#recovery=true`,
+        redirectTo: `${window.location.origin}/update-password?type=recovery#recovery=true`,
       });
 
       if (error) throw error;

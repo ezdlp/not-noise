@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -41,6 +40,7 @@ const UpdatePassword = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [recoveryFlow, setRecoveryFlow] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -52,15 +52,14 @@ const UpdatePassword = () => {
   });
 
   useEffect(() => {
-    // This function now checks multiple sources for the token
     const detectRecoveryFlow = () => {
-      // First check if we have a valid recovery flag in the URL hash
+      console.log("Current URL:", window.location.href);
+      
       if (window.location.hash.includes('recovery=true')) {
         console.log("Recovery flag found in URL hash");
         return true;
       }
       
-      // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const type = urlParams.get('type');
       if (type === 'recovery') {
@@ -68,59 +67,104 @@ const UpdatePassword = () => {
         return true;
       }
       
+      if (urlParams.has('access_token') && urlParams.get('token_type') === 'recovery_token') {
+        console.log("Recovery token found in access_token parameter");
+        return true;
+      }
+      
+      if (urlParams.has('type') && 
+         (urlParams.get('type') === 'recovery' || 
+          urlParams.get('type') === 'email_change')) {
+        console.log("Recovery or email change type found in URL parameters");
+        return true;
+      }
+      
       return false;
     };
 
-    // Initialize recovery flow detection
-    setRecoveryFlow(detectRecoveryFlow());
+    const isRecoveryFlow = detectRecoveryFlow();
+    setRecoveryFlow(isRecoveryFlow);
+    console.log("Recovery flow detected:", isRecoveryFlow);
+
+    const verifyPasswordRecovery = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const tokenType = urlParams.get('token_type');
+        const type = urlParams.get('type');
+        
+        console.log("URL params:", { accessToken: !!accessToken, tokenType, type });
+        
+        if (accessToken && tokenType === 'recovery_token') {
+          try {
+            console.log("Exchanging recovery token");
+            const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
+            if (error) {
+              console.error("Token exchange error:", error);
+              throw new Error(error.message);
+            }
+            console.log("Recovery token exchanged successfully");
+            setRecoveryFlow(true);
+            setIsVerifying(false);
+            return;
+          } catch (error) {
+            console.error("Token exchange failed:", error);
+          }
+        }
+        
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log("Current session:", sessionData.session ? "Active" : "None");
+        
+        if (sessionData.session) {
+          if (isRecoveryFlow) {
+            console.log("User is in recovery flow with active session");
+            setIsVerifying(false);
+            return;
+          } else {
+            console.log("User is signed in but not in recovery flow, redirecting");
+            navigate("/dashboard");
+            return;
+          }
+        } else if (isRecoveryFlow) {
+          console.log("No session but in recovery flow");
+          setIsVerifying(false);
+          return;
+        } else {
+          console.log("No active session and not in recovery flow");
+          setError("No active recovery session found. Please request a new password reset link.");
+          setIsVerifying(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Session verification error:", error);
+        setError("Error checking authentication state. Please try again or request a new password reset link.");
+        setIsVerifying(false);
+      }
+    };
     
-    // Set up auth state change listener for recovery event
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
+      console.log("Auth event:", event, "Session:", session ? "exists" : "none");
+      
       if (event === "PASSWORD_RECOVERY") {
         console.log("PASSWORD_RECOVERY event detected");
         setRecoveryFlow(true);
         setIsVerifying(false);
       } else if (event === "SIGNED_IN" && !form.getValues('password')) {
-        // If user is already logged in but hasn't set a password, consider them not in recovery flow
-        setRecoveryFlow(false);
-        setIsVerifying(false);
-        navigate("/dashboard");
+        if (!isRecoveryFlow) {
+          console.log("User signed in but not in recovery flow, redirecting");
+          navigate("/dashboard");
+        }
       }
     });
 
-    // Check if user has an active recovery session
-    const checkSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        console.log("Current session:", data.session ? "Active" : "None");
-        
-        if (data.session && !recoveryFlow) {
-          // User is signed in but not in recovery flow
-          setIsVerifying(false);
-          setRecoveryFlow(false);
-        } else if (recoveryFlow) {
-          // In recovery flow, ready for password update
-          setIsVerifying(false);
-        } else {
-          // No active session and not in recovery flow
-          setError("No active recovery session found. Please request a new password reset link.");
-          setIsVerifying(false);
-        }
-      } catch (err) {
-        console.error("Session check error:", err);
-        setError("Error checking authentication state. Please try again.");
-        setIsVerifying(false);
-      }
-    };
-
-    // Run the session check
-    checkSession();
+    verifyPasswordRecovery();
 
     return () => {
-      authListener.subscription.unsubscribe();
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
-  }, [navigate, form, recoveryFlow]);
+  }, [navigate, form, location]);
 
   const checkPasswordRequirements = (password: string) => {
     const requirements = {
@@ -151,7 +195,7 @@ const UpdatePassword = () => {
     setError(null);
 
     try {
-      // Update user's password
+      console.log("Updating password...");
       const { error: updateError } = await supabase.auth.updateUser({
         password: values.password
       });
@@ -165,10 +209,9 @@ const UpdatePassword = () => {
         description: "Your password has been successfully updated. You can now log in with your new password.",
       });
 
-      // Sign out after successful password update
+      console.log("Password updated successfully, signing out...");
       await supabase.auth.signOut();
       
-      // Redirect to login page after a short delay
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
       console.error("Update password error:", error);
