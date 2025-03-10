@@ -80,9 +80,26 @@ export interface GeoStats {
   countryCode: string;
   views: number;
   clicks: number;
+  ctr: number; // Adding this property to fix the type error
 }
 
 /**
  * Time-based analytics period
  */
 export type AnalyticsPeriod = '7d' | '30d' | '90d' | 'all';
+
+/**
+ * Analytics dashboard stats from Supabase
+ */
+export interface AnalyticsDashboardStatsResult {
+  period: string;
+  product_visits: number;
+  smart_link_visits: number;
+  signups: number;
+  active_users: number;
+  pro_subscribers: number;
+  revenue: number;
+  social_cards_usage: number;
+  meta_pixel_usage: number;
+  email_capture_usage: number;
+}
