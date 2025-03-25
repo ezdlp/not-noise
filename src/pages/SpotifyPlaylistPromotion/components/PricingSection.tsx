@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PricingPlan from "@/components/spotify-promotion/PricingPlan";
@@ -52,21 +51,62 @@ const PricingSection = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Base background color */}
-      <div className="absolute inset-0 bg-[#6851fb]" />
+      {/* Artwork blurred background */}
+      <div className="absolute inset-0 bg-[#6851fb]">
+        {selectedTrack.artworkUrl ? (
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${selectedTrack.artworkUrl})`,
+              filter: 'blur(70px) saturate(150%) brightness(0.4)',
+              transform: 'scale(1.5)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center center',
+              animation: 'slow-drift 30s ease-in-out infinite'
+            }}
+          />
+        ) : (
+          // Fallback gradient if no artwork is available
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
+              backgroundSize: '100% 100%',
+              backgroundPosition: 'center center'
+            }}
+          />
+        )}
+      </div>
       
-      {/* Gradient overlay with texture */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('/lovable-uploads/hero-gradient.svg')`,
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center'
-        }}
-      />
+      {/* Add the keyframes animation to the component */}
+      <style>
+        {`
+          @keyframes slow-drift {
+            0% {
+              transform: scale(1.5) translate(0, 0);
+            }
+            25% {
+              transform: scale(1.52) translate(5px, -5px);
+            }
+            50% {
+              transform: scale(1.55) translate(0, 0);
+            }
+            75% {
+              transform: scale(1.52) translate(-5px, 5px);
+            }
+            100% {
+              transform: scale(1.5) translate(0, 0);
+            }
+          }
+        `}
+      </style>
+      
+      {/* Overlay to ensure content readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#4a37b3]/50 to-transparent mix-blend-multiply" />
+      <div className="absolute inset-0 bg-[#6851fb]/20" />
 
       {/* Content */}
-      <div className="relative container mx-auto px-4 py-12">
+      <div className="relative container mx-auto px-4 py-12 z-10">
         <Button
           variant="ghost"
           className="text-white mb-8 hover:text-white/80"
@@ -120,17 +160,17 @@ const PricingSection = () => {
         <div className="mt-16 text-center text-white/80">
           <h3 className="text-xl font-semibold text-white mb-4">What Happens Next?</h3>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
+            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
               <div className="text-2xl mb-2">1</div>
               <h4 className="font-semibold mb-2">Track Review</h4>
               <p className="text-sm">Our team analyzes your track and creates a custom promotion strategy</p>
             </div>
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
+            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
               <div className="text-2xl mb-2">2</div>
               <h4 className="font-semibold mb-2">Playlist Outreach</h4>
               <p className="text-sm">We submit your track to carefully selected playlist curators</p>
             </div>
-            <div className="backdrop-blur-sm bg-white/5 rounded-lg p-6 transition-all duration-300 hover:bg-white/10">
+            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
               <div className="text-2xl mb-2">3</div>
               <h4 className="font-semibold mb-2">Results & Reports</h4>
               <p className="text-sm">Get detailed feedback and track your promotion progress</p>
@@ -139,7 +179,7 @@ const PricingSection = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-block backdrop-blur-sm bg-white/5 rounded-lg px-6 py-4 text-white/80">
+          <div className="inline-block backdrop-blur-xl bg-white/10 rounded-xl px-6 py-4 text-white/90 border border-white/10">
             <p className="text-sm font-medium">🎯 Limited spots available this month</p>
           </div>
         </div>

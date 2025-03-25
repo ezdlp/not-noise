@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -230,8 +229,8 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
               <Card 
                 key={tier.name}
                 className={cn(
-                  "relative flex flex-col justify-between group bg-[#FAFAFA] backdrop-blur-sm transition-all duration-300 hover:shadow-xl",
-                  tier.popular && "md:scale-105 border-primary"
+                  "relative flex flex-col justify-between backdrop-blur-xl bg-white/20 border-white/20 transition-all duration-300 hover:shadow-xl text-white",
+                  tier.popular && "md:scale-105 border-primary shadow-lg"
                 )}
               >
                 {tier.popular && (
@@ -246,89 +245,108 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                       <img 
                         src={tier.vinylImage}
                         alt={`${tier.name} vinyl`}
-                        className="w-full h-full animate-float"
+                        className="w-full h-full animate-float drop-shadow-2xl"
                       />
                     </div>
-                    <h3 className="text-2xl font-bold text-[#0F0F0F]">{tier.name} Package</h3>
-                    <div className="mt-2 space-y-1">
-                      {tier.discount > 0 ? (
-                        <>
-                          <p className="text-sm text-[#0F0F0F]/60 line-through">${metrics.originalPrice}</p>
-                          <p className="text-3xl font-bold text-[#0F0F0F]">${tier.price}</p>
-                          <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 text-sm rounded-full">
-                            Save ${metrics.savings}
+                    <div className="text-center">
+                      <h3 className="text-2xl font-semibold text-white">{tier.name}</h3>
+                      <p className="text-4xl font-bold mb-2 text-white">
+                        ${tier.price}
+                        {tier.discount > 0 && (
+                          <span className="text-sm text-white/80 ml-2 line-through">
+                            ${metrics.originalPrice}
                           </span>
-                        </>
-                      ) : (
-                        <p className="text-3xl font-bold text-[#0F0F0F]">${tier.price}</p>
+                        )}
+                      </p>
+                      {tier.discount > 0 && (
+                        <p className="text-sm text-white/90 mb-2">
+                          Save ${metrics.savings}
+                        </p>
                       )}
                     </div>
                   </CardHeader>
-
-                  <CardContent className="space-y-6">
-                    <div className="p-4 bg-white rounded-lg space-y-2 shadow-sm">
-                      <div className="flex justify-between text-sm text-[#0F0F0F]/80">
-                        <span>Playlist Submissions</span>
-                        <span className="font-semibold">{tier.submissions}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-[#0F0F0F]/80">
-                        <span className="flex items-center gap-1">
-                          Expected Playlist Adds
+                  
+                  <CardContent className="text-center">
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <p className="text-lg font-medium text-white">{tier.submissions}</p>
                           <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-[#0F0F0F]/40" />
+                            <TooltipTrigger asChild>
+                              <span><Info className="h-4 w-4 ml-1 text-white/70" /></span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="w-[200px] text-xs">
-                                Based on historical data and campaign performance
-                              </p>
+                              Number of playlists we will submit your track to
                             </TooltipContent>
                           </Tooltip>
-                        </span>
-                        <span className="font-semibold">{tier.minAdds}-{tier.maxAdds}</span>
+                        </div>
+                        <p className="text-sm text-white/80">Playlist Submissions</p>
                       </div>
-                      <div className="flex justify-between text-sm text-[#0F0F0F]/80">
-                        <span>Expected Streams</span>
-                        <span className="font-semibold">{metrics.streams}</span>
+                      
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <p className="text-lg font-medium text-white">{tier.minAdds}-{tier.maxAdds}</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span><Info className="h-4 w-4 ml-1 text-white/70" /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Expected number of playlist placements
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-sm text-white/80">Guaranteed Playlist Adds</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <p className="text-lg font-medium text-white">{metrics.streams}</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span><Info className="h-4 w-4 ml-1 text-white/70" /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Estimated range based on average playlist streams
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <p className="text-sm text-white/80">Estimated Streams</p>
                       </div>
                     </div>
-
-                    <div className="space-y-3">
-                      {tier.features.map((feature) => (
-                        <div key={feature} className="flex items-center gap-2 text-sm text-[#0F0F0F]/80 group/feature">
-                          <svg 
-                            className="h-4 w-4 text-emerald-400 flex-shrink-0 transition-transform duration-300 group-hover/feature:scale-110" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor"
-                          >
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                          <span className="group-hover/feature:text-[#0F0F0F]">{feature}</span>
-                        </div>
-                      ))}
+                    
+                    {/* Features */}
+                    <div className="border-t border-white/20 pt-4">
+                      <p className="text-sm font-medium text-white mb-2">What's included:</p>
+                      <ul className="space-y-2 text-left text-sm">
+                        {tier.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-primary">✓</span>
+                            <span className="text-white/90">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </CardContent>
                 </div>
-
-                <CardFooter className="mt-6">
+                
+                <CardFooter>
                   <Button 
-                    onClick={() => handleSelect(tier)}
-                    disabled={isProcessing}
                     className={cn(
-                      "w-full transition-all duration-300 hover:scale-105",
+                      "w-full rounded-lg text-base font-medium py-5 transition-all duration-300",
                       tier.popular ? 
                         "bg-primary hover:bg-primary/90 text-white" : 
-                        "bg-[#0F0F0F] hover:bg-[#0F0F0F]/90 text-white"
+                        "bg-white hover:bg-white/90 text-primary hover:text-primary/90"
                     )}
+                    onClick={() => handleSelect(tier)}
+                    disabled={isProcessing}
                   >
                     {isProcessing ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Processing...</span>
-                      </div>
+                      <>
+                        <span className="animate-spin mr-2">◌</span> 
+                        Processing...
+                      </>
                     ) : (
-                      `Get Started with ${tier.name}`
+                      <>Select {tier.name} Plan</>
                     )}
                   </Button>
                 </CardFooter>
