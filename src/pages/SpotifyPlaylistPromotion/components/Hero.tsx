@@ -28,8 +28,11 @@ const Hero: React.FC = () => {
     queryKey: ['spotify-search', searchQuery],
     queryFn: async () => {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       if (!searchQuery || searchQuery.length < 3) return null;
 =======
+=======
+>>>>>>> Stashed changes
       if (!searchQuery || searchQuery.length < 3) return { tracks: [], albums: [] };
       
 >>>>>>> Stashed changes
@@ -46,6 +49,7 @@ const Hero: React.FC = () => {
           return { tracks: [], albums: [] };
         }
         
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         if (!data?.tracks?.items?.length) {
           console.log('No tracks found for query:', searchQuery);
@@ -70,6 +74,14 @@ const Hero: React.FC = () => {
           console.log('No data returned from search');
           return { tracks: [], albums: [] };
         }
+=======
+        console.log('Spotify search response:', data);
+        
+        if (!data) {
+          console.log('No data returned from search');
+          return { tracks: [], albums: [] };
+        }
+>>>>>>> Stashed changes
         
         // Check if data has the expected structure
         if (data.error) {
@@ -88,6 +100,9 @@ const Hero: React.FC = () => {
           tracks: tracks,
           albums: albums
         };
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       } catch (error) {
         console.error('Search error details:', error);
@@ -175,7 +190,11 @@ const Hero: React.FC = () => {
                     {searchResults.tracks.map((track: Track) => (
                       <button
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                         key={track.spotifyId}
+=======
+                        key={track.id || track.spotifyId || Math.random().toString()}
+>>>>>>> Stashed changes
 =======
                         key={track.id || track.spotifyId || Math.random().toString()}
 >>>>>>> Stashed changes
