@@ -10,13 +10,14 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Track {
+  id?: string;
   title: string;
   artist: string;
-  album: string;
+  album?: string;
   artworkUrl: string;
-  spotifyId: string;
+  spotifyId?: string;
   spotifyUrl: string;
-  releaseDate: string;
+  releaseDate?: string;
 }
 
 const Hero: React.FC = () => {
@@ -27,15 +28,8 @@ const Hero: React.FC = () => {
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['spotify-search', searchQuery],
     queryFn: async () => {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      if (!searchQuery || searchQuery.length < 3) return null;
-=======
-=======
->>>>>>> Stashed changes
       if (!searchQuery || searchQuery.length < 3) return { tracks: [], albums: [] };
       
->>>>>>> Stashed changes
       try {
         console.log('Searching for:', searchQuery);
         
@@ -49,39 +43,12 @@ const Hero: React.FC = () => {
           return { tracks: [], albums: [] };
         }
         
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        if (!data?.tracks?.items?.length) {
-          console.log('No tracks found for query:', searchQuery);
-          return { tracks: [], albums: [] };
-        }
-
-        const tracks = data.tracks.items.map((track: any) => ({
-          title: track.name,
-          artist: track.artists.map((artist: any) => artist.name).join(', '),
-          album: track.album.name,
-          artworkUrl: track.album.images[0]?.url,
-          spotifyId: track.id,
-          spotifyUrl: track.external_urls.spotify,
-          releaseDate: track.album.release_date
-        }));
-
-        return { tracks, albums: [] };
-=======
         console.log('Spotify search response:', data);
         
         if (!data) {
           console.log('No data returned from search');
           return { tracks: [], albums: [] };
         }
-=======
-        console.log('Spotify search response:', data);
-        
-        if (!data) {
-          console.log('No data returned from search');
-          return { tracks: [], albums: [] };
-        }
->>>>>>> Stashed changes
         
         // Check if data has the expected structure
         if (data.error) {
@@ -100,10 +67,6 @@ const Hero: React.FC = () => {
           tracks: tracks,
           albums: albums
         };
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       } catch (error) {
         console.error('Search error details:', error);
         toast.error("An error occurred while searching. Please try again.");
@@ -126,8 +89,8 @@ const Hero: React.FC = () => {
           selectedTrack: {
             title: selectedTrack.title,
             artist: selectedTrack.artist,
-            id: selectedTrack.spotifyId,
-            artistId: selectedTrack.spotifyId,
+            id: selectedTrack.id || selectedTrack.spotifyId,
+            artistId: selectedTrack.id || selectedTrack.spotifyId,
             artworkUrl: selectedTrack.artworkUrl,
             genre: undefined
           }
@@ -189,15 +152,7 @@ const Hero: React.FC = () => {
                   <Card className="divide-y divide-neutral-200 overflow-hidden max-h-[400px] overflow-y-auto">
                     {searchResults.tracks.map((track: Track) => (
                       <button
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                        key={track.spotifyId}
-=======
                         key={track.id || track.spotifyId || Math.random().toString()}
->>>>>>> Stashed changes
-=======
-                        key={track.id || track.spotifyId || Math.random().toString()}
->>>>>>> Stashed changes
                         onClick={() => handleSelectTrack(track)}
                         className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 transition-colors text-[#111827] group"
                       >
