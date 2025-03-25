@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
@@ -157,7 +156,7 @@ serve(async (req) => {
       
       // Safely transform search results with null checking
       responseData = {
-        tracks: (searchData.tracks?.items || []).map((track) => ({
+        tracks: Array.isArray(searchData.tracks?.items) ? searchData.tracks.items.map((track) => ({
           id: track.id,
           title: track.name,
           artist: track.artists?.[0]?.name || 'Unknown Artist',
@@ -166,8 +165,8 @@ serve(async (req) => {
           spotifyUrl: track.external_urls?.spotify || '',
           albumName: track.album?.name || 'Unknown Album',
           releaseDate: track.album?.release_date
-        })),
-        albums: (searchData.albums?.items || []).map((album) => ({
+        })) : [],
+        albums: Array.isArray(searchData.albums?.items) ? searchData.albums.items.map((album) => ({
           id: album.id,
           title: album.name,
           artist: album.artists?.[0]?.name || 'Unknown Artist',
@@ -177,7 +176,7 @@ serve(async (req) => {
           albumType: album.album_type || 'album',
           totalTracks: album.total_tracks || 0,
           releaseDate: album.release_date
-        }))
+        })) : []
       };
     } else {
       throw new Error('Missing url or query parameter');

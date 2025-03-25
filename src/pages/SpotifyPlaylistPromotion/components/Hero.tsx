@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music, TrendingUp, Users, Search, ArrowDown } from "lucide-react";
@@ -28,18 +27,26 @@ const Hero: React.FC = () => {
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['spotify-search', searchQuery],
     queryFn: async () => {
+<<<<<<< Updated upstream
       if (!searchQuery || searchQuery.length < 3) return null;
+=======
+      if (!searchQuery || searchQuery.length < 3) return { tracks: [], albums: [] };
+      
+>>>>>>> Stashed changes
       try {
+        console.log('Searching for:', searchQuery);
+        
         const { data, error } = await supabase.functions.invoke('spotify-search', {
           body: { query: searchQuery }
         });
         
         if (error) {
-          console.error('Search error:', error);
+          console.error('Search error details:', error);
           toast.error("Failed to search tracks. Please try again.");
-          return null;
+          return { tracks: [], albums: [] };
         }
         
+<<<<<<< Updated upstream
         if (!data?.tracks?.items?.length) {
           console.log('No tracks found for query:', searchQuery);
           return { tracks: [], albums: [] };
@@ -56,10 +63,36 @@ const Hero: React.FC = () => {
         }));
 
         return { tracks, albums: [] };
+=======
+        console.log('Spotify search response:', data);
+        
+        if (!data) {
+          console.log('No data returned from search');
+          return { tracks: [], albums: [] };
+        }
+        
+        // Check if data has the expected structure
+        if (data.error) {
+          console.error('API returned error:', data.error);
+          toast.error("Spotify search failed. Please try again later.");
+          return { tracks: [], albums: [] };
+        }
+        
+        // Ensure tracks and albums are always arrays
+        const tracks = Array.isArray(data.tracks) ? data.tracks : [];
+        const albums = Array.isArray(data.albums) ? data.albums : [];
+        
+        console.log(`Found ${tracks.length} tracks and ${albums.length} albums`);
+        
+        return {
+          tracks: tracks,
+          albums: albums
+        };
+>>>>>>> Stashed changes
       } catch (error) {
-        console.error('Search error:', error);
+        console.error('Search error details:', error);
         toast.error("An error occurred while searching. Please try again.");
-        return null;
+        return { tracks: [], albums: [] };
       }
     },
     enabled: searchQuery.length > 2
@@ -137,11 +170,15 @@ const Hero: React.FC = () => {
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     <span className="ml-2 text-[#374151]">Searching...</span>
                   </Card>
-                ) : searchResults?.tracks && searchResults.tracks.length > 0 ? (
+                ) : searchResults?.tracks && Array.isArray(searchResults.tracks) && searchResults.tracks.length > 0 ? (
                   <Card className="divide-y divide-neutral-200 overflow-hidden max-h-[400px] overflow-y-auto">
                     {searchResults.tracks.map((track: Track) => (
                       <button
+<<<<<<< Updated upstream
                         key={track.spotifyId}
+=======
+                        key={track.id || track.spotifyId || Math.random().toString()}
+>>>>>>> Stashed changes
                         onClick={() => handleSelectTrack(track)}
                         className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 transition-colors text-[#111827] group"
                       >
@@ -157,7 +194,7 @@ const Hero: React.FC = () => {
                       </button>
                     ))}
                   </Card>
-                ) : searchQuery.length > 2 && (
+                ) : (
                   <Card className="p-4 text-center text-[#6B7280]">
                     No tracks found
                   </Card>
