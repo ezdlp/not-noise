@@ -6,9 +6,29 @@ import {
   FileText, 
   Users, 
   ImageIcon, 
-  Link2,
-  Music2
+  Link2
 } from 'lucide-react';
+
+// Custom Spotify icon component
+const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 14.5c2.5-1 5.5-.5 7.5.5" />
+    <path d="M8 11.5c3.5-1.5 8-.5 11 1.5" />
+    <path d="M8 8.5c4.5-2 10-1.5 14 1.5" />
+  </svg>
+);
 
 export const AdminSidebar: React.FC = () => {
   const location = useLocation();
@@ -18,8 +38,8 @@ export const AdminSidebar: React.FC = () => {
     { to: '/control-room/content', icon: <FileText size={18} />, label: 'Blog Content' },
     { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
     { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
+    { to: '/control-room/promotions', icon: <SpotifyIcon size={18} />, label: 'Playlist Promotions' },
     { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
-    { to: '/control-room/promotions', icon: <Music2 size={18} />, label: 'Playlist Promotions' },
   ];
 
   return (

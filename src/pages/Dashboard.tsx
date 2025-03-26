@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
@@ -6,7 +7,7 @@ import { SubscriptionBanner } from "@/components/subscription/SubscriptionBanner
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link2, Lock, HeadphonesIcon, Layout } from "lucide-react";
+import { Link2, Lock, Layout } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,28 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useSmartLinkCreation } from "@/hooks/useSmartLinkCreation";
 import { PromotionsDashboard } from "@/components/spotify-promotion/PromotionsDashboard";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+
+// Custom Spotify icon component
+const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 14.5c2.5-1 5.5-.5 7.5.5" />
+    <path d="M8 11.5c3.5-1.5 8-.5 11 1.5" />
+    <path d="M8 8.5c4.5-2 10-1.5 14 1.5" />
+  </svg>
+);
 
 export default function Dashboard() {
   const location = useLocation();
@@ -224,6 +247,23 @@ export default function Dashboard() {
               Smart Links
             </button>
             <button
+              onClick={() => handleTabClick('promotions')}
+              className={cn(
+                "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
+                activeTab === 'promotions'
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              <span className="flex items-center gap-1.5">
+                <SpotifyIcon className="h-3.5 w-3.5" />
+                Playlist Promotions
+                <Badge variant="outline" className="ml-1 h-4 px-1.5 bg-primary text-white text-[10px] font-semibold">
+                  NEW
+                </Badge>
+              </span>
+            </button>
+            <button
               onClick={() => handleTabClick('email-subscribers')}
               className={cn(
                 "pb-4 text-sm font-medium relative transition-colors hover:text-primary group",
@@ -237,20 +277,6 @@ export default function Dashboard() {
                 {!isFeatureEnabled('email_capture') && (
                   <Lock className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-primary/70 transition-colors" />
                 )}
-              </span>
-            </button>
-            <button
-              onClick={() => handleTabClick('promotions')}
-              className={cn(
-                "pb-4 text-sm font-medium relative transition-colors hover:text-primary",
-                activeTab === 'promotions'
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground"
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                Playlist Promotions
-                <HeadphonesIcon className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-primary/70 transition-colors" />
               </span>
             </button>
           </div>
