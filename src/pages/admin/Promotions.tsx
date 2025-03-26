@@ -18,6 +18,28 @@ import { formatDistance } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
 
+// Define the Campaign type to match the expected structure
+interface Campaign {
+  id: string;
+  track_name: string;
+  track_artist: string;
+  status: string;
+  genre: string;
+  created_at: string;
+  total_cost: number;
+  submission_count: number;
+  // Add other fields that might be used
+  end_date?: string;
+  start_date?: string;
+  estimated_additions?: number;
+  final_streams?: number;
+  initial_streams?: number;
+  spotify_artist_id?: string;
+  spotify_track_id?: string;
+  success_rate?: number;
+  user_id?: string;
+}
+
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
   
@@ -30,7 +52,7 @@ export default function Promotions() {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      return data as Campaign[] || [];
     },
   });
 
@@ -91,7 +113,7 @@ export default function Promotions() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  promotions?.map((promo: any) => (
+                  promotions?.map((promo: Campaign) => (
                     <TableRow key={promo.id}>
                       <TableCell className="font-medium">{promo.track_name}</TableCell>
                       <TableCell>{promo.track_artist}</TableCell>

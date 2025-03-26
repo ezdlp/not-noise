@@ -125,4 +125,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: error instanceof Error ? error.message : 'Failed to search Spotify'
     });
   }
-} 
+}
