@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -32,11 +31,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
-// Custom Spotify icon component since it's not available in Lucide
+// Custom Spotify icon component that uses the SVG file
 const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
+    viewBox="0 0 48 48" 
     width="24" 
     height="24" 
     fill="none" 
@@ -46,10 +45,8 @@ const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 14.5c2.5-1 5.5-.5 7.5.5" />
-    <path d="M8 11.5c3.5-1.5 8-.5 11 1.5" />
-    <path d="M8 8.5c4.5-2 10-1.5 14 1.5" />
+    <circle cx="24" cy="24" r="21.5" />
+    <path d="m12.3332,30.6695c8.1899-1.8711,15.215-1.0655,20.8822,2.3979m-21.6486-8.7867c7.8081-2.3692,17.5151-1.2216,24.1517,2.8567m-25.3671-9.8174c7.5945-2.3055,20.2195-1.8601,28.1974,2.876" />
   </svg>
 );
 
@@ -166,7 +163,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar 
       variant="sidebar" 
-      className="w-64 transition-all duration-300"
+      className="w-72 transition-all duration-300"
     >
       <SidebarHeader className="px-4 py-3 flex items-center justify-between border-b">
         <div className="h-6 flex items-center">
@@ -239,7 +236,7 @@ export function DashboardSidebar() {
                   isActive={isDashboardRoute && activeSection === 'promotions'}
                   onClick={() => handleSectionChange('promotions')}
                   tooltip="Playlist Promotions"
-                  className="transition-colors duration-200 relative px-3 text-sm h-10"
+                  className="transition-colors duration-200 relative px-3 text-sm h-10 min-w-0 w-full"
                 >
                   <SpotifyIcon className="mr-2 h-4 w-4" />
                   <span className="flex items-center">
@@ -324,4 +321,4 @@ export function DashboardSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-} 
+}

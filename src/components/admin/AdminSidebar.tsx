@@ -9,11 +9,11 @@ import {
   Link2
 } from 'lucide-react';
 
-// Custom Spotify icon component
+// Custom Spotify icon component that uses the SVG file
 const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
+    viewBox="0 0 48 48" 
     width="24" 
     height="24" 
     fill="none" 
@@ -23,10 +23,8 @@ const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 14.5c2.5-1 5.5-.5 7.5.5" />
-    <path d="M8 11.5c3.5-1.5 8-.5 11 1.5" />
-    <path d="M8 8.5c4.5-2 10-1.5 14 1.5" />
+    <circle cx="24" cy="24" r="21.5" />
+    <path d="m12.3332,30.6695c8.1899-1.8711,15.215-1.0655,20.8822,2.3979m-21.6486-8.7867c7.8081-2.3692,17.5151-1.2216,24.1517,2.8567m-25.3671-9.8174c7.5945-2.3055,20.2195-1.8601,28.1974,2.876" />
   </svg>
 );
 

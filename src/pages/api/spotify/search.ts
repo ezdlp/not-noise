@@ -11,8 +11,14 @@ interface SpotifyCredentials {
   client_secret: string;
 }
 
-// Simplified type for config value
-type ConfigValue = string | Record<string, unknown>;
+// Define interface for config value
+interface ConfigObject {
+  client_id: string;
+  client_secret: string;
+  [key: string]: unknown;
+}
+
+type ConfigValue = string | ConfigObject;
 
 /**
  * Get a Spotify API token using client credentials
@@ -28,7 +34,7 @@ async function getSpotifyToken(): Promise<string> {
 
     if (error) throw error;
     
-    // Parse the config_value which should be a JSON string
+    // Parse the config_value which should be a JSON string or object
     const credentialsValue = data?.config_value as ConfigValue;
     let credentials: SpotifyCredentials;
     
@@ -39,15 +45,13 @@ async function getSpotifyToken(): Promise<string> {
         throw new Error('Invalid Spotify credentials format in app config');
       }
     } else if (typeof credentialsValue === 'object' && credentialsValue !== null) {
-      // Safe type assertion after validation
-      const tempCreds = credentialsValue;
       if (
-        typeof tempCreds.client_id === 'string' && 
-        typeof tempCreds.client_secret === 'string'
+        typeof credentialsValue.client_id === 'string' && 
+        typeof credentialsValue.client_secret === 'string'
       ) {
         credentials = {
-          client_id: tempCreds.client_id,
-          client_secret: tempCreds.client_secret
+          client_id: credentialsValue.client_id,
+          client_secret: credentialsValue.client_secret
         };
       } else {
         throw new Error('Invalid Spotify credentials structure in app config');
