@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -12,7 +11,6 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PromotionSignupModal } from "./PromotionSignupModal";
-import { useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { PricingTier, SelectedTrack } from "@/types/spotify-promotion";
 
@@ -164,26 +162,21 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     }
   };
 
-  // Function to normalize and validate Spotify track ID
   const normalizeTrackId = (trackId: string) => {
-    // If it's already in spotify:track:ID format
     if (trackId.startsWith('spotify:track:')) {
       return trackId;
     }
     
-    // If it's a URL
     if (trackId.includes('spotify.com/track/')) {
       const parts = trackId.split('/track/');
       const id = parts[1]?.split('?')[0];
       return id ? `spotify:track:${id}` : trackId;
     }
     
-    // If it's just an ID, convert to URI format
     if (/^[a-zA-Z0-9]{22}$/.test(trackId)) {
       return `spotify:track:${trackId}`;
     }
     
-    // Return as is if we can't determine the format
     return trackId;
   };
 
@@ -206,7 +199,6 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       
       const packageId = getPackageId(tier.name);
       
-      // Format track ID and artist ID appropriately
       const spotifyTrackId = selectedTrack.id || '';
       
       console.log('Initiating checkout:', {

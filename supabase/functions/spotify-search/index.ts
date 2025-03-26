@@ -148,29 +148,50 @@ serve(async (req) => {
   
   try {
     const token = await getSpotifyToken();
-    const body = await req.json();
+    let body;
+    
+    try {
+      body = await req.json();
+      console.log("Request body:", JSON.stringify(body));
+    } catch (error) {
+      throw new Error(`Invalid request body: ${error.message}`);
+    }
     
     let responseData;
     
     // URL lookup or search
     if (body.url) {
+      console.log(`Processing URL lookup: ${body.url}`);
       responseData = await getSpotifyItemFromUrl(token, body.url);
+      console.log(`URL lookup result:`, JSON.stringify(responseData));
     } else if (body.query) {
+      console.log(`Processing search query: ${body.query}`);
       const searchData = await searchSpotify(token, body.query);
       
       // Safely transform search results with null checking and include artist IDs
       responseData = {
-        tracks: Array.isArray(searchData.tracks?.items) ? searchData.tracks.items.map((track) => ({
-          id: track.id,
-          title: track.name,
-          artist: track.artists?.[0]?.name || 'Unknown Artist',
-          artistId: track.artists?.[0]?.id || '',
-          artworkUrl: track.album?.images?.[0]?.url || '',
-          content_type: 'track',
-          spotifyUrl: track.external_urls?.spotify || '',
-          albumName: track.album?.name || 'Unknown Album',
-          releaseDate: track.album?.release_date
-        })) : [],
+        tracks: Array.isArray(searchData.tracks?.items) ? searchData.tracks.items.map((track) => {
+          const transformedTrack = {
+            id: track.id,
+            title: track.name,
+            artist: track.artists?.[0]?.name || 'Unknown Artist',
+            artistId: track.artists?.[0]?.id || '',
+            artworkUrl: track.album?.images?.[0]?.url || '',
+            content_type: 'track',
+            spotifyUrl: track.external_urls?.spotify || '',
+            albumName: track.album?.name || 'Unknown Album',
+            releaseDate: track.album?.release_date
+          };
+          
+          console.log(`Transformed track: ${JSON.stringify({
+            id: transformedTrack.id,
+            title: transformedTrack.title,
+            artist: transformedTrack.artist,
+            artistId: transformedTrack.artistId
+          })}`);
+          
+          return transformedTrack;
+        }) : [],
         albums: Array.isArray(searchData.albums?.items) ? searchData.albums.items.map((album) => ({
           id: album.id,
           title: album.name,
@@ -184,6 +205,8 @@ serve(async (req) => {
           releaseDate: album.release_date
         })) : []
       };
+      
+      console.log(`Search found ${responseData.tracks.length} tracks and ${responseData.albums.length} albums`);
     } else {
       throw new Error('Missing url or query parameter');
     }

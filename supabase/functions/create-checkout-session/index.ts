@@ -41,10 +41,18 @@ serve(async (req) => {
       throw new Error('No email found for authenticated user');
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2025-02-24.acacia', // Updated to match the Stripe dashboard version
-      httpClient: Stripe.createFetchHttpClient(), // Explicitly set HTTP client for Deno environment
-      maxNetworkRetries: 3, // Add retries for better reliability
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      console.error('Missing STRIPE_SECRET_KEY environment variable');
+      throw new Error('Server configuration error: Missing Stripe credentials');
+    }
+    
+    console.log(`Initializing Stripe with API version 2025-02-24.acacia`);
+    
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-02-24.acacia', 
+      httpClient: Stripe.createFetchHttpClient(),
+      maxNetworkRetries: 3,
     });
 
     // Get or create customer
@@ -84,14 +92,20 @@ serve(async (req) => {
         discountApplied 
       } = requestData;
 
-      // Validate required parameters
-      if (!packageId || !trackId || !trackName || !artistName || !basePrice) {
-        throw new Error(`Missing required parameters for promotion checkout: 
-          packageId: ${packageId}, 
-          trackId: ${trackId}, 
-          trackName: ${trackName}, 
-          artistName: ${artistName}, 
-          basePrice: ${basePrice}`);
+      // Validate required parameters and log diagnostics
+      if (!packageId || !trackId) {
+        console.error('Missing required parameters:', { packageId, trackId, trackName, artistName });
+        throw new Error('Missing required parameters: packageId and trackId are required');
+      }
+      
+      if (!trackName || !artistName) {
+        console.error('Missing track details:', { trackName, artistName });
+        throw new Error('Missing track details: trackName and artistName are required');
+      }
+      
+      if (basePrice === undefined || basePrice === null) {
+        console.error('Missing price information');
+        throw new Error('Missing price information: basePrice is required');
       }
 
       console.log('Creating promotion checkout session...', { 
@@ -136,27 +150,23 @@ serve(async (req) => {
       }
 
       // Parse and normalize the Spotify track ID
-      // It might come in different formats: full URI, ID only, or URL format
-      let normalizedTrackId = trackId;
-      let artistId = '';
-      
-      // Extract artist ID if possible (might be passed directly or part of trackId)
-      if (trackId.includes(':artist:')) {
-        const parts = trackId.split(':');
-        artistId = parts[parts.indexOf('artist') + 1] || '';
-      } else if (requestData.artistId) {
-        artistId = requestData.artistId;
-      }
+      console.log('Original track ID format:', trackId);
       
       // Normalize track ID format
-      if (trackId.includes('spotify:track:')) {
-        // Format: spotify:track:1234567890
-        const parts = trackId.split(':');
-        normalizedTrackId = parts[parts.length - 1];
-      } else if (trackId.includes('spotify.com/track/')) {
-        // Format: https://open.spotify.com/track/1234567890
-        const parts = trackId.split('/track/');
-        normalizedTrackId = parts[1].split('?')[0];
+      let normalizedTrackId = trackId;
+      let artistId = requestData.artistId || '';
+      
+      // Handle different track ID formats
+      if (typeof trackId === 'string') {
+        if (trackId.includes('spotify:track:')) {
+          // Format: spotify:track:1234567890
+          const parts = trackId.split(':');
+          normalizedTrackId = parts[parts.length - 1];
+        } else if (trackId.includes('spotify.com/track/')) {
+          // Format: https://open.spotify.com/track/1234567890
+          const parts = trackId.split('/track/');
+          normalizedTrackId = parts[1]?.split('?')[0] || trackId;
+        }
       }
       
       console.log('Normalized track ID:', normalizedTrackId);
@@ -164,6 +174,16 @@ serve(async (req) => {
 
       try {
         // Create a record in the promotions table
+        console.log('Creating promotion database record with data:', {
+          user_id: user.id,
+          spotify_track_id: normalizedTrackId,
+          track_name: trackName,
+          track_artist: artistName,
+          spotify_artist_id: artistId || 'unknown',
+          genre: genre || 'other',
+          total_cost: finalPrice / 100
+        });
+        
         const { data: promotion, error: promotionError } = await supabaseClient
           .from('promotions')
           .insert({
@@ -171,10 +191,10 @@ serve(async (req) => {
             spotify_track_id: normalizedTrackId,
             track_name: trackName,
             track_artist: artistName,
-            spotify_artist_id: artistId || normalizedTrackId, // Fallback to track ID if artist ID is not available
+            spotify_artist_id: artistId || 'unknown', // Use 'unknown' if artist ID is not available
             genre: genre || 'other',
             total_cost: finalPrice / 100, // Store price in dollars
-            status: 'pending', // Use 'pending' as it's one of the allowed values
+            status: 'pending', 
             created_at: new Date().toISOString(),
             submission_count: submissionCount,
             estimated_additions: estimatedAdditions,
@@ -190,15 +210,19 @@ serve(async (req) => {
             spotify_track_id: normalizedTrackId,
             track_name: trackName,
             track_artist: artistName,
-            spotify_artist_id: artistId || normalizedTrackId,
+            spotify_artist_id: artistId || 'unknown',
             genre: genre || 'other',
             total_cost: finalPrice / 100
           });
           throw new Error('Failed to create promotion record: ' + promotionError.message);
         }
 
+        console.log('Promotion record created successfully:', promotion);
+
         // Create Stripe checkout session
         try {
+          console.log('Creating Stripe checkout session with price:', finalPrice);
+          
           const session = await stripe.checkout.sessions.create({
             customer: customer_id,
             customer_email: customer_id ? undefined : email,
@@ -231,7 +255,7 @@ serve(async (req) => {
               trackName,
               trackArtist: artistName,
               spotifyTrackId: normalizedTrackId,
-              spotifyArtistId: artistId || normalizedTrackId,
+              spotifyArtistId: artistId || 'unknown',
               submissionCount: submissionCount.toString(),
               estimatedAdditions: estimatedAdditions.toString(),
               genre: genre || 'other',
@@ -344,7 +368,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message || "An unknown error occurred",
-        success: false 
+        success: false,
+        stack: error.stack || "No stack trace available"
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
