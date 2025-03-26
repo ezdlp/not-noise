@@ -127,8 +127,8 @@ serve(async (req) => {
         email 
       });
 
-      // Calculate final price with discount if applicable
-      const finalPrice = discountApplied ? Math.round(basePrice * 0.9 * 100) : Math.round(basePrice * 100);
+      // Use the basePrice directly since the discount has already been applied in the frontend
+      const finalPrice = Math.round(basePrice * 100);
 
       // Get package tier name for display
       let tierName;
@@ -267,7 +267,8 @@ serve(async (req) => {
               estimatedAdditions: estimatedAdditions.toString(),
               genre: genre || 'other',
               packageId,
-              isProDiscount: discountApplied ? 'true' : 'false'
+              isProDiscount: discountApplied ? 'true' : 'false',
+              discountPercent: discountApplied ? '25' : '0'
             },
             client_reference_id: promotion.id,
           });

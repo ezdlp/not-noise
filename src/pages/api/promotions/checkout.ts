@@ -1,3 +1,4 @@
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 import Stripe from 'stripe';
@@ -77,6 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         estimatedAdditions: promotionData.estimatedAdditions.toString(),
         genre: promotionData.genre,
         isProDiscount: isPro ? 'true' : 'false',
+        discountPercent: isPro ? '25' : '0'
       },
       customer_email: user.email,
     });

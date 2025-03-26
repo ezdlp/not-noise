@@ -196,7 +196,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         return;
       }
 
-      const finalPrice = isPro ? Math.round(tier.price * 0.9) : tier.price;
+      const finalPrice = isPro ? Math.round(tier.price * 0.75) : tier.price;
       
       const packageId = getPackageId(tier.name);
       
@@ -269,7 +269,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
   const calculatePrice = (basePrice: number) => {
     if (isPro) {
-      const discountedPrice = basePrice * 0.9;
+      const discountedPrice = basePrice * 0.75;
       return discountedPrice.toFixed(2);
     }
     return basePrice.toFixed(2);
@@ -308,7 +308,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                 </svg>
               </div>
               <p className="text-primary font-medium">
-                Pro Subscriber Benefit: You'll receive a 10% discount on your Spotify playlist promotion!
+                Pro Subscriber Benefit: You'll receive a 25% discount on your Spotify playlist promotion!
               </p>
             </div>
           </div>
@@ -333,7 +333,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
               const followersPerPlaylist = 8000;
               const totalReach = tier.submissions * followersPerPlaylist;
               const formattedReach = (totalReach).toLocaleString();
-              const proDiscount = Math.round(tier.price * 0.1);
+              const proDiscount = Math.round(tier.price * 0.25);
               
               return (
                 <Card 
