@@ -1,3 +1,4 @@
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,7 +20,21 @@ async function getSpotifyToken(): Promise<string> {
 
     if (error) throw error;
     
-    const credentials = data?.config_value as { client_id: string, client_secret: string };
+    // Parse the config_value which should be a JSON string
+    const credentialsValue = data?.config_value;
+    let credentials: { client_id: string, client_secret: string };
+    
+    if (typeof credentialsValue === 'string') {
+      try {
+        credentials = JSON.parse(credentialsValue);
+      } catch (e) {
+        throw new Error('Invalid Spotify credentials format in app config');
+      }
+    } else if (typeof credentialsValue === 'object') {
+      credentials = credentialsValue as { client_id: string, client_secret: string };
+    } else {
+      throw new Error('Spotify credentials not found in app config');
+    }
     
     if (!credentials?.client_id || !credentials?.client_secret) {
       throw new Error('Spotify credentials not found in app config');
