@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   HelpCircle,
+  FileAudio  // Add this import
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -31,24 +32,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
-// Custom Spotify icon component that uses the SVG file
-const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 48 48" 
-    width="24" 
-    height="24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5"  // Increased stroke width from 2 to 2.5
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    {...props}
-  >
-    <circle cx="24" cy="24" r="21.5" />
-    <path d="m12.3332,30.6695c8.1899-1.8711,15.215-1.0655,20.8822,2.3979m-21.6486-8.7867c7.8081-2.3692,17.5151-1.2216,24.1517,2.8567m-25.3671-9.8174c7.5945-2.3055,20.2195-1.8601,28.1974,2.876" />
-  </svg>
-);
+// Remove the custom SpotifyIcon component since we're using Lucide icon
 
 export function DashboardSidebar() {
   const location = useLocation();
@@ -238,7 +222,7 @@ export function DashboardSidebar() {
                   tooltip="Playlist Promotions"
                   className="transition-colors duration-200 relative px-3 text-sm h-10 min-w-0 w-full"
                 >
-                  <SpotifyIcon className="mr-2 h-4 w-4" />
+                  <FileAudio className="mr-2 h-4 w-4" />
                   <span className="flex items-center">
                     Playlist Promotions
                     <Badge variant="outline" className="ml-2 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold">

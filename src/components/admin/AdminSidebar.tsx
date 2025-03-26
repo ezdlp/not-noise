@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -6,10 +5,10 @@ import {
   FileText, 
   Users, 
   ImageIcon, 
-  Link2
+  Link2,
+  FileAudio
 } from 'lucide-react';
 
-// Custom Spotify icon component that uses the SVG file
 const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -18,7 +17,7 @@ const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     height="24" 
     fill="none" 
     stroke="currentColor" 
-    strokeWidth="2.5"  // Increased stroke width from 2 to 2.5
+    strokeWidth="2.5" 
     strokeLinecap="round" 
     strokeLinejoin="round"
     {...props}
@@ -36,19 +35,17 @@ export const AdminSidebar: React.FC = () => {
     { to: '/control-room/content', icon: <FileText size={18} />, label: 'Blog Content' },
     { to: '/control-room/users', icon: <Users size={18} />, label: 'Users' },
     { to: '/control-room/smart-links', icon: <Link2 size={18} />, label: 'Smart Links' },
-    { to: '/control-room/promotions', icon: <SpotifyIcon size={18} />, label: 'Playlist Promotions' },
+    { to: '/control-room/promotions', icon: <FileAudio size={18} />, label: 'Playlist Promotions' },
     { to: '/control-room/media-library', icon: <ImageIcon size={18} />, label: 'Media Library' },
   ];
 
   return (
     <div className="w-64 h-screen bg-gray-50 border-r border-gray-200 pt-4 flex flex-col overflow-y-auto">
-      {/* Admin Menu Header */}
       <div className="px-6 py-4 mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Control Room</h2>
         <p className="text-sm text-gray-500">Admin Dashboard</p>
       </div>
       
-      {/* Menu Items */}
       <nav className="flex-1">
         <ul className="px-4 space-y-1">
           {menuItems.map((item) => {
@@ -74,7 +71,6 @@ export const AdminSidebar: React.FC = () => {
         </ul>
       </nav>
       
-      {/* Bottom Section */}
       <div className="px-6 py-4 border-t border-gray-200 mt-auto">
         <div className="flex items-center">
           <div className="ml-3">
