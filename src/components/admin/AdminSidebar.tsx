@@ -18,7 +18,7 @@ const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     height="24" 
     fill="none" 
     stroke="currentColor" 
-    strokeWidth="2" 
+    strokeWidth="2.5"  // Increased stroke width from 2 to 2.5
     strokeLinecap="round" 
     strokeLinejoin="round"
     {...props}
