@@ -3,12 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Link2, 
   Lock, 
-  PieChart, 
   Users, 
   Settings,
   LogOut,
   HelpCircle,
-  FileAudio  // Add this import
+  FileAudio
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -32,8 +31,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
-// Remove the custom SpotifyIcon component since we're using Lucide icon
-
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,7 +38,7 @@ export function DashboardSidebar() {
   const sectionParam = searchParams.get('section');
   
   // Default section is smart-links
-  const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions' | 'analytics'>(
+  const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions'>(
     (sectionParam as any) || 'smart-links'
   );
   
@@ -50,7 +47,7 @@ export function DashboardSidebar() {
   
   // Handle URL parameter changes
   useEffect(() => {
-    const validSections = ['smart-links', 'email-subscribers', 'promotions', 'analytics'];
+    const validSections = ['smart-links', 'email-subscribers', 'promotions'];
     if (sectionParam && validSections.includes(sectionParam)) {
       // Check if user has access to this section
       if (sectionParam === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
@@ -62,7 +59,7 @@ export function DashboardSidebar() {
   }, [sectionParam, isFeatureEnabled, setShowUpgradeModal]);
 
   // Handle navigation from sidebar
-  const handleSectionChange = useCallback((section: 'smart-links' | 'email-subscribers' | 'promotions' | 'analytics') => {
+  const handleSectionChange = useCallback((section: 'smart-links' | 'email-subscribers' | 'promotions') => {
     // Don't do anything if we're already on this section
     if (section === activeSection) return;
     
@@ -147,7 +144,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar 
       variant="sidebar" 
-      className="w-72 transition-all duration-300"
+      className="w-64 transition-all duration-300"
     >
       <SidebarHeader className="px-4 py-3 flex items-center justify-between border-b">
         <div className="h-6 flex items-center">
@@ -245,18 +242,6 @@ export function DashboardSidebar() {
                   {!isFeatureEnabled('email_capture') && (
                     <Lock className="ml-1.5 h-3.5 w-3.5 opacity-70" />
                   )}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={isDashboardRoute && activeSection === 'analytics'}
-                  onClick={() => handleSectionChange('analytics')}
-                  tooltip="Analytics"
-                  className="transition-colors duration-200 relative px-3 text-sm h-10"
-                >
-                  <PieChart className="mr-2 h-4 w-4" />
-                  <span>Analytics</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
