@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useSmartLinkCreation } from "@/hooks/useSmartLinkCreation";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { SpotifyIcon } from "@/components/icons/SpotifyIcon";
 import {
   Sidebar,
   SidebarContent,
@@ -33,12 +32,34 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
+// Custom Spotify icon component since it's not available in Lucide
+const SpotifyIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    width="24" 
+    height="24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 14.5c2.5-1 5.5-.5 7.5.5" />
+    <path d="M8 11.5c3.5-1.5 8-.5 11 1.5" />
+    <path d="M8 8.5c4.5-2 10-1.5 14 1.5" />
+  </svg>
+);
+
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
   
+  // Default section is smart-links
   const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions' | 'analytics'>(
     (sectionParam as any) || 'smart-links'
   );
@@ -46,9 +67,11 @@ export function DashboardSidebar() {
   const { isFeatureEnabled } = useFeatureAccess();
   const { setShowUpgradeModal } = useSmartLinkCreation();
   
+  // Handle URL parameter changes
   useEffect(() => {
     const validSections = ['smart-links', 'email-subscribers', 'promotions', 'analytics'];
     if (sectionParam && validSections.includes(sectionParam)) {
+      // Check if user has access to this section
       if (sectionParam === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
         setShowUpgradeModal(true);
       } else {
@@ -57,20 +80,26 @@ export function DashboardSidebar() {
     }
   }, [sectionParam, isFeatureEnabled, setShowUpgradeModal]);
 
+  // Handle navigation from sidebar
   const handleSectionChange = useCallback((section: 'smart-links' | 'email-subscribers' | 'promotions' | 'analytics') => {
+    // Don't do anything if we're already on this section
     if (section === activeSection) return;
     
+    // Check feature access
     if (section === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
       setShowUpgradeModal(true);
       return;
     }
     
+    // Update URL to reflect section change (use replace to avoid growing history stack)
     navigate({
       pathname: '/dashboard',
       search: `?section=${section}`
     }, { replace: true });
     
+    // Change active section
     setActiveSection(section);
+    
   }, [activeSection, isFeatureEnabled, navigate, setShowUpgradeModal]);
 
   const { data: profile } = useQuery({
@@ -95,6 +124,7 @@ export function DashboardSidebar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { tier: 'free' };
 
+      // Separate queries to avoid join issues
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
@@ -108,12 +138,13 @@ export function DashboardSidebar() {
         tier: subscriptionData?.tier || 'free'
       };
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
   });
 
   const isPro = subscription?.tier === 'pro';
   
+  // User profile utilities
   const getInitials = (name: string) => {
     return name
       ?.split(' ')
@@ -128,6 +159,7 @@ export function DashboardSidebar() {
     navigate("/login");
   };
 
+  // Determine if the current route is a dashboard route for active states
   const isDashboardRoute = location.pathname === '/dashboard';
   const isSettingsRoute = location.pathname === '/settings';
 
@@ -149,6 +181,7 @@ export function DashboardSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="py-5 px-2 flex flex-col h-[calc(100%-3.5rem)]">
+        {/* User Profile Section */}
         <div className="px-2 py-2 mb-4">
           <div className="flex items-center gap-2">
             <Avatar 
@@ -182,6 +215,7 @@ export function DashboardSidebar() {
         
         <SidebarSeparator className="mb-2" />
         
+        {/* Main Navigation Section - Dashboard */}
         <div className="flex-grow px-1">
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-medium text-muted-foreground px-3 mb-1">
@@ -205,15 +239,12 @@ export function DashboardSidebar() {
                   isActive={isDashboardRoute && activeSection === 'promotions'}
                   onClick={() => handleSectionChange('promotions')}
                   tooltip="Playlist Promotions"
-                  className="transition-colors duration-200 relative px-3 text-sm h-10 w-full"
+                  className="transition-colors duration-200 relative px-3 text-sm h-10"
                 >
-                  <SpotifyIcon className="mr-2 h-4 w-4 text-[#1DB954]" />
-                  <span className="flex items-center mr-2">
+                  <SpotifyIcon className="mr-2 h-4 w-4" />
+                  <span className="flex items-center">
                     Playlist Promotions
-                    <Badge 
-                      variant="outline" 
-                      className="ml-2 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold"
-                    >
+                    <Badge variant="outline" className="ml-2 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold">
                       NEW
                     </Badge>
                   </span>
@@ -250,7 +281,8 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroup>
         </div>
-        
+       
+        {/* Bottom Section - Help, Settings, Logout */}
         <div className="mt-auto px-1">
           <SidebarSeparator className="mb-2" />
           <SidebarMenu>
@@ -292,4 +324,4 @@ export function DashboardSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-}
+} 
