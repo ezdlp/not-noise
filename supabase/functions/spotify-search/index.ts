@@ -79,8 +79,21 @@ async function getSpotifyItemFromUrl(token, url) {
     } else if (url.includes('/playlist/')) {
       itemType = 'playlist';
       spotifyId = url.split('/playlist/')[1].split('?')[0];
+    } else if (url.startsWith('spotify:track:')) {
+      itemType = 'track';
+      spotifyId = url.split('spotify:track:')[1];
+    } else if (url.startsWith('spotify:album:')) {
+      itemType = 'album';
+      spotifyId = url.split('spotify:album:')[1];
+    } else if (url.startsWith('spotify:playlist:')) {
+      itemType = 'playlist';
+      spotifyId = url.split('spotify:playlist:')[1];
+    } else if (/^[a-zA-Z0-9]{22}$/.test(url)) {
+      // Assume it's a track ID if it's just a string of the right length
+      itemType = 'track';
+      spotifyId = url;
     } else {
-      throw new Error('Invalid Spotify URL');
+      throw new Error('Invalid Spotify URL or ID format');
     }
     
     const endpoint = `https://api.spotify.com/v1/${itemType}s/${spotifyId}`;

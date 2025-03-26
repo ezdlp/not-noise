@@ -14,6 +14,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client with SERVICE ROLE key to bypass RLS
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+
+  // Also create a client with the user's token for user-specific operations
   const supabaseClient = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -173,7 +180,7 @@ serve(async (req) => {
       console.log('Artist ID:', artistId);
 
       try {
-        // Create a record in the promotions table
+        // Create a record in the promotions table - USING ADMIN CLIENT to bypass RLS
         console.log('Creating promotion database record with data:', {
           user_id: user.id,
           spotify_track_id: normalizedTrackId,
@@ -184,7 +191,7 @@ serve(async (req) => {
           total_cost: finalPrice / 100
         });
         
-        const { data: promotion, error: promotionError } = await supabaseClient
+        const { data: promotion, error: promotionError } = await supabaseAdmin
           .from('promotions')
           .insert({
             user_id: user.id,

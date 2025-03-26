@@ -5,18 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 // Spotify API base URL
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 
-// Define a simple interface for Spotify credentials
+// Define interface for credentials
 interface SpotifyCredentials {
   client_id: string;
   client_secret: string;
 }
 
-// Define the expected shape of config_value
+// Simplified type for config value
 type ConfigValue = string | Record<string, unknown>;
 
 /**
  * Get a Spotify API token using client credentials
- * Note: In production, this token should be cached to avoid rate limits
  */
 async function getSpotifyToken(): Promise<string> {
   try {
@@ -47,8 +46,8 @@ async function getSpotifyToken(): Promise<string> {
         typeof tempCreds.client_secret === 'string'
       ) {
         credentials = {
-          client_id: tempCreds.client_id as string,
-          client_secret: tempCreds.client_secret as string
+          client_id: tempCreds.client_id,
+          client_secret: tempCreds.client_secret
         };
       } else {
         throw new Error('Invalid Spotify credentials structure in app config');
