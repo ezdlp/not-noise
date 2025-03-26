@@ -95,22 +95,22 @@ export type Database = {
       }
       app_config: {
         Row: {
+          config_value: string
           created_at: string | null
           key: string
           updated_at: string | null
-          value: string
         }
         Insert: {
+          config_value: string
           created_at?: string | null
           key: string
           updated_at?: string | null
-          value: string
         }
         Update: {
+          config_value?: string
           created_at?: string | null
           key?: string
           updated_at?: string | null
-          value?: string
         }
         Relationships: []
       }
@@ -461,6 +461,120 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "blog_post_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_result_data: {
+        Row: {
+          ai_analysis: Json | null
+          campaign_id: string
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          raw_data: Json
+          stats: Json | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          raw_data: Json
+          stats?: Json | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          raw_data?: Json
+          stats?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_result_data_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_result_files: {
+        Row: {
+          created_at: string | null
+          file_path: string
+          id: string
+          processed: boolean | null
+          promotion_id: string
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_path: string
+          id?: string
+          processed?: boolean | null
+          promotion_id: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_path?: string
+          id?: string
+          processed?: boolean | null
+          promotion_id?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_result_files_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_results: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          file_path: string
+          id: string
+          processed_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          file_path: string
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          file_path?: string
+          id?: string
+          processed_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_results_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
             referencedColumns: ["id"]
           },
         ]
@@ -1037,6 +1151,7 @@ export type Database = {
           email: string | null
           hide_branding: boolean
           id: string
+          is_admin: boolean | null
           music_genre: string
           name: string
           updated_at: string | null
@@ -1048,6 +1163,7 @@ export type Database = {
           email?: string | null
           hide_branding?: boolean
           id: string
+          is_admin?: boolean | null
           music_genre: string
           name: string
           updated_at?: string | null
@@ -1059,6 +1175,7 @@ export type Database = {
           email?: string | null
           hide_branding?: boolean
           id?: string
+          is_admin?: boolean | null
           music_genre?: string
           name?: string
           updated_at?: string | null

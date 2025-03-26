@@ -119,7 +119,10 @@ export default function Promotions() {
         </TabsContent>
         
         <TabsContent value="campaign-results">
-          <CampaignResultsUploader promotions={promotions} isLoading={isLoading} />
+          <CampaignResultsUploader 
+            campaigns={promotions || []} 
+            isLoading={isLoading} 
+          />
         </TabsContent>
         
         <TabsContent value="tools">

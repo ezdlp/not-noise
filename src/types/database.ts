@@ -1,3 +1,32 @@
+export interface CampaignResultFiles {
+  id: string;
+  promotion_id: string;
+  file_path: string;
+  uploaded_by?: string;
+  processed: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CampaignResultData {
+  id: string;
+  campaign_id: string;
+  raw_data: any;
+  stats?: any;
+  ai_analysis?: any;
+  processed_at?: string;
+  created_at?: string;
+}
+
+export interface CampaignResults {
+  id: string;
+  campaign_id: string;
+  file_path: string;
+  status?: string;
+  processed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface Profile {
   id: string;
@@ -18,6 +47,7 @@ export interface Profile {
     is_early_adopter?: boolean;
     current_period_end?: string;
   }[];
+  is_admin?: boolean;
 }
 
 export interface UserRole {
@@ -102,9 +132,9 @@ export interface BlogPost {
 
 export interface SitemapLog {
   id: string;
-  status: string; // Changed from union type to string to match what comes from the database
+  status: string;
   message: string;
-  details: any; // Changed from Record<string, any> to any to accept any JSON value
+  details: any;
   source: string;
   created_at: string;
   updated_at: string;
@@ -112,7 +142,7 @@ export interface SitemapLog {
 
 export interface SitemapCache {
   key: string;
-  content?: string; // Make content optional since we often only need metadata
+  content?: string;
   etag: string;
   created_at: string;
   updated_at: string;

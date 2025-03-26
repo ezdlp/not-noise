@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,23 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircleIcon, CheckCircleIcon, FileTextIcon, UploadIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import Papa from "papaparse";
 
-export function CampaignResultsUploader() {
+type Campaign = {
+  id: string;
+  track_name: string;
+  artist_name: string;
+}
+
+type CampaignResultsUploaderProps = {
+  campaigns: Campaign[];
+  isLoading: boolean;
+}
+
+export function CampaignResultsUploader({ 
+  campaigns, 
+  isLoading 
+}: CampaignResultsUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
   const [csvData, setCsvData] = useState<any[]>([]);
@@ -21,21 +34,6 @@ export function CampaignResultsUploader() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  // Fetch active campaigns
-  const { data: campaigns, isLoading } = useQuery({
-    queryKey: ["active-campaigns"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("promotions")
-        .select("id, track_name, artist_name, status, created_at")
-        .in("status", ["active", "pending"])
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -110,13 +108,11 @@ export function CampaignResultsUploader() {
       setUploadProgress(10);
 
       // 1. Upload the file to Supabase Storage
-      const campaign = campaigns?.find(c => c.id === selectedCampaignId);
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
       const fileExt = file.name.split('.').pop();
       const fileName = `${selectedCampaignId}_${Date.now()}.${fileExt}`;
       const filePath = `${selectedCampaignId}/${fileName}`;
 
-      setUploadProgress(20);
-      
       const { error: uploadError } = await supabase.storage
         .from("campaign-result-files")
         .upload(filePath, file);
@@ -349,4 +345,4 @@ export function CampaignResultsUploader() {
       </CardContent>
     </Card>
   );
-} 
+}
