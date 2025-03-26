@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -13,29 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PromotionSignupModal } from "./PromotionSignupModal";
 import { useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { PricingTier, SelectedTrack } from "@/types/spotify-promotion";
 
 interface PricingPlanProps {
   onSubmit?: (submissions: number, totalCost: number) => void;
-  selectedTrack?: {
-    title: string;
-    artist: string;
-    id: string;
-    artistId: string;
-    genre?: string;
-  };
-}
-
-interface PricingTier {
-  name: string;
-  submissions: number;
-  minAdds: number;
-  maxAdds: number;
-  price: number;
-  discount: number;
-  popular?: boolean;
-  features: string[];
-  vinylImage: string;
-  priceId: string;
+  selectedTrack?: SelectedTrack;
 }
 
 const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) => {
@@ -181,6 +164,29 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     }
   };
 
+  // Function to normalize and validate Spotify track ID
+  const normalizeTrackId = (trackId: string) => {
+    // If it's already in spotify:track:ID format
+    if (trackId.startsWith('spotify:track:')) {
+      return trackId;
+    }
+    
+    // If it's a URL
+    if (trackId.includes('spotify.com/track/')) {
+      const parts = trackId.split('/track/');
+      const id = parts[1]?.split('?')[0];
+      return id ? `spotify:track:${id}` : trackId;
+    }
+    
+    // If it's just an ID, convert to URI format
+    if (/^[a-zA-Z0-9]{22}$/.test(trackId)) {
+      return `spotify:track:${trackId}`;
+    }
+    
+    // Return as is if we can't determine the format
+    return trackId;
+  };
+
   const handleCheckout = async (tier: typeof tiers[0]) => {
     try {
       setIsProcessing(true);
@@ -200,49 +206,59 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
       
       const packageId = getPackageId(tier.name);
       
+      // Format track ID and artist ID appropriately
+      const spotifyTrackId = selectedTrack.id || '';
+      
       console.log('Initiating checkout:', {
         packageId,
-        trackId: selectedTrack.id,
+        trackId: spotifyTrackId,
+        artistId: selectedTrack.artistId,
         price: finalPrice
       });
       
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          packageId,
-          trackId: selectedTrack.id,
-          trackName: selectedTrack.title,
-          artistName: selectedTrack.artist,
-          genre: selectedTrack.genre || 'other',
-          basePrice: finalPrice,
-          discountApplied: isPro
-        }
-      });
-
-      if (error) {
-        console.error('Checkout error:', error);
-        setCheckoutError(`Error: ${error.message || 'Failed to create checkout session'}`);
-        throw new Error(error.message || 'Failed to create checkout session');
-      }
-      
-      if (!data?.checkoutUrl) {
-        console.error('No checkout URL received:', data);
-        setCheckoutError("Error: Unable to create checkout session. Please try again or contact support.");
-        throw new Error('Unable to create checkout session');
-      }
-      
       try {
-        localStorage.setItem('lastPromotionTrack', JSON.stringify({
-          title: selectedTrack.title,
-          artist: selectedTrack.artist,
-          id: selectedTrack.id,
-          packageId: packageId
-        }));
-      } catch (storageError) {
-        console.warn('Could not save to localStorage:', storageError);
+        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+          body: {
+            packageId,
+            trackId: spotifyTrackId,
+            artistId: selectedTrack.artistId,
+            trackName: selectedTrack.title,
+            artistName: selectedTrack.artist,
+            genre: selectedTrack.genre || 'other',
+            basePrice: finalPrice,
+            discountApplied: isPro
+          }
+        });
+
+        if (error) {
+          console.error('Checkout error:', error);
+          setCheckoutError(`Error: ${error.message || 'Failed to create checkout session'}`);
+          throw new Error(error.message || 'Failed to create checkout session');
+        }
+        
+        if (!data?.checkoutUrl) {
+          console.error('No checkout URL received:', data);
+          setCheckoutError("Error: Unable to create checkout session. Please try again or contact support.");
+          throw new Error('Unable to create checkout session');
+        }
+        
+        try {
+          localStorage.setItem('lastPromotionTrack', JSON.stringify({
+            title: selectedTrack.title,
+            artist: selectedTrack.artist,
+            id: selectedTrack.id,
+            packageId: packageId
+          }));
+        } catch (storageError) {
+          console.warn('Could not save to localStorage:', storageError);
+        }
+        
+        window.location.href = data.checkoutUrl;
+        
+      } catch (apiError) {
+        console.error('API error during checkout:', apiError);
+        throw apiError;
       }
-      
-      window.location.href = data.checkoutUrl;
-      
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({

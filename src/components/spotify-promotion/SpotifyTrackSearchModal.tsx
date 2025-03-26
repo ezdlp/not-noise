@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ type SpotifyTrack = {
   title: string;
   artist: string;
   artworkUrl: string;
+  artistId?: string;
   spotifyId?: string;
   spotifyUrl: string;
   releaseDate?: string;
@@ -72,6 +74,15 @@ export function SpotifyTrackSearchModal({ isOpen, onClose }: SpotifyTrackSearchM
     // Close the modal
     onClose();
     
+    // Add more logging for debugging
+    console.log('Selected track details:', {
+      title: track.title,
+      artist: track.artist,
+      id: track.id,
+      artistId: track.artistId,
+      artworkUrl: track.artworkUrl
+    });
+    
     // Redirect to the pricing page with the selected track
     navigate('/spotify-playlist-promotion/pricing', {
       state: {
@@ -79,7 +90,7 @@ export function SpotifyTrackSearchModal({ isOpen, onClose }: SpotifyTrackSearchM
           title: track.title,
           artist: track.artist,
           id: track.id || track.spotifyId || "",
-          artistId: track.id || track.spotifyId || "",
+          artistId: track.artistId || "",
           artworkUrl: track.artworkUrl,
           genre: undefined
         }
@@ -156,4 +167,4 @@ export function SpotifyTrackSearchModal({ isOpen, onClose }: SpotifyTrackSearchM
       </DialogContent>
     </Dialog>
   );
-} 
+}

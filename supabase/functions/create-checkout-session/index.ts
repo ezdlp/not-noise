@@ -62,6 +62,7 @@ serve(async (req) => {
     let requestData;
     try {
       requestData = await req.json();
+      console.log("Request data received:", JSON.stringify(requestData, null, 2));
     } catch (jsonError) {
       console.error('Error parsing request body:', jsonError);
       throw new Error('Invalid request format');
@@ -85,7 +86,12 @@ serve(async (req) => {
 
       // Validate required parameters
       if (!packageId || !trackId || !trackName || !artistName || !basePrice) {
-        throw new Error('Missing required parameters for promotion checkout');
+        throw new Error(`Missing required parameters for promotion checkout: 
+          packageId: ${packageId}, 
+          trackId: ${trackId}, 
+          trackName: ${trackName}, 
+          artistName: ${artistName}, 
+          basePrice: ${basePrice}`);
       }
 
       console.log('Creating promotion checkout session...', { 
@@ -129,91 +135,135 @@ serve(async (req) => {
           estimatedAdditions = 5;
       }
 
-      // Create a record in the promotions table
-      const { data: promotion, error: promotionError } = await supabaseClient
-        .from('promotions')
-        .insert({
-          user_id: user.id,
-          spotify_track_id: trackId,
-          track_name: trackName,
-          track_artist: artistName,
-          spotify_artist_id: trackId.split(':')[2] || '', // Extract artist ID from track ID
-          genre: genre || 'other',
-          total_cost: finalPrice / 100, // Store price in dollars
-          status: 'pending', // Use 'pending' as it's one of the allowed values
-          created_at: new Date().toISOString(),
-          submission_count: submissionCount,
-          estimated_additions: estimatedAdditions,
-          success_rate: 0, // Initialize at 0
-          initial_streams: 0, // Optional but good to initialize
-          final_streams: null // Optional
-        })
-        .select('id')
-        .single();
-
-      if (promotionError) {
-        console.error('Error creating promotion:', promotionError);
-        throw new Error('Failed to create promotion record: ' + promotionError.message);
+      // Parse and normalize the Spotify track ID
+      // It might come in different formats: full URI, ID only, or URL format
+      let normalizedTrackId = trackId;
+      let artistId = '';
+      
+      // Extract artist ID if possible (might be passed directly or part of trackId)
+      if (trackId.includes(':artist:')) {
+        const parts = trackId.split(':');
+        artistId = parts[parts.indexOf('artist') + 1] || '';
+      } else if (requestData.artistId) {
+        artistId = requestData.artistId;
       }
+      
+      // Normalize track ID format
+      if (trackId.includes('spotify:track:')) {
+        // Format: spotify:track:1234567890
+        const parts = trackId.split(':');
+        normalizedTrackId = parts[parts.length - 1];
+      } else if (trackId.includes('spotify.com/track/')) {
+        // Format: https://open.spotify.com/track/1234567890
+        const parts = trackId.split('/track/');
+        normalizedTrackId = parts[1].split('?')[0];
+      }
+      
+      console.log('Normalized track ID:', normalizedTrackId);
+      console.log('Artist ID:', artistId);
 
-      // Create Stripe checkout session
       try {
-        const session = await stripe.checkout.sessions.create({
-          customer: customer_id,
-          customer_email: customer_id ? undefined : email,
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: 'usd',
-                product_data: {
-                  name: `${tierName} Promotion Package`,
-                  description: `Spotify playlist promotion for "${trackName}" by ${artistName}`,
-                  metadata: {
-                    promotionId: promotion.id,
-                    trackId,
-                    packageId,
-                  },
-                },
-                unit_amount: finalPrice,
-              },
-              quantity: 1,
-            },
-          ],
-          mode: 'payment',
-          success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion?canceled=true`,
-          metadata: {
-            promotionId: promotion.id,
-            userId: user.id,
-            type: 'promotion',
-            trackName,
-            trackArtist: artistName,
-            spotifyTrackId: trackId,
-            spotifyArtistId: trackId.split(':')[2] || '',
-            submissionCount: submissionCount.toString(),
-            estimatedAdditions: estimatedAdditions.toString(),
+        // Create a record in the promotions table
+        const { data: promotion, error: promotionError } = await supabaseClient
+          .from('promotions')
+          .insert({
+            user_id: user.id,
+            spotify_track_id: normalizedTrackId,
+            track_name: trackName,
+            track_artist: artistName,
+            spotify_artist_id: artistId || normalizedTrackId, // Fallback to track ID if artist ID is not available
             genre: genre || 'other',
-            packageId,
-            isProDiscount: discountApplied ? 'true' : 'false'
-          },
-          client_reference_id: promotion.id,
-        });
+            total_cost: finalPrice / 100, // Store price in dollars
+            status: 'pending', // Use 'pending' as it's one of the allowed values
+            created_at: new Date().toISOString(),
+            submission_count: submissionCount,
+            estimated_additions: estimatedAdditions,
+            success_rate: 0 // Initialize at 0
+          })
+          .select('id')
+          .single();
 
-        // Return the checkout URL
-        return new Response(
-          JSON.stringify({
-            checkoutUrl: session.url,
-            promotionId: promotion.id,
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
-      } catch (stripeError) {
-        console.error('Stripe checkout session creation error:', stripeError);
-        throw new Error(`Stripe error: ${stripeError.message}`);
+        if (promotionError) {
+          console.error('Error creating promotion:', promotionError);
+          console.error('Attempted data:', {
+            user_id: user.id,
+            spotify_track_id: normalizedTrackId,
+            track_name: trackName,
+            track_artist: artistName,
+            spotify_artist_id: artistId || normalizedTrackId,
+            genre: genre || 'other',
+            total_cost: finalPrice / 100
+          });
+          throw new Error('Failed to create promotion record: ' + promotionError.message);
+        }
+
+        // Create Stripe checkout session
+        try {
+          const session = await stripe.checkout.sessions.create({
+            customer: customer_id,
+            customer_email: customer_id ? undefined : email,
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: `${tierName} Promotion Package`,
+                    description: `Spotify playlist promotion for "${trackName}" by ${artistName}`,
+                    metadata: {
+                      promotionId: promotion.id,
+                      trackId: normalizedTrackId,
+                      packageId,
+                    },
+                  },
+                  unit_amount: finalPrice,
+                },
+                quantity: 1,
+              },
+            ],
+            mode: 'payment',
+            success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion?canceled=true`,
+            metadata: {
+              promotionId: promotion.id,
+              userId: user.id,
+              type: 'promotion',
+              trackName,
+              trackArtist: artistName,
+              spotifyTrackId: normalizedTrackId,
+              spotifyArtistId: artistId || normalizedTrackId,
+              submissionCount: submissionCount.toString(),
+              estimatedAdditions: estimatedAdditions.toString(),
+              genre: genre || 'other',
+              packageId,
+              isProDiscount: discountApplied ? 'true' : 'false'
+            },
+            client_reference_id: promotion.id,
+          });
+
+          console.log('Stripe checkout session created successfully:', {
+            sessionId: session.id,
+            url: session.url
+          });
+
+          // Return the checkout URL
+          return new Response(
+            JSON.stringify({
+              checkoutUrl: session.url,
+              promotionId: promotion.id,
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            }
+          );
+        } catch (stripeError) {
+          console.error('Stripe checkout session creation error:', stripeError);
+          throw new Error(`Stripe error: ${stripeError.message}`);
+        }
+      } catch (dbError) {
+        console.error('Database operation error:', dbError);
+        throw new Error(`Database error: ${dbError.message}`);
       }
     } else {
       // Handle regular subscription checkout flow

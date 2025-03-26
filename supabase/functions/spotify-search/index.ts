@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
@@ -99,6 +100,7 @@ async function getSpotifyItemFromUrl(token, url) {
         id: data.id,
         title: data.name,
         artist: data.artists[0]?.name || 'Unknown Artist',
+        artistId: data.artists[0]?.id || '',
         artworkUrl: data.album?.images[0]?.url || '',
         content_type: 'track',
         spotifyUrl: data.external_urls?.spotify || url,
@@ -110,6 +112,7 @@ async function getSpotifyItemFromUrl(token, url) {
         id: data.id,
         title: data.name,
         artist: data.artists[0]?.name || 'Unknown Artist',
+        artistId: data.artists[0]?.id || '',
         artworkUrl: data.images[0]?.url || '',
         content_type: 'album',
         spotifyUrl: data.external_urls?.spotify || url,
@@ -122,6 +125,7 @@ async function getSpotifyItemFromUrl(token, url) {
         id: data.id,
         title: data.name,
         artist: data.owner?.display_name || 'Unknown Creator',
+        artistId: data.owner?.id || '',
         artworkUrl: data.images[0]?.url || '',
         content_type: 'playlist',
         spotifyUrl: data.external_urls?.spotify || url,
@@ -154,12 +158,13 @@ serve(async (req) => {
     } else if (body.query) {
       const searchData = await searchSpotify(token, body.query);
       
-      // Safely transform search results with null checking
+      // Safely transform search results with null checking and include artist IDs
       responseData = {
         tracks: Array.isArray(searchData.tracks?.items) ? searchData.tracks.items.map((track) => ({
           id: track.id,
           title: track.name,
           artist: track.artists?.[0]?.name || 'Unknown Artist',
+          artistId: track.artists?.[0]?.id || '',
           artworkUrl: track.album?.images?.[0]?.url || '',
           content_type: 'track',
           spotifyUrl: track.external_urls?.spotify || '',
@@ -170,6 +175,7 @@ serve(async (req) => {
           id: album.id,
           title: album.name,
           artist: album.artists?.[0]?.name || 'Unknown Artist',
+          artistId: album.artists?.[0]?.id || '',
           artworkUrl: album.images?.[0]?.url || '',
           content_type: 'album',
           spotifyUrl: album.external_urls?.spotify || '',
