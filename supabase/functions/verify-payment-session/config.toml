@@ -1,2 +1,11 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
+
+# Environment variables
+[config]
+env_vars = [
+  "STRIPE_SECRET_KEY",
+  "SUPABASE_URL",
+  "SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY"
+]

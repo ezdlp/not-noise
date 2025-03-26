@@ -12,6 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PromotionSignupModal } from "./PromotionSignupModal";
 import { useEffect } from "react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface PricingPlanProps {
   onSubmit?: (submissions: number, totalCost: number) => void;
@@ -44,15 +45,14 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check initial auth state and subscription
     const checkAuthAndSubscription = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
       
       if (session?.user) {
-        // Fetch user subscription
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
@@ -69,12 +69,10 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
     checkAuthAndSubscription();
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setIsAuthenticated(!!session);
       
       if (session?.user) {
-        // Fetch user subscription on auth change
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
@@ -177,10 +175,8 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     setSelectedTier(tier);
 
     if (isAuthenticated) {
-      // If user is authenticated, proceed directly to checkout
       handleCheckout(tier);
     } else {
-      // If user is not authenticated, show signup modal
       setShowSignupModal(true);
     }
   };
@@ -188,6 +184,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   const handleCheckout = async (tier: typeof tiers[0]) => {
     try {
       setIsProcessing(true);
+      setCheckoutError(null);
       
       if (!selectedTrack) {
         toast({
@@ -199,20 +196,16 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         return;
       }
 
-      // Calculate final price with discount
       const finalPrice = isPro ? Math.round(tier.price * 0.9) : tier.price;
       
-      // Get package ID from tier name
       const packageId = getPackageId(tier.name);
       
-      // Log checkout attempt for debugging
       console.log('Initiating checkout:', {
         packageId,
         trackId: selectedTrack.id,
         price: finalPrice
       });
       
-      // Call the Supabase Edge Function instead of the API route
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           packageId,
@@ -227,21 +220,33 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
       if (error) {
         console.error('Checkout error:', error);
+        setCheckoutError(`Error: ${error.message || 'Failed to create checkout session'}`);
         throw new Error(error.message || 'Failed to create checkout session');
       }
       
       if (!data?.checkoutUrl) {
         console.error('No checkout URL received:', data);
+        setCheckoutError("Error: Unable to create checkout session. Please try again or contact support.");
         throw new Error('Unable to create checkout session');
       }
       
-      // Redirect to Stripe checkout
+      try {
+        localStorage.setItem('lastPromotionTrack', JSON.stringify({
+          title: selectedTrack.title,
+          artist: selectedTrack.artist,
+          id: selectedTrack.id,
+          packageId: packageId
+        }));
+      } catch (storageError) {
+        console.warn('Could not save to localStorage:', storageError);
+      }
+      
       window.location.href = data.checkoutUrl;
       
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
-        title: "Error",
+        title: "Checkout Error",
         description: error instanceof Error ? error.message : "There was an error processing your request. Please try again.",
         variant: "destructive"
       });
@@ -253,16 +258,14 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     }
   };
 
-  // Calculate price with discount if applicable
   const calculatePrice = (basePrice: number) => {
     if (isPro) {
-      const discountedPrice = basePrice * 0.9; // 10% discount
+      const discountedPrice = basePrice * 0.9;
       return discountedPrice.toFixed(2);
     }
     return basePrice.toFixed(2);
   };
 
-  // Get package ID from tier name
   const getPackageId = (tierName: string): string => {
     switch (tierName.toLowerCase()) {
       case 'silver':
@@ -287,7 +290,6 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   return (
     <>
       <div className="container py-12 px-4 mx-auto">
-        {/* Pro Discount Alert - Show only for Pro users */}
         {isPro && (
           <div className="mb-8 p-4 bg-primary/10 border border-primary/20 rounded-lg">
             <div className="flex items-center gap-2">
@@ -303,6 +305,18 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
           </div>
         )}
 
+        {checkoutError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle>Checkout Error</AlertTitle>
+            <AlertDescription>
+              {checkoutError}
+              <div className="mt-2">
+                <p className="text-sm">Please try again or contact our support team if the problem persists.</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-8">
           <div className="grid md:grid-cols-3 gap-6">
             {tiers.map((tier) => {
@@ -310,7 +324,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
               const followersPerPlaylist = 8000;
               const totalReach = tier.submissions * followersPerPlaylist;
               const formattedReach = (totalReach).toLocaleString();
-              const proDiscount = Math.round(tier.price * 0.1); // Calculate 10% discount
+              const proDiscount = Math.round(tier.price * 0.1);
               
               return (
                 <Card 
@@ -383,7 +397,6 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                         </div>
                       </div>
                       
-                      {/* Features */}
                       <div className="border-t border-white/30 pt-4">
                         <p className="text-sm font-medium text-white mb-2 drop-shadow-sm">What's included:</p>
                         <ul className="space-y-2 text-left text-sm">

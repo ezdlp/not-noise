@@ -875,6 +875,89 @@ export type Database = {
           },
         ]
       }
+      playlist_campaigns: {
+        Row: {
+          accepted_count: number | null
+          artist_name: string
+          artwork_url: string | null
+          created_at: string
+          declined_count: number | null
+          genre: string | null
+          id: string
+          release_date: string | null
+          spotify_track_id: string | null
+          status: string
+          total_submissions: number | null
+          track_title: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_count?: number | null
+          artist_name: string
+          artwork_url?: string | null
+          created_at?: string
+          declined_count?: number | null
+          genre?: string | null
+          id?: string
+          release_date?: string | null
+          spotify_track_id?: string | null
+          status?: string
+          total_submissions?: number | null
+          track_title: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_count?: number | null
+          artist_name?: string
+          artwork_url?: string | null
+          created_at?: string
+          declined_count?: number | null
+          genre?: string | null
+          id?: string
+          release_date?: string | null
+          spotify_track_id?: string | null
+          status?: string
+          total_submissions?: number | null
+          track_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playlist_submissions: {
+        Row: {
+          campaign_id: string
+          curator_name: string
+          feedback: string | null
+          id: string
+          status: string
+          timestamp: string
+        }
+        Insert: {
+          campaign_id: string
+          curator_name: string
+          feedback?: string | null
+          id?: string
+          status?: string
+          timestamp?: string
+        }
+        Update: {
+          campaign_id?: string
+          curator_name?: string
+          feedback?: string | null
+          id?: string
+          status?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_submissions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "playlist_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playlists: {
         Row: {
           category: Database["public"]["Enums"]["playlist_category"]
