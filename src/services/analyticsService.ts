@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsEvent {
@@ -21,67 +20,108 @@ class AnalyticsService {
   private lastTrackedPath: string | null = null;
   private lastTrackedTime: number = 0;
   private pageViewCount: number = 0;
+  private pendingPageViews: Set<string> = new Set();
+  private isProcessingPageView: boolean = false;
 
   constructor() {
     this.sessionId = this.getOrCreateSessionId();
-    console.log('Analytics session initialized with ID:', this.sessionId);
+    // Reduce logging in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Analytics session initialized with ID:', this.sessionId);
+    }
   }
 
   private getOrCreateSessionId(): string {
     // Try to get existing session ID from storage
     const existingSession = sessionStorage.getItem('analytics_session_id');
     if (existingSession) {
-      console.log('[Analytics] Using existing session ID:', existingSession);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Using existing session ID:', existingSession);
+      }
       return existingSession;
     }
 
     // Create new session ID if none exists
     const newSession = Math.random().toString(36).substring(2) + Date.now().toString(36);
     sessionStorage.setItem('analytics_session_id', newSession);
-    console.log('[Analytics] Created new session ID:', newSession);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Analytics] Created new session ID:', newSession);
+    }
     return newSession;
   }
 
   async trackPageView(url: string) {
     // Skip tracking for non-URL values or empty paths
     if (!url || typeof url !== 'string') {
-      console.log('[Analytics] Invalid URL provided for tracking:', url);
       return;
     }
     
     // Skip tracking for smart links at this level (they're tracked separately)
     if (url.startsWith('/link/')) {
-      console.log('[Analytics] Skipping page view tracking for smart link:', url);
       return;
     }
 
-    // Implement de-duplication logic with a more robust approach
+    // Add exponential back-off for repeated tracking attempts
+    // to prevent browser throttling
     const now = Date.now();
-    const isDuplicate = url === this.lastTrackedPath && (now - this.lastTrackedTime < 2000);
+    const timeSinceLastTracking = now - this.lastTrackedTime;
     
+    // If the same URL is tracked within a short time frame, skip it
+    const isDuplicate = url === this.lastTrackedPath && timeSinceLastTracking < 2000;
     if (isDuplicate) {
-      console.log('[Analytics] Skipping duplicate page view within 2 seconds:', url);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Skipping duplicate page view within 2 seconds:', url);
+      }
       return;
     }
-
-    // Initialize tracking if first view
-    if (!this.isInitialized) {
-      this.isInitialized = true;
-      console.log('[Analytics] Initializing tracking for session:', this.sessionId);
-      
-      // Get location info in the background without blocking
-      this.getLocationInfo().catch(error => 
-        console.error('[Analytics] Failed to get location info:', error)
-      );
-    }
-
-    this.pageViewCount++;
+    
+    // Add to pending queue
+    this.pendingPageViews.add(url);
+    
+    // Update tracking state
     this.lastTrackedPath = url;
     this.lastTrackedTime = now;
-
-    console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', this.sessionId);
     
-    try {      
+    // If already processing a view, the next one will be picked up from the queue
+    if (this.isProcessingPageView) {
+      return;
+    }
+    
+    // Process queue
+    this.processNextPageView();
+  }
+  
+  private async processNextPageView() {
+    if (this.pendingPageViews.size === 0 || this.isProcessingPageView) {
+      return;
+    }
+    
+    this.isProcessingPageView = true;
+    
+    // Get the next URL from the queue
+    const url = Array.from(this.pendingPageViews)[0];
+    this.pendingPageViews.delete(url);
+    
+    try {
+      // Initialize tracking if first view
+      if (!this.isInitialized) {
+        this.isInitialized = true;
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[Analytics] Initializing tracking for session:', this.sessionId);
+        }
+        
+        // Get location info in the background without blocking
+        this.getLocationInfo().catch(() => {
+          // Silent fail - location info is optional
+        });
+      }
+
+      this.pageViewCount++;
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Tracking page view #' + this.pageViewCount + ' for:', url, 'Session:', this.sessionId);
+      }
+      
       // Track basic page view immediately without waiting for location
       const baseData = {
         url,
@@ -93,8 +133,11 @@ class AnalyticsService {
       const locationInfo = await this.getLocationInfo();
       
       // Track in Supabase with location info if available
-      console.log('[Analytics] Inserting page view into analytics_page_views table');
-      const { data, error } = await supabase.from('analytics_page_views').insert({
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Inserting page view into analytics_page_views table');
+      }
+      
+      const { error } = await supabase.from('analytics_page_views').insert({
         ...baseData,
         ...(locationInfo && {
           country: locationInfo.country,
@@ -105,13 +148,19 @@ class AnalyticsService {
 
       if (error) {
         console.error('[Analytics] Error inserting page view:', error);
-      } else {
+      } else if (process.env.NODE_ENV !== 'production') {
         console.log('[Analytics] Page view tracked successfully in Supabase');
       }
     } catch (error) {
       console.error('[Analytics] Error tracking page view:', error);
-      // Don't throw error to prevent breaking the app
-      // but log it for debugging
+    } finally {
+      this.isProcessingPageView = false;
+      
+      // Check if there are more items in the queue
+      if (this.pendingPageViews.size > 0) {
+        // Add a small delay to prevent rapid API calls
+        setTimeout(() => this.processNextPageView(), 100);
+      }
     }
   }
 
@@ -122,7 +171,10 @@ class AnalyticsService {
     }
 
     try {
-      console.log('[Analytics] Fetching location info');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Fetching location info');
+      }
+      
       const { data, error } = await supabase.functions.invoke('get-location');
       
       if (error) {
@@ -143,7 +195,10 @@ class AnalyticsService {
         ip_hash: ipHash
       };
 
-      console.log('[Analytics] Location info retrieved:', this.locationInfo);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Analytics] Location info retrieved:', this.locationInfo);
+      }
+      
       return this.locationInfo;
     } catch (error) {
       console.error('[Analytics] Error getting location info:', error);
@@ -153,7 +208,10 @@ class AnalyticsService {
 
   async trackEvent(event: AnalyticsEvent) {
     try {
-      console.log('Tracking event:', event.event_type, event.event_data);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Tracking event:', event.event_type, event.event_data);
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       // Track in Supabase
@@ -241,11 +299,15 @@ class AnalyticsService {
   }
 
   private async hashIP(ip: string): Promise<string> {
+    // Use subtle crypto API to hash the IP address
     const encoder = new TextEncoder();
-    const data = encoder.encode(ip);
+    const data = encoder.encode(ip + navigator.userAgent);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Convert the hash to a hex string
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 }
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, useLocation, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +7,7 @@ import Header from "@/components/layout/Header";
 import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
 import { switchToSmartLinkTracking } from "@/services/ga4";
 import { analyticsService } from "@/services/analyticsService";
+import { HelmetProvider } from 'react-helmet-async';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -16,6 +16,7 @@ function AppLayout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/control-room');
   const isSmartLinkRoute = location.pathname.startsWith('/link/');
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
   const isAuthRoute = location.pathname === '/login' || 
                      location.pathname === '/register' || 
                      location.pathname === '/reset-password' ||
@@ -39,7 +40,7 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
-      {!isAdminRoute && !isSmartLinkRoute && !isAuthRoute && <Header />}
+      {!isAdminRoute && !isSmartLinkRoute && !isDashboardRoute && !isAuthRoute && <Header />}
       <AppContent />
       <CookieConsent />
     </div>
@@ -49,11 +50,13 @@ function AppLayout() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <SidebarProvider>
-          <AppLayout />
-        </SidebarProvider>
-      </Router>
+      <HelmetProvider>
+        <Router>
+          <SidebarProvider>
+            <AppLayout />
+          </SidebarProvider>
+        </Router>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 }

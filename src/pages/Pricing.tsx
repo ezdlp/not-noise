@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -355,6 +354,10 @@ export default function Pricing() {
                           </Tooltip>
                         </TooltipProvider>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
+                      10% discount on <a href="/spotify-playlist-promotion" className="text-primary hover:underline">Spotify Playlist Promotion Campaigns</a>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-primary" />

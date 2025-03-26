@@ -1,0 +1,16 @@
+# Config for the create-checkout-session Edge Function
+
+# Allowed imports
+import_map = "../_shared/import_map.json"
+
+# Set custom headers for CORS and content types
+[config]
+env_vars = [
+  "STRIPE_SECRET_KEY",
+  "SUPABASE_URL",
+  "SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY"
+]
+
+[params]
+# Function specific parameters 

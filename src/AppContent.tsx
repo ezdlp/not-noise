@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
@@ -11,7 +10,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 
 // Lazy load non-critical routes
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Dashboard = lazy(() => import("@/pages/DashboardWithSidebar"));
 const SmartLink = lazy(() => import("@/pages/SmartLink"));
 const SmartLinkAnalytics = lazy(() => import("@/pages/SmartLinkAnalytics"));
 const CreateSmartLink = lazy(() => import("@/pages/CreateSmartLink"));
@@ -23,7 +22,8 @@ const Blog = lazy(() => import("@/pages/Blog"));
 const PublicBlogPost = lazy(() => import("@/pages/PublicBlogPost"));
 const SpotifyPlaylistPromotion = lazy(() => import("@/pages/SpotifyPlaylistPromotion"));
 const PricingSection = lazy(() => import("@/pages/SpotifyPlaylistPromotion/components/PricingSection"));
-const SuccessPage = lazy(() => import("@/pages/SpotifyPlaylistPromotion/components/SuccessPage"));
+const PromotionSuccessPage = lazy(() => import("@/pages/spotify-playlist-promotion/success"));
+const CampaignDetail = lazy(() => import("@/pages/spotify-playlist-promotion/campaigns/CampaignDetail"));
 const Help = lazy(() => import("@/pages/Help"));
 const StreamingCalculator = lazy(() => import("@/pages/StreamingCalculator"));
 const AdminOverview = lazy(() => import("@/pages/admin/Overview"));
@@ -140,7 +140,12 @@ export default function AppContent() {
         } />
         <Route path="success" element={
           <Suspense fallback={<LoadingSpinner />}>
-            <SuccessPage />
+            <PromotionSuccessPage />
+          </Suspense>
+        } />
+        <Route path="campaigns/:id" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <CampaignDetail />
           </Suspense>
         } />
       </Route>

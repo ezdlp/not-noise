@@ -33,6 +33,14 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
     },
     {
+      "source": "/api/payments/create-promotion-checkout",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/create-checkout-session"
+    },
+    {
+      "source": "/api/spotify/search",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

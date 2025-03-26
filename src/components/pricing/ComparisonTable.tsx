@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Check, HelpCircle, X, Clock, Sparkles, Link, BarChart3, Download, ArrowUpDown, Mail, Instagram, Palette, HeadphonesIcon, Zap, DollarSign } from "lucide-react";
 import {
@@ -28,6 +27,16 @@ const ComparisonTable = () => {
       free: "Up to 10 smart links",
       pro: "Unlimited smart links",
       info: "Create trackable smart links for your music",
+    },
+    {
+      name: "Spotify Playlist Promotion",
+      icon: <HeadphonesIcon className="h-4 w-4" />,
+      free: "Regular pricing",
+      pro: <div className="font-medium">
+        <a href="/spotify-playlist-promotion" className="text-primary hover:underline">10% discount on all campaigns</a>
+        <span className="ml-2 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-white">NEW</span>
+      </div>,
+      info: "Get your music heard by new listeners through our curated playlist promotion service",
     },
     {
       name: "Music Platforms",

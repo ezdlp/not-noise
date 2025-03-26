@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,20 +16,40 @@ const FREE_PLATFORMS = [
 
 export function useFeatureAccess() {
   const { data: subscription } = useQuery({
-    queryKey: ["subscription"],
+    queryKey: ["feature-access-subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      // Separate queries to avoid join issues
+      const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
-        .select("*, subscription_features!inner(*)")
+        .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (subscriptionError) throw subscriptionError;
+      
+      // Default to free tier if no subscription data found
+      const tier = subscriptionData?.tier || 'free';
+      
+      // Get features for this tier
+      const { data: features, error: featuresError } = await supabase
+        .from("subscription_features")
+        .select("*")
+        .eq("tier", tier);
+        
+      if (featuresError) throw featuresError;
+      
+      return {
+        ...subscriptionData,
+        features,
+        tier
+      };
     },
+    // Add these options to prevent constant refetching
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   const isFeatureEnabled = (feature: Feature): boolean => {

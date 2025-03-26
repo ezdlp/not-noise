@@ -52,13 +52,13 @@ const PricingSection = () => {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Artwork blurred background */}
-      <div className="absolute inset-0 bg-[#6851fb]">
+      <div className="absolute inset-0">
         {selectedTrack.artworkUrl ? (
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: `url(${selectedTrack.artworkUrl})`,
-              filter: 'blur(70px) saturate(150%) brightness(0.4)',
+              filter: 'blur(70px) saturate(120%)',
               transform: 'scale(1.5)',
               backgroundSize: 'cover',
               backgroundPosition: 'center center',
@@ -101,15 +101,14 @@ const PricingSection = () => {
         `}
       </style>
       
-      {/* Overlay to ensure content readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#4a37b3]/50 to-transparent mix-blend-multiply" />
-      <div className="absolute inset-0 bg-[#6851fb]/20" />
+      {/* Light overlay for text readability - much more subtle */}
+      <div className="absolute inset-0 bg-black/10" />
 
       {/* Content */}
       <div className="relative container mx-auto px-4 py-12 z-10">
         <Button
           variant="ghost"
-          className="text-white mb-8 hover:text-white/80"
+          className="text-white mb-8 hover:text-white/80 font-medium bg-black/20 backdrop-blur-md hover:bg-black/30 drop-shadow-md"
           onClick={() => navigate('..')}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
@@ -130,17 +129,17 @@ const PricingSection = () => {
               </div>
             )}
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-md mb-2">
                 Promotion Packages for
               </h1>
-              <p className="text-2xl md:text-3xl font-bold text-white/90">
+              <p className="text-2xl md:text-3xl font-bold text-white/95 drop-shadow-md">
                 "{selectedTrack.title}"
               </p>
-              <p className="text-xl text-white/80">
+              <p className="text-xl text-white/90 drop-shadow-md">
                 by {selectedTrack.artist}
               </p>
             </div>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto mt-4">
+            <p className="text-lg text-white/90 max-w-2xl mx-auto mt-4 drop-shadow-md">
               Custom-tailored promotion packages to get "{selectedTrack.title}" to the right audience 
               and boost your music career.
             </p>
@@ -157,30 +156,62 @@ const PricingSection = () => {
           selectedTrack={selectedTrack}
         />
 
-        <div className="mt-16 text-center text-white/80">
-          <h3 className="text-xl font-semibold text-white mb-4">What Happens Next?</h3>
+        <div className="mt-16 text-center text-white/90">
+          <h3 className="text-xl font-semibold text-white drop-shadow-md mb-4">What Happens Next?</h3>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
-              <div className="text-2xl mb-2">1</div>
-              <h4 className="font-semibold mb-2">Track Review</h4>
-              <p className="text-sm">Our team analyzes your track and creates a custom promotion strategy</p>
+            <div className="backdrop-blur-xl bg-white/30 rounded-xl p-6 transition-all duration-300 hover:bg-white/40 hover:shadow-lg border border-white/30 shadow-md">
+              <div className="text-2xl font-bold mb-2">1</div>
+              <h4 className="font-semibold mb-2 drop-shadow-sm">Track Review</h4>
+              <p className="text-sm text-white/90">Our team analyzes your track and creates a custom promotion strategy</p>
             </div>
-            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
-              <div className="text-2xl mb-2">2</div>
-              <h4 className="font-semibold mb-2">Playlist Outreach</h4>
-              <p className="text-sm">We submit your track to carefully selected playlist curators</p>
+            <div className="backdrop-blur-xl bg-white/30 rounded-xl p-6 transition-all duration-300 hover:bg-white/40 hover:shadow-lg border border-white/30 shadow-md">
+              <div className="text-2xl font-bold mb-2">2</div>
+              <h4 className="font-semibold mb-2 drop-shadow-sm">Playlist Outreach</h4>
+              <p className="text-sm text-white/90">We submit your track to carefully selected playlist curators</p>
             </div>
-            <div className="backdrop-blur-xl bg-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/15 hover:shadow-lg border border-white/10">
-              <div className="text-2xl mb-2">3</div>
-              <h4 className="font-semibold mb-2">Results & Reports</h4>
-              <p className="text-sm">Get detailed feedback and track your promotion progress</p>
+            <div className="backdrop-blur-xl bg-white/30 rounded-xl p-6 transition-all duration-300 hover:bg-white/40 hover:shadow-lg border border-white/30 shadow-md">
+              <div className="text-2xl font-bold mb-2">3</div>
+              <h4 className="font-semibold mb-2 drop-shadow-sm">Results & Reports</h4>
+              <p className="text-sm text-white/90">Get detailed feedback and track your promotion progress</p>
             </div>
           </div>
         </div>
 
         <div className="mt-12 text-center">
-          <div className="inline-block backdrop-blur-xl bg-white/10 rounded-xl px-6 py-4 text-white/90 border border-white/10">
+          <div className="inline-block backdrop-blur-xl bg-white/30 rounded-xl px-6 py-4 text-white border border-white/30 shadow-md">
             <p className="text-sm font-medium">🎯 Limited spots available this month</p>
+          </div>
+        </div>
+        
+        {/* The Soundraiser Difference */}
+        <div className="mt-16 max-w-4xl mx-auto bg-white/20 backdrop-blur-xl rounded-xl p-8 border border-white/30 shadow-md">
+          <h3 className="text-xl font-bold text-white text-center mb-6">The Soundraiser Difference</h3>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-2">Quality Over Quantity</h4>
+              <p className="text-sm text-white/90">
+                We don't just submit to any playlist. Each curator in our network has been vetted for engagement quality and genuine listeners.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-2">Transparent Process</h4>
+              <p className="text-sm text-white/90">
+                You'll receive detailed reports showing where your music was submitted and the curator feedback received.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-2">Beyond Numbers</h4>
+              <p className="text-sm text-white/90">
+                While we can't guarantee specific playlist adds, every submission provides valuable feedback and industry insights to help refine your sound.
+              </p>
+            </div>
+          </div>
+          
+          <div className="text-center mt-6 text-white/90 text-sm italic">
+            "We believe in connecting real music with real listeners. No bots, no fake plays – just authentic music discovery."
           </div>
         </div>
       </div>

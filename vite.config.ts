@@ -9,6 +9,37 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     hmr: {
       timeout: 60000
+    },
+    proxy: {
+      // Forward API requests to Supabase Edge Functions
+      '/api/payments/create-promotion-checkout': {
+        target: 'https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/create-checkout-session',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/payments\/create-promotion-checkout/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Forward the Authorization header if it exists
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+              proxyReq.setHeader('Authorization', authHeader);
+            }
+          });
+        }
+      },
+      '/api/spotify/search': {
+        target: 'https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search',
+        changeOrigin: true,
+        rewrite: (path) => '',
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Forward the Authorization header if it exists
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+              proxyReq.setHeader('Authorization', authHeader);
+            }
+          });
+        }
+      }
     }
   },
   plugins: [

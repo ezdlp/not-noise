@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0'; // Keep consistent version with webhook
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -49,85 +48,205 @@ serve(async (req) => {
     }
 
     // Get the request body
-    const { priceId, promotionData, isSubscription } = await req.json();
+    const requestData = await req.json();
     
-    if (!priceId) {
-      throw new Error('No price ID provided');
-    }
+    // Route the request based on what's sent - either for regular checkout or promotion checkout
+    let isPromotion = false;
+    
+    // Check if this is a promotion checkout request from PricingPlan.tsx
+    if (requestData.packageId) {
+      isPromotion = true;
+      const { 
+        packageId, 
+        trackId, 
+        trackName, 
+        artistName, 
+        genre, 
+        basePrice, 
+        discountApplied 
+      } = requestData;
 
-    console.log('Creating payment session...', { 
-      priceId, 
-      isSubscription,
-      userId: user.id,
-      email 
-    });
-
-    // Check if this is a promotion by checking priceId against known promotion price IDs
-    const promotionPriceIds = [
-      'price_1QpCdhFx6uwYcH3SqX5B02x3',  // Silver
-      'price_1QpCecFx6uwYcH3S7TqiqXmo',  // Gold
-      'price_1QpCf7Fx6uwYcH3SClLj92Pf'   // Platinum
-    ];
-
-    const isPromotion = promotionPriceIds.includes(priceId);
-
-    // Set up base session parameters
-    const sessionParams = {
-      customer: customer_id,
-      customer_email: customer_id ? undefined : email,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: isSubscription ? 'subscription' : 'payment',
-      success_url: isPromotion 
-        ? `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`
-        : `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: isPromotion 
-        ? `${req.headers.get('origin')}/spotify-playlist-promotion`
-        : `${req.headers.get('origin')}/pricing`,
-      metadata: {
-        userId: user.id,
-        type: isSubscription ? 'subscription' : 'promotion'
-      },
-      expand: ['subscription']
-    };
-
-    // If this is a promotion purchase, add promotion metadata
-    if (isPromotion && promotionData) {
-      const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre } = promotionData;
-      
-      // Add promotion specific metadata
-      sessionParams.metadata = {
-        ...sessionParams.metadata,
+      console.log('Creating promotion checkout session...', { 
+        packageId,
+        trackId,
         trackName,
-        trackArtist,
-        spotifyTrackId,
-        spotifyArtistId,
-        submissionCount: submissionCount.toString(),
-        estimatedAdditions: estimatedAdditions.toString(),
-        genre
-      };
-    }
+        artistName,
+        genre,
+        basePrice,
+        discountApplied,
+        userId: user.id,
+        email 
+      });
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+      // Calculate final price with discount if applicable
+      const finalPrice = discountApplied ? Math.round(basePrice * 0.9 * 100) : Math.round(basePrice * 100);
 
-    console.log('Payment session created:', {
-      sessionId: session.id,
-      customerId: session.customer,
-      subscriptionId: session.subscription?.id,
-      metadata: session.metadata
-    });
-
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+      // Get package tier name for display
+      let tierName;
+      switch (packageId.toLowerCase()) {
+        case 'silver':
+          tierName = 'Silver';
+          break;
+        case 'gold':
+          tierName = 'Gold';
+          break;
+        case 'platinum':
+          tierName = 'Platinum';
+          break;
+        default:
+          tierName = 'Silver';
       }
-    );
+
+      // Create a record in the promotions table
+      const { data: promotion, error: promotionError } = await supabaseClient
+        .from('promotions')
+        .insert({
+          user_id: user.id,
+          spotify_track_id: trackId,
+          track_name: trackName,
+          track_artist: artistName,
+          spotify_artist_id: trackId.split(':')[2], // Extract artist ID from track ID
+          genre: genre || 'other',
+          total_cost: finalPrice / 100, // Store price in dollars
+          status: 'pending', // Use 'pending' as it's one of the allowed values
+          created_at: new Date().toISOString(),
+          submission_count: packageId.toLowerCase() === 'silver' ? 20 : packageId.toLowerCase() === 'gold' ? 35 : 50,
+          estimated_additions: packageId.toLowerCase() === 'silver' ? 5 : packageId.toLowerCase() === 'gold' ? 8 : 12,
+          success_rate: 0, // Initialize at 0
+          initial_streams: 0, // Optional but good to initialize
+          final_streams: null // Optional
+        })
+        .select('id')
+        .single();
+
+      if (promotionError) {
+        console.error('Error creating promotion:', promotionError);
+        throw new Error('Failed to create promotion record');
+      }
+
+      // Create Stripe checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer: customer_id,
+        customer_email: customer_id ? undefined : email,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `${tierName} Promotion Package`,
+                description: `Spotify playlist promotion for "${trackName}" by ${artistName}`,
+                metadata: {
+                  promotionId: promotion.id,
+                  trackId,
+                  packageId,
+                },
+              },
+              unit_amount: finalPrice,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion?canceled=true`,
+        metadata: {
+          promotionId: promotion.id,
+          userId: user.id,
+          type: 'promotion',
+          trackName,
+          trackArtist: artistName,
+          spotifyTrackId: trackId,
+          spotifyArtistId: trackId.split(':')[2],
+          submissionCount: packageId.toLowerCase() === 'silver' ? '20' : packageId.toLowerCase() === 'gold' ? '35' : '50',
+          estimatedAdditions: packageId.toLowerCase() === 'silver' ? '5' : packageId.toLowerCase() === 'gold' ? '8' : '12',
+          genre: genre || 'other',
+          packageId,
+          isProDiscount: discountApplied ? 'true' : 'false'
+        },
+        client_reference_id: promotion.id,
+      });
+
+      // Return the checkout URL
+      return new Response(
+        JSON.stringify({
+          checkoutUrl: session.url,
+          promotionId: promotion.id,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } else {
+      // Handle regular subscription checkout flow
+      const { priceId, promotionData, isSubscription } = requestData;
+      
+      if (!priceId) {
+        throw new Error('No price ID provided');
+      }
+
+      console.log('Creating payment session...', { 
+        priceId, 
+        isSubscription,
+        userId: user.id,
+        email 
+      });
+
+      // Set up base session parameters
+      const sessionParams = {
+        customer: customer_id,
+        customer_email: customer_id ? undefined : email,
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: isSubscription ? 'subscription' : 'payment',
+        success_url: `${req.headers.get('origin')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.get('origin')}/pricing`,
+        metadata: {
+          userId: user.id,
+          type: isSubscription ? 'subscription' : 'payment'
+        },
+        expand: ['subscription']
+      };
+
+      // If this is a promotion purchase with promotionData, add promotion metadata
+      if (promotionData) {
+        const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre } = promotionData;
+        
+        // Add promotion specific metadata
+        sessionParams.metadata = {
+          ...sessionParams.metadata,
+          trackName,
+          trackArtist,
+          spotifyTrackId,
+          spotifyArtistId,
+          submissionCount: submissionCount.toString(),
+          estimatedAdditions: estimatedAdditions.toString(),
+          genre
+        };
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      console.log('Payment session created:', {
+        sessionId: session.id,
+        customerId: session.customer,
+        subscriptionId: session.subscription?.id,
+        metadata: session.metadata
+      });
+
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
   } catch (error) {
     console.error('Error creating payment session:', error);
     return new Response(

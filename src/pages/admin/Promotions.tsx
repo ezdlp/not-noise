@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
+import { CampaignResultsUploader } from './components/CampaignResultsUploader';
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
@@ -55,6 +55,7 @@ export default function Promotions() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="promotions">Promotion Campaigns</TabsTrigger>
+          <TabsTrigger value="campaign-results">Campaign Results</TabsTrigger>
           <TabsTrigger value="tools">Admin Tools</TabsTrigger>
         </TabsList>
         
@@ -115,6 +116,10 @@ export default function Promotions() {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="campaign-results">
+          <CampaignResultsUploader promotions={promotions} isLoading={isLoading} />
         </TabsContent>
         
         <TabsContent value="tools">

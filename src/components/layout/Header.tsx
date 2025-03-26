@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
@@ -47,19 +46,26 @@ const Header = () => {
   })
 
   const { data: subscription } = useQuery({
-    queryKey: ["subscription"],
+    queryKey: ["header-subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return null
 
-      const { data } = await supabase
+      const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
-      return data
+      if (subscriptionError) return { tier: 'free' }
+      
+      return {
+        ...subscriptionData,
+        tier: subscriptionData?.tier || 'free'
+      }
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   })
 
   const getInitials = (name: string) => {

@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Link2, CheckCircle2, Music2, ChevronDown, Lock } from "lucide-react";
@@ -16,14 +15,17 @@ export function FeatureLimits() {
         .from("subscriptions")
         .select("tier")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (subscriptionError) throw subscriptionError;
+      
+      // Default to free tier if no subscription is found
+      const tier = subscription?.tier || 'free';
 
       const { data: features, error: featuresError } = await supabase
         .from("subscription_features")
         .select("*")
-        .eq("tier", subscription.tier);
+        .eq("tier", tier);
 
       if (featuresError) throw featuresError;
 
@@ -38,9 +40,12 @@ export function FeatureLimits() {
       return {
         features,
         smartLinksCount: smartLinksCount || 0,
-        tier: subscription.tier
+        tier
       };
     },
+    // Add these options to prevent constant refetching
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   if (!featureUsage) return null;

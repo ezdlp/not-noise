@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
@@ -53,13 +52,9 @@ export function SubscriptionBanner() {
         features
       };
     },
-  });
-
-  // Debug logging to track state
-  console.log('Subscription Banner State:', {
-    isLoading,
-    subscription,
-    tier: subscription?.tier,
+    // Add these options to prevent constant refetching
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Don't show anything while loading

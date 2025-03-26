@@ -270,20 +270,30 @@ export default function AccountSettings() {
   };
 
   const { data: subscription } = useQuery({
-    queryKey: ["subscription"],
+    queryKey: ["account-subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (subscriptionError) throw subscriptionError;
+      
+      // Default to free tier if no subscription data found
+      const tier = subscriptionData?.tier || 'free';
+      
+      return {
+        ...subscriptionData,
+        tier
+      };
     },
+    // Add these options to prevent constant refetching
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   const handleManageSubscription = async () => {
