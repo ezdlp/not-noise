@@ -11,7 +11,8 @@ interface ReviewStepProps {
   data: {
     title: string;
     artist: string;
-    artwork_url?: string; // Changed from artworkUrl to match database field
+    artwork_url?: string; 
+    artworkUrl?: string;
     description?: string;
     platforms: Array<{
       id: string;
@@ -90,15 +91,20 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       const smartLinkData: any = {
         title: data.title,
         artist_name: artistName,
-        artwork_url: data.artwork_url,
+        artwork_url: data.artwork_url || data.artworkUrl,
         description: data.description,
         content_type: data.content_type || 'track',
-        email_capture_enabled: data.email_capture_enabled,
-        email_capture_title: data.email_capture_title,
-        email_capture_description: data.email_capture_description,
         slug: data.slug,
         user_id: session.session.user.id,
       };
+
+      if (data.email_capture_enabled) {
+        smartLinkData.email_capture_enabled = true;
+        smartLinkData.email_capture_title = data.email_capture_title;
+        smartLinkData.email_capture_description = data.email_capture_description;
+      } else {
+        smartLinkData.email_capture_enabled = false;
+      }
 
       if (data.metaPixel?.enabled) {
         smartLinkData.meta_pixel_id = data.metaPixel.pixelId;
@@ -106,7 +112,7 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         smartLinkData.meta_click_event = data.metaPixel.clickEventName;
       }
 
-      if (isPlaylist) {
+      if (isPlaylist && enabledPlatforms.length > 0) {
         smartLinkData.playlist_metadata = {
           curator: artistName,
           platform_data: enabledPlatforms.map(p => ({
@@ -116,13 +122,19 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         };
       }
 
+      console.log("Sending data to Supabase:", smartLinkData);
+      
       const { data: smartLink, error: createError } = await supabase
         .from("smart_links")
         .insert(smartLinkData)
         .select()
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error("Database error:", createError);
+        throw createError;
+      }
+      
       if (!smartLink) throw new Error("Failed to create smart link");
 
       if (enabledPlatforms.length > 0) {
@@ -140,8 +152,9 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         if (platformError) throw platformError;
       }
 
-      if (data.artwork_url && data.artwork_url.includes('temp/')) {
-        const oldPath = data.artwork_url.split('artworks/')[1];
+      if ((data.artwork_url || data.artworkUrl) && (data.artwork_url || data.artworkUrl).includes('temp/')) {
+        const artworkUrl = data.artwork_url || data.artworkUrl;
+        const oldPath = artworkUrl.split('artworks/')[1];
         const newPath = `${smartLink.id}/${oldPath.split('/').pop()}`;
         
         const { error: moveError } = await supabase
@@ -176,8 +189,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       navigate("/dashboard");
     } catch (error) {
       console.error("Error creating smart link:", error);
-      toast.error("Failed to create smart link. Please try again.");
-    } finally {
+      const errorMessage = error instanceof Error 
+        ? `Error: ${error.message}`
+        : "Failed to create smart link. Please try again.";
+      toast.error(errorMessage);
       setIsCreating(false);
     }
   };
