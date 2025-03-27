@@ -24,6 +24,11 @@ export default function WebsiteSEO({
   const defaultImage = "/lovable-uploads/soundraiser-logo/Iso A.png";
   const twitterUsername = "@soundraiser_";
 
+  // Don't provide SEO for /link/ routes since SmartLinkSEO handles those
+  if (pathname.startsWith('/link/')) {
+    return null;
+  }
+
   const seo = {
     title: title || defaultTitle,
     description: description || defaultDescription,
@@ -45,6 +50,7 @@ export default function WebsiteSEO({
       <meta httpEquiv="content-language" content="en" />
       
       {/* Resource hints */}
+      <meta name="twitter:site" content={twitterUsername} />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://i.scdn.co" crossOrigin="anonymous" />

@@ -83,26 +83,32 @@ export function SmartLinkSEO({
       
       {/* Technical SEO */}
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      
+      {/* Override the default OG tags to ensure proper image display */}
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
-      <meta property="og:image" content={artworkUrl} />
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
+      
+      {/* Image tags with proper dimensions - critical for social media cards */}
+      <meta property="og:image" content={artworkUrl} />
+      <meta property="og:image:secure_url" content={artworkUrl.replace('http:', 'https:')} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="1200" />
+      <meta property="og:image:alt" content={`${title} by ${artistName}`} />
+      
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (
         <meta key={index} property="music:musician" content={platform.url} />
       ))}
-
-      {/* Image dimensions for social media */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={artworkUrl} />
+      <meta name="twitter:image:alt" content={`${title} by ${artistName}`} />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">
