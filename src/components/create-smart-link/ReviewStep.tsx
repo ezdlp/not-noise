@@ -87,10 +87,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         ? (userProfile?.artist_name || 'Playlist Curator')
         : data.artist;
 
-      const smartLinkData = {
+      const smartLinkData: any = {
         title: data.title,
         artist_name: artistName,
-        artwork_url: data.artwork_url, // Using consistent snake_case
+        artwork_url: data.artwork_url,
         description: data.description,
         content_type: data.content_type || 'track',
         email_capture_enabled: data.email_capture_enabled,
@@ -101,13 +101,13 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
       };
 
       if (data.metaPixel?.enabled) {
-        smartLinkData['meta_pixel_id'] = data.metaPixel.pixelId;
-        smartLinkData['meta_view_event'] = data.metaPixel.viewEventName;
-        smartLinkData['meta_click_event'] = data.metaPixel.clickEventName;
+        smartLinkData.meta_pixel_id = data.metaPixel.pixelId;
+        smartLinkData.meta_view_event = data.metaPixel.viewEventName;
+        smartLinkData.meta_click_event = data.metaPixel.clickEventName;
       }
 
       if (isPlaylist) {
-        smartLinkData['playlist_metadata'] = {
+        smartLinkData.playlist_metadata = {
           curator: artistName,
           platform_data: enabledPlatforms.map(p => ({
             platform: p.name,
@@ -140,12 +140,10 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         if (platformError) throw platformError;
       }
 
-      // Move artwork from temp to permanent location if it exists and starts with temp/
       if (data.artwork_url && data.artwork_url.includes('temp/')) {
         const oldPath = data.artwork_url.split('artworks/')[1];
         const newPath = `${smartLink.id}/${oldPath.split('/').pop()}`;
         
-        // Copy the file to the new location
         const { error: moveError } = await supabase
           .storage
           .from('artworks')
@@ -154,7 +152,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
         if (moveError) {
           console.error('Error moving artwork:', moveError);
         } else {
-          // Update the smart link with the new artwork URL
           const { data: { publicUrl: newArtworkUrl } } = supabase
             .storage
             .from('artworks')
@@ -165,7 +162,6 @@ const ReviewStep = ({ data, onBack, onComplete, onEditStep }: ReviewStepProps) =
             .update({ artwork_url: newArtworkUrl })
             .eq('id', smartLink.id);
 
-          // Delete the temp file
           await supabase
             .storage
             .from('artworks')
