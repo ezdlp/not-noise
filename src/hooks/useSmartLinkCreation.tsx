@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +33,7 @@ export function useSmartLinkCreation() {
       }
 
       analytics.trackFeatureUsage('create_smart_link', true);
-      navigate("/create");
+      navigate("/dashboard/create");
     } catch (error) {
       console.error("Error checking smart link limit:", error);
       toast.error("Failed to check link limit");

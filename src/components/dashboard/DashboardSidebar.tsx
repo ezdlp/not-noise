@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -140,7 +139,7 @@ export function DashboardSidebar() {
 
   // Determine if the current route is a dashboard route for active states
   const isDashboardRoute = location.pathname === '/dashboard';
-  const isSettingsRoute = location.pathname === '/settings';
+  const isSettingsRoute = location.pathname === '/dashboard/settings';
 
   return (
     <Sidebar 
@@ -218,15 +217,15 @@ export function DashboardSidebar() {
                   isActive={isDashboardRoute && activeSection === 'promotions'}
                   onClick={() => handleSectionChange('promotions')}
                   tooltip="Playlist Promotions"
-                  className="transition-colors duration-200 relative px-3 text-sm h-10 min-w-0 w-full"
+                  className="transition-colors duration-200 relative px-3 text-sm h-10 min-w-0 w-full overflow-visible"
                 >
-                  <FileAudio className="mr-2 h-4 w-4" />
-                  <span className="flex items-center">
-                    Playlist Promotions
-                    <Badge variant="outline" className="ml-2 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold">
+                  <div className="flex items-center w-full">
+                    <FileAudio className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Playlist Promotions</span>
+                    <Badge variant="outline" className="ml-1 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold flex-shrink-0">
                       NEW
                     </Badge>
-                  </span>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
@@ -267,7 +266,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={isSettingsRoute}
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate('/dashboard/settings')}
                 tooltip="Settings"
                 className="transition-colors duration-200 relative px-3 text-sm h-10"
               >

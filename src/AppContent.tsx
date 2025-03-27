@@ -8,6 +8,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // Lazy load non-critical routes
 const Dashboard = lazy(() => import("@/pages/DashboardWithSidebar"));
@@ -151,33 +152,57 @@ export default function AppContent() {
       </Route>
       
       <Route path="/dashboard" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <Dashboard />
-        </Suspense>
+        <DashboardLayout />
+      }>
+        <Route index element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <Dashboard />
+          </Suspense>
+        } />
+        
+        <Route path="create" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <CreateSmartLink />
+          </Suspense>
+        } />
+        
+        <Route path="links/:id/edit" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <EditSmartLink />
+          </Suspense>
+        } />
+        
+        <Route path="links/:id/analytics" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <SmartLinkAnalytics />
+          </Suspense>
+        } />
+        
+        <Route path="settings" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <AccountSettings />
+          </Suspense>
+        } />
+      </Route>
+      
+      <Route path="/dashboard-new" element={
+        <Navigate to="/dashboard" replace />
       } />
       
       <Route path="/create" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <CreateSmartLink />
-        </Suspense>
+        <Navigate to="/dashboard/create" replace />
       } />
       
       <Route path="/links/:id/edit" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <EditSmartLink />
-        </Suspense>
+        <Navigate to="/dashboard/links/:id/edit" replace />
       } />
       
       <Route path="/links/:id/analytics" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <SmartLinkAnalytics />
-        </Suspense>
+        <Navigate to="/dashboard/links/:id/analytics" replace />
       } />
       
       <Route path="/settings" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <AccountSettings />
-        </Suspense>
+        <Navigate to="/dashboard/settings" replace />
       } />
       
       <Route path="/control-room" element={<AdminRoute><AdminLayout /></AdminRoute>}>
