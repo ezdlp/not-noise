@@ -1,6 +1,7 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart2Icon,
   EditIcon,
@@ -24,7 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { SocialCardPreviewDialog } from "./SocialCardPreviewDialog";
@@ -87,6 +87,11 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
   const totalClicks = link.platform_links?.reduce((sum: number, pl: any) => 
     sum + (pl.platform_clicks?.length || 0), 0) || 0;
 
+  const handleEditClick = () => {
+    // Navigate directly to the dashboard edit route instead of relying on redirects
+    navigate(`/dashboard/links/${link.id}/edit`);
+  };
+
   return (
     <>
       <Card className="flex flex-col md:flex-row gap-5 p-4 h-full bg-white border-[#E6E6E6] shadow-[0_2px_4px_rgba(15,15,15,0.05)]">
@@ -113,7 +118,7 @@ export function SmartLinkCard({ link, onDelete, onAnalyticsClick }: SmartLinkCar
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/links/${link.id}/edit`)}>
+                  <DropdownMenuItem onClick={handleEditClick}>
                     <EditIcon className="mr-2 h-4 w-4" />
                     Edit
                   </DropdownMenuItem>

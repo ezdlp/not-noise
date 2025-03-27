@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -43,6 +44,12 @@ const LoadingSpinner = () => (
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
+
+// Helper component to handle parameter passing in redirects
+const RedirectWithId = ({ path }: { path: string }) => {
+  const params = useParams();
+  return <Navigate to={path.replace(':id', params.id || '')} replace />;
+};
 
 export default function AppContent() {
   return (
@@ -193,12 +200,13 @@ export default function AppContent() {
         <Navigate to="/dashboard/create" replace />
       } />
       
+      {/* Fixed routes to properly preserve parameters */}
       <Route path="/links/:id/edit" element={
-        <Navigate to="/dashboard/links/:id/edit" replace />
+        <RedirectWithId path="/dashboard/links/:id/edit" />
       } />
       
       <Route path="/links/:id/analytics" element={
-        <Navigate to="/dashboard/links/:id/analytics" replace />
+        <RedirectWithId path="/dashboard/links/:id/analytics" />
       } />
       
       <Route path="/settings" element={
