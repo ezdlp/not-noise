@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { SmartLinksList } from "@/components/dashboard/SmartLinksList";
@@ -13,8 +14,6 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useSmartLinkCreation } from "@/hooks/useSmartLinkCreation";
 import { PromotionsDashboard } from "@/components/spotify-promotion/PromotionsDashboard";
 import { useLocation } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -106,53 +105,45 @@ export default function Dashboard() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="relative flex h-screen w-full overflow-hidden bg-neutral-seasalt">
-        <DashboardSidebar />
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      {/* Subscription Banner */}
+      <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
+        <SubscriptionBanner />
+      </div>
+      
+      {/* Dashboard Content Section */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold">{getSectionTitle()}</h1>
+          
+          {activeSection === 'smart-links' && (
+            <Button onClick={handleCreateClick} className="gap-2">
+              <Link2 className="h-4 w-4" />
+              Create Smart Link
+            </Button>
+          )}
+        </div>
         
-        <div className="flex-1 overflow-auto ml-64">
-          <div className="container mx-auto py-6 px-4 space-y-6">
-            {/* Subscription Banner */}
-            <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
-              <SubscriptionBanner />
-            </div>
-            
-            {/* Dashboard Content Section */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-semibold">{getSectionTitle()}</h1>
-                
-                {activeSection === 'smart-links' && (
-                  <Button onClick={handleCreateClick} className="gap-2">
-                    <Link2 className="h-4 w-4" />
-                    Create Smart Link
-                  </Button>
-                )}
-              </div>
-              
-              {/* Analytics Section - Only show in Smart Links section */}
-              {!isLoading && activeSection === 'smart-links' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <DashboardStats data={links} />
-                </div>
-              )}
-
-              {/* Content Area */}
-              <div className="min-h-[300px] animate-in fade-in-50 duration-200">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-60">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                  </div>
-                ) : activeSection === 'smart-links' ? (
-                  <SmartLinksList links={links} isLoading={isLinksLoading} />
-                ) : activeSection === 'email-subscribers' ? (
-                  <EmailSubscribersList />
-                ) : activeSection === 'promotions' ? (
-                  <PromotionsDashboard />
-                ) : null}
-              </div>
-            </div>
+        {/* Analytics Section - Only show in Smart Links section */}
+        {!isLoading && activeSection === 'smart-links' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <DashboardStats data={links} />
           </div>
+        )}
+
+        {/* Content Area */}
+        <div className="min-h-[300px] animate-in fade-in-50 duration-200">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-60">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : activeSection === 'smart-links' ? (
+            <SmartLinksList links={links} isLoading={isLinksLoading} />
+          ) : activeSection === 'email-subscribers' ? (
+            <EmailSubscribersList />
+          ) : activeSection === 'promotions' ? (
+            <PromotionsDashboard />
+          ) : null}
         </div>
       </div>
 
@@ -162,6 +153,6 @@ export default function Dashboard() {
         feature={activeSection === 'email-subscribers' ? "collect email subscribers" : "create more smart links"} 
         description={activeSection === 'email-subscribers' ? "Upgrade to Pro to collect emails from your fans and build your mailing list!" : "You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"} 
       />
-    </SidebarProvider>
+    </div>
   );
 }

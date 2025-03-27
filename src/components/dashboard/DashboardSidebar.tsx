@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -144,7 +145,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar 
       variant="sidebar" 
-      className="w-64 transition-all duration-300"
+      className="w-64 z-10 transition-all duration-300"
     >
       <SidebarHeader className="px-4 py-3 flex items-center justify-between border-b">
         <div className="h-6 flex items-center">

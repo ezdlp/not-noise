@@ -8,7 +8,7 @@ export function DashboardLayout() {
     <SidebarProvider>
       <div className="relative flex h-screen w-full overflow-hidden bg-neutral-seasalt">
         <DashboardSidebar />
-        <div className="flex-1 overflow-auto ml-64"> {/* Added ml-64 to offset the sidebar width */}
+        <div className="flex-1 overflow-auto">
           <Outlet />
         </div>
       </div>
