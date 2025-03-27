@@ -13,16 +13,13 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useSmartLinkCreation } from "@/hooks/useSmartLinkCreation";
 import { PromotionsDashboard } from "@/components/spotify-promotion/PromotionsDashboard";
 import { useLocation } from "react-router-dom";
-
 export default function Dashboard() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
 
   // Default section is smart-links
-  const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions'>(
-    sectionParam as any || 'smart-links'
-  );
+  const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions'>(sectionParam as any || 'smart-links');
   const [isLoading, setIsLoading] = useState(false);
   const {
     isFeatureEnabled
@@ -45,7 +42,6 @@ export default function Dashboard() {
       }
     }
   }, [sectionParam, isFeatureEnabled, setShowUpgradeModal]);
-
   const {
     data: links,
     isLoading: isLinksLoading
@@ -102,9 +98,7 @@ export default function Dashboard() {
         return 'Dashboard';
     }
   };
-
-  return (
-    <div className="container mx-auto py-6 px-4 space-y-6">
+  return <div className="container mx-auto py-6 px-4 space-y-6">
       {/* Subscription Banner */}
       <div className="bg-background/50 rounded-lg border border-border/50 overflow-hidden">
         <SubscriptionBanner />
@@ -113,45 +107,27 @@ export default function Dashboard() {
       {/* Dashboard Content Section */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">{getSectionTitle()}</h1>
           
-          {activeSection === 'smart-links' && (
-            <Button onClick={handleCreateClick} className="gap-2">
+          
+          {activeSection === 'smart-links' && <Button onClick={handleCreateClick} className="gap-2">
               <Link2 className="h-4 w-4" />
               Create Smart Link
-            </Button>
-          )}
+            </Button>}
         </div>
         
         {/* Analytics Section - Only show in Smart Links section */}
-        {!isLoading && activeSection === 'smart-links' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {!isLoading && activeSection === 'smart-links' && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DashboardStats data={links} />
-          </div>
-        )}
+          </div>}
 
         {/* Content Area */}
         <div className="min-h-[300px] animate-in fade-in-50 duration-200">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-60">
+          {isLoading ? <div className="flex items-center justify-center h-60">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : activeSection === 'smart-links' ? (
-            <SmartLinksList links={links} isLoading={isLinksLoading} />
-          ) : activeSection === 'email-subscribers' ? (
-            <EmailSubscribersList />
-          ) : activeSection === 'promotions' ? (
-            <PromotionsDashboard />
-          ) : null}
+            </div> : activeSection === 'smart-links' ? <SmartLinksList links={links} isLoading={isLinksLoading} /> : activeSection === 'email-subscribers' ? <EmailSubscribersList /> : activeSection === 'promotions' ? <PromotionsDashboard /> : null}
         </div>
       </div>
 
-      <UpgradeModal 
-        isOpen={showUpgradeModal} 
-        onClose={() => setShowUpgradeModal(false)} 
-        feature={activeSection === 'email-subscribers' ? "collect email subscribers" : "create more smart links"} 
-        description={activeSection === 'email-subscribers' ? "Upgrade to Pro to collect emails from your fans and build your mailing list!" : "You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"} 
-      />
-    </div>
-  );
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} feature={activeSection === 'email-subscribers' ? "collect email subscribers" : "create more smart links"} description={activeSection === 'email-subscribers' ? "Upgrade to Pro to collect emails from your fans and build your mailing list!" : "You've reached the limit of smart links on the free plan. Upgrade to Pro for unlimited smart links and more features!"} />
+    </div>;
 }
