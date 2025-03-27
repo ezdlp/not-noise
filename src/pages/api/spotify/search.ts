@@ -1,152 +1,53 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/integrations/supabase/client';
+import SpotifyWebApi from 'spotify-web-api-node';
 
-// Spotify API base URL
-const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
+// Initialize the Spotify API with client credentials
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+});
 
-// Define interface for credentials
-interface SpotifyCredentials {
-  client_id: string;
-  client_secret: string;
-}
+// Token refresh logic
+let tokenExpirationTime = 0;
 
-// Define interface for config value
-interface ConfigObject {
-  client_id: string;
-  client_secret: string;
-  [key: string]: unknown;
-}
-
-type ConfigValue = string | ConfigObject;
-
-/**
- * Get a Spotify API token using client credentials
- */
-async function getSpotifyToken(): Promise<string> {
+async function refreshToken() {
   try {
-    // Get Spotify credentials from Supabase config
-    const { data, error } = await supabase
-      .from('app_config')
-      .select('config_value')
-      .eq('config_key', 'spotify_credentials')
-      .single();
-
-    if (error) throw error;
-    
-    // Parse the config_value which should be a JSON string or object
-    const credentialsValue = data?.config_value as ConfigValue;
-    let credentials: SpotifyCredentials;
-    
-    if (typeof credentialsValue === 'string') {
-      try {
-        credentials = JSON.parse(credentialsValue);
-      } catch (e) {
-        throw new Error('Invalid Spotify credentials format in app config');
-      }
-    } else if (typeof credentialsValue === 'object' && credentialsValue !== null) {
-      if (
-        typeof credentialsValue.client_id === 'string' && 
-        typeof credentialsValue.client_secret === 'string'
-      ) {
-        credentials = {
-          client_id: credentialsValue.client_id,
-          client_secret: credentialsValue.client_secret
-        };
-      } else {
-        throw new Error('Invalid Spotify credentials structure in app config');
-      }
-    } else {
-      throw new Error('Spotify credentials not found in app config');
-    }
-    
-    if (!credentials?.client_id || !credentials?.client_secret) {
-      throw new Error('Spotify credentials not found in app config');
-    }
-
-    // Base64 encode the client credentials
-    const auth = Buffer.from(`${credentials.client_id}:${credentials.client_secret}`).toString('base64');
-    
-    // Request a token from Spotify
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
-
-    const tokenData = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(`Spotify token error: ${tokenData.error}`);
-    }
-
-    return tokenData.access_token;
+    const data = await spotifyApi.clientCredentialsGrant();
+    spotifyApi.setAccessToken(data.body.access_token);
+    tokenExpirationTime = Date.now() + (data.body.expires_in * 1000) - 60000; // Expire 1 minute early to be safe
+    return true;
   } catch (error) {
-    console.error('Error getting Spotify token:', error);
-    throw new Error('Failed to authenticate with Spotify');
+    console.error('Error refreshing Spotify token:', error);
+    return false;
   }
 }
 
-/**
- * Search for tracks using the Spotify API
- */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
   try {
-    // Ensure user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    // Get search query from request
-    const query = req.query.query as string;
-    if (!query || typeof query !== 'string') {
-      return res.status(400).json({ message: 'Search query is required' });
-    }
-
-    // Get Spotify access token
-    const token = await getSpotifyToken();
-
-    // Search Spotify for tracks
-    const response = await fetch(
-      `${SPOTIFY_API_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+    // Check if token needs refreshing
+    if (Date.now() > tokenExpirationTime) {
+      const success = await refreshToken();
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to authenticate with Spotify' });
       }
+    }
+
+    const { query, type = 'track' } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+
+    // Perform the search
+    const response = await spotifyApi.search(
+      query as string, 
+      [type as string] as ('album' | 'artist' | 'playlist' | 'track')[]
     );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Spotify API error: ${error.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    
-    // Format the response data
-    const tracks = data.tracks.items.map((track: any) => ({
-      id: track.id,
-      name: track.name,
-      artist: track.artists.map((a: any) => a.name).join(', '),
-      albumCover: track.album.images[0]?.url || '',
-      releaseDate: track.album.release_date,
-      previewUrl: track.preview_url,
-    }));
-
-    return res.status(200).json({ tracks });
+    return res.status(200).json(response.body);
   } catch (error) {
-    console.error('Spotify search error:', error);
-    return res.status(500).json({ 
-      message: error instanceof Error ? error.message : 'Failed to search Spotify'
-    });
+    console.error('Error searching Spotify:', error);
+    return res.status(500).json({ error: 'Failed to search Spotify' });
   }
 }
