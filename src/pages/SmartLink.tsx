@@ -3,12 +3,74 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PlatformButton from "@/components/smart-link/PlatformButton";
 import EmailSubscribeForm from "@/components/smart-link/EmailSubscribeForm";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import SmartLinkHeader from "@/components/smart-link/SmartLinkHeader";
 import { SmartLinkSEO } from "@/components/seo/SmartLinkSEO";
 import { analyticsService } from "@/services/analyticsService";
 import { analytics } from "@/services/analytics";
 import { Loader2 } from "lucide-react";
+
+// Early SEO component to immediately inject metadata for crawlers
+function EarlySEO({ slug }: { slug: string }) {
+  const [smartLinkData, setSmartLinkData] = useState<any>(null);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: slugData } = await supabase
+          .from('smart_links')
+          .select(`
+            id,
+            title,
+            artist_name,
+            artwork_url,
+            description,
+            release_date,
+            platform_links (
+              id,
+              platform_name,
+              url
+            )
+          `)
+          .eq('slug', slug)
+          .maybeSingle();
+          
+        if (slugData) {
+          setSmartLinkData(slugData);
+        }
+      } catch (err) {
+        console.error('Error in early SEO fetch:', err);
+      }
+    };
+    
+    fetchData();
+  }, [slug]);
+  
+  if (!smartLinkData) return null;
+  
+  // Create absolute artwork URL
+  const baseUrl = 'https://soundraiser.io';
+  const artworkUrl = smartLinkData.artwork_url?.startsWith('http') 
+    ? smartLinkData.artwork_url 
+    : `${baseUrl}${smartLinkData.artwork_url?.startsWith('/') ? '' : '/'}${smartLinkData.artwork_url}`;
+    
+  const streamingPlatforms = smartLinkData.platform_links?.map((pl: any) => ({
+    name: pl.platform_name,
+    url: pl.url
+  })) || [];
+  
+  return (
+    <SmartLinkSEO
+      title={smartLinkData.title}
+      artistName={smartLinkData.artist_name}
+      artworkUrl={artworkUrl}
+      description={smartLinkData.description}
+      releaseDate={smartLinkData.release_date}
+      streamingPlatforms={streamingPlatforms}
+      slug={slug}
+    />
+  );
+}
 
 export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
@@ -174,6 +236,8 @@ export default function SmartLink() {
     console.log("Smart link is loading...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        {/* Even while loading, we render the early SEO component to ensure metadata is available */}
+        <EarlySEO slug={slug || ''} />
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-center mt-4 text-gray-600">Loading your music...</p>
@@ -186,6 +250,8 @@ export default function SmartLink() {
     console.error("Smart link error or not found:", error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        {/* Even on error, we still try to render early SEO in case it succeeded */}
+        <EarlySEO slug={slug || ''} />
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full mx-4">
           <h1 className="text-2xl font-semibold text-center text-gray-900 mb-4">Link Not Found</h1>
           <p className="text-center text-gray-600">
