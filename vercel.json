@@ -1,3 +1,4 @@
+
 {
   "images": {
     "sizes": [304, 760],
@@ -39,6 +40,10 @@
     {
       "source": "/api/spotify/search",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
+    },
+    {
+      "source": "/api/social-sharing/:slug",
+      "destination": "/api/social-sharing-handler"
     },
     {
       "source": "/(.*)",
