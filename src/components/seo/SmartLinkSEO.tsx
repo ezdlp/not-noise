@@ -22,9 +22,14 @@ export function SmartLinkSEO({
   releaseDate,
   streamingPlatforms = [],
 }: SmartLinkSEOProps) {
+  // Ensure we have absolute URLs for images
+  const absoluteArtworkUrl = artworkUrl?.startsWith('http') 
+    ? artworkUrl 
+    : `https://soundraiser.io${artworkUrl}`;
+
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
-  const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
+  const canonical = `https://soundraiser.io${window.location.pathname}`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -51,9 +56,9 @@ export function SmartLinkSEO({
     "byArtist": {
       "@type": "MusicGroup",
       "name": artistName,
-      "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
+      "@id": `https://soundraiser.io/artist/${encodeURIComponent(artistName)}`
     },
-    "image": artworkUrl,
+    "image": absoluteArtworkUrl,
     "description": description,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
@@ -69,7 +74,7 @@ export function SmartLinkSEO({
       "name": "Soundraiser",
       "logo": {
         "@type": "ImageObject",
-        "url": `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
+        "url": "https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png"
       }
     }
   };
@@ -83,26 +88,32 @@ export function SmartLinkSEO({
       
       {/* Technical SEO */}
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      
+      {/* Open Graph / Facebook */}
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
-      <meta property="og:image" content={artworkUrl} />
+      <meta property="og:image" content={absoluteArtworkUrl} />
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="fb:app_id" content="611776603279256" />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (
         <meta key={index} property="music:musician" content={platform.url} />
       ))}
 
-      {/* Image dimensions for social media */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
-      <meta name="twitter:image" content={artworkUrl} />
+      <meta name="twitter:image" content={absoluteArtworkUrl} />
+      <meta name="twitter:site" content="@soundraiser_" />
+
+      {/* Additional mobile-specific meta tags */}
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">
