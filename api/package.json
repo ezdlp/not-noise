@@ -1,0 +1,10 @@
+{
+  "name": "soundraiser-api",
+  "version": "1.0.0",
+  "description": "Soundraiser Serverless Functions",
+  "main": "index.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "@vercel/node": "^2.5.0"
+  }
+} 

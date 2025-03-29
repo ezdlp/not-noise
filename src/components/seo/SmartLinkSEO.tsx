@@ -1,4 +1,3 @@
-
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
 
@@ -12,6 +11,7 @@ interface SmartLinkSEOProps {
     name: string;
     url: string;
   }[];
+  slug?: string;
 }
 
 export function SmartLinkSEO({
@@ -21,10 +21,19 @@ export function SmartLinkSEO({
   description,
   releaseDate,
   streamingPlatforms = [],
+  slug,
 }: SmartLinkSEOProps) {
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
-  const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
+  
+  // Use the explicit slug for canonical URL if available, otherwise fallback to window.location
+  const pathname = slug ? `/link/${slug}` : window.location.pathname;
+  const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${pathname}`;
+  
+  // Make sure we have an absolute URL for the artwork
+  const absoluteArtworkUrl = artworkUrl.startsWith('http') 
+    ? artworkUrl 
+    : `${DEFAULT_SEO_CONFIG.siteUrl}${artworkUrl}`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -53,7 +62,7 @@ export function SmartLinkSEO({
       "name": artistName,
       "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
     },
-    "image": artworkUrl,
+    "image": absoluteArtworkUrl,
     "description": description,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
@@ -86,9 +95,13 @@ export function SmartLinkSEO({
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
-      <meta property="og:image" content={artworkUrl} />
+      <meta property="og:image" content={absoluteArtworkUrl} />
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
+      
+      {/* Add special meta for social media crawlers that support it */}
+      {slug && <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />}
+      
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (
         <meta key={index} property="music:musician" content={platform.url} />
@@ -102,7 +115,8 @@ export function SmartLinkSEO({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
-      <meta name="twitter:image" content={artworkUrl} />
+      <meta name="twitter:image" content={absoluteArtworkUrl} />
+      <meta name="twitter:domain" content={DEFAULT_SEO_CONFIG.siteUrl.replace(/^https?:\/\//, '')} />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

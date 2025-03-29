@@ -17,6 +17,10 @@
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
     {
+      "source": "/og/link/:slug",
+      "destination": "/api/social-preview?slug=:slug"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
     },
@@ -52,6 +56,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/og/link/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     },
