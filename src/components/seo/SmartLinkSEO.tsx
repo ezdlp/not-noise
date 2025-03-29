@@ -78,7 +78,7 @@ export function SmartLinkSEO({
   };
 
   return (
-    <Helmet prioritizeSeoTags>
+    <Helmet>
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
