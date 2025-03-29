@@ -17,6 +17,10 @@
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
     {
+      "source": "/api/og-preview",
+      "destination": "/api/og-preview.js"
+    },
+    {
       "source": "/link/:slug",
       "has": [
         {
@@ -25,11 +29,11 @@
           "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
         }
       ],
-      "destination": "/api/og-preview?slug=:slug"
+      "destination": "/api/og-preview.js?slug=:slug"
     },
     {
       "source": "/og/link/:slug",
-      "destination": "/api/og-preview?slug=:slug"
+      "destination": "/api/og-preview.js?slug=:slug"
     },
     {
       "source": "/sitemap.xml",
@@ -88,6 +92,15 @@
     },
     {
       "source": "/og/link/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/api/og-preview",
       "headers": [
         {
           "key": "Cache-Control",

@@ -5,7 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-console.log('OG Preview API: Initializing with environment variables', {
+console.log('OG Preview API v1.0.2: Initializing with environment variables', {
   supabaseUrlSet: !!supabaseUrl,
   supabaseKeySet: !!supabaseKey,
   nodeEnv: process.env.NODE_ENV,
@@ -24,6 +24,7 @@ function escapeHtml(unsafe) {
 }
 
 function getAbsoluteUrl(url) {
+  if (!url) return 'https://soundraiser.io/og-image.png';
   const baseUrl = 'https://soundraiser.io';
   return url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
@@ -121,8 +122,40 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+// Fallback HTML for error cases
+const ERROR_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundraiser - Smart Links for Musicians</title>
+  <meta name="description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
+  
+  <!-- OpenGraph Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
+  <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
+  <meta property="og:image" content="https://soundraiser.io/og-image.png">
+  <meta property="og:url" content="https://soundraiser.io">
+  <meta property="og:site_name" content="Soundraiser">
+  
+  <!-- Twitter Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
+  <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
+  <meta name="twitter:image" content="https://soundraiser.io/og-image.png">
+</head>
+<body>
+  <h1>Soundraiser</h1>
+  <p>Smart Links for Musicians</p>
+  <script>
+    window.location.href = "https://soundraiser.io";
+  </script>
+</body>
+</html>`;
+
 module.exports = async (req, res) => {
-  console.log('OG Preview API: Request received', {
+  console.log('OG Preview API v1.0.2: Request received', {
     method: req.method,
     url: req.url,
     query: req.query,
@@ -141,13 +174,14 @@ module.exports = async (req, res) => {
 
   // Cache control - allow caching for 1 hour
   res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   
   try {
     // Get slug from URL parameters
     const slug = req.query.slug;
     if (!slug) {
       console.error('OG Preview API: Missing slug parameter');
-      return res.status(400).send('Missing slug parameter');
+      return res.status(200).send(ERROR_HTML);
     }
 
     console.log(`OG Preview API: Generating preview for slug: ${slug}`);
@@ -158,7 +192,7 @@ module.exports = async (req, res) => {
         url: supabaseUrl ? 'Set' : 'Missing', 
         key: supabaseKey ? 'Set' : 'Missing' 
       });
-      return res.status(500).send('Server configuration error');
+      return res.status(200).send(ERROR_HTML);
     }
 
     // Fetch smart link data from Supabase
@@ -184,19 +218,19 @@ module.exports = async (req, res) => {
         .maybeSingle();
     } catch (dbError) {
       console.error('OG Preview API: Supabase query error:', dbError);
-      return res.status(500).send('Database query error');
+      return res.status(200).send(ERROR_HTML);
     }
 
     const { data: smartLink, error } = smartLinkResult;
 
     if (error) {
       console.error('OG Preview API: Error fetching smart link:', error);
-      return res.status(500).send('Error fetching smart link data');
+      return res.status(200).send(ERROR_HTML);
     }
 
     if (!smartLink) {
       console.error(`OG Preview API: Smart link not found for slug: ${slug}`);
-      return res.status(404).send('Smart link not found');
+      return res.status(200).send(ERROR_HTML);
     }
 
     console.log('OG Preview API: Found smart link data:', {
@@ -230,11 +264,10 @@ module.exports = async (req, res) => {
       .replace(/ARTIST_PLACEHOLDER/g, escapeHtml(smartLink.artist_name));
 
     // Set content type and send response
-    res.setHeader('Content-Type', 'text/html');
     console.log('OG Preview API: Sending HTML response');
     return res.status(200).send(html);
   } catch (error) {
     console.error('OG Preview API: Error in handler:', error);
-    return res.status(500).send('Internal Server Error');
+    return res.status(200).send(ERROR_HTML);
   }
 }; 
