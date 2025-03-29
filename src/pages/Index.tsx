@@ -7,13 +7,11 @@ import { CallToAction } from "@/components/landing/CallToAction";
 import { Footer } from "@/components/landing/Footer";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { DefaultSEO } from "@/components/seo/DefaultSEO";
 import WebsiteSEO from "@/components/seo/WebsiteSEO";
 import { Helmet } from "react-helmet";
-import { useLocation } from "react-router-dom";
 
 const Index = () => {
-  const { pathname } = useLocation();
-  
   useEffect(() => {
     // Remove any trailing colons from URLs
     const currentUrl = window.location.href;
@@ -35,21 +33,15 @@ const Index = () => {
     }]
   };
 
-  // Only include SEO for the homepage, not for smart links or other pages
-  const shouldIncludeSEO = pathname === "/";
-
   return (
     <div className="min-h-screen">
-      {shouldIncludeSEO && <WebsiteSEO />}
-      
-      {shouldIncludeSEO && (
-        <Helmet>
-          <script type="application/ld+json">
-            {JSON.stringify(breadcrumbSchema)}
-          </script>
-        </Helmet>
-      )}
-      
+      <DefaultSEO />
+      <WebsiteSEO />
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+      </Helmet>
       <Hero />
       <TrustedLabels />
       <Features />
