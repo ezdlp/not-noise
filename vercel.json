@@ -25,11 +25,11 @@
           "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
         }
       ],
-      "destination": "/api/social-preview?slug=:slug"
+      "destination": "/api/render-smart-link?slug=:slug"
     },
     {
       "source": "/og/link/:slug",
-      "destination": "/api/social-preview?slug=:slug"
+      "destination": "/api/render-smart-link?slug=:slug"
     },
     {
       "source": "/sitemap.xml",
@@ -71,15 +71,6 @@
       ]
     },
     {
-      "source": "/og/link/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
-    },
-    {
       "source": "/link/:slug",
       "has": [
         {
@@ -88,6 +79,15 @@
           "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
         }
       ],
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/og/link/:slug",
       "headers": [
         {
           "key": "Cache-Control",
@@ -130,9 +130,15 @@
         "installCommand": "npm ci",
         "buildCommand": "npm run build"
       }
+    },
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key"
   }
 }

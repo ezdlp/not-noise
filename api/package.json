@@ -1,10 +1,12 @@
 {
   "name": "soundraiser-api",
   "version": "1.0.0",
-  "description": "Soundraiser Serverless Functions",
+  "description": "Soundraiser API Functions",
   "main": "index.js",
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0",
-    "@vercel/node": "^2.5.0"
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 } 

@@ -1,16 +1,13 @@
-
 import React, { useEffect } from 'react';
 import { SmartImage } from '@/components/ui/smart-image';
 
 interface SmartLinkHeaderProps {
   title: string;
-  artistName?: string;
+  artistName: string;
   artworkUrl: string;
-  description?: string;
-  contentType?: 'track' | 'album' | 'playlist';
 }
 
-const SmartLinkHeader = ({ title, artistName, artworkUrl, description, contentType }: SmartLinkHeaderProps) => {
+const SmartLinkHeader = ({ title, artistName, artworkUrl }: SmartLinkHeaderProps) => {
   useEffect(() => {
     console.log("Artwork URL received:", artworkUrl);
   }, [artworkUrl]);
@@ -35,13 +32,8 @@ const SmartLinkHeader = ({ title, artistName, artworkUrl, description, contentTy
       />
       <h1 className="text-2xl font-bold mb-1 text-gray-900">{title}</h1>
       <p className="text-lg text-gray-600 mb-2">
-        {contentType === 'playlist' ? 'Playlist' : artistName}
+        {artistName}
       </p>
-      {description && (
-        <p className="text-sm text-gray-500 max-w-md mx-auto mt-3 px-4">
-          {description}
-        </p>
-      )}
     </div>
   );
 };

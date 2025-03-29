@@ -110,6 +110,10 @@ export default function SmartLink() {
         }
 
         console.log("Successfully found smart link:", smartLinkData);
+        
+        // Set document title immediately for better SEO
+        document.title = `${smartLinkData.title} by ${smartLinkData.artist_name} | Listen on All Platforms`;
+        
         return smartLinkData;
       } catch (error) {
         console.error("Error in smart link query:", error);
@@ -223,12 +227,18 @@ export default function SmartLink() {
     url: pl.url
   })) || [];
 
+  // Create absolute artwork URL
+  const baseUrl = 'https://soundraiser.io';
+  const artworkUrl = smartLink.artwork_url.startsWith('http') 
+    ? smartLink.artwork_url 
+    : `${baseUrl}${smartLink.artwork_url.startsWith('/') ? '' : '/'}${smartLink.artwork_url}`;
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       <SmartLinkSEO
         title={smartLink.title}
         artistName={smartLink.artist_name}
-        artworkUrl={smartLink.artwork_url}
+        artworkUrl={artworkUrl}
         description={smartLink.description}
         releaseDate={smartLink.release_date}
         streamingPlatforms={streamingPlatforms}
@@ -238,7 +248,7 @@ export default function SmartLink() {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
-          backgroundImage: `url(${smartLink.artwork_url})`,
+          backgroundImage: `url(${artworkUrl})`,
           filter: 'blur(30px) brightness(0.7)',
           transform: 'scale(1.1)'
         }}
@@ -249,58 +259,46 @@ export default function SmartLink() {
           <SmartLinkHeader
             title={smartLink.title}
             artistName={smartLink.artist_name}
-            artworkUrl={smartLink.artwork_url}
-            description={smartLink.description}
-            contentType={smartLink.content_type}
+            artworkUrl={artworkUrl}
           />
-          
-          <div className="space-y-4">
-            {smartLink.platform_links && smartLink.platform_links.map((platformLink) => {
-              const icon = platformIcons[platformLink.platform_id];
-              if (!icon) {
-                console.warn(`No icon found for platform: ${platformLink.platform_id}`);
-                return null;
-              }
 
-              return (
+          <div className="mt-6 space-y-4">
+            {smartLink.platform_links && smartLink.platform_links.length > 0 ? (
+              smartLink.platform_links.map((platformLink) => (
                 <PlatformButton
                   key={platformLink.id}
-                  name={platformLink.platform_name}
-                  icon={icon}
-                  action={getActionText(platformLink.platform_id)}
+                  platformId={platformLink.platform_id.toLowerCase()}
+                  platformName={platformLink.platform_name}
+                  actionText={getActionText(platformLink.platform_id.toLowerCase())}
                   url={platformLink.url}
+                  iconUrl={platformIcons[platformLink.platform_id.toLowerCase()] || `/lovable-uploads/${platformLink.platform_id.toLowerCase()}.png`}
                   onClick={() => handlePlatformClick(platformLink.id)}
                 />
-              );
-            })}
+              ))
+            ) : (
+              <p className="text-center text-gray-600 py-4">No platforms available for this release.</p>
+            )}
           </div>
 
-          {smartLink.email_capture_enabled && (
-            <EmailSubscribeForm
-              smartLinkId={smartLink.id}
-              title={smartLink.email_capture_title}
-              description={smartLink.email_capture_description}
-            />
+          {smartLink.enable_email_capture && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <EmailSubscribeForm smartLinkId={smartLink.id} />
+            </div>
+          )}
+
+          {!smartLink.profiles?.hide_branding && (
+            <div className="mt-8 pt-4 border-t border-gray-100 text-center">
+              <a
+                href="https://soundraiser.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-primary transition-colors"
+              >
+                Powered by Soundraiser
+              </a>
+            </div>
           )}
         </div>
-        
-        {!smartLink.profiles?.hide_branding && (
-          <div className="mt-8 text-center">
-            <a 
-              href="https://soundraiser.io" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
-            >
-              <img 
-                src="/lovable-uploads/soundraiser-logo/Iso D.svg"
-                alt="Soundraiser"
-                className="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
-              />
-              <span className="text-sm">Powered by Soundraiser</span>
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
