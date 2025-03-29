@@ -25,11 +25,11 @@
           "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
         }
       ],
-      "destination": "/api/render-smart-link?slug=:slug"
+      "destination": "/api/og-preview?slug=:slug"
     },
     {
       "source": "/og/link/:slug",
-      "destination": "/api/render-smart-link?slug=:slug"
+      "destination": "/api/og-preview?slug=:slug"
     },
     {
       "source": "/sitemap.xml",
@@ -137,6 +137,8 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key"
   }
 }

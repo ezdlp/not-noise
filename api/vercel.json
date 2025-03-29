@@ -1,14 +1,23 @@
 {
+  "version": 2,
   "functions": {
     "api/*.js": {
       "memory": 1024,
       "maxDuration": 10
     }
   },
+  "routes": [
+    {
+      "src": "/link/(?<slug>[^/]+)",
+      "dest": "/api/og-preview?slug=$slug",
+      "headers": {
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"
+      },
+      "continue": true
+    }
+  ],
   "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key", 
-    "SUPABASE_URL": "@vite_supabase_url",
-    "SUPABASE_ANON_KEY": "@vite_supabase_anon_key"
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key"
   }
 } 
