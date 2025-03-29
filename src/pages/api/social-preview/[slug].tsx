@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -10,8 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Fetch smart link data from Supabase
-    const { data: smartLink, error } = await supabase
+    let smartLink = null;
+
+    const { data: slugData, error } = await supabase
       .from('smart_links')
       .select(`
         *,
@@ -30,8 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to fetch smart link data' });
     }
 
-    if (!smartLink) {
-      // Try to fetch by ID in case slug is actually an ID
+    if (!slugData) {
       const { data: linkById, error: idError } = await supabase
         .from('smart_links')
         .select(`
@@ -51,24 +50,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       smartLink = linkById;
+    } else {
+      smartLink = slugData;
     }
 
-    // Ensure we have an absolute URL for the artwork
     const artworkUrl = smartLink.artwork_url?.startsWith('http') 
       ? smartLink.artwork_url 
       : `https://soundraiser.io${smartLink.artwork_url}`;
 
-    // Generate a full, SEO-friendly title
     const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
 
-    // Generate the description
     const description = smartLink.description || 
       `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
 
-    // Create canonical URL
     const canonicalUrl = `https://soundraiser.io/link/${slug}`;
 
-    // Generate HTML with all necessary meta tags for social media platforms
     const html = `
       <!DOCTYPE html>
       <html lang="en">
@@ -140,7 +136,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           </style>
           
           <script>
-            // Redirect to the actual page after a short delay
             setTimeout(() => {
               window.location.href = "${canonicalUrl}";
             }, 50);
@@ -157,9 +152,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       </html>
     `;
 
-    // Send the HTML response with appropriate headers
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400'); // Cache for 24 hours
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
     return res.status(200).send(html);
   } catch (error) {
     console.error('Error generating social preview:', error);
