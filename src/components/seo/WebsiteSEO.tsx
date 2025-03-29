@@ -18,16 +18,16 @@ export default function WebsiteSEO({
 }: Props) {
   const { pathname } = useLocation();
 
+  // Don't provide SEO for /link/ routes since SmartLinkSEO handles those
+  if (pathname.startsWith('/link/')) {
+    return null;
+  }
+
   const defaultTitle = "Soundraiser";
   const defaultDescription = "Smart Links and Music Marketing Platform";
   const siteUrl = "https://soundraiser.io";
   const defaultImage = "/lovable-uploads/soundraiser-logo/Iso A.png";
   const twitterUsername = "@soundraiser_";
-
-  // Don't provide SEO for /link/ routes since SmartLinkSEO handles those
-  if (pathname.startsWith('/link/')) {
-    return null;
-  }
 
   const seo = {
     title: title || defaultTitle,
@@ -37,7 +37,7 @@ export default function WebsiteSEO({
   };
 
   return (
-    <Helmet title={seo.title}>
+    <Helmet>
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content="#6851FB" />
       <meta name="description" content={seo.description} />

@@ -26,9 +26,9 @@ export function SmartLinkSEO({
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
 
-  // Ensure artwork URL is secure
+  // Ensure artwork URL is secure and properly formatted
   const secureArtworkUrl = artworkUrl.replace('http:', 'https:');
-
+  
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
     "@type": "ListenAction",
@@ -79,39 +79,44 @@ export function SmartLinkSEO({
 
   return (
     <Helmet>
-      {/* Basic */}
+      {/* Basic meta tags */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
       <link rel="canonical" href={canonical} />
       
       {/* Technical SEO */}
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta httpEquiv="content-language" content="en" />
       
-      {/* Override the default OG tags to ensure proper image display */}
+      {/* Open Graph tags optimized for sharing music */}
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
       
-      {/* Image tags with proper dimensions - critical for social media cards */}
+      {/* Image tags with proper dimensions, format, and explicit properties */}
       <meta property="og:image" content={secureArtworkUrl} />
       <meta property="og:image:secure_url" content={secureArtworkUrl} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="1200" />
       <meta property="og:image:alt" content={`${title} by ${artistName}`} />
+      <meta property="og:image:type" content="image/jpeg" />
       
+      {/* Music-specific Open Graph tags */}
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
+      <meta property="music:creator" content={artistName} />
       {streamingPlatforms.map((platform, index) => (
         <meta key={index} property="music:musician" content={platform.url} />
       ))}
 
-      {/* Twitter */}
+      {/* Twitter Card tags */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={secureArtworkUrl} />
       <meta name="twitter:image:alt" content={`${title} by ${artistName}`} />
+      <meta name="twitter:site" content="@soundraiser_" />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">
