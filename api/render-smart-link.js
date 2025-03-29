@@ -1,10 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Initialize Supabase client with fallbacks for environment variables
+// These variable names should match what's set in Vercel
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+// Log for debugging during deployment
+console.log(`Initializing Supabase client with URL: ${supabaseUrl ? 'URL exists' : 'URL missing'}`);
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Escape HTML special characters to prevent XSS
@@ -23,15 +26,106 @@ function getAbsoluteUrl(url) {
   return url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
-// Load the template
+// Hardcoded template (instead of reading from file system)
 function getTemplate() {
-  try {
-    const templatePath = path.join(__dirname, '../public/smart-link-template.html');
-    return fs.readFileSync(templatePath, 'utf8');
-  } catch (error) {
-    console.error('Error reading template file:', error);
-    return null;
-  }
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- METADATA_PLACEHOLDER -->
+  
+  <!-- Base styles for no-JS fallback -->
+  <style>
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+      background-color: #fafafa;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+    .artwork {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 24px;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .artist {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      font-size: 18px;
+      color: #374151;
+      margin-top: 0;
+    }
+    .cta {
+      display: inline-block;
+      background-color: #6851FB;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      margin-top: 20px;
+      transition: background-color 0.2s;
+    }
+    .platforms {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .platform-button {
+      padding: 10px 15px;
+      background-color: white;
+      border: 1px solid #E6E6E6;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: #111827;
+      font-weight: 500;
+      font-size: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .platform-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .platform-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+    }
+  </style>
+  
+  <!-- Inject the main app -->
+  <script type="module" src="/src/main.tsx"></script>
+</head>
+<body>
+  <div id="root">
+    <!-- FALLBACK_CONTENT_PLACEHOLDER -->
+  </div>
+</body>
+</html>`;
 }
 
 module.exports = async (req, res) => {
@@ -50,25 +144,39 @@ module.exports = async (req, res) => {
 
     console.log(`Rendering smart link for slug: ${slug}`);
 
+    // Check if Supabase client is initialized properly
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase credentials missing. Check environment variables.');
+      return res.status(500).send('Server configuration error');
+    }
+
     // Fetch smart link data from Supabase
-    const { data: smartLink, error } = await supabase
-      .from('smart_links')
-      .select(`
-        id,
-        title,
-        artist_name,
-        artwork_url,
-        description,
-        release_date,
-        platform_links (
+    let smartLinkResult;
+    try {
+      smartLinkResult = await supabase
+        .from('smart_links')
+        .select(`
           id,
-          platform_id,
-          platform_name,
-          url
-        )
-      `)
-      .eq('slug', slug)
-      .maybeSingle();
+          title,
+          artist_name,
+          artwork_url,
+          description,
+          release_date,
+          platform_links (
+            id,
+            platform_id,
+            platform_name,
+            url
+          )
+        `)
+        .eq('slug', slug)
+        .maybeSingle();
+    } catch (dbError) {
+      console.error('Supabase query error:', dbError);
+      return res.status(500).send('Database query error');
+    }
+
+    const { data: smartLink, error } = smartLinkResult;
 
     if (error) {
       console.error('Error fetching smart link:', error);
