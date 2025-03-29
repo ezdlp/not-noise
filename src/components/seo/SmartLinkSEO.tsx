@@ -64,7 +64,7 @@ export function SmartLinkSEO({
       "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
     },
     "image": absoluteArtworkUrl,
-    "description": description,
+    "description": finalDescription,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
     "url": canonical,
@@ -197,28 +197,17 @@ export function SmartLinkSEO({
       <meta name="description" content={finalDescription} />
       <link rel="canonical" href={canonical} />
       
-      {/* Technical SEO */}
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      {/* Essential Open Graph - Required properties */}
+      <meta property="og:url" content={canonical} />
       <meta property="og:type" content="music.song" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
       <meta property="og:image" content={absoluteArtworkUrl} />
-      <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
       
-      {/* Add special link to static version for social media crawlers */}
-      {slug && (
-        <>
-          <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} data-bot-view="true" />
-          <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />
-        </>
-      )}
+      {/* Facebook specific */}
+      <meta property="fb:app_id" content="1032091254648768" />
       
-      {releaseDate && <meta property="music:release_date" content={releaseDate} />}
-      {streamingPlatforms.map((platform, index) => (
-        <meta key={index} property="music:musician" content={platform.url} />
-      ))}
-
       {/* Image dimensions for social media */}
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
@@ -228,7 +217,12 @@ export function SmartLinkSEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={absoluteArtworkUrl} />
-      <meta name="twitter:domain" content={DEFAULT_SEO_CONFIG.siteUrl.replace(/^https?:\/\//, '')} />
+      
+      {/* Music specific */}
+      {releaseDate && <meta property="music:release_date" content={releaseDate} />}
+      {streamingPlatforms.map((platform, index) => (
+        <meta key={index} property="music:musician" content={platform.url} />
+      ))}
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">
