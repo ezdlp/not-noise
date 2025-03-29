@@ -99,8 +99,13 @@ export function SmartLinkSEO({
       <meta property="og:url" content={canonical} />
       <meta property="og:site_name" content="Soundraiser" />
       
-      {/* Add special meta for social media crawlers that support it */}
-      {slug && <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />}
+      {/* Add special link to static version for social media crawlers */}
+      {slug && (
+        <>
+          <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} data-bot-view="true" />
+          <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />
+        </>
+      )}
       
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (

@@ -17,6 +17,17 @@
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
     {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "User-Agent",
+          "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
+        }
+      ],
+      "destination": "/api/social-preview?slug=:slug"
+    },
+    {
       "source": "/og/link/:slug",
       "destination": "/api/social-preview?slug=:slug"
     },
@@ -61,6 +72,22 @@
     },
     {
       "source": "/og/link/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "User-Agent",
+          "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
+        }
+      ],
       "headers": [
         {
           "key": "Cache-Control",
