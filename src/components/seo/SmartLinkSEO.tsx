@@ -26,6 +26,9 @@ export function SmartLinkSEO({
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
 
+  // Ensure artwork URL is secure
+  const secureArtworkUrl = artworkUrl.replace('http:', 'https:');
+
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
     "@type": "ListenAction",
@@ -53,7 +56,7 @@ export function SmartLinkSEO({
       "name": artistName,
       "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
     },
-    "image": artworkUrl,
+    "image": secureArtworkUrl,
     "description": description,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
@@ -75,7 +78,7 @@ export function SmartLinkSEO({
   };
 
   return (
-    <Helmet>
+    <Helmet prioritizeSeoTags>
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
@@ -92,8 +95,8 @@ export function SmartLinkSEO({
       <meta property="og:site_name" content="Soundraiser" />
       
       {/* Image tags with proper dimensions - critical for social media cards */}
-      <meta property="og:image" content={artworkUrl} />
-      <meta property="og:image:secure_url" content={artworkUrl.replace('http:', 'https:')} />
+      <meta property="og:image" content={secureArtworkUrl} />
+      <meta property="og:image:secure_url" content={secureArtworkUrl} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="1200" />
       <meta property="og:image:alt" content={`${title} by ${artistName}`} />
@@ -107,7 +110,7 @@ export function SmartLinkSEO({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
-      <meta name="twitter:image" content={artworkUrl} />
+      <meta name="twitter:image" content={secureArtworkUrl} />
       <meta name="twitter:image:alt" content={`${title} by ${artistName}`} />
 
       {/* Schema.org structured data */}
