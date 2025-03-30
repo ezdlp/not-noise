@@ -2,26 +2,28 @@ import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
 
 export function DefaultSEO() {
+  const { title, description, image, type, siteUrl } = DEFAULT_SEO_CONFIG;
+
   return (
     <Helmet>
       {/* Basic */}
-      <title>{DEFAULT_SEO_CONFIG.defaultTitle}</title>
-      <meta name="description" content={DEFAULT_SEO_CONFIG.defaultDescription} />
-      <link rel="canonical" href={DEFAULT_SEO_CONFIG.siteUrl} />
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={siteUrl} />
 
       {/* Open Graph */}
-      <meta property="og:type" content={DEFAULT_SEO_CONFIG.type} />
-      <meta property="og:title" content={DEFAULT_SEO_CONFIG.defaultTitle} />
-      <meta property="og:description" content={DEFAULT_SEO_CONFIG.defaultDescription} />
-      <meta property="og:image" content={DEFAULT_SEO_CONFIG.defaultImage} />
-      <meta property="og:url" content={DEFAULT_SEO_CONFIG.siteUrl} />
+      <meta property="og:type" content={type} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
+      <meta property="og:url" content={siteUrl} />
       <meta property="og:site_name" content="Soundraiser" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={DEFAULT_SEO_CONFIG.defaultTitle} />
-      <meta name="twitter:description" content={DEFAULT_SEO_CONFIG.defaultDescription} />
-      <meta name="twitter:image" content={DEFAULT_SEO_CONFIG.defaultImage} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
 
       {/* Other Important Meta Tags */}
       <meta name="viewport" content="width=device-width, initial-scale=1" />

@@ -34,9 +34,9 @@ export function ArticleSEO({
   twitterTitle,
   twitterDescription,
 }: ArticleSEOProps) {
-  const fullTitle = `${title} | ${DEFAULT_SEO_CONFIG.defaultTitle}`;
+  const fullTitle = `${title} | ${DEFAULT_SEO_CONFIG.title}`;
   const canonicalUrl = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
-  const finalImage = image || DEFAULT_SEO_CONFIG.defaultImage;
+  const finalImage = image || DEFAULT_SEO_CONFIG.image;
 
   // Prepare schema.org Article markup
   const articleSchema = {

@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,6 @@ export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
 
   useEffect(() => {
-    // Initialize analytics for smart links
     analytics.initialize(true);
     analytics.trackPageView(`/link/${slug}`);
   }, [slug]);
@@ -46,32 +44,10 @@ export default function SmartLink() {
     queryFn: async () => {
       console.log("Fetching smart link with slug:", slug);
       
-      // Fetch smart link data
-      const { data: smartLinkData, error: fetchError } = await supabase
-        .from('smart_links')
-        .select(`
-          *,
-          platform_links (
-            id,
-            platform_id,
-            platform_name,
-            url
-          ),
-          profiles:user_id (
-            hide_branding
-          )
-        `)
-        .eq('slug', slug)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error fetching smart link:', fetchError);
-        throw fetchError;
-      }
-
-      if (!smartLinkData) {
-        // Try fetching by ID instead
-        const { data: idData, error: idError } = await supabase
+      let smartLinkData;
+      
+      try {
+        const { data: slugData, error: smartLinkError } = await supabase
           .from('smart_links')
           .select(`
             *,
@@ -85,23 +61,60 @@ export default function SmartLink() {
               hide_branding
             )
           `)
-          .eq('id', slug)
+          .eq('slug', slug)
           .maybeSingle();
 
-        if (idError) {
-          console.error('Error fetching smart link by ID:', idError);
-          throw idError;
+        console.log("Slug query result:", { data: slugData, error: smartLinkError });
+
+        if (!slugData && !smartLinkError) {
+          console.log("Attempting to fetch by ID:", slug);
+          const { data: idData, error: idError } = await supabase
+            .from('smart_links')
+            .select(`
+              *,
+              platform_links (
+                id,
+                platform_id,
+                platform_name,
+                url
+              ),
+              profiles:user_id (
+                hide_branding
+              )
+            `)
+            .eq('id', slug)
+            .maybeSingle();
+
+          console.log("ID query result:", { data: idData, error: idError });
+
+          if (idError) {
+            console.error('Error fetching smart link by ID:', idError);
+            throw idError;
+          }
+
+          if (!idData) {
+            console.error('Smart link not found by either slug or ID:', slug);
+            throw new Error('Smart link not found');
+          }
+
+          smartLinkData = idData;
+        } else if (smartLinkError) {
+          console.error('Error fetching smart link:', smartLinkError);
+          throw smartLinkError;
+        } else {
+          smartLinkData = slugData;
         }
 
-        if (!idData) {
-          console.error('Smart link not found by either slug or ID:', slug);
+        if (!smartLinkData) {
           throw new Error('Smart link not found');
         }
 
-        return idData;
+        console.log("Successfully found smart link:", smartLinkData);
+        return smartLinkData;
+      } catch (error) {
+        console.error("Error in smart link query:", error);
+        throw error;
       }
-
-      return smartLinkData;
     },
     retry: 1,
     staleTime: 5 * 60 * 1000,
@@ -140,9 +153,7 @@ export default function SmartLink() {
     try {
       console.log('Recording platform click for ID:', platformLinkId);
       
-      // Use a safe default value with optional chaining
-      const platformName = "Unknown";
-      analytics.trackPlatformClick(platformName, smartLink.id);
+      analytics.trackPlatformClick(smartLink.platform_name || 'Unknown', smartLink.id);
       
       await analyticsService.trackPlatformClick(platformLinkId);
       console.log('Platform click recorded successfully');
@@ -156,6 +167,7 @@ export default function SmartLink() {
   };
 
   if (isLoading) {
+    console.log("Smart link is loading...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
@@ -167,6 +179,7 @@ export default function SmartLink() {
   }
 
   if (error || !smartLink) {
+    console.error("Smart link error or not found:", error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full mx-4">
@@ -210,28 +223,21 @@ export default function SmartLink() {
     url: pl.url
   })) || [];
 
-  // Create absolute artwork URL
-  const baseUrl = 'https://soundraiser.io';
-  const artworkUrl = smartLink.artwork_url.startsWith('http') 
-    ? smartLink.artwork_url 
-    : `${baseUrl}${smartLink.artwork_url.startsWith('/') ? '' : '/'}${smartLink.artwork_url}`;
-
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       <SmartLinkSEO
         title={smartLink.title}
         artistName={smartLink.artist_name}
-        artworkUrl={artworkUrl}
+        artworkUrl={smartLink.artwork_url}
         description={smartLink.description}
         releaseDate={smartLink.release_date}
         streamingPlatforms={streamingPlatforms}
-        slug={slug}
       />
       
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ 
-          backgroundImage: `url(${artworkUrl})`,
+          backgroundImage: `url(${smartLink.artwork_url})`,
           filter: 'blur(30px) brightness(0.7)',
           transform: 'scale(1.1)'
         }}
@@ -242,46 +248,58 @@ export default function SmartLink() {
           <SmartLinkHeader
             title={smartLink.title}
             artistName={smartLink.artist_name}
-            artworkUrl={artworkUrl}
+            artworkUrl={smartLink.artwork_url}
+            description={smartLink.description}
+            contentType={smartLink.content_type}
           />
+          
+          <div className="space-y-4">
+            {smartLink.platform_links && smartLink.platform_links.map((platformLink) => {
+              const icon = platformIcons[platformLink.platform_id];
+              if (!icon) {
+                console.warn(`No icon found for platform: ${platformLink.platform_id}`);
+                return null;
+              }
 
-          <div className="mt-6 space-y-4">
-            {smartLink.platform_links && smartLink.platform_links.length > 0 ? (
-              smartLink.platform_links.map((platformLink) => (
+              return (
                 <PlatformButton
                   key={platformLink.id}
-                  platformId={platformLink.platform_id.toLowerCase()}
-                  platformName={platformLink.platform_name}
-                  actionText={getActionText(platformLink.platform_id.toLowerCase())}
+                  name={platformLink.platform_name}
+                  icon={icon}
+                  action={getActionText(platformLink.platform_id)}
                   url={platformLink.url}
-                  iconUrl={platformIcons[platformLink.platform_id.toLowerCase()] || `/lovable-uploads/${platformLink.platform_id.toLowerCase()}.png`}
                   onClick={() => handlePlatformClick(platformLink.id)}
                 />
-              ))
-            ) : (
-              <p className="text-center text-gray-600 py-4">No platforms available for this release.</p>
-            )}
+              );
+            })}
           </div>
 
           {smartLink.email_capture_enabled && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <EmailSubscribeForm smartLinkId={smartLink.id} />
-            </div>
-          )}
-
-          {!smartLink.profiles?.hide_branding && (
-            <div className="mt-8 pt-4 border-t border-gray-100 text-center">
-              <a
-                href="https://soundraiser.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-primary transition-colors"
-              >
-                Powered by Soundraiser
-              </a>
-            </div>
+            <EmailSubscribeForm
+              smartLinkId={smartLink.id}
+              title={smartLink.email_capture_title}
+              description={smartLink.email_capture_description}
+            />
           )}
         </div>
+        
+        {!smartLink.profiles?.hide_branding && (
+          <div className="mt-8 text-center">
+            <a 
+              href="https://soundraiser.io" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
+            >
+              <img 
+                src="/lovable-uploads/soundraiser-logo/Iso D.svg"
+                alt="Soundraiser"
+                className="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
+              />
+              <span className="text-sm">Powered by Soundraiser</span>
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
