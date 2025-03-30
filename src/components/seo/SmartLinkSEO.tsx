@@ -1,3 +1,4 @@
+
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
 import { useEffect } from "react";
