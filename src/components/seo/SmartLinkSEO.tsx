@@ -35,7 +35,7 @@ export function SmartLinkSEO({
   // Make sure we have an absolute URL for the artwork
   const absoluteArtworkUrl = artworkUrl.startsWith('http') 
     ? artworkUrl 
-    : `${DEFAULT_SEO_CONFIG.siteUrl}${artworkUrl}`;
+    : `${DEFAULT_SEO_CONFIG.siteUrl}${artworkUrl.startsWith('/') ? '' : '/'}${artworkUrl}`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -87,6 +87,11 @@ export function SmartLinkSEO({
 
   // Direct DOM manipulation for consistent metadata for crawlers
   useEffect(() => {
+    // First, clean up existing homepage-specific meta tags
+    document.querySelectorAll('meta[data-page="homepage"]').forEach(tag => {
+      tag.remove();
+    });
+    
     // Helper to create or update meta tags
     const setMetaTag = (name: string, content: string, property?: string) => {
       // Try to find existing tag first
@@ -159,19 +164,27 @@ export function SmartLinkSEO({
     }
     script.textContent = JSON.stringify(musicSchema);
     
-    // Special link for alternate bot view
+    // Special links for alternate bot view and debugging
     if (slug) {
-      let link = document.querySelector('link[data-bot-view="true"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'alternate');
-        link.setAttribute('type', 'text/html');
-        link.setAttribute('data-bot-view', 'true');
-        document.head.appendChild(link);
+      // Social media preview direct link
+      let linkSocial = document.querySelector('link[data-bot-view="true"]');
+      if (!linkSocial) {
+        linkSocial = document.createElement('link');
+        linkSocial.setAttribute('rel', 'alternate');
+        linkSocial.setAttribute('type', 'text/html');
+        linkSocial.setAttribute('data-bot-view', 'true');
+        document.head.appendChild(linkSocial);
       }
-      link.setAttribute('href', `${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`);
+      linkSocial.setAttribute('href', `${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`);
       
+      // Add a meta tag for social media crawlers to see the direct OG link
       setMetaTag('og:see_also', `${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`, 'og:see_also');
+      
+      // Add a special debug header to help track the source
+      const metaDebug = document.createElement('meta');
+      metaDebug.setAttribute('name', 'x-soundraiser-debug');
+      metaDebug.setAttribute('content', `smart-link:${slug}:client-side`);
+      document.head.appendChild(metaDebug);
     }
     
     // Manual cleanup when component unmounts
@@ -224,6 +237,10 @@ export function SmartLinkSEO({
       {streamingPlatforms.map((platform, index) => (
         <meta key={index} property="music:musician" content={platform.url} />
       ))}
+
+      {/* Alternative bot-friendly URL */}
+      {slug && <link rel="alternate" href={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} data-bot-view="true" />}
+      {slug && <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />}
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

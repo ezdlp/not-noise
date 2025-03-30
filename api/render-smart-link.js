@@ -61,6 +61,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <!-- Music Specific Tags -->
   <meta property="music:musician" content="ARTIST_MUSICIAN_URL_PLACEHOLDER">
   <meta property="music:release_date" content="RELEASE_DATE_PLACEHOLDER">
+
+  <!-- Debug header -->
+  <meta name="x-soundraiser-debug" content="smart-link:SLUG_PLACEHOLDER:server-side">
   
   <style>
     body {
@@ -285,7 +288,8 @@ module.exports = async (req, res) => {
       .replace(/URL_PLACEHOLDER/g, pageUrl)
       .replace(/ARTIST_PLACEHOLDER/g, escapeHtml(smartLink.artist_name))
       .replace(/ARTIST_MUSICIAN_URL_PLACEHOLDER/g, musicianUrl)
-      .replace(/RELEASE_DATE_PLACEHOLDER/g, releaseDate);
+      .replace(/RELEASE_DATE_PLACEHOLDER/g, releaseDate)
+      .replace(/SLUG_PLACEHOLDER/g, slug);
 
     // Set content type and send response
     console.log('Smart Link Preview API: Sending HTML response');
