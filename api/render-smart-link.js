@@ -1,20 +1,21 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors';
+// Import required dependencies
+const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client with environment variables
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-console.log('Smart Link Preview Edge Function: Initializing with environment variables', {
+console.log('Smart Link Preview API: Initializing with environment variables', {
   supabaseUrlSet: !!supabaseUrl,
   supabaseKeySet: !!supabaseKey,
+  nodeEnv: process.env.NODE_ENV,
 });
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Helper functions
-function escapeHtml(unsafe: string): string {
+function escapeHtml(unsafe) {
   return unsafe
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -23,7 +24,7 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function getAbsoluteUrl(url?: string): string {
+function getAbsoluteUrl(url) {
   if (!url) return 'https://soundraiser.io/soundraiser-og-image.jpg';
   const baseUrl = 'https://soundraiser.io';
   return url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
@@ -62,8 +63,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <meta property="music:release_date" content="RELEASE_DATE_PLACEHOLDER">
 
   <!-- Debug header -->
-  <meta name="x-soundraiser-debug" content="smart-link:SLUG_PLACEHOLDER:supabase-edge">
-  <meta name="x-soundraiser-useragent" content="USER_AGENT_PLACEHOLDER">
+  <meta name="x-soundraiser-debug" content="smart-link:SLUG_PLACEHOLDER:server-side">
   
   <style>
     body {
@@ -162,10 +162,6 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
   <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
   <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
-  
-  <!-- Debug information -->
-  <meta name="x-soundraiser-debug" content="error-fallback">
-  <meta name="x-soundraiser-useragent" content="USER_AGENT_PLACEHOLDER">
 </head>
 <body>
   <h1>Soundraiser</h1>
@@ -176,136 +172,91 @@ const ERROR_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// Cache to store recently generated previews (TTL: 1 hour)
-const previewCache = new Map<string, { html: string, timestamp: number }>();
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
-
-Deno.serve(async (req) => {
-  // Get the User-Agent for debugging
-  const userAgent = req.headers.get('user-agent') || '';
-  const url = new URL(req.url);
-  const slug = url.searchParams.get('slug');
-  
-  console.log('Smart Link Preview Edge Function: Request received', {
-    method: req.method,
+module.exports = async (req, res) => {
+  // DEBUG: Log all incoming requests
+  console.log('Smart Link Preview API: Bot Request', {
+    ua: req.headers['user-agent'],
     url: req.url,
-    slug,
-    userAgent: userAgent.substring(0, 100), // Truncate for readability
-    headers: Array.from(req.headers.entries()).reduce((acc, [key, value]) => {
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string>)
+    slug: req.query.slug
   });
 
-  // Check for preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        ...corsHeaders,
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-      },
-    });
-  }
+  console.log('Smart Link Preview API: Request received', {
+    method: req.method,
+    url: req.url,
+    query: req.query,
+    headers: {
+      'user-agent': req.headers['user-agent'],
+      'content-type': req.headers['content-type'],
+      'x-forwarded-for': req.headers['x-forwarded-for']
+    }
+  });
 
-  // Set CORS and cache headers for all responses
-  const responseHeaders = {
-    ...corsHeaders,
-    'Content-Type': 'text/html; charset=utf-8',
-    'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-    'X-Smart-Link-Debug': 'edge-function-response',
-    'X-Smart-Link-Slug': slug || 'none',
-    'X-Smart-Link-UserAgent': userAgent.substring(0, 50) // Truncate for header size limits
-  };
-
+  // Set CORS and cache headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  
   try {
-    console.log('Smart Link Preview Edge Function: Processing request', { slug });
-
+    // Get slug from URL parameters
+    const slug = req.query.slug;
     if (!slug) {
-      console.error('Smart Link Preview Edge Function: Missing slug parameter');
-      return new Response(
-        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
-        { 
-          status: 200,
-          headers: responseHeaders 
-        }
-      );
+      console.error('Smart Link Preview API: Missing slug parameter');
+      return res.status(200).send(ERROR_HTML);
     }
 
-    // Check cache first
-    const cacheKey = `smartlink:${slug}`;
-    const cachedPreview = previewCache.get(cacheKey);
-    const now = Date.now();
-    
-    if (cachedPreview && (now - cachedPreview.timestamp) < CACHE_TTL) {
-      console.log(`Smart Link Preview Edge Function: Cache hit for slug: ${slug}`);
-      return new Response(cachedPreview.html, { 
-        status: 200,
-        headers: responseHeaders 
-      });
-    }
-
-    console.log(`Smart Link Preview Edge Function: Cache miss, generating preview for slug: ${slug}`);
+    console.log(`Smart Link Preview API: Generating preview for slug: ${slug}`);
 
     // Validate Supabase credentials
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Smart Link Preview Edge Function: Supabase credentials missing:', { 
+      console.error('Smart Link Preview API: Supabase credentials missing:', { 
         url: supabaseUrl ? 'Set' : 'Missing', 
         key: supabaseKey ? 'Set' : 'Missing' 
       });
-      return new Response(
-        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
-        { 
-          status: 200,
-          headers: responseHeaders 
-        }
-      );
+      return res.status(200).send(ERROR_HTML);
     }
 
     // Fetch smart link data from Supabase
-    const smartLinkResult = await supabase
-      .from('smart_links')
-      .select(`
-        id,
-        title,
-        artist_name,
-        artwork_url,
-        description,
-        release_date,
-        platform_links (
+    let smartLinkResult;
+    try {
+      console.log('Smart Link Preview API: Querying Supabase for smart link data');
+      smartLinkResult = await supabase
+        .from('smart_links')
+        .select(`
           id,
-          platform_name,
-          url
-        )
-      `)
-      .eq('slug', slug)
-      .maybeSingle();
+          title,
+          artist_name,
+          artwork_url,
+          description,
+          release_date,
+          platform_links (
+            id,
+            platform_name,
+            url
+          )
+        `)
+        .eq('slug', slug)
+        .maybeSingle();
+    } catch (dbError) {
+      console.error('Smart Link Preview API: Supabase query error:', dbError);
+      return res.status(200).send(ERROR_HTML);
+    }
 
     const { data: smartLink, error } = smartLinkResult;
 
     if (error) {
-      console.error('Smart Link Preview Edge Function: Error fetching smart link:', error);
-      return new Response(
-        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
-        { 
-          status: 200,
-          headers: responseHeaders 
-        }
-      );
+      console.error('Smart Link Preview API: Error fetching smart link:', error);
+      return res.status(200).send(ERROR_HTML);
     }
 
     if (!smartLink) {
-      console.error(`Smart Link Preview Edge Function: Smart link not found for slug: ${slug}`);
-      return new Response(
-        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
-        { 
-          status: 200,
-          headers: responseHeaders 
-        }
-      );
+      console.error(`Smart Link Preview API: Smart link not found for slug: ${slug}`);
+      return res.status(200).send(ERROR_HTML);
     }
 
-    console.log('Smart Link Preview Edge Function: Found smart link data:', {
+    console.log('Smart Link Preview API: Found smart link data:', {
       id: smartLink.id,
       title: smartLink.title,
       artist: smartLink.artist_name,
@@ -328,7 +279,7 @@ Deno.serve(async (req) => {
     // Format release date if available
     const releaseDate = smartLink.release_date || '';
 
-    console.log('Smart Link Preview Edge Function: Prepared template data:', {
+    console.log('Smart Link Preview API: Prepared template data:', {
       title,
       description: description.substring(0, 30) + '...',
       artworkUrl,
@@ -345,36 +296,13 @@ Deno.serve(async (req) => {
       .replace(/ARTIST_PLACEHOLDER/g, escapeHtml(smartLink.artist_name))
       .replace(/ARTIST_MUSICIAN_URL_PLACEHOLDER/g, musicianUrl)
       .replace(/RELEASE_DATE_PLACEHOLDER/g, releaseDate)
-      .replace(/SLUG_PLACEHOLDER/g, slug)
-      .replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent));
-
-    // Store in cache
-    previewCache.set(cacheKey, { html, timestamp: now });
-    
-    // Clean up old cache entries (simple janitor)
-    if (now % 10 === 0) { // Run cleanup randomly (~10% of requests)
-      console.log('Smart Link Preview Edge Function: Running cache cleanup');
-      for (const [key, value] of previewCache.entries()) {
-        if ((now - value.timestamp) > CACHE_TTL) {
-          previewCache.delete(key);
-        }
-      }
-    }
+      .replace(/SLUG_PLACEHOLDER/g, slug);
 
     // Set content type and send response
-    console.log('Smart Link Preview Edge Function: Sending HTML response');
-    return new Response(html, {
-      status: 200,
-      headers: responseHeaders
-    });
+    console.log('Smart Link Preview API: Sending HTML response');
+    return res.status(200).send(html);
   } catch (error) {
-    console.error('Smart Link Preview Edge Function: Error in handler:', error);
-    return new Response(
-      ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
-      {
-        status: 200,
-        headers: responseHeaders
-      }
-    );
+    console.error('Smart Link Preview API: Error in handler:', error);
+    return res.status(200).send(ERROR_HTML);
   }
-});
+};

@@ -53,10 +53,6 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
-      "source": "/test-bot/:slug",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
-    },
-    {
       "source": "/((?!api|_next|lovable-uploads|sitemap).*)",
       "destination": "/index.html"
     }
