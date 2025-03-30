@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
@@ -31,6 +32,15 @@ function escapeHtml(unsafe: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CRITICAL DEBUG: Log all incoming requests
+  console.log("DEBUG SOCIAL PREVIEW REQUEST:", {
+    ua: req.headers['user-agent'],
+    slug: req.query.slug,
+    url: req.url,
+    path: req.url ? req.url.split('?')[0] : null,
+    headers: req.headers
+  });
+
   // Debug tracking code
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   console.log(`[${requestId}] SOCIAL PREVIEW API: Request received`);
@@ -49,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Set essential headers to ensure proper browser/crawler handling
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Disable caching for debugging purposes
+    // Disable caching to ensure fresh responses during debugging
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -106,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soundraiser - Smart Links for Musicians</title>
-  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.png">
+  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
   <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
   <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
   <meta property="og:url" content="https://soundraiser.io">
@@ -262,7 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   
   <!-- Debug info for visual inspection -->
   <div style="margin-top: 20px; font-size: 10px; color: #999; text-align: center;">
-    Request ID: ${requestId} | API Version: 1.2 | Timestamp: ${new Date().toISOString()}
+    Request ID: ${requestId} | API Version: 1.3 | Timestamp: ${new Date().toISOString()}
   </div>
 </body>
 </html>`;

@@ -1,3 +1,4 @@
+
 // Import required dependencies
 const { createClient } = require('@supabase/supabase-js');
 
@@ -5,7 +6,7 @@ const { createClient } = require('@supabase/supabase-js');
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-console.log('OG Preview API v1.0.2: Initializing with environment variables', {
+console.log('OG Preview API v1.0.3: Initializing with environment variables', {
   supabaseUrlSet: !!supabaseUrl,
   supabaseKeySet: !!supabaseKey,
   nodeEnv: process.env.NODE_ENV,
@@ -24,7 +25,7 @@ function escapeHtml(unsafe) {
 }
 
 function getAbsoluteUrl(url) {
-  if (!url) return 'https://soundraiser.io/og-image.png';
+  if (!url) return 'https://soundraiser.io/soundraiser-og-image.jpg';
   const baseUrl = 'https://soundraiser.io';
   return url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
@@ -135,7 +136,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta property="og:type" content="website">
   <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
   <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.png">
+  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
   <meta property="og:url" content="https://soundraiser.io">
   <meta property="og:site_name" content="Soundraiser">
   
@@ -143,7 +144,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
   <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.png">
+  <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
 </head>
 <body>
   <h1>Soundraiser</h1>

@@ -25,7 +25,7 @@ function escapeHtml(unsafe) {
 }
 
 function getAbsoluteUrl(url) {
-  if (!url) return 'https://soundraiser.io/og-image.png';
+  if (!url) return 'https://soundraiser.io/soundraiser-og-image.jpg';
   const baseUrl = 'https://soundraiser.io';
   return url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
@@ -148,7 +148,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta property="og:type" content="website">
   <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
   <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta property="og:image" content="https://soundraiser.io/og-image.png">
+  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://soundraiser.io">
@@ -161,7 +161,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
   <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta name="twitter:image" content="https://soundraiser.io/og-image.png">
+  <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
 </head>
 <body>
   <h1>Soundraiser</h1>
@@ -173,6 +173,13 @@ const ERROR_HTML = `<!DOCTYPE html>
 </html>`;
 
 module.exports = async (req, res) => {
+  // DEBUG: Log all incoming requests
+  console.log('Smart Link Preview API: Bot Request', {
+    ua: req.headers['user-agent'],
+    url: req.url,
+    slug: req.query.slug
+  });
+
   console.log('Smart Link Preview API: Request received', {
     method: req.method,
     url: req.url,
