@@ -1,6 +1,7 @@
 
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { corsHeaders } from '../_shared/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 
 // Initialize Supabase client with environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -180,7 +181,7 @@ const ERROR_HTML = `<!DOCTYPE html>
 const previewCache = new Map<string, { html: string, timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Get the User-Agent for debugging
   const userAgent = req.headers.get('user-agent') || '';
   const url = new URL(req.url);
