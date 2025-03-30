@@ -66,6 +66,9 @@ export function SmartLinkSEO({
     }
   };
 
+  // Add a meta tag to help with debugging
+  const isBot = typeof navigator !== 'undefined' && /bot|crawler|spider|pinterest|facebook|twitter|linkedin/i.test(navigator.userAgent);
+
   return (
     <Helmet>
       {/* Basic */}
@@ -93,6 +96,10 @@ export function SmartLinkSEO({
       {/* Music Specific */}
       <meta property="music:musician" content={`${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`} />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
+      
+      {/* Debug Information */}
+      <meta name="x-soundraiser-debug" content={`smart-link:${slug}:${isBot ? 'bot' : 'user'}`} />
+      <meta name="x-soundraiser-url" content={canonical} />
       
       {/* Schema.org structured data */}
       <script type="application/ld+json">

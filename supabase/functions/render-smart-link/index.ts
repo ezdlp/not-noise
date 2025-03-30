@@ -63,6 +63,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
   <!-- Debug header -->
   <meta name="x-soundraiser-debug" content="smart-link:SLUG_PLACEHOLDER:supabase-edge">
+  <meta name="x-soundraiser-useragent" content="USER_AGENT_PLACEHOLDER">
   
   <style>
     body {
@@ -161,6 +162,10 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
   <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
   <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
+  
+  <!-- Debug information -->
+  <meta name="x-soundraiser-debug" content="error-fallback">
+  <meta name="x-soundraiser-useragent" content="USER_AGENT_PLACEHOLDER">
 </head>
 <body>
   <h1>Soundraiser</h1>
@@ -176,6 +181,22 @@ const previewCache = new Map<string, { html: string, timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
 Deno.serve(async (req) => {
+  // Get the User-Agent for debugging
+  const userAgent = req.headers.get('user-agent') || '';
+  const url = new URL(req.url);
+  const slug = url.searchParams.get('slug');
+  
+  console.log('Smart Link Preview Edge Function: Request received', {
+    method: req.method,
+    url: req.url,
+    slug,
+    userAgent: userAgent.substring(0, 100), // Truncate for readability
+    headers: Array.from(req.headers.entries()).reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>)
+  });
+
   // Check for preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -192,27 +213,23 @@ Deno.serve(async (req) => {
     ...corsHeaders,
     'Content-Type': 'text/html; charset=utf-8',
     'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+    'X-Smart-Link-Debug': 'edge-function-response',
+    'X-Smart-Link-Slug': slug || 'none',
+    'X-Smart-Link-UserAgent': userAgent.substring(0, 50) // Truncate for header size limits
   };
 
   try {
-    // Parse the URL to get query parameters
-    const url = new URL(req.url);
-    const slug = url.searchParams.get('slug');
-    const userAgent = req.headers.get('user-agent') || '';
-
-    console.log('Smart Link Preview Edge Function: Request received', {
-      method: req.method,
-      url: req.url,
-      slug,
-      userAgent: userAgent.substring(0, 100) // Truncate for readability
-    });
+    console.log('Smart Link Preview Edge Function: Processing request', { slug });
 
     if (!slug) {
       console.error('Smart Link Preview Edge Function: Missing slug parameter');
-      return new Response(ERROR_HTML, { 
-        status: 200,
-        headers: responseHeaders 
-      });
+      return new Response(
+        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
+        { 
+          status: 200,
+          headers: responseHeaders 
+        }
+      );
     }
 
     // Check cache first
@@ -236,10 +253,13 @@ Deno.serve(async (req) => {
         url: supabaseUrl ? 'Set' : 'Missing', 
         key: supabaseKey ? 'Set' : 'Missing' 
       });
-      return new Response(ERROR_HTML, { 
-        status: 200,
-        headers: responseHeaders 
-      });
+      return new Response(
+        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
+        { 
+          status: 200,
+          headers: responseHeaders 
+        }
+      );
     }
 
     // Fetch smart link data from Supabase
@@ -265,18 +285,24 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error('Smart Link Preview Edge Function: Error fetching smart link:', error);
-      return new Response(ERROR_HTML, { 
-        status: 200,
-        headers: responseHeaders 
-      });
+      return new Response(
+        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
+        { 
+          status: 200,
+          headers: responseHeaders 
+        }
+      );
     }
 
     if (!smartLink) {
       console.error(`Smart Link Preview Edge Function: Smart link not found for slug: ${slug}`);
-      return new Response(ERROR_HTML, { 
-        status: 200,
-        headers: responseHeaders 
-      });
+      return new Response(
+        ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
+        { 
+          status: 200,
+          headers: responseHeaders 
+        }
+      );
     }
 
     console.log('Smart Link Preview Edge Function: Found smart link data:', {
@@ -319,7 +345,8 @@ Deno.serve(async (req) => {
       .replace(/ARTIST_PLACEHOLDER/g, escapeHtml(smartLink.artist_name))
       .replace(/ARTIST_MUSICIAN_URL_PLACEHOLDER/g, musicianUrl)
       .replace(/RELEASE_DATE_PLACEHOLDER/g, releaseDate)
-      .replace(/SLUG_PLACEHOLDER/g, slug);
+      .replace(/SLUG_PLACEHOLDER/g, slug)
+      .replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent));
 
     // Store in cache
     previewCache.set(cacheKey, { html, timestamp: now });
@@ -342,9 +369,12 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Smart Link Preview Edge Function: Error in handler:', error);
-    return new Response(ERROR_HTML, {
-      status: 200,
-      headers: responseHeaders
-    });
+    return new Response(
+      ERROR_HTML.replace(/USER_AGENT_PLACEHOLDER/g, escapeHtml(userAgent)), 
+      {
+        status: 200,
+        headers: responseHeaders
+      }
+    );
   }
 });
