@@ -140,7 +140,9 @@ export default function SmartLink() {
     try {
       console.log('Recording platform click for ID:', platformLinkId);
       
-      analytics.trackPlatformClick(smartLink.platform_name || 'Unknown', smartLink.id);
+      // Use a safe default value with optional chaining
+      const platformName = "Unknown";
+      analytics.trackPlatformClick(platformName, smartLink.id);
       
       await analyticsService.trackPlatformClick(platformLinkId);
       console.log('Platform click recorded successfully');
@@ -261,7 +263,7 @@ export default function SmartLink() {
             )}
           </div>
 
-          {smartLink.enable_email_capture && (
+          {smartLink.email_capture_enabled && (
             <div className="mt-8 pt-6 border-t border-gray-200">
               <EmailSubscribeForm smartLinkId={smartLink.id} />
             </div>

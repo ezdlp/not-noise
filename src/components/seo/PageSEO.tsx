@@ -17,7 +17,7 @@ export function PageSEO({
 }: SEOProps) {
   const fullTitle = `${title} | Soundraiser`;
   const finalCanonical = canonical || `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
-  const finalImage = image || DEFAULT_SEO_CONFIG.image;
+  const finalImage = image || DEFAULT_SEO_CONFIG.defaultImage;
 
   return (
     <Helmet>

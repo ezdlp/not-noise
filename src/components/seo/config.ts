@@ -5,6 +5,10 @@ export const DEFAULT_SEO_CONFIG = {
   defaultTitle: "Soundraiser - Smart Links for Musicians",
   defaultDescription: "Create beautiful smart links for your music on all platforms. Promote your releases effectively.",
   defaultImage: "/soundraiser-og-image.jpg",
+  title: "Soundraiser - Smart Links for Musicians",
+  description: "Create beautiful smart links for your music on all platforms. Promote your releases effectively.",
+  image: "/soundraiser-og-image.jpg",
+  type: "website"
 }
 
 export const SCHEMA_ORG_CONFIG = {
