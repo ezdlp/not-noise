@@ -55,6 +55,14 @@
     .result {
       margin-top: 20px;
     }
+    .success {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    .error {
+      color: #F44336;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -78,7 +86,7 @@
   
   <div class="card">
     <h2>3. Simulate Bot Request</h2>
-    <p>Test the endpoint directly with typical bot user agents:</p>
+    <p>Test the endpoint directly:</p>
     <select id="bot-selector">
       <option value="facebookexternalhit/1.1">Facebook</option>
       <option value="Twitterbot/1.0">Twitter</option>
@@ -89,8 +97,15 @@
     </select>
     <button id="simulate-btn">Simulate Bot Request</button>
     <div class="result" id="bot-result">
-      <p>Note: This simulation is limited by browser CORS policies. It checks if the endpoint is accessible.</p>
+      <p>This tests the Edge Function directly by making an HTTP request to it.</p>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>4. Direct Edge Function Test</h2>
+    <p>Test the Supabase Edge Function directly:</p>
+    <button id="direct-test-btn">Test Edge Function Directly</button>
+    <div class="result" id="direct-result"></div>
   </div>
 
   <script>
@@ -105,7 +120,7 @@
     document.getElementById('test-btn').addEventListener('click', async () => {
       const slug = document.getElementById('slug-input').value.trim();
       if (!slug) {
-        document.getElementById('result').innerHTML = '<p style="color: red;">Please enter a slug</p>';
+        document.getElementById('result').innerHTML = '<p class="error">Please enter a slug</p>';
         return;
       }
       
@@ -117,28 +132,28 @@
         
         if (response.ok) {
           document.getElementById('result').innerHTML = `
-            <p style="color: green;">✅ Success! The endpoint responded with HTTP ${response.status}</p>
+            <p class="success">✅ Success! The endpoint responded with HTTP ${response.status}</p>
             <p>To view meta tags, share this link on social media:</p>
             <p><strong>https://soundraiser.io/link/${slug}</strong></p>
           `;
         } else {
           document.getElementById('result').innerHTML = `
-            <p style="color: red;">Error: HTTP ${response.status}</p>
+            <p class="error">Error: HTTP ${response.status}</p>
             <pre>${await response.text()}</pre>
           `;
         }
       } catch (error) {
         document.getElementById('result').innerHTML = `
-          <p style="color: red;">Error: ${error.message}</p>
+          <p class="error">Error: ${error.message}</p>
         `;
       }
     });
     
-    // Simulate bot request (limited by CORS)
+    // Simulate bot request
     document.getElementById('simulate-btn').addEventListener('click', async () => {
       const slug = document.getElementById('slug-input').value.trim();
       if (!slug) {
-        document.getElementById('bot-result').innerHTML = '<p style="color: red;">Please enter a slug</p>';
+        document.getElementById('bot-result').innerHTML = '<p class="error">Please enter a slug</p>';
         return;
       }
       
@@ -146,32 +161,65 @@
       document.getElementById('bot-result').innerHTML = '<p>Testing...</p>';
       
       try {
-        // This will likely fail due to CORS, but it's a useful indication if it works
-        const corsProxy = 'https://corsproxy.io/?';
+        // This will make a request directly to the edge function
         const targetUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=${slug}`;
         
-        const response = await fetch(corsProxy + encodeURIComponent(targetUrl), {
+        const response = await fetch(targetUrl, {
           headers: {
             'User-Agent': botAgent
           }
         });
         
         if (response.ok) {
+          const text = await response.text();
           document.getElementById('bot-result').innerHTML = `
-            <p style="color: green;">✅ Success! The endpoint responded with HTTP ${response.status}</p>
+            <p class="success">✅ Success! The endpoint responded with HTTP ${response.status}</p>
             <p>First 200 characters of response:</p>
-            <pre>${(await response.text()).substring(0, 200)}...</pre>
+            <pre>${text.substring(0, 500)}...</pre>
           `;
         } else {
           document.getElementById('bot-result').innerHTML = `
-            <p style="color: red;">Error: HTTP ${response.status}</p>
+            <p class="error">Error: HTTP ${response.status}</p>
             <pre>${await response.text()}</pre>
           `;
         }
       } catch (error) {
         document.getElementById('bot-result').innerHTML = `
-          <p style="color: red;">Error: ${error.message}</p>
-          <p>This is expected due to CORS restrictions in browsers. The test is still useful to confirm the endpoint exists.</p>
+          <p class="error">Error: ${error.message}</p>
+        `;
+      }
+    });
+    
+    // Direct edge function test
+    document.getElementById('direct-test-btn').addEventListener('click', async () => {
+      const slug = document.getElementById('slug-input').value.trim();
+      if (!slug) {
+        document.getElementById('direct-result').innerHTML = '<p class="error">Please enter a slug</p>';
+        return;
+      }
+      
+      document.getElementById('direct-result').innerHTML = '<p>Testing direct access to Edge Function...</p>';
+      
+      try {
+        const edgeFunctionUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=${slug}`;
+        const response = await fetch(edgeFunctionUrl);
+        
+        if (response.ok) {
+          const text = await response.text();
+          document.getElementById('direct-result').innerHTML = `
+            <p class="success">✅ Success! The Edge Function responded with HTTP ${response.status}</p>
+            <p>Response starts with:</p>
+            <pre>${text.substring(0, 500)}...</pre>
+          `;
+        } else {
+          document.getElementById('direct-result').innerHTML = `
+            <p class="error">Error: HTTP ${response.status}</p>
+            <pre>${await response.text()}</pre>
+          `;
+        }
+      } catch (error) {
+        document.getElementById('direct-result').innerHTML = `
+          <p class="error">Error: ${error.message}</p>
         `;
       }
     });
