@@ -29,12 +29,12 @@
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
     },
     {
-      "source": "/api/og-preview",
-      "destination": "/api/og-preview.js"
+      "source": "/api/sitemap",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
     },
     {
-      "source": "/og/link/:slug",
-      "destination": "/api/social-preview?slug=:slug"
+      "source": "/api/sitemap/:file",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
     },
     {
       "source": "/sitemap.xml",
@@ -43,14 +43,6 @@
     {
       "source": "/sitemap-:file.xml",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/sitemap-:file.xml"
-    },
-    {
-      "source": "/api/sitemap",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
-    },
-    {
-      "source": "/api/sitemap/:file",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
     },
     {
       "source": "/api/payments/create-promotion-checkout",
@@ -92,24 +84,6 @@
         {
           "key": "Content-Type",
           "value": "text/html; charset=UTF-8"
-        }
-      ]
-    },
-    {
-      "source": "/og/link/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
-    },
-    {
-      "source": "/api/og-preview",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     },

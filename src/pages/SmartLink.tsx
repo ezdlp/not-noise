@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ export default function SmartLink() {
   const { slug } = useParams<{ slug: string }>();
 
   useEffect(() => {
+    // Initialize analytics for smart links
     analytics.initialize(true);
     analytics.trackPageView(`/link/${slug}`);
   }, [slug]);
@@ -44,10 +46,32 @@ export default function SmartLink() {
     queryFn: async () => {
       console.log("Fetching smart link with slug:", slug);
       
-      let smartLinkData;
-      
-      try {
-        const { data: slugData, error: smartLinkError } = await supabase
+      // Fetch smart link data
+      const { data: smartLinkData, error: fetchError } = await supabase
+        .from('smart_links')
+        .select(`
+          *,
+          platform_links (
+            id,
+            platform_id,
+            platform_name,
+            url
+          ),
+          profiles:user_id (
+            hide_branding
+          )
+        `)
+        .eq('slug', slug)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching smart link:', fetchError);
+        throw fetchError;
+      }
+
+      if (!smartLinkData) {
+        // Try fetching by ID instead
+        const { data: idData, error: idError } = await supabase
           .from('smart_links')
           .select(`
             *,
@@ -61,64 +85,23 @@ export default function SmartLink() {
               hide_branding
             )
           `)
-          .eq('slug', slug)
+          .eq('id', slug)
           .maybeSingle();
 
-        console.log("Slug query result:", { data: slugData, error: smartLinkError });
-
-        if (!slugData && !smartLinkError) {
-          console.log("Attempting to fetch by ID:", slug);
-          const { data: idData, error: idError } = await supabase
-            .from('smart_links')
-            .select(`
-              *,
-              platform_links (
-                id,
-                platform_id,
-                platform_name,
-                url
-              ),
-              profiles:user_id (
-                hide_branding
-              )
-            `)
-            .eq('id', slug)
-            .maybeSingle();
-
-          console.log("ID query result:", { data: idData, error: idError });
-
-          if (idError) {
-            console.error('Error fetching smart link by ID:', idError);
-            throw idError;
-          }
-
-          if (!idData) {
-            console.error('Smart link not found by either slug or ID:', slug);
-            throw new Error('Smart link not found');
-          }
-
-          smartLinkData = idData;
-        } else if (smartLinkError) {
-          console.error('Error fetching smart link:', smartLinkError);
-          throw smartLinkError;
-        } else {
-          smartLinkData = slugData;
+        if (idError) {
+          console.error('Error fetching smart link by ID:', idError);
+          throw idError;
         }
 
-        if (!smartLinkData) {
+        if (!idData) {
+          console.error('Smart link not found by either slug or ID:', slug);
           throw new Error('Smart link not found');
         }
 
-        console.log("Successfully found smart link:", smartLinkData);
-        
-        // Set document title immediately for better SEO
-        document.title = `${smartLinkData.title} by ${smartLinkData.artist_name} | Listen on All Platforms`;
-        
-        return smartLinkData;
-      } catch (error) {
-        console.error("Error in smart link query:", error);
-        throw error;
+        return idData;
       }
+
+      return smartLinkData;
     },
     retry: 1,
     staleTime: 5 * 60 * 1000,
@@ -171,7 +154,6 @@ export default function SmartLink() {
   };
 
   if (isLoading) {
-    console.log("Smart link is loading...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
@@ -183,7 +165,6 @@ export default function SmartLink() {
   }
 
   if (error || !smartLink) {
-    console.error("Smart link error or not found:", error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full mx-4">

@@ -49,30 +49,6 @@ export default function WebsiteSEO({
       <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://i.scdn.co" crossOrigin="anonymous" />
       
-      {/* OG (Open Graph) tags */}
-      {article ? (
-        <meta property="og:type" content="article" />
-      ) : (
-        <meta property="og:type" content="website" />
-      )}
-      <meta property="og:url" content={seo.url} />
-      <meta property="og:title" content={seo.title} />
-      <meta property="og:description" content={seo.description} />
-      <meta property="og:image" content={seo.image} />
-      <meta property="og:image:alt" content={seo.description} />
-      <meta property="og:site_name" content="Soundraiser" />
-      <meta property="og:locale" content="en_US" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      
-      {/* Twitter Card tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:creator" content={twitterUsername} />
-      <meta name="twitter:title" content={seo.title} />
-      <meta name="twitter:description" content={seo.description} />
-      <meta name="twitter:image" content={seo.image} />
-      <meta name="twitter:image:alt" content={seo.description} />
-
       {/* Schema.org structured data */}
       <script type="application/ld+json">
         {JSON.stringify(SCHEMA_ORG_CONFIG)}
