@@ -18,7 +18,7 @@
           "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
         }
       ],
-      "destination": "/api/render-smart-link?slug=:slug"
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
     },
     {
       "source": "/_next/image",
