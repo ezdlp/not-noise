@@ -10,6 +10,17 @@
   },
   "rewrites": [
     {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "User-Agent",
+          "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
+        }
+      ],
+      "destination": "/api/social-preview.ts?slug=:slug"
+    },
+    {
       "source": "/_next/image",
       "destination": "/_next/image"
     },
@@ -20,17 +31,6 @@
     {
       "source": "/api/og-preview",
       "destination": "/api/og-preview.js"
-    },
-    {
-      "source": "/link/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "User-Agent",
-          "value": "(bot|telegram|whatsapp|facebook|twitter|pinterest|linkedin|vkontakte|slack|discord|Bot|facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|PinterestBot|Slackbot|DiscordBot|Discordbot)"
-        }
-      ],
-      "destination": "/api/social-preview.ts?slug=:slug"
     },
     {
       "source": "/og/link/:slug",

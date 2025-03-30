@@ -9,23 +9,22 @@
     <meta name="description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively." />
     <meta name="author" content="Soundraiser" />
     
-    <!-- The static OG tags below are only for the homepage, not for smart links -->
-    <!-- Smart links will have their OG tags generated dynamically -->
-    <meta data-page="homepage" property="og:url" content="https://soundraiser.io" />
-    <meta data-page="homepage" property="og:type" content="website" />
-    <meta data-page="homepage" property="og:title" content="Soundraiser - Smart Links for Musicians" />
-    <meta data-page="homepage" property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively." />
-    <meta data-page="homepage" property="og:image" content="https://soundraiser.io/og-image.png" />
-    <meta data-page="homepage" property="og:image:width" content="1200" />
-    <meta data-page="homepage" property="og:image:height" content="630" />
-    <meta data-page="homepage" property="og:site_name" content="Soundraiser" />
-    <meta data-page="homepage" property="fb:app_id" content="1032091254648768" />
+    <!-- Homepage-specific OG tags - these will be overridden on smart link pages -->
+    <meta data-homepage="true" property="og:url" content="https://soundraiser.io" />
+    <meta data-homepage="true" property="og:type" content="website" />
+    <meta data-homepage="true" property="og:title" content="Soundraiser - Smart Links for Musicians" />
+    <meta data-homepage="true" property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively." />
+    <meta data-homepage="true" property="og:image" content="https://soundraiser.io/og-image.png" />
+    <meta data-homepage="true" property="og:image:width" content="1200" />
+    <meta data-homepage="true" property="og:image:height" content="630" />
+    <meta data-homepage="true" property="og:site_name" content="Soundraiser" />
+    <meta data-homepage="true" property="fb:app_id" content="1032091254648768" />
     
-    <!-- Twitter Card tags -->
-    <meta data-page="homepage" name="twitter:card" content="summary_large_image" />
-    <meta data-page="homepage" name="twitter:title" content="Soundraiser - Smart Links for Musicians" />
-    <meta data-page="homepage" name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively." />
-    <meta data-page="homepage" name="twitter:image" content="https://soundraiser.io/og-image.png" />
+    <!-- Twitter Card tags - homepage specific -->
+    <meta data-homepage="true" name="twitter:card" content="summary_large_image" />
+    <meta data-homepage="true" name="twitter:title" content="Soundraiser - Smart Links for Musicians" />
+    <meta data-homepage="true" name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively." />
+    <meta data-homepage="true" name="twitter:image" content="https://soundraiser.io/og-image.png" />
     
     <!-- Preconnect to image optimization endpoint -->
     <link rel="preconnect" href="/_next" crossorigin />

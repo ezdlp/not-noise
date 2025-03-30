@@ -85,12 +85,29 @@ export function SmartLinkSEO({
     }
   };
 
+  // This function detects if the current user agent is likely a bot
+  const isSocialBot = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return /bot|crawler|spider|facebookexternalhit|twitterbot|discordbot|telegrambot|whatsapp|linkedinbot|slack/i.test(userAgent);
+  };
+
   // Direct DOM manipulation for consistent metadata for crawlers
   useEffect(() => {
     // First, clean up existing homepage-specific meta tags
-    document.querySelectorAll('meta[data-page="homepage"]').forEach(tag => {
+    document.querySelectorAll('meta[data-homepage="true"]').forEach(tag => {
       tag.remove();
     });
+    
+    // Debug information in console
+    console.log(`SmartLinkSEO: Setting metadata for ${title} by ${artistName}`);
+    console.log(`SmartLinkSEO: Artwork URL: ${absoluteArtworkUrl}`);
+    console.log(`SmartLinkSEO: Is social bot: ${isSocialBot()}`);
+    
+    // Don't modify DOM if this appears to be a bot - they should get server-rendered markup
+    if (isSocialBot()) {
+      console.log('SmartLinkSEO: Social bot detected, not modifying client-side meta tags');
+      return;
+    }
     
     // Helper to create or update meta tags
     const setMetaTag = (name: string, content: string, property?: string) => {
@@ -110,6 +127,7 @@ export function SmartLinkSEO({
         } else {
           meta.setAttribute('name', name);
         }
+        meta.setAttribute('data-smart-link', 'true');
         document.head.appendChild(meta);
       }
       
@@ -118,6 +136,9 @@ export function SmartLinkSEO({
 
     // Update the document title directly
     document.title = fullTitle;
+    
+    // Add debugging meta tag
+    setMetaTag('x-soundraiser-client-debug', `smart-link-seo-${Date.now()}`, 'x-soundraiser-client-debug');
     
     // Update basic meta tags
     setMetaTag('description', finalDescription);
@@ -152,6 +173,7 @@ export function SmartLinkSEO({
       const meta = document.createElement('meta');
       meta.setAttribute('property', 'music:musician');
       meta.setAttribute('content', platform.url);
+      meta.setAttribute('data-smart-link', 'true');
       document.head.appendChild(meta);
     });
     
@@ -189,8 +211,10 @@ export function SmartLinkSEO({
     
     // Manual cleanup when component unmounts
     return () => {
-      // We don't remove the meta tags on unmount as they should persist
-      // for better SEO even during page transitions
+      // Clean up all meta tags we've added for this smart link
+      document.querySelectorAll('meta[data-smart-link="true"]').forEach(tag => {
+        tag.remove();
+      });
     };
   }, [
     fullTitle, 
@@ -208,39 +232,39 @@ export function SmartLinkSEO({
     <Helmet>
       {/* Basic */}
       <title>{fullTitle}</title>
-      <meta name="description" content={finalDescription} />
-      <link rel="canonical" href={canonical} />
+      <meta name="description" content={finalDescription} data-smart-link="true" />
+      <link rel="canonical" href={canonical} data-smart-link="true" />
       
       {/* Essential Open Graph - Required properties */}
-      <meta property="og:url" content={canonical} />
-      <meta property="og:type" content="music.song" />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={finalDescription} />
-      <meta property="og:image" content={absoluteArtworkUrl} />
-      <meta property="og:site_name" content="Soundraiser" />
+      <meta property="og:url" content={canonical} data-smart-link="true" />
+      <meta property="og:type" content="music.song" data-smart-link="true" />
+      <meta property="og:title" content={fullTitle} data-smart-link="true" />
+      <meta property="og:description" content={finalDescription} data-smart-link="true" />
+      <meta property="og:image" content={absoluteArtworkUrl} data-smart-link="true" />
+      <meta property="og:site_name" content="Soundraiser" data-smart-link="true" />
       
       {/* Facebook specific */}
-      <meta property="fb:app_id" content="1032091254648768" />
+      <meta property="fb:app_id" content="1032091254648768" data-smart-link="true" />
       
       {/* Image dimensions for social media */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content="1200" data-smart-link="true" />
+      <meta property="og:image:height" content="630" data-smart-link="true" />
 
       {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={finalDescription} />
-      <meta name="twitter:image" content={absoluteArtworkUrl} />
+      <meta name="twitter:card" content="summary_large_image" data-smart-link="true" />
+      <meta name="twitter:title" content={fullTitle} data-smart-link="true" />
+      <meta name="twitter:description" content={finalDescription} data-smart-link="true" />
+      <meta name="twitter:image" content={absoluteArtworkUrl} data-smart-link="true" />
       
       {/* Music specific */}
-      {releaseDate && <meta property="music:release_date" content={releaseDate} />}
+      {releaseDate && <meta property="music:release_date" content={releaseDate} data-smart-link="true" />}
       {streamingPlatforms.map((platform, index) => (
-        <meta key={index} property="music:musician" content={platform.url} />
+        <meta key={index} property="music:musician" content={platform.url} data-smart-link="true" />
       ))}
 
       {/* Alternative bot-friendly URL */}
       {slug && <link rel="alternate" href={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} data-bot-view="true" />}
-      {slug && <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} />}
+      {slug && <meta property="og:see_also" content={`${DEFAULT_SEO_CONFIG.siteUrl}/og/link/${slug}`} data-smart-link="true" />}
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

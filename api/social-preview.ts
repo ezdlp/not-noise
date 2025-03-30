@@ -32,17 +32,48 @@ function escapeHtml(unsafe: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Debug tracking code
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  console.log(`[${requestId}] SOCIAL PREVIEW API: Request received`);
+  console.log(`[${requestId}] User-Agent: ${req.headers['user-agent']}`);
+  console.log(`[${requestId}] Request URL: ${req.url}`);
+  console.log(`[${requestId}] Request query:`, req.query);
+
   try {
     // Extract the slug from the URL path
     const slug = req.query.slug as string;
     
     if (!slug) {
+      console.error(`[${requestId}] ERROR: Missing slug parameter`);
       return res.status(400).send('Missing slug parameter');
     }
 
+    // Set essential headers to ensure proper browser/crawler handling
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    // Disable caching for debugging purposes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     // Debug info
-    console.log(`Social preview requested for slug: ${slug}`);
-    console.log(`User agent: ${req.headers['user-agent']}`);
+    console.log(`[${requestId}] Social preview requested for slug: ${slug}`);
+    console.log(`[${requestId}] User agent: ${req.headers['user-agent']}`);
+    console.log(`[${requestId}] Supabase URL configured: ${!!supabaseUrl}`);
+    console.log(`[${requestId}] Supabase key configured: ${!!supabaseKey}`);
+
+    // Detect if it's a bot from Facebook, Twitter, etc.
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    const isBot = /bot|crawler|spider|facebookexternalhit|twitterbot|discordbot|telegrambot|whatsapp|linkedinbot|slack/i.test(userAgent);
+    console.log(`[${requestId}] Is bot: ${isBot}, User agent: ${userAgent}`);
+
+    // Verify the environment variables for Supabase
+    if (!supabaseUrl || !supabaseKey) {
+      console.error(`[${requestId}] ERROR: Supabase credentials missing`);
+      return res.status(500).send('Supabase configuration error');
+    }
+
+    // Log that we're querying Supabase
+    console.log(`[${requestId}] Querying Supabase for smart link with slug: ${slug}`);
 
     // Query the database for the smart link data
     const { data: smartLink, error } = await supabase
@@ -64,16 +95,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching smart link:', error);
+      console.error(`[${requestId}] Supabase query error:`, error);
       return res.status(500).send('Error fetching smart link');
     }
 
     if (!smartLink) {
-      console.error(`Smart link not found for slug: ${slug}`);
+      console.error(`[${requestId}] Smart link not found for slug: ${slug}`);
       return res.status(404).send('Smart link not found');
     }
 
-    console.log(`Found smart link data: ${JSON.stringify(smartLink, null, 2)}`);
+    console.log(`[${requestId}] Found smart link data:`, {
+      id: smartLink.id,
+      title: smartLink.title,
+      artist: smartLink.artist_name,
+      hasArtwork: !!smartLink.artwork_url
+    });
 
     // Format the title
     const title = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
@@ -86,13 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? smartLink.artwork_url 
       : `${baseUrl}${smartLink.artwork_url.startsWith('/') ? '' : '/'}${smartLink.artwork_url}`;
 
-    // Detect if it's a bot from Facebook, Twitter, etc.
-    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
-    const isBot = /bot|crawler|spider|facebookexternalhit|twitterbot|discordbot|telegrambot|whatsapp|linkedinbot|slack/i.test(userAgent);
-
-    // For debugging
-    console.log(`Is bot: ${isBot}, User agent: ${userAgent}`);
-
+    console.log(`[${requestId}] Using artwork URL: ${artworkUrl}`);
+    
     // Generate HTML with proper Open Graph tags
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -101,6 +132,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  
+  <!-- Debug info -->
+  <meta name="x-soundraiser-debug" content="social-preview-api-${requestId}">
+  <meta name="x-request-id" content="${requestId}">
+  <meta name="x-preview-type" content="social-bot-preview">
+  <meta name="x-slug" content="${slug}">
   
   <!-- Preload artwork image -->
   <link rel="preload" href="${artworkUrl}" as="image">
@@ -145,13 +182,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     "url": "${baseUrl}/link/${slug}"
   }
   </script>
-  
-  ${!isBot ? `
-  <!-- Redirect to the actual page if not a bot -->
-  <script>
-    window.location.href = '/link/${slug}';
-  </script>
-  ` : ''}
   
   <!-- Fallback styles for bots that render pages -->
   <style>
@@ -213,19 +243,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     <img class="artwork" src="${artworkUrl}" alt="${escapeHtml(smartLink.title)}">
     <h1>${escapeHtml(smartLink.title)}</h1>
     <p class="artist">by ${escapeHtml(smartLink.artist_name)}</p>
-    <a href="/link/${slug}" class="cta">Listen on All Platforms</a>
+    <p>${escapeHtml(description)}</p>
+    <a href="${baseUrl}/link/${slug}" class="cta">Listen on All Platforms</a>
+  </div>
+  
+  <!-- Debug info for visual inspection -->
+  <div style="margin-top: 20px; font-size: 10px; color: #999; text-align: center;">
+    Request ID: ${requestId} | API Version: 1.2 | Timestamp: ${new Date().toISOString()}
   </div>
 </body>
 </html>`;
 
     // Log response for debugging
-    console.log('Returning HTML with proper Open Graph tags');
+    console.log(`[${requestId}] Returning HTML with proper Open Graph tags`);
 
-    // Set proper content type and send the HTML
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
+    // Send the HTML response
+    return res.send(html);
   } catch (error) {
-    console.error('Error in social preview handler:', error);
-    res.status(500).send('Internal Server Error');
+    console.error(`[${requestId}] Unhandled error in social preview handler:`, error);
+    return res.status(500).send('Internal Server Error');
   }
-} 
+}
