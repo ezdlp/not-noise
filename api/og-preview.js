@@ -135,7 +135,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta property="og:type" content="website">
   <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
   <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta property="og:image" content="https://soundraiser.io/og-image.png">
+  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.png">
   <meta property="og:url" content="https://soundraiser.io">
   <meta property="og:site_name" content="Soundraiser">
   
@@ -143,7 +143,7 @@ const ERROR_HTML = `<!DOCTYPE html>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians">
   <meta name="twitter:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
-  <meta name="twitter:image" content="https://soundraiser.io/og-image.png">
+  <meta name="twitter:image" content="https://soundraiser.io/soundraiser-og-image.png">
 </head>
 <body>
   <h1>Soundraiser</h1>
@@ -270,4 +270,4 @@ module.exports = async (req, res) => {
     console.error('OG Preview API: Error in handler:', error);
     return res.status(200).send(ERROR_HTML);
   }
-}; 
+};

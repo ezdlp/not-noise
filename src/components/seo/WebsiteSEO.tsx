@@ -21,7 +21,7 @@ export default function WebsiteSEO({
   const defaultTitle = "Soundraiser";
   const defaultDescription = "Smart Links and Music Marketing Platform";
   const siteUrl = "https://soundraiser.io";
-  const defaultImage = "/lovable-uploads/soundraiser-logo/Iso A.png";
+  const defaultImage = "/soundraiser-og-image.png";
   const twitterUsername = "@soundraiser_";
 
   const seo = {

@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { IncomingMessage, ServerResponse } from 'http';
 
@@ -101,7 +100,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!smartLink) {
       console.error(`[${requestId}] Smart link not found for slug: ${slug}`);
-      return res.status(404).send('Smart link not found');
+      return res.status(404).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundraiser - Smart Links for Musicians</title>
+  <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.png">
+  <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
+  <meta property="og:description" content="Create beautiful smart links for your music on all platforms. Promote your releases effectively.">
+  <meta property="og:url" content="https://soundraiser.io">
+</head>
+<body>
+  <h1>Smart link not found</h1>
+</body>
+</html>`);
     }
 
     console.log(`[${requestId}] Found smart link data:`, {
