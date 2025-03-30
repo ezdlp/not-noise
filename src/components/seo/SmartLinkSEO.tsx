@@ -66,13 +66,33 @@ export function SmartLinkSEO({
     }
   };
 
-  // We rely on Helmet for non-crawlers
   return (
     <Helmet>
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
       <link rel="canonical" href={canonical} />
+      
+      {/* Open Graph */}
+      <meta property="og:type" content="music.song" />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={finalDescription} />
+      <meta property="og:image" content={absoluteArtworkUrl} />
+      <meta property="og:url" content={canonical} />
+      <meta property="og:site_name" content="Soundraiser" />
+      
+      {/* Facebook Specific */}
+      <meta property="fb:app_id" content="1032091254648768" />
+      
+      {/* Twitter */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={finalDescription} />
+      <meta name="twitter:image" content={absoluteArtworkUrl} />
+      
+      {/* Music Specific */}
+      <meta property="music:musician" content={`${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`} />
+      {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       
       {/* Schema.org structured data */}
       <script type="application/ld+json">

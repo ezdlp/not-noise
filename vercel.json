@@ -53,7 +53,7 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api|_next|lovable-uploads|sitemap).*)",
       "destination": "/index.html"
     }
   ],
