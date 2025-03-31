@@ -121,6 +121,8 @@ export function SmartLinkSEO({
       <meta name="soundraiser:rendered-url" content={renderedPath} />
       <meta name="soundraiser:social-api-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
       <meta name="soundraiser:og-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
+      <meta name="soundraiser:crawler-test" content="true" />
+      <meta name="soundraiser:version" content="1.0.2" />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

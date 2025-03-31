@@ -35,20 +35,22 @@ Deno.serve(async (req) => {
     console.log(`[Render Smart Link] User Agent: ${userAgent}`);
     console.log(`[Render Smart Link] Referer: ${referer}`);
     
-    // Check if this is a crawler with more detailed logging
-    const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
+    // Enhanced crawler detection with more user agents
+    const crawlerRegex = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i;
+    const isCrawler = crawlerRegex.test(userAgent);
     console.log(`[Render Smart Link] Is crawler: ${isCrawler}`);
     
     if (isCrawler) {
       // More detailed debugging for crawler requests
-      const crawlerType = userAgent.match(/(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i)?.[1] || 'Unknown crawler';
+      const crawlerMatches = userAgent.match(crawlerRegex);
+      const crawlerType = crawlerMatches ? crawlerMatches[1] : 'Unknown crawler';
       console.log(`[Render Smart Link] Crawler type detected: ${crawlerType}`);
     }
     
     // Log all headers for debugging
     console.log(`[Render Smart Link] All headers:`, Object.fromEntries([...req.headers.entries()]));
     
-    // Extract slug from path - handle different formats
+    // Extract slug from path - handle different formats with enhanced logging
     let slug = '';
     
     // Check for different path patterns
@@ -281,6 +283,7 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     <meta name="soundraiser:request-path" content="${requestUrl}" />
     <meta name="soundraiser:canonical" content="${canonical}" />
     <meta name="soundraiser:render-timestamp" content="${new Date().toISOString()}" />
+    <meta name="soundraiser:version" content="1.0.2" />
     
     <!-- Redirection script - only for non-crawler clients -->
     <script>
@@ -325,7 +328,7 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     'X-Request-URL': requestUrl,
     'X-User-Agent': userAgent.substring(0, 100), // Truncate if very long
     'X-Is-Crawler': isCrawler.toString(),
-    'X-Soundraiser-Version': '1.0.1', // Add a version for tracking response format changes
+    'X-Soundraiser-Version': '1.0.2', // Updated version for tracking response format changes
   };
 
   return new Response(html, { headers: responseHeaders });
