@@ -4,7 +4,7 @@
 export default function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
   
-  // Known bot patterns to check for
+  // Common bot patterns
   const botPatterns = [
     { name: 'Facebook', regex: /facebook|facebookexternalhit/i },
     { name: 'Twitter', regex: /twitter|twitterbot/i },
@@ -12,96 +12,50 @@ export default function handler(req, res) {
     { name: 'Pinterest', regex: /pinterest|pinterestbot/i },
     { name: 'Google', regex: /google|googlebot/i },
     { name: 'Bing', regex: /bing|bingbot/i },
-    { name: 'Yahoo', regex: /yahoo|slurp/i },
-    { name: 'Yandex', regex: /yandex|yandexbot/i },
-    { name: 'WhatsApp', regex: /whatsapp/i },
-    { name: 'Telegram', regex: /telegram|telegrambot/i },
-    { name: 'Generic Bot', regex: /bot|crawler|spider/i }
+    { name: 'Bot', regex: /bot|crawler|spider/i }
   ];
   
-  // Test against all bot patterns
+  // Test the user agent against each pattern
   const matchedBots = botPatterns
     .filter(bot => bot.regex.test(userAgent))
     .map(bot => bot.name);
-  
-  // Determine if this is a bot based on all tests
+    
   const isBot = matchedBots.length > 0;
   
-  // Parse the URL being requested
-  const url = new URL(req.url, `https://${req.headers.host || 'localhost'}`);
-  const path = url.pathname;
-  const format = url.searchParams.get('format') || 'json';
+  // Get format from query parameter
+  const format = req.query.format || 'json';
   
-  // Log the request for analytics
-  console.log(`[Crawler Detection] UA: ${userAgent.substring(0, 100)}`);
-  console.log(`[Crawler Detection] Bot: ${isBot}, Matches: ${matchedBots.join(', ')}`);
+  // Log for debugging
+  console.log(`[Detect Crawler] UA: ${userAgent.substring(0, 100)}`);
+  console.log(`[Detect Crawler] Is Bot: ${isBot}, Matches: ${matchedBots.join(', ')}`);
   
-  // Return the results in the requested format
+  // Return HTML or JSON based on format parameter
   if (format === 'html') {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(`
       <!DOCTYPE html>
-      <html lang="en">
+      <html>
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Crawler Detection Results</title>
+        <title>Bot Detection Result</title>
         <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .result {
-            background-color: ${isBot ? '#e7f5ff' : '#f8f9fa'};
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-          }
-          .matches {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-          }
-          .bot-match {
-            background-color: #6851FB;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-          }
-          pre {
-            background-color: #f1f1f1;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-          }
+          body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          .result { background: ${isBot ? '#e7f5ff' : '#f8f9fa'}; padding: 20px; border-radius: 8px; }
+          .bot { background: #6851FB; color: white; padding: 5px 10px; border-radius: 4px; margin: 5px; display: inline-block; }
         </style>
       </head>
       <body>
-        <h1>Crawler Detection Results</h1>
-        
+        <h1>Bot Detection Results</h1>
         <div class="result">
-          <h2>Detection Result: ${isBot ? 'Bot Detected' : 'Not a Bot'}</h2>
-          
+          <h2>Is Bot: ${isBot ? 'YES' : 'NO'}</h2>
           ${matchedBots.length > 0 ? `
             <h3>Matched Patterns:</h3>
-            <div class="matches">
-              ${matchedBots.map(bot => `<span class="bot-match">${bot}</span>`).join('')}
-            </div>
+            <div>${matchedBots.map(bot => `<span class="bot">${bot}</span>`).join('')}</div>
           ` : ''}
+          <h3>User Agent:</h3>
+          <pre>${userAgent}</pre>
         </div>
-        
-        <h3>User Agent:</h3>
-        <pre>${userAgent}</pre>
-        
-        <h3>Request Details:</h3>
-        <pre>Path: ${path}
-Host: ${req.headers.host || 'unknown'}
-Time: ${new Date().toISOString()}</pre>
-        
-        <p><a href="${url.pathname}?format=json">View as JSON</a></p>
       </body>
       </html>
     `);
@@ -111,9 +65,6 @@ Time: ${new Date().toISOString()}</pre>
   return res.status(200).json({
     isBot,
     matchedBots,
-    userAgent,
-    requestPath: path,
-    requestHost: req.headers.host || 'unknown',
-    timestamp: new Date().toISOString()
+    userAgent
   });
 } 

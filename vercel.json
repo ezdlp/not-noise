@@ -9,8 +9,38 @@
   },
   "rewrites": [
     {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "facebookexternalhit"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "twitterbot"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
+      "source": "/fb-link/:slug",
+      "destination": "/api/fb-link?slug=:slug"
+    },
+    {
       "source": "/edge-render/:slug",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
+      "source": "/fb-test",
+      "destination": "/fb-test.html"
     },
     {
       "source": "/api/bot-handler/:slug",
@@ -23,17 +53,6 @@
     {
       "source": "/preview-test",
       "destination": "/preview-test.html"
-    },
-    {
-      "source": "/link/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "facebook|twitter"
-        }
-      ],
-      "destination": "/api/bot-handler/:slug"
     },
     {
       "source": "/api/test-bot",
@@ -122,6 +141,15 @@
     },
     {
       "source": "/edge-render/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/fb-link/:slug",
       "headers": [
         {
           "key": "Cache-Control",
