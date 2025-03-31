@@ -9,6 +9,33 @@
   },
   "rewrites": [
     {
+      "source": "/api/test-bot",
+      "destination": "/api/test-bot"
+    },
+    {
+      "source": "/api/direct-og/:slug",
+      "destination": "/api/direct-og?slug=:slug"
+    },
+    {
+      "source": "/api/render-smart-link/:slug",
+      "destination": "/api/render-smart-link/[slug]"
+    },
+    {
+      "source": "/edge-render/:slug",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "bot|facebook|twitter|pinterest|linkedin|whatsapp"
+        }
+      ],
+      "destination": "/edge-render/:slug"
+    },
+    {
       "source": "/_next/image",
       "destination": "/_next/image"
     },
@@ -39,21 +66,6 @@
     {
       "source": "/api/spotify/search",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
-    },
-    {
-      "source": "/api/render-smart-link/:slug",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
-    },
-    {
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(facebook|facebookexternalhit|twitter|twitterbot|linkedin|pinterest|google|bot|whatsapp|telegram|slack|discord).*"
-        }
-      ],
-      "source": "/link/:slug",
-      "destination": "/api/render-smart-link/:slug"
     },
     {
       "source": "/(.*)",

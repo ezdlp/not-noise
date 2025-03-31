@@ -21,38 +21,56 @@ export default async function handler(req, res) {
     const edgeFunctionUrl = `${supabaseUrl}/functions/v1/render-smart-link?slug=${encodeURIComponent(slug)}`;
     
     console.log(`[API] Proxying to Edge Function: ${edgeFunctionUrl}`);
+    console.log(`[API] Using anon key: ${supabaseAnonKey.substring(0, 20)}...`);
 
     // Fetch the Edge Function response with proper authorization
     const response = await fetch(edgeFunctionUrl, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${supabaseAnonKey}`,
         'Content-Type': 'application/json',
-        'User-Agent': userAgent
+        'User-Agent': userAgent,
+        'Accept': 'text/html,application/json',
       }
     });
+
+    console.log(`[API] Edge Function response status: ${response.status} ${response.statusText}`);
+    console.log(`[API] Edge Function response type: ${response.headers.get('content-type')}`);
 
     if (!response.ok) {
       console.error(`[API] Edge Function error: ${response.status} ${response.statusText}`);
       
       // Get the error message
-      const errorText = await response.text();
-      console.error(`[API] Error details: ${errorText}`);
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error(`[API] Error details: ${errorText}`);
+      } catch (e) {
+        console.error(`[API] Could not read error text: ${e.message}`);
+      }
       
-      // Return a fallback response for errors
+      // Try to generate a useful Smart Link preview despite the error
+      const ogTitle = `${slug.replace(/-/g, ' ')} | Soundraiser`;
+      const ogDescription = `Listen to this release on all streaming platforms`;
+      
       return res.status(200).send(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Soundraiser - Smart Links for Musicians</title>
-          <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
-          <meta property="og:description" content="Create beautiful smart links for your music on all platforms">
+          <title>${ogTitle}</title>
+          <meta property="og:title" content="${ogTitle}">
+          <meta property="og:description" content="${ogDescription}">
           <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
           <meta property="og:url" content="https://soundraiser.io/link/${slug}">
+          <meta property="og:type" content="music.song">
           <meta name="twitter:card" content="summary_large_image">
+          <meta name="twitter:title" content="${ogTitle}">
+          <meta name="twitter:description" content="${ogDescription}">
           <meta name="x-debug-info" content="API Error: ${response.status}">
+          <meta name="x-error-details" content="${errorText.substring(0, 100).replace(/"/g, '&quot;')}">
         </head>
         <body>
-          <h1>Soundraiser</h1>
+          <h1>${ogTitle}</h1>
           <p>Loading your music...</p>
           <script>window.location.href = '/link/${slug}';</script>
         </body>
@@ -72,23 +90,29 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[API] Unexpected error:', error);
     
+    const slug = req.query.slug || 'unknown-slug';
+    const ogTitle = `${slug.replace(/-/g, ' ')} | Soundraiser`;
+    
     // Return a fallback response for errors
     return res.status(200).send(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Soundraiser - Smart Links for Musicians</title>
-        <meta property="og:title" content="Soundraiser - Smart Links for Musicians">
-        <meta property="og:description" content="Create beautiful smart links for your music on all platforms">
+        <title>${ogTitle}</title>
+        <meta property="og:title" content="${ogTitle}">
+        <meta property="og:description" content="Listen to this release on all streaming platforms">
         <meta property="og:image" content="https://soundraiser.io/soundraiser-og-image.jpg">
-        <meta property="og:url" content="https://soundraiser.io">
+        <meta property="og:url" content="https://soundraiser.io/link/${slug}">
+        <meta property="og:type" content="music.song">
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="x-debug-info" content="API Catch: ${error.message}">
+        <meta name="twitter:title" content="${ogTitle}">
+        <meta name="twitter:description" content="Listen to this release on all streaming platforms">
+        <meta name="x-debug-info" content="API Catch: ${error.message.substring(0, 100).replace(/"/g, '&quot;')}">
       </head>
       <body>
-        <h1>Soundraiser</h1>
+        <h1>${ogTitle}</h1>
         <p>Loading your music...</p>
-        <script>window.location.href = '/';</script>
+        <script>window.location.href = '/link/${slug}';</script>
       </body>
       </html>
     `);
