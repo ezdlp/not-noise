@@ -28,42 +28,56 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    console.log(`Original URL: ${url.toString()}`);
+    console.log(`[Render Smart Link] Request URL: ${url.toString()}`);
+    console.log(`[Render Smart Link] User Agent: ${req.headers.get('user-agent')}`);
     
-    // Extract slug from path - handle both formats
+    // Extract slug from path - handle different formats
     // Format 1: /render-smart-link/slug
     // Format 2: /link/slug
     let slug;
     if (url.pathname.startsWith('/render-smart-link/')) {
       slug = url.pathname.replace(/^\/render-smart-link\//, '');
+      console.log(`[Render Smart Link] Extracted from /render-smart-link/ path: ${slug}`);
     } else if (url.pathname.startsWith('/link/')) {
       slug = url.pathname.replace(/^\/link\//, '');
+      console.log(`[Render Smart Link] Extracted from /link/ path: ${slug}`);
     } else {
       // If none match, try a generic approach
       slug = url.pathname.split('/').filter(Boolean).pop();
+      console.log(`[Render Smart Link] Extracted using generic approach: ${slug}`);
     }
     
     // Remove any trailing slashes
     slug = slug ? slug.replace(/\/$/, '') : '';
     
-    console.log(`Extracted slug: "${slug}"`);
+    console.log(`[Render Smart Link] Final slug for lookup: "${slug}"`);
     
     if (!slug) {
-      console.error('Slug is required');
-      return new Response('Slug is required', { status: 400 });
+      console.error('[Render Smart Link] Slug is required');
+      return new Response('Slug is required', { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      });
     }
-
-    console.log(`Rendering Smart Link for slug: ${slug}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[Render Smart Link] Missing Supabase credentials');
+      return new Response('Server configuration error', { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      });
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('[Render Smart Link] Supabase client initialized');
 
-    console.log('Fetching smart link data from database...');
-
-    // Fetch the smart link data
-    const { data: smartLink, error } = await supabase
+    // Fetch the smart link data by slug first
+    console.log(`[Render Smart Link] Attempting to fetch smart link with slug: ${slug}`);
+    const { data: smartLinkBySlug, error: slugError } = await supabase
       .from('smart_links')
       .select(`
         *,
@@ -75,17 +89,15 @@ Deno.serve(async (req) => {
       .eq('slug', slug)
       .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching smart link:', error);
-      return new Response(JSON.stringify({ error: 'Error fetching smart link' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    if (slugError) {
+      console.error(`[Render Smart Link] Error fetching by slug: ${slugError.message}`);
+    } else {
+      console.log(`[Render Smart Link] Slug search result: ${smartLinkBySlug ? 'Found' : 'Not found'}`);
     }
 
-    if (!smartLink) {
-      console.log('Smart link not found, trying by ID...');
-      // Try to find by ID instead
+    // If not found by slug, try by ID
+    if (!smartLinkBySlug && !slugError) {
+      console.log(`[Render Smart Link] Attempting to fetch smart link with ID: ${slug}`);
       const { data: smartLinkById, error: idError } = await supabase
         .from('smart_links')
         .select(`
@@ -98,23 +110,39 @@ Deno.serve(async (req) => {
         .eq('id', slug)
         .maybeSingle();
 
-      if (idError || !smartLinkById) {
-        console.error('Smart link not found by slug or ID:', slug);
+      if (idError) {
+        console.error(`[Render Smart Link] Error fetching by ID: ${idError.message}`);
+        return new Response(JSON.stringify({ error: 'Error fetching smart link' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!smartLinkById) {
+        console.error(`[Render Smart Link] Smart link not found by slug or ID: ${slug}`);
         return new Response(JSON.stringify({ error: 'Smart link not found' }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      console.log('Found smart link by ID');
+      console.log(`[Render Smart Link] Found smart link by ID: ${smartLinkById.id}`);
       return generateHtmlResponse(smartLinkById);
     }
 
-    console.log('Found smart link by slug');
-    return generateHtmlResponse(smartLink);
+    if (smartLinkBySlug) {
+      console.log(`[Render Smart Link] Found smart link by slug: ${smartLinkBySlug.id}`);
+      return generateHtmlResponse(smartLinkBySlug);
+    } else {
+      console.error(`[Render Smart Link] Smart link not found by slug or ID: ${slug}`);
+      return new Response(JSON.stringify({ error: 'Smart link not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error(`[Render Smart Link] Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
     return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -123,6 +151,8 @@ Deno.serve(async (req) => {
 });
 
 function generateHtmlResponse(smartLink: SmartLink): Response {
+  console.log(`[Render Smart Link] Generating HTML response for: ${smartLink.title} by ${smartLink.artist_name}`);
+  
   const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io';
   const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
   const description = smartLink.description || 
@@ -242,6 +272,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     </div>
   </body>
 </html>`;
+
+  console.log(`[Render Smart Link] HTML response generated successfully`);
 
   return new Response(html, {
     headers: { 
