@@ -96,7 +96,10 @@ export function SmartLinkSEO({
   }, [fullTitle, slug]);
 
   return (
-    <Helmet>
+    <Helmet
+      defaultTitle={fullTitle}
+      titleTemplate={null}
+    >
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />

@@ -66,14 +66,14 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const slug = url.searchParams.get('slug');
     const userAgent = req.headers.get('user-agent') || 'unknown';
-    
+
     console.log(`[Edge Function] Processing request for slug: ${slug}, UA: ${userAgent.substring(0, 100)}`);
 
     // Check if slug parameter is provided
     if (!slug) {
       return new Response('Missing slug parameter', { 
         status: 400, 
-        headers: responseHeaders
+          headers: responseHeaders 
       });
     }
 
@@ -95,10 +95,10 @@ Deno.serve(async (req) => {
       console.error('[Edge Function] Missing Supabase credentials');
       return new Response('Server configuration error', { 
         status: 500,
-        headers: responseHeaders
+        headers: responseHeaders 
       });
     }
-    
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false,
@@ -132,15 +132,15 @@ Deno.serve(async (req) => {
       console.error(`[Edge Function] Database error:`, error);
       return new Response(`Database error: ${error.message}`, {
         status: 500,
-        headers: responseHeaders
+          headers: responseHeaders 
       });
     }
-    
+
     if (!smartLink) {
       console.error(`[Edge Function] Smart link not found: ${slug}`);
       return new Response(`Smart link not found: ${slug}`, {
         status: 404,
-        headers: responseHeaders
+          headers: responseHeaders 
       });
     }
 
