@@ -35,13 +35,28 @@ function escapeHtml(unsafe: string): string {
 
 // Helper function to ensure URLs are absolute
 function ensureAbsoluteUrl(url: string, baseUrl: string): string {
+  if (!url) return `${baseUrl}/soundraiser-og-image.jpg`;
+  
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  return new URL(url, baseUrl).toString();
+  return new URL(url.startsWith('/') ? url : `/${url}`, baseUrl).toString();
 }
 
+// Log environment variables (redacted for security)
+console.log('Edge Function Environment:', {
+  hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+  hasAnonKey: !!Deno.env.get('SUPABASE_ANON_KEY'),
+  isProduction: Deno.env.get('NODE_ENV') === 'production',
+});
+
 Deno.serve(async (req) => {
+  const responseHeaders = {
+    ...corsHeaders,
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+  };
+
   // Handle CORS for preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -50,13 +65,15 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const slug = url.searchParams.get('slug');
-    console.log(`[Edge Function] Processing request for slug: ${slug}`);
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    
+    console.log(`[Edge Function] Processing request for slug: ${slug}, UA: ${userAgent.substring(0, 100)}`);
 
     // Check if slug parameter is provided
     if (!slug) {
       return new Response('Missing slug parameter', { 
         status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'text/plain' } 
+        headers: responseHeaders
       });
     }
 
@@ -67,15 +84,27 @@ Deno.serve(async (req) => {
     
     if (cachedData && (now - cachedData.timestamp) < CACHE_TTL) {
       console.log(`[Edge Function] Returning cached HTML for slug: ${slug}`);
-      return new Response(cachedData.html, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' }
-      });
+      return new Response(cachedData.html, { headers: responseHeaders });
     }
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[Edge Function] Missing Supabase credentials');
+      return new Response('Server configuration error', { 
+        status: 500,
+        headers: responseHeaders
+      });
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      }
+    });
 
     // Fetch smart link data from Supabase
     console.log(`[Edge Function] Fetching data for slug: ${slug}`);
@@ -99,18 +128,26 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     // Handle error or missing data
-    if (error || !smartLink) {
-      console.error(`[Edge Function] Error fetching smart link:`, error);
-      return new Response('Smart link not found', {
+    if (error) {
+      console.error(`[Edge Function] Database error:`, error);
+      return new Response(`Database error: ${error.message}`, {
+        status: 500,
+        headers: responseHeaders
+      });
+    }
+    
+    if (!smartLink) {
+      console.error(`[Edge Function] Smart link not found: ${slug}`);
+      return new Response(`Smart link not found: ${slug}`, {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+        headers: responseHeaders
       });
     }
 
     console.log(`[Edge Function] Successfully fetched data for: ${smartLink.title}`);
 
     // Create absolute URLs
-    const baseUrl = url.origin;
+    const baseUrl = url.origin.includes('localhost') ? 'https://soundraiser.io' : url.origin;
     const artworkUrl = ensureAbsoluteUrl(smartLink.artwork_url, baseUrl);
     const canonicalUrl = `${baseUrl}/link/${slug}`;
     
@@ -144,6 +181,10 @@ Deno.serve(async (req) => {
     <!-- Music Specific Meta Tags -->
     <meta property="music:musician" content="${canonicalUrl}">
     <meta property="music:release_date" content="${smartLink.release_date || ''}">
+    
+    <!-- Debug Headers -->
+    <meta name="x-soundraiser-debug" content="edge-function-response">
+    <meta name="x-soundraiser-slug" content="${slug}">
     
     <!-- Preload critical assets -->
     <link rel="preload" as="image" href="${artworkUrl}">
@@ -244,14 +285,12 @@ Deno.serve(async (req) => {
     
     console.log(`[Edge Function] Returning generated HTML for: ${smartLink.title}`);
     
-    return new Response(html, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' }
-    });
+    return new Response(html, { headers: responseHeaders });
   } catch (error) {
     console.error(`[Edge Function] Error:`, error);
     return new Response(`Error: ${error.message}`, {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      headers: responseHeaders
     });
   }
 }); 
