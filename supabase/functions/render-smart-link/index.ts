@@ -30,11 +30,23 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     console.log(`Original URL: ${url.toString()}`);
     
-    // Extract slug from path
-    let slug = url.pathname.replace(/^\/render-smart-link\//, '');
+    // Extract slug from path - handle both formats
+    // Format 1: /render-smart-link/slug
+    // Format 2: /link/slug
+    let slug;
+    if (url.pathname.startsWith('/render-smart-link/')) {
+      slug = url.pathname.replace(/^\/render-smart-link\//, '');
+    } else if (url.pathname.startsWith('/link/')) {
+      slug = url.pathname.replace(/^\/link\//, '');
+    } else {
+      // If none match, try a generic approach
+      slug = url.pathname.split('/').filter(Boolean).pop();
+    }
     
     // Remove any trailing slashes
-    slug = slug.replace(/\/$/, '');
+    slug = slug ? slug.replace(/\/$/, '') : '';
+    
+    console.log(`Extracted slug: "${slug}"`);
     
     if (!slug) {
       console.error('Slug is required');

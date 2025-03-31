@@ -49,8 +49,8 @@
           "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo)"
         }
       ],
-      "source": "/link/:slug",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug"
+      "source": "/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
     },
     {
       "source": "/(.*)",
