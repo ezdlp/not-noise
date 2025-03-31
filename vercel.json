@@ -14,57 +14,14 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "facebookexternalhit"
+          "value": ".*bot.*|.*facebook.*|.*twitter.*|.*linkedin.*|.*pinterest.*"
         }
       ],
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+      "destination": "/api/smart-link?slug=:slug"
     },
     {
-      "source": "/link/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "twitterbot"
-        }
-      ],
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
-    },
-    {
-      "source": "/fb-link/:slug",
-      "destination": "/api/fb-link?slug=:slug"
-    },
-    {
-      "source": "/edge-render/:slug",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
-    },
-    {
-      "source": "/fb-test",
-      "destination": "/fb-test.html"
-    },
-    {
-      "source": "/api/bot-handler/:slug",
-      "destination": "/api/bot-handler?slug=:slug"
-    },
-    {
-      "source": "/api/detect-crawler",
-      "destination": "/api/detect-crawler"
-    },
-    {
-      "source": "/preview-test",
-      "destination": "/preview-test.html"
-    },
-    {
-      "source": "/api/test-bot",
-      "destination": "/api/test-bot"
-    },
-    {
-      "source": "/api/direct-og/:slug",
-      "destination": "/api/direct-og?slug=:slug"
-    },
-    {
-      "source": "/api/render-smart-link/:slug",
-      "destination": "/api/render-smart-link/[slug]"
+      "source": "/api/smart-link",
+      "destination": "/api/smart-link"
     },
     {
       "source": "/_next/image",
@@ -136,33 +93,6 @@
         {
           "key": "Content-Type",
           "value": "application/xml; charset=UTF-8"
-        }
-      ]
-    },
-    {
-      "source": "/edge-render/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
-    },
-    {
-      "source": "/fb-link/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
-    },
-    {
-      "source": "/api/bot-handler/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     }
