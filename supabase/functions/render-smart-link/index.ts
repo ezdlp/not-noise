@@ -28,22 +28,32 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+    const userAgent = req.headers.get('user-agent') || '';
+    
     console.log(`[Render Smart Link] Request URL: ${url.toString()}`);
-    console.log(`[Render Smart Link] User Agent: ${req.headers.get('user-agent')}`);
+    console.log(`[Render Smart Link] User Agent: ${userAgent}`);
+    
+    // Check if this is a crawler
+    const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
+    console.log(`[Render Smart Link] Is crawler: ${isCrawler}`);
     
     // Extract slug from path - handle different formats
-    // Format 1: /render-smart-link/slug
-    // Format 2: /link/slug
-    let slug;
+    let slug = '';
+    
+    // Check for different path patterns
     if (url.pathname.startsWith('/render-smart-link/')) {
       slug = url.pathname.replace(/^\/render-smart-link\//, '');
       console.log(`[Render Smart Link] Extracted from /render-smart-link/ path: ${slug}`);
     } else if (url.pathname.startsWith('/link/')) {
       slug = url.pathname.replace(/^\/link\//, '');
       console.log(`[Render Smart Link] Extracted from /link/ path: ${slug}`);
+    } else if (url.pathname.startsWith('/social-api/link/')) {
+      slug = url.pathname.replace(/^\/social-api\/link\//, '');
+      console.log(`[Render Smart Link] Extracted from /social-api/link/ path: ${slug}`);
     } else {
       // If none match, try a generic approach
-      slug = url.pathname.split('/').filter(Boolean).pop();
+      const segments = url.pathname.split('/').filter(Boolean);
+      slug = segments.length ? segments[segments.length - 1] : '';
       console.log(`[Render Smart Link] Extracted using generic approach: ${slug}`);
     }
     
@@ -246,7 +256,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     <!-- Redirection script -->
     <script>
       // Only redirect browsers, not bots
-      if (!/bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|crawl|spider|google|bing|yahoo/i.test(navigator.userAgent)) {
+      if (!/bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(navigator.userAgent)) {
         window.location.href = "/link/${smartLink.id}";
       }
     </script>
@@ -275,11 +285,15 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
 
   console.log(`[Render Smart Link] HTML response generated successfully`);
 
-  return new Response(html, {
-    headers: { 
-      ...corsHeaders, 
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=86400'
-    }
-  });
+  // Enhanced headers to aid troubleshooting and caching
+  const responseHeaders = {
+    ...corsHeaders,
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Smart-Link-ID': smartLink.id,
+    'X-Render-Source': 'Soundraiser Edge Function'
+  };
+
+  return new Response(html, { headers: responseHeaders });
 }

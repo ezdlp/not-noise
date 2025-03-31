@@ -46,10 +46,14 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo)"
+          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
         }
       ],
       "source": "/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/social-api/link/:slug*",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
     },
     {
