@@ -29,13 +29,18 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const userAgent = req.headers.get('user-agent') || '';
+    const referer = req.headers.get('referer') || '';
     
     console.log(`[Render Smart Link] Request URL: ${url.toString()}`);
     console.log(`[Render Smart Link] User Agent: ${userAgent}`);
+    console.log(`[Render Smart Link] Referer: ${referer}`);
     
     // Check if this is a crawler
     const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
     console.log(`[Render Smart Link] Is crawler: ${isCrawler}`);
+    
+    // Log all headers for debugging
+    console.log(`[Render Smart Link] All headers:`, Object.fromEntries([...req.headers.entries()]));
     
     // Extract slug from path - handle different formats
     let slug = '';
@@ -46,10 +51,15 @@ Deno.serve(async (req) => {
       console.log(`[Render Smart Link] Extracted from /render-smart-link/ path: ${slug}`);
     } else if (url.pathname.startsWith('/link/')) {
       slug = url.pathname.replace(/^\/link\//, '');
+      // Remove any trailing '/seo' if present
+      slug = slug.replace(/\/seo$/, '');
       console.log(`[Render Smart Link] Extracted from /link/ path: ${slug}`);
     } else if (url.pathname.startsWith('/social-api/link/')) {
       slug = url.pathname.replace(/^\/social-api\/link\//, '');
       console.log(`[Render Smart Link] Extracted from /social-api/link/ path: ${slug}`);
+    } else if (url.pathname.startsWith('/og/')) {
+      slug = url.pathname.replace(/^\/og\//, '');
+      console.log(`[Render Smart Link] Extracted from /og/ path: ${slug}`);
     } else {
       // If none match, try a generic approach
       const segments = url.pathname.split('/').filter(Boolean);
@@ -137,12 +147,12 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[Render Smart Link] Found smart link by ID: ${smartLinkById.id}`);
-      return generateHtmlResponse(smartLinkById);
+      return generateHtmlResponse(smartLinkById, req);
     }
 
     if (smartLinkBySlug) {
       console.log(`[Render Smart Link] Found smart link by slug: ${smartLinkBySlug.id}`);
-      return generateHtmlResponse(smartLinkBySlug);
+      return generateHtmlResponse(smartLinkBySlug, req);
     } else {
       console.error(`[Render Smart Link] Smart link not found by slug or ID: ${slug}`);
       return new Response(JSON.stringify({ error: 'Smart link not found' }), {
@@ -160,7 +170,7 @@ Deno.serve(async (req) => {
   }
 });
 
-function generateHtmlResponse(smartLink: SmartLink): Response {
+function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
   console.log(`[Render Smart Link] Generating HTML response for: ${smartLink.title} by ${smartLink.artist_name}`);
   
   const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io';
@@ -168,6 +178,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
   const description = smartLink.description || 
     `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${siteUrl}/link/${smartLink.id}`;
+  const userAgent = req.headers.get('user-agent') || '';
+  const requestUrl = new URL(req.url).toString();
 
   // Generate schema markup for music
   const streamingPlatforms = smartLink.platform_links || [];
@@ -248,6 +260,10 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${smartLink.artwork_url}" />
 
+    <!-- Debug Info (hidden in comments) -->
+    <!-- Request URL: ${requestUrl} -->
+    <!-- User Agent: ${userAgent} -->
+
     <!-- Schema.org structured data -->
     <script type="application/ld+json">
       ${JSON.stringify(musicSchema)}
@@ -292,7 +308,9 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     'Cache-Control': 'public, max-age=3600, s-maxage=86400',
     'X-Content-Type-Options': 'nosniff',
     'X-Smart-Link-ID': smartLink.id,
-    'X-Render-Source': 'Soundraiser Edge Function'
+    'X-Render-Source': 'Soundraiser Edge Function',
+    'X-Request-URL': requestUrl,
+    'X-User-Agent': userAgent.substring(0, 100) // Truncate if very long
   };
 
   return new Response(html, { headers: responseHeaders });

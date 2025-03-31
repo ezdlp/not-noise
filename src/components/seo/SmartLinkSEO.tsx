@@ -25,6 +25,9 @@ export function SmartLinkSEO({
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
+  const seoPath = window.location.pathname.endsWith('/seo') 
+    ? window.location.pathname 
+    : `${window.location.pathname}/seo`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -103,6 +106,10 @@ export function SmartLinkSEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={artworkUrl} />
+
+      {/* Special Meta Crawler links - helps crawlers find the SEO-optimized version */}
+      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}/og/${window.location.pathname.split('/').pop()}`} />
+      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${seoPath}`} />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

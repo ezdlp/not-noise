@@ -42,6 +42,18 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
+      "source": "/social-api/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/og/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/link/:slug*/seo",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
       "has": [
         {
           "type": "header",
@@ -50,10 +62,6 @@
         }
       ],
       "source": "/link/:slug*",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
-    },
-    {
-      "source": "/social-api/link/:slug*",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
     },
     {
