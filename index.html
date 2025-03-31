@@ -74,45 +74,13 @@
       }
     </style>
     
-    <!-- Enhanced Crawler detection script with more user agents -->
+    <!-- Simplified Crawler detection script -->
     <script>
       (function() {
-        // Check if URL is a smart link
-        const isSmartLink = window.location.pathname.startsWith('/link/');
-        
-        // Expanded crawler detection regex
-        const crawlerRegex = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i;
-        const isCrawler = crawlerRegex.test(navigator.userAgent);
-        
-        // Set a global flag for crawlers
-        window.isCrawler = isCrawler;
-        
-        // If it's a crawler and trying to access a smart link, prevent client-side routing
-        if (isCrawler && isSmartLink) {
-          console.log('Crawler detected:', navigator.userAgent);
-          
-          // For smart links, disable client-side rendering entirely
-          window._disableSPAForSmartLinks = true;
-          
-          // Create a debug element visible only to crawlers
-          document.addEventListener('DOMContentLoaded', function() {
-            const debugEl = document.createElement('div');
-            debugEl.style.display = 'none';
-            debugEl.id = 'crawler-debug-info';
-            debugEl.textContent = 'Crawler detected: ' + navigator.userAgent + '. SPA disabled for SmartLinks.';
-            document.body.appendChild(debugEl);
-            
-            // Add meta debug info
-            const metaDebug = document.createElement('meta');
-            metaDebug.name = 'soundraiser:crawler-mode';
-            metaDebug.content = 'true';
-            document.head.appendChild(metaDebug);
-          });
-        }
-        
-        // If it's a smart link but not a crawler, we need special handling to make sure it loads properly
-        if (isSmartLink && !isCrawler) {
-          console.log('Smart link detected for regular browser. Loading client-side app.');
+        // Mark direct smart link access for analytics purposes
+        if (window.location.pathname.startsWith('/link/')) {
+          window.isSmartLink = true;
+          console.log('Smart link detected:', window.location.pathname);
         }
       })();
     </script>

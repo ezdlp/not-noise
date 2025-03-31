@@ -26,13 +26,8 @@ export function SmartLinkSEO({
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
   const slug = window.location.pathname.split('/').pop() || '';
-  const seoPath = window.location.pathname.endsWith('/seo') 
-    ? window.location.pathname 
-    : `${window.location.pathname}/seo`;
-  const ogPath = `/og/${slug}`;
-  const socialApiPath = `/social-api/link/${slug}`;
   const directLinkPath = `/direct-link/${slug}`;
-  const renderedPath = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/${slug}`;
+  const serverRenderedUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/${slug}`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -112,21 +107,9 @@ export function SmartLinkSEO({
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={artworkUrl} />
 
-      {/* Enhanced Special Meta Crawler links - helps crawlers find the SEO-optimized version */}
-      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
-      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
-      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${seoPath}`} />
+      {/* Direct link to server-rendered version for crawlers */}
+      <link rel="alternate" type="text/html" href={serverRenderedUrl} />
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${directLinkPath}`} />
-      <link rel="alternate" type="text/html" href={renderedPath} />
-
-      {/* Additional meta tags for crawler debugging */}
-      <meta name="soundraiser:rendered-url" content={renderedPath} />
-      <meta name="soundraiser:social-api-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
-      <meta name="soundraiser:og-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
-      <meta name="soundraiser:direct-link" content={`${DEFAULT_SEO_CONFIG.siteUrl}${directLinkPath}`} />
-      <meta name="soundraiser:crawler-test" content="true" />
-      <meta name="soundraiser:version" content="1.0.3" />
-      <meta name="soundraiser:client-side" content="true" />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">
