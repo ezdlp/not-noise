@@ -14,46 +14,14 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*bot.*|.*facebook.*|.*twitter.*|.*linkedin.*|.*pinterest.*"
+          "value": "(?i).*(bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram).*"
         }
       ],
       "destination": "/api/smart-link?slug=:slug"
     },
     {
-      "source": "/api/smart-link",
-      "destination": "/api/smart-link"
-    },
-    {
-      "source": "/_next/image",
-      "destination": "/_next/image"
-    },
-    {
       "source": "/lovable-uploads/:path*",
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
-    },
-    {
-      "source": "/sitemap.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
-    },
-    {
-      "source": "/sitemap-:file.xml",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/sitemap-:file.xml"
-    },
-    {
-      "source": "/api/sitemap",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
-    },
-    {
-      "source": "/api/sitemap/:file",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
-    },
-    {
-      "source": "/api/payments/create-promotion-checkout",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/create-checkout-session"
-    },
-    {
-      "source": "/api/spotify/search",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
       "source": "/(.*)",
@@ -69,32 +37,6 @@
           "value": "public, max-age=31536000, immutable, stale-while-revalidate=86400"
         }
       ]
-    },
-    {
-      "source": "/sitemap.xml",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/xml; charset=UTF-8"
-        }
-      ]
-    },
-    {
-      "source": "/sitemap-:file.xml",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/xml; charset=UTF-8"
-        }
-      ]
     }
   ],
   "builds": [
@@ -106,10 +48,5 @@
         "buildCommand": "npm run build"
       }
     }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "SUPABASE_URL": "https://owtufhdsuuyrgmxytclj.supabase.co",
-    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
-  }
+  ]
 }
