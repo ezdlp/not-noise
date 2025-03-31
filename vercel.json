@@ -9,6 +9,33 @@
   },
   "rewrites": [
     {
+      "source": "/edge-render/:slug",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
+      "source": "/api/bot-handler/:slug",
+      "destination": "/api/bot-handler?slug=:slug"
+    },
+    {
+      "source": "/api/detect-crawler",
+      "destination": "/api/detect-crawler"
+    },
+    {
+      "source": "/preview-test",
+      "destination": "/preview-test.html"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "facebook|twitter"
+        }
+      ],
+      "destination": "/api/bot-handler/:slug"
+    },
+    {
       "source": "/api/test-bot",
       "destination": "/api/test-bot"
     },
@@ -19,21 +46,6 @@
     {
       "source": "/api/render-smart-link/:slug",
       "destination": "/api/render-smart-link/[slug]"
-    },
-    {
-      "source": "/edge-render/:slug",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
-    },
-    {
-      "source": "/link/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "bot|facebook|twitter|pinterest|linkedin|whatsapp"
-        }
-      ],
-      "destination": "/edge-render/:slug"
     },
     {
       "source": "/_next/image",
@@ -105,6 +117,24 @@
         {
           "key": "Content-Type",
           "value": "application/xml; charset=UTF-8"
+        }
+      ]
+    },
+    {
+      "source": "/edge-render/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/api/bot-handler/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     }
