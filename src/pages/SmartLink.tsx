@@ -232,6 +232,7 @@ export default function SmartLink() {
         description={smartLink.description}
         releaseDate={smartLink.release_date}
         streamingPlatforms={streamingPlatforms}
+        slug={slug}
       />
       
       <div 
