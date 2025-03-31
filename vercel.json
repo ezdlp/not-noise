@@ -17,7 +17,7 @@
           "value": "(?i).*(bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram).*"
         }
       ],
-      "destination": "/api/smart-link?slug=:slug"
+      "destination": "/bot-preview.html"
     },
     {
       "source": "/lovable-uploads/:path*",
@@ -29,6 +29,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/bot-preview.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
     {
       "source": "/:path*\\.(jpg|jpeg|png|webp|avif|svg)",
       "headers": [
