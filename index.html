@@ -1,24 +1,47 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/lovable-uploads/soundraiser-logo/Iso A fav.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Soundraiser</title>
+    <meta name="description" content="Soundraiser - Smart Links for Musicians" />
+    <meta name="author" content="Soundraiser" />
+    <meta property="og:image" content="/og-image.png" />
     
     <!-- Preconnect to image optimization endpoint -->
     <link rel="preconnect" href="/_next" crossorigin />
     
-    <!-- Google Analytics -->
+    <!-- Preload LCP image with responsive sizing -->
+    <link
+      rel="preload"
+      as="image"
+      href="/_next/image?url=/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png&w=304&q=75"
+      media="(max-width: 768px)"
+      type="image/webp"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/_next/image?url=/lovable-uploads/3f0382f4-6742-422d-a591-2828a65d9e83.png&w=760&q=75"
+      media="(min-width: 769px)"
+      type="image/webp"
+    />
+    
+    <!-- Google Analytics - Simplified Implementation -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       
+      // Set default measurement ID (main product)
       gtag('config', 'G-2CFB508HGL', {
         send_page_view: true,
         anonymize_ip: true
       });
       
+      // Function to switch to smart links measurement ID
       window.switchToSmartLinkTracking = function() {
         gtag('config', 'G-1XE9T2280Q', {
           send_page_view: true,
@@ -29,7 +52,7 @@
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2CFB508HGL"></script>
 
-    <!-- reCAPTCHA -->
+    <!-- Direct reCAPTCHA loading -->
     <script src="https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F"></script>
     <style>
       .grecaptcha-badge {
@@ -37,8 +60,10 @@
       }
     </style>
   </head>
+
   <body>
     <div id="root"></div>
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

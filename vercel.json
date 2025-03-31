@@ -9,19 +9,36 @@
   },
   "rewrites": [
     {
-      "source": "/link/:slug",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i).*(bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram).*"
-        }
-      ],
-      "destination": "/api/preview"
+      "source": "/_next/image",
+      "destination": "/_next/image"
     },
     {
       "source": "/lovable-uploads/:path*",
       "destination": "/_next/image?url=/lovable-uploads/:path*&w=760&q=75"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
+    },
+    {
+      "source": "/sitemap-:file.xml",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/sitemap-:file.xml"
+    },
+    {
+      "source": "/api/sitemap",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap"
+    },
+    {
+      "source": "/api/sitemap/:file",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file"
+    },
+    {
+      "source": "/api/payments/create-promotion-checkout",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/create-checkout-session"
+    },
+    {
+      "source": "/api/spotify/search",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
       "source": "/(.*)",
@@ -37,6 +54,32 @@
           "value": "public, max-age=31536000, immutable, stale-while-revalidate=86400"
         }
       ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=UTF-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap-:file.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=UTF-8"
+        }
+      ]
     }
   ],
   "builds": [
@@ -48,5 +91,8 @@
         "buildCommand": "npm run build"
       }
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

@@ -1,7 +1,0 @@
-[cors]
-cors.enabled = true
-
-# Disable JWT auth verification for this function
-# This allows the function to be called without authentication
-[auth]
-auth.enabled = false 
