@@ -35,9 +35,15 @@ Deno.serve(async (req) => {
     console.log(`[Render Smart Link] User Agent: ${userAgent}`);
     console.log(`[Render Smart Link] Referer: ${referer}`);
     
-    // Check if this is a crawler
+    // Check if this is a crawler with more detailed logging
     const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
     console.log(`[Render Smart Link] Is crawler: ${isCrawler}`);
+    
+    if (isCrawler) {
+      // More detailed debugging for crawler requests
+      const crawlerType = userAgent.match(/(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i)?.[1] || 'Unknown crawler';
+      console.log(`[Render Smart Link] Crawler type detected: ${crawlerType}`);
+    }
     
     // Log all headers for debugging
     console.log(`[Render Smart Link] All headers:`, Object.fromEntries([...req.headers.entries()]));
@@ -180,6 +186,7 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
   const canonical = `${siteUrl}/link/${smartLink.id}`;
   const userAgent = req.headers.get('user-agent') || '';
   const requestUrl = new URL(req.url).toString();
+  const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
 
   // Generate schema markup for music
   const streamingPlatforms = smartLink.platform_links || [];
@@ -269,10 +276,16 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
       ${JSON.stringify(musicSchema)}
     </script>
     
-    <!-- Redirection script -->
+    <!-- Diagnostic meta tags -->
+    <meta name="soundraiser:is-crawler" content="${isCrawler}" />
+    <meta name="soundraiser:request-path" content="${requestUrl}" />
+    <meta name="soundraiser:canonical" content="${canonical}" />
+    <meta name="soundraiser:render-timestamp" content="${new Date().toISOString()}" />
+    
+    <!-- Redirection script - only for non-crawler clients -->
     <script>
       // Only redirect browsers, not bots
-      if (!/bot|facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(navigator.userAgent)) {
+      if (!/facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(navigator.userAgent)) {
         window.location.href = "/link/${smartLink.id}";
       }
     </script>
@@ -310,7 +323,9 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     'X-Smart-Link-ID': smartLink.id,
     'X-Render-Source': 'Soundraiser Edge Function',
     'X-Request-URL': requestUrl,
-    'X-User-Agent': userAgent.substring(0, 100) // Truncate if very long
+    'X-User-Agent': userAgent.substring(0, 100), // Truncate if very long
+    'X-Is-Crawler': isCrawler.toString(),
+    'X-Soundraiser-Version': '1.0.1', // Add a version for tracking response format changes
   };
 
   return new Response(html, { headers: responseHeaders });

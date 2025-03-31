@@ -10,6 +10,29 @@
   },
   "rewrites": [
     {
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
+        }
+      ],
+      "source": "/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/social-api/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/og/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/link/:slug*/seo",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
       "source": "/_next/image",
       "destination": "/_next/image"
     },
@@ -40,29 +63,6 @@
     {
       "source": "/api/spotify/search",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
-    },
-    {
-      "source": "/social-api/link/:slug*",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
-    },
-    {
-      "source": "/og/:slug*",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
-    },
-    {
-      "source": "/link/:slug*/seo",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
-    },
-    {
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
-        }
-      ],
-      "source": "/link/:slug*",
-      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
     },
     {
       "source": "/(.*)",

@@ -73,6 +73,29 @@
         visibility: hidden;
       }
     </style>
+    
+    <!-- Crawler detection script -->
+    <script>
+      (function() {
+        // Detect if the user agent is a crawler
+        const isCrawler = /facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(navigator.userAgent);
+        
+        // If it's a crawler and trying to access a smart link, prevent client-side routing
+        if (isCrawler && window.location.pathname.startsWith('/link/')) {
+          // Log that we detected a crawler (for debugging)
+          console.log('Crawler detected, disabling client-side routing');
+          
+          // Set a flag to indicate this is a crawler
+          window.isCrawler = true;
+          
+          // Do not allow client-side navigation
+          document.addEventListener('DOMContentLoaded', function() {
+            // Prevent React router from taking over
+            window._preventReactRouterInitialization = true;
+          });
+        }
+      })();
+    </script>
   </head>
 
   <body>
