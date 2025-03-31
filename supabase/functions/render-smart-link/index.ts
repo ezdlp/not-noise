@@ -28,9 +28,16 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const slug = url.pathname.replace(/^\/link\//, '');
+    console.log(`Original URL: ${url.toString()}`);
+    
+    // Extract slug from path
+    let slug = url.pathname.replace(/^\/render-smart-link\//, '');
+    
+    // Remove any trailing slashes
+    slug = slug.replace(/\/$/, '');
     
     if (!slug) {
+      console.error('Slug is required');
       return new Response('Slug is required', { status: 400 });
     }
 
