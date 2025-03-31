@@ -77,34 +77,42 @@
     <!-- Enhanced Crawler detection script with more user agents -->
     <script>
       (function() {
+        // Check if URL is a smart link
+        const isSmartLink = window.location.pathname.startsWith('/link/');
+        
         // Expanded crawler detection regex
-        const isCrawler = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i.test(navigator.userAgent);
+        const crawlerRegex = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i;
+        const isCrawler = crawlerRegex.test(navigator.userAgent);
+        
+        // Set a global flag for crawlers
+        window.isCrawler = isCrawler;
         
         // If it's a crawler and trying to access a smart link, prevent client-side routing
-        if (isCrawler) {
+        if (isCrawler && isSmartLink) {
           console.log('Crawler detected:', navigator.userAgent);
           
-          // Set a global flag to indicate this is a crawler
-          window.isCrawler = true;
+          // For smart links, disable client-side rendering entirely
+          window._disableSPAForSmartLinks = true;
           
-          // For smart links, ensure proper routing
-          if (window.location.pathname.startsWith('/link/')) {
-            console.log('Crawler accessing smart link, disabling client-side routing');
+          // Create a debug element visible only to crawlers
+          document.addEventListener('DOMContentLoaded', function() {
+            const debugEl = document.createElement('div');
+            debugEl.style.display = 'none';
+            debugEl.id = 'crawler-debug-info';
+            debugEl.textContent = 'Crawler detected: ' + navigator.userAgent + '. SPA disabled for SmartLinks.';
+            document.body.appendChild(debugEl);
             
-            // Explicitly set document flag for React Router
-            document.addEventListener('DOMContentLoaded', function() {
-              // Prevent React router from taking over
-              window._preventReactRouterInitialization = true;
-              console.log('React Router initialization blocked for crawler');
-              
-              // Add a debug element visible only to crawlers
-              const debugEl = document.createElement('div');
-              debugEl.style.display = 'none';
-              debugEl.id = 'crawler-debug-info';
-              debugEl.textContent = 'Crawler detected: ' + navigator.userAgent;
-              document.body.appendChild(debugEl);
-            });
-          }
+            // Add meta debug info
+            const metaDebug = document.createElement('meta');
+            metaDebug.name = 'soundraiser:crawler-mode';
+            metaDebug.content = 'true';
+            document.head.appendChild(metaDebug);
+          });
+        }
+        
+        // If it's a smart link but not a crawler, we need special handling to make sure it loads properly
+        if (isSmartLink && !isCrawler) {
+          console.log('Smart link detected for regular browser. Loading client-side app.');
         }
       })();
     </script>

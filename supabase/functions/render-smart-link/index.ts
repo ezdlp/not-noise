@@ -68,6 +68,9 @@ Deno.serve(async (req) => {
     } else if (url.pathname.startsWith('/og/')) {
       slug = url.pathname.replace(/^\/og\//, '');
       console.log(`[Render Smart Link] Extracted from /og/ path: ${slug}`);
+    } else if (url.pathname.startsWith('/direct-link/')) {
+      slug = url.pathname.replace(/^\/direct-link\//, '');
+      console.log(`[Render Smart Link] Extracted from /direct-link/ path: ${slug}`);
     } else {
       // If none match, try a generic approach
       const segments = url.pathname.split('/').filter(Boolean);
@@ -238,7 +241,7 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     }
   };
 
-  // Generate HTML with the proper meta tags
+  // Generate HTML with the proper meta tags - enhanced version for better crawler support
   const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -283,15 +286,10 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     <meta name="soundraiser:request-path" content="${requestUrl}" />
     <meta name="soundraiser:canonical" content="${canonical}" />
     <meta name="soundraiser:render-timestamp" content="${new Date().toISOString()}" />
-    <meta name="soundraiser:version" content="1.0.2" />
+    <meta name="soundraiser:version" content="1.0.3" />
+    <meta name="soundraiser:non-spa-mode" content="true" />
     
-    <!-- Redirection script - only for non-crawler clients -->
-    <script>
-      // Only redirect browsers, not bots
-      if (!/facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(navigator.userAgent)) {
-        window.location.href = "/link/${smartLink.id}";
-      }
-    </script>
+    <!-- NO client-side redirection - render directly for better crawler support -->
   </head>
   <body>
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
@@ -308,9 +306,12 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
         `).join('')}
       </div>
       
-      <p style="margin-top: 40px; font-size: 14px; color: #999;">
-        If you are not redirected automatically, <a href="/link/${smartLink.id}" style="color: #6851FB; text-decoration: none;">click here</a> to view the music.
-      </p>
+      <div style="margin-top: 40px;">
+        <a href="https://soundraiser.io" style="display: inline-flex; align-items: center; gap: 8px; color: #666; text-decoration: none;">
+          <img src="${siteUrl}/lovable-uploads/soundraiser-logo/Iso A.svg" alt="Soundraiser" style="height: 24px; width: auto;" />
+          <span>Powered by Soundraiser</span>
+        </a>
+      </div>
     </div>
   </body>
 </html>`;
@@ -324,11 +325,11 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     'Cache-Control': 'public, max-age=3600, s-maxage=86400',
     'X-Content-Type-Options': 'nosniff',
     'X-Smart-Link-ID': smartLink.id,
-    'X-Render-Source': 'Soundraiser Edge Function',
+    'X-Render-Source': 'Soundraiser Direct HTML',
     'X-Request-URL': requestUrl,
     'X-User-Agent': userAgent.substring(0, 100), // Truncate if very long
     'X-Is-Crawler': isCrawler.toString(),
-    'X-Soundraiser-Version': '1.0.2', // Updated version for tracking response format changes
+    'X-Soundraiser-Version': '1.0.3', // Updated version for tracking response format changes
   };
 
   return new Response(html, { headers: responseHeaders });

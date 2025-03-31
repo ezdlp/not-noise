@@ -31,6 +31,7 @@ export function SmartLinkSEO({
     : `${window.location.pathname}/seo`;
   const ogPath = `/og/${slug}`;
   const socialApiPath = `/social-api/link/${slug}`;
+  const directLinkPath = `/direct-link/${slug}`;
   const renderedPath = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/${slug}`;
 
   // Generate action buttons for schema markup
@@ -115,14 +116,17 @@ export function SmartLinkSEO({
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${seoPath}`} />
+      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${directLinkPath}`} />
       <link rel="alternate" type="text/html" href={renderedPath} />
 
       {/* Additional meta tags for crawler debugging */}
       <meta name="soundraiser:rendered-url" content={renderedPath} />
       <meta name="soundraiser:social-api-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
       <meta name="soundraiser:og-url" content={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
+      <meta name="soundraiser:direct-link" content={`${DEFAULT_SEO_CONFIG.siteUrl}${directLinkPath}`} />
       <meta name="soundraiser:crawler-test" content="true" />
-      <meta name="soundraiser:version" content="1.0.2" />
+      <meta name="soundraiser:version" content="1.0.3" />
+      <meta name="soundraiser:client-side" content="true" />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

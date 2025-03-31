@@ -69,7 +69,7 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!link/).*)",
       "destination": "/index.html"
     }
   ],
@@ -111,6 +111,15 @@
     },
     {
       "source": "/direct-link/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/link/:path*",
       "headers": [
         {
           "key": "Cache-Control",
