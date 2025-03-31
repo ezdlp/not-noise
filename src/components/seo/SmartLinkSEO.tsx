@@ -1,6 +1,5 @@
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
-import { useEffect } from "react";
 
 interface SmartLinkSEOProps {
   title: string;
@@ -24,7 +23,7 @@ export function SmartLinkSEO({
   streamingPlatforms = [],
   slug,
 }: SmartLinkSEOProps) {
-  const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
+  const fullTitle = `${title} by ${artistName} | Stream on all platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
   
   // Use the explicit slug for canonical URL if available, otherwise fallback to window.location
@@ -84,22 +83,8 @@ export function SmartLinkSEO({
     }
   };
 
-  // Add debugging for bot detection
-  useEffect(() => {
-    const isBot = typeof navigator !== 'undefined' && /bot|crawler|spider|pinterest|facebook|twitter|linkedin/i.test(navigator.userAgent);
-    console.log("SmartLinkSEO rendered:", {
-      title: fullTitle,
-      isBot,
-      userAgent: navigator?.userAgent,
-      slug
-    });
-  }, [fullTitle, slug]);
-
   return (
-    <Helmet
-      defaultTitle={fullTitle}
-      titleTemplate={null}
-    >
+    <Helmet>
       {/* Basic */}
       <title>{fullTitle}</title>
       <meta name="description" content={finalDescription} />
@@ -131,10 +116,6 @@ export function SmartLinkSEO({
       {/* Image dimensions for social media */}
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="1200" />
-      
-      {/* Debug Information */}
-      <meta name="x-soundraiser-debug" content={`smart-link:${slug}:client-side`} />
-      <meta name="x-soundraiser-url" content={canonical} />
       
       {/* Schema.org structured data */}
       <script type="application/ld+json">
