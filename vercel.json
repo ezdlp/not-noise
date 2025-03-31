@@ -41,6 +41,17 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|googlebot|bingbot|yandex|pinterest|redditbot)"
+        }
+      ],
+      "source": "/link/:slug",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link?slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
