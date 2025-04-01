@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, useLocation, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -21,6 +22,17 @@ function AppLayout() {
                      location.pathname === '/register' || 
                      location.pathname === '/reset-password' ||
                      location.pathname === '/update-password';
+
+  // Check for hash-based routing for smart links
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#/link/')) {
+      // Remove the hash and navigate to the SPA route
+      const path = hash.substring(1);
+      window.history.replaceState(null, '', path);
+      window.location.reload();
+    }
+  }, []);
 
   // Track page views only on route change
   useEffect(() => {

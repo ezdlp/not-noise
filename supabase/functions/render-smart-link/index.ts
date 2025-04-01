@@ -289,29 +289,228 @@ function generateHtmlResponse(smartLink: SmartLink, req: Request): Response {
     <meta name="soundraiser:version" content="1.0.3" />
     <meta name="soundraiser:non-spa-mode" content="true" />
     
-    <!-- NO client-side redirection - render directly for better crawler support -->
+    <!-- Enhanced styling for direct HTML rendering -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9));
+        color: #ffffff;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        line-height: 1.5;
+      }
+      
+      .container {
+        max-width: 480px;
+        width: 90%;
+        background: rgba(15, 15, 20, 0.85);
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        margin: 2rem 0;
+      }
+      
+      .artwork {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        margin-bottom: 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #ffffff;
+      }
+      
+      h2 {
+        font-size: 1.25rem;
+        font-weight: 400;
+        margin-bottom: 1.5rem;
+        color: rgba(255,255,255,0.8);
+      }
+      
+      p {
+        margin-bottom: 1.5rem;
+        color: rgba(255,255,255,0.7);
+      }
+      
+      .platforms {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+      }
+      
+      .platform-button {
+        display: block;
+        padding: 0.875rem 1rem;
+        background: #6851FB;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+      
+      .platform-button:hover {
+        background: #5643e6;
+        transform: translateY(-2px);
+      }
+      
+      .footer {
+        text-align: center;
+        margin-top: 2rem;
+        opacity: 0.7;
+        font-size: 0.875rem;
+      }
+      
+      .footer a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+      }
+      
+      .footer img {
+        height: 24px;
+        width: auto;
+      }
+      
+      @media (max-width: 480px) {
+        .container {
+          width: 95%;
+          padding: 1.5rem;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+        }
+        
+        h2 {
+          font-size: 1.1rem;
+        }
+      }
+      
+      /* Background blur effect */
+      .page-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-size: cover;
+        background-position: center;
+        z-index: -1;
+        filter: blur(20px) brightness(0.4);
+      }
+      
+      /* Loading indicator and client-side redirect for non-crawler users */
+      .redirect-message {
+        position: fixed;
+        bottom: 1rem;
+        left: 0;
+        right: 0;
+        text-align: center;
+        padding: 0.5rem;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.875rem;
+      }
+      
+      .lds-ring {
+        display: inline-block;
+        position: relative;
+        width: 16px;
+        height: 16px;
+        vertical-align: middle;
+        margin-right: 8px;
+      }
+      
+      .lds-ring div {
+        box-sizing: border-box;
+        display: block;
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        margin: 2px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        border-color: #fff transparent transparent transparent;
+      }
+      
+      .lds-ring div:nth-child(1) { animation-delay: -0.45s; }
+      .lds-ring div:nth-child(2) { animation-delay: -0.3s; }
+      .lds-ring div:nth-child(3) { animation-delay: -0.15s; }
+      
+      @keyframes lds-ring {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+
+    <script>
+      // This script only runs for non-crawler visitors
+      function detectCrawler() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        return /bot|crawler|spider|crawling|facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex/i.test(userAgent);
+      }
+      
+      function loadFullExperience() {
+        if (!detectCrawler()) {
+          // For real users, redirect to the SPA version after 1 second
+          setTimeout(() => {
+            window.location.href = '/#' + window.location.pathname;
+          }, 1000);
+        }
+      }
+      
+      // Run after DOM is loaded
+      document.addEventListener('DOMContentLoaded', loadFullExperience);
+    </script>
   </head>
   <body>
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
-      <img src="${smartLink.artwork_url}" alt="${smartLink.title}" style="max-width: 300px; border-radius: 8px; margin-bottom: 20px;" />
-      <h1 style="margin: 0; font-size: 24px; color: #333;">${smartLink.title}</h1>
-      <h2 style="margin: 10px 0 20px; font-size: 18px; color: #555; font-weight: normal;">by ${smartLink.artist_name}</h2>
-      <p style="max-width: 600px; margin-bottom: 30px; color: #666;">${description}</p>
+    <div class="page-background" style="background-image: url(${smartLink.artwork_url})"></div>
+    
+    <div class="container">
+      <img src="${smartLink.artwork_url}" alt="${smartLink.title}" class="artwork" />
+      <h1>${smartLink.title}</h1>
+      <h2>by ${smartLink.artist_name}</h2>
       
-      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 600px;">
+      ${smartLink.description ? `<p>${smartLink.description}</p>` : ''}
+      
+      <div class="platforms">
         ${streamingPlatforms.map(platform => `
-          <a href="${platform.url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10px 20px; background-color: #6851FB; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
+          <a href="${platform.url}" target="_blank" rel="noopener noreferrer" class="platform-button">
             Listen on ${platform.platform_name}
           </a>
         `).join('')}
       </div>
       
-      <div style="margin-top: 40px;">
-        <a href="https://soundraiser.io" style="display: inline-flex; align-items: center; gap: 8px; color: #666; text-decoration: none;">
-          <img src="${siteUrl}/lovable-uploads/soundraiser-logo/Iso A.svg" alt="Soundraiser" style="height: 24px; width: auto;" />
+      <div class="footer">
+        <a href="https://soundraiser.io" target="_blank" rel="noopener noreferrer">
+          <img src="${siteUrl}/lovable-uploads/soundraiser-logo/Iso A.svg" alt="Soundraiser" />
           <span>Powered by Soundraiser</span>
         </a>
       </div>
+    </div>
+    
+    <div class="redirect-message">
+      <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+      Loading interactive experience...
     </div>
   </body>
 </html>`;
