@@ -1,4 +1,3 @@
-
 {
   "images": {
     "sizes": [304, 760],
@@ -14,7 +13,18 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
+          "value": "(facebookexternalhit/1.1|Facebot)"
+        }
+      ],
+      "source": "/link/:slug*",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
         }
       ],
       "source": "/link/:slug*",
@@ -115,19 +125,6 @@
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/link/:slug*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
         }
       ]
     },
