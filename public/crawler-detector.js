@@ -49,94 +49,89 @@
   // Check if the current user agent matches any crawler pattern
   const isCrawler = crawlerPatterns.some(pattern => pattern.test(userAgent));
   
-  if (isCrawler) {
-    console.log('Crawler detected:', userAgent);
-    
-    // Set a fallback meta tags immediately so there's something for the crawler
-    document.title = `Listen on All Platforms - Soundraiser`;
-    
-    // Create and inject OG meta tags if they don't exist
-    const metaTags = [
-      { property: 'og:title', content: `Listen on All Platforms - Soundraiser` },
-      { property: 'og:description', content: `Stream or download music across all major platforms with a single link.` },
-      { property: 'og:url', content: window.location.href },
-      { property: 'og:type', content: 'music.song' },
-      { property: 'og:image', content: '/lovable-uploads/soundraiser-logo/Logo A.png' },
-      { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: `Listen on All Platforms - Soundraiser` },
-      { name: 'twitter:description', content: `Stream or download music across all major platforms with a single link.` },
-      { name: 'twitter:image', content: '/lovable-uploads/soundraiser-logo/Logo A.png' }
-    ];
-    
-    metaTags.forEach(tag => {
-      let meta;
-      if (tag.property) {
-        meta = document.querySelector(`meta[property="${tag.property}"]`);
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.setAttribute('property', tag.property);
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', tag.content);
-      } else if (tag.name) {
-        meta = document.querySelector(`meta[name="${tag.name}"]`);
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.setAttribute('name', tag.name);
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', tag.content);
+  // Immediately try to fetch meta data for this link, regardless of crawler detection
+  const siteUrl = "https://soundraiser.io";
+  const metaUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`;
+  
+  console.log('Fetching meta data from:', metaUrl);
+  
+  // Use fetch API to get the meta data
+  fetch(metaUrl)
+    .then(response => {
+      console.log('Meta response status:', response.status);
+      if (!response.ok) {
+        throw new Error('Failed to fetch meta data: ' + response.status);
       }
-    });
-    
-    // Attempt to get SEO data directly
-    fetch(`https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.title) {
-          console.log('Received meta data:', data);
-          
-          // Update title and meta tags with actual data
-          document.title = `${data.title} by ${data.artistName} | Listen on All Platforms`;
-          
-          // Update OG meta tags
-          const metaTitle = document.querySelector('meta[property="og:title"]');
-          if (metaTitle) metaTitle.setAttribute('content', `${data.title} by ${data.artistName} | Listen on All Platforms`);
-          
-          const metaDesc = document.querySelector('meta[property="og:description"]');
-          if (metaDesc) metaDesc.setAttribute('content', data.description || `Stream or download ${data.title} by ${data.artistName}. Available on Spotify, Apple Music, and more streaming platforms.`);
-          
-          const metaImage = document.querySelector('meta[property="og:image"]');
-          if (metaImage) metaImage.setAttribute('content', data.artworkUrl);
-          
-          // Update Twitter meta tags
-          const twitterTitle = document.querySelector('meta[name="twitter:title"]');
-          if (twitterTitle) twitterTitle.setAttribute('content', `${data.title} by ${data.artistName} | Listen on All Platforms`);
-          
-          const twitterDesc = document.querySelector('meta[name="twitter:description"]');
-          if (twitterDesc) twitterDesc.setAttribute('content', data.description || `Stream or download ${data.title} by ${data.artistName}. Available on Spotify, Apple Music, and more streaming platforms.`);
-          
-          const twitterImage = document.querySelector('meta[name="twitter:image"]');
-          if (twitterImage) twitterImage.setAttribute('content', data.artworkUrl);
+      return response.json();
+    })
+    .then(data => {
+      if (data && data.title) {
+        console.log('Received meta data:', data);
+        
+        // Create the important meta information
+        const fullTitle = `${data.title} by ${data.artistName} | Listen on All Platforms`;
+        const description = data.description || `Stream or download ${data.title} by ${data.artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
+        
+        // Make sure image URL is absolute
+        const artworkUrl = data.artworkUrl.startsWith('http') 
+          ? data.artworkUrl 
+          : `${siteUrl}${data.artworkUrl.startsWith('/') ? '' : '/'}${data.artworkUrl}`;
+        
+        // Set page title
+        document.title = fullTitle;
+        
+        // Update all meta tags
+        const metaTags = [
+          { property: 'og:title', content: fullTitle },
+          { property: 'og:description', content: description },
+          { property: 'og:image', content: artworkUrl },
+          { property: 'og:url', content: `${siteUrl}/link/${slug}` },
+          { property: 'og:type', content: 'music.song' },
+          { name: 'twitter:card', content: 'summary_large_image' },
+          { name: 'twitter:title', content: fullTitle },
+          { name: 'twitter:description', content: description },
+          { name: 'twitter:image', content: artworkUrl },
+          { name: 'description', content: description }
+        ];
+        
+        metaTags.forEach(tag => {
+          let meta;
+          if (tag.property) {
+            meta = document.querySelector(`meta[property="${tag.property}"]`);
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('property', tag.property);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', tag.content);
+          } else if (tag.name) {
+            meta = document.querySelector(`meta[name="${tag.name}"]`);
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('name', tag.name);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', tag.content);
+          }
+        });
+
+        // If we're a crawler and meta tags are updated, but we're not redirected yet by Vercel rules,
+        // force a redirect to the server-side version
+        if (isCrawler) {
+          console.log('Crawler detected, ensuring redirect to SSR version');
+          setTimeout(() => {
+            window.location.href = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/${slug}`;
+          }, 200);
         }
-      })
-      .catch(error => {
-        console.error('Error fetching smart link meta data:', error);
-      });
-    
-    // For crawlers, redirect to the SSR version if not already there
-    // This is a fallback in case the Vercel rewrite rule didn't catch it
-    setTimeout(() => {
-      // Check if any OG meta tags were populated with real data
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      const ogTitle = document.querySelector('meta[property="og:title"]');
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching smart link meta data:', error);
       
-      // If we still have default values after a timeout, force redirect to the SSR version
-      if ((!ogImage || ogImage.getAttribute('content') === '/lovable-uploads/soundraiser-logo/Logo A.png') &&
-          (!ogTitle || ogTitle.getAttribute('content') === 'Listen on All Platforms - Soundraiser')) {
-        console.log('Meta tags not populated with real data, redirecting to SSR version');
+      // For crawlers, redirect directly to the SSR version as fallback
+      if (isCrawler) {
+        console.log('Error fetching meta, redirecting crawler to SSR version');
         window.location.href = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/${slug}`;
       }
-    }, 500);
-  }
+    });
 })();

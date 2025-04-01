@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     } else if (error) {
       console.error('Error fetching smart link:', error)
       return new Response(JSON.stringify({ error: 'Server error' }), { 
-        status: Al500,
+        status: 500,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json'
