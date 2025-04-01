@@ -10,6 +10,13 @@
   },
   "rewrites": [
     {
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)"
+        }
+      ],
       "source": "/link/:slug*",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
     },
@@ -62,13 +69,7 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
-      "source": "/((?!link/).*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "soundraiser.io"
-        }
-      ],
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
@@ -114,49 +115,6 @@
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/link/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/social-api/link/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/og/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
         }
       ]
     }
