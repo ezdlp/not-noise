@@ -1,6 +1,7 @@
 
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
+import { useEffect } from "react";
 
 interface SmartLinkSEOProps {
   title: string;
@@ -80,13 +81,58 @@ export function SmartLinkSEO({
     }
   };
   
-  // Store the smartLinkData globally for crawler detection
-  window.smartLinkData = {
-    title,
-    artistName,
-    description: description || '',
-    artworkUrl: absoluteArtworkUrl,
-  };
+  // Update any global data or other state
+  useEffect(() => {
+    // Store the smartLinkData globally for crawler detection
+    window.smartLinkData = {
+      title,
+      artistName,
+      description: finalDescription,
+      artworkUrl: absoluteArtworkUrl,
+    };
+    
+    // Force update meta tags right away (in addition to Helmet)
+    const updateMetaTags = () => {
+      const metaTags = [
+        { property: 'og:title', content: fullTitle },
+        { property: 'og:description', content: finalDescription },
+        { property: 'og:image', content: absoluteArtworkUrl },
+        { property: 'og:url', content: canonical },
+        { property: 'og:type', content: 'music.song' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: fullTitle },
+        { name: 'twitter:description', content: finalDescription },
+        { name: 'twitter:image', content: absoluteArtworkUrl },
+        { name: 'description', content: finalDescription }
+      ];
+      
+      metaTags.forEach(tag => {
+        let meta;
+        if (tag.property) {
+          meta = document.querySelector(`meta[property="${tag.property}"]`);
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('property', tag.property);
+            document.head.appendChild(meta);
+          }
+          meta.setAttribute('content', tag.content);
+        } else if (tag.name) {
+          meta = document.querySelector(`meta[name="${tag.name}"]`);
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('name', tag.name);
+            document.head.appendChild(meta);
+          }
+          meta.setAttribute('content', tag.content);
+        }
+      });
+    };
+    
+    // Run immediately
+    updateMetaTags();
+    // Also delay by a small amount to ensure it runs after any other scripts
+    setTimeout(updateMetaTags, 100);
+  }, [title, artistName, description, absoluteArtworkUrl, canonical, fullTitle, finalDescription]);
 
   return (
     <Helmet>

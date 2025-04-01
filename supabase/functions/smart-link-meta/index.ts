@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     console.log(`Successfully generated meta for ${slug}`)
 
-    // Return just the metadata as JSON
+    // Return just the metadata as JSON with proper caching headers
     return new Response(JSON.stringify({
       title: finalSmartLink.title,
       artistName: finalSmartLink.artist_name,
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400'
+        'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=600'
       }
     })
   } catch (error) {

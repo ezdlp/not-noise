@@ -19,7 +19,7 @@
     return;
   }
   
-  console.log('Smart link path detected:', path, 'Slug:', slug);
+  console.log(`Smart link path detected: ${path}, Slug: ${slug}`);
   
   // List of known crawler user agents
   const crawlerPatterns = [
@@ -49,7 +49,7 @@
   // Check if the current user agent matches any crawler pattern
   const isCrawler = crawlerPatterns.some(pattern => pattern.test(userAgent));
   
-  // Immediately try to fetch meta data for this link, regardless of crawler detection
+  // Immediately try to fetch meta data for this link
   const siteUrl = "https://soundraiser.io";
   const metaUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`;
   
@@ -80,7 +80,7 @@
         // Set page title
         document.title = fullTitle;
         
-        // Update all meta tags
+        // Update all meta tags - doing this immediately and with high priority
         const metaTags = [
           { property: 'og:title', content: fullTitle },
           { property: 'og:description', content: description },
@@ -94,6 +94,15 @@
           { name: 'description', content: description }
         ];
         
+        // Store meta data globally
+        window.smartLinkData = {
+          title: data.title,
+          artistName: data.artistName,
+          description: description,
+          artworkUrl: artworkUrl,
+        };
+        
+        // Create meta tags if they don't exist or update existing ones
         metaTags.forEach(tag => {
           let meta;
           if (tag.property) {
@@ -115,10 +124,10 @@
           }
         });
 
-        // If we're a crawler and meta tags are updated, but we're not redirected yet by Vercel rules,
-        // force a redirect to the server-side version
+        // Create preemptive SSR redirect for crawlers
         if (isCrawler) {
           console.log('Crawler detected, ensuring redirect to SSR version');
+          // Use a short timeout to ensure meta tags were at least attempted to be set first
           setTimeout(() => {
             window.location.href = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/${slug}`;
           }, 200);
