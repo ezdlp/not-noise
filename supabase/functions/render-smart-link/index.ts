@@ -33,25 +33,25 @@ interface SmartLink {
 
 // Platform icons with absolute URLs
 const platformIcons: { [key: string]: string } = {
-  spotify: "https://soundraiser.io/_next/image?url=/lovable-uploads/spotify.png&w=64&q=75",
-  apple_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/applemusic.png&w=64&q=75",
-  youtube_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtubemusic.png&w=64&q=75",
-  youtube: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtube.png&w=64&q=75",
-  amazon_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/amazonmusic.png&w=64&q=75",
-  deezer: "https://soundraiser.io/_next/image?url=/lovable-uploads/deezer.png&w=64&q=75",
-  soundcloud: "https://soundraiser.io/_next/image?url=/lovable-uploads/soundcloud.png&w=64&q=75",
-  itunes: "https://soundraiser.io/_next/image?url=/lovable-uploads/itunes.png&w=64&q=75",
-  tidal: "https://soundraiser.io/_next/image?url=/lovable-uploads/tidal.png&w=64&q=75",
-  anghami: "https://soundraiser.io/_next/image?url=/lovable-uploads/anghami.png&w=64&q=75",
-  napster: "https://soundraiser.io/_next/image?url=/lovable-uploads/napster.png&w=64&q=75",
-  boomplay: "https://soundraiser.io/_next/image?url=/lovable-uploads/boomplay.png&w=64&q=75",
-  yandex: "https://soundraiser.io/_next/image?url=/lovable-uploads/yandex.png&w=64&q=75",
-  beatport: "https://soundraiser.io/_next/image?url=/lovable-uploads/beatport.png&w=64&q=75",
-  bandcamp: "https://soundraiser.io/_next/image?url=/lovable-uploads/bandcamp.png&w=64&q=75",
-  audius: "https://soundraiser.io/_next/image?url=/lovable-uploads/audius.png&w=64&q=75",
-  youtubeMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtubemusic.png&w=64&q=75",
-  appleMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/applemusic.png&w=64&q=75",
-  amazonMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/amazonmusic.png&w=64&q=75"
+  spotify: "https://soundraiser.io/lovable-uploads/spotify.png",
+  apple_music: "https://soundraiser.io/lovable-uploads/applemusic.png",
+  youtube_music: "https://soundraiser.io/lovable-uploads/youtubemusic.png",
+  youtube: "https://soundraiser.io/lovable-uploads/youtube.png",
+  amazon_music: "https://soundraiser.io/lovable-uploads/amazonmusic.png",
+  deezer: "https://soundraiser.io/lovable-uploads/deezer.png",
+  soundcloud: "https://soundraiser.io/lovable-uploads/soundcloud.png",
+  itunes: "https://soundraiser.io/lovable-uploads/itunes.png",
+  tidal: "https://soundraiser.io/lovable-uploads/tidal.png",
+  anghami: "https://soundraiser.io/lovable-uploads/anghami.png",
+  napster: "https://soundraiser.io/lovable-uploads/napster.png",
+  boomplay: "https://soundraiser.io/lovable-uploads/boomplay.png",
+  yandex: "https://soundraiser.io/lovable-uploads/yandex.png",
+  beatport: "https://soundraiser.io/lovable-uploads/beatport.png",
+  bandcamp: "https://soundraiser.io/lovable-uploads/bandcamp.png",
+  audius: "https://soundraiser.io/lovable-uploads/audius.png",
+  youtubeMusic: "https://soundraiser.io/lovable-uploads/youtubemusic.png",
+  appleMusic: "https://soundraiser.io/lovable-uploads/applemusic.png",
+  amazonMusic: "https://soundraiser.io/lovable-uploads/amazonmusic.png"
 };
 
 Deno.serve(async (req) => {
@@ -226,687 +226,593 @@ Deno.serve(async (req) => {
 function generateHtmlResponse(smartLink: SmartLink): Response {
   console.log(`[Render Smart Link] Generating HTML response for: ${smartLink.title} by ${smartLink.artist_name}`);
   
-  const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io';
-  const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
-  const description = smartLink.description || 
-    `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
-  const canonical = `${siteUrl}/link/${smartLink.id}`;
+  try {
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://soundraiser.io';
+    const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
+    const description = smartLink.description || 
+      `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
+    const canonical = `${siteUrl}/link/${smartLink.id}`;
 
-  // Make artwork URL absolute if it's not already
-  const artworkUrl = smartLink.artwork_url.startsWith('http') 
-    ? smartLink.artwork_url 
-    : `${siteUrl}/_next/image?url=${encodeURIComponent(smartLink.artwork_url)}&w=760&q=75`;
+    // Make artwork URL absolute if it's not already
+    let artworkUrl = '';
+    try {
+      if (smartLink.artwork_url) {
+        artworkUrl = smartLink.artwork_url.startsWith('http') 
+          ? smartLink.artwork_url 
+          : `${siteUrl}${smartLink.artwork_url}`;
+      } else {
+        artworkUrl = `${siteUrl}/lovable-uploads/soundraiser-logo/Logo%20A.svg`;
+      }
+    } catch (error) {
+      console.error(`[Render Smart Link] Error processing artwork URL: ${error}`);
+      artworkUrl = `${siteUrl}/lovable-uploads/soundraiser-logo/Logo%20A.svg`;
+    }
 
-  // Generate streamer buttons HTML
-  const platformButtons = smartLink.platform_links?.map(platform => {
-    const icon = platformIcons[platform.platform_id] || '';
-    const actionText = ['itunes', 'beatport'].includes(platform.platform_id) ? 'Buy' : 'Play';
-    
-    return `
-      <a 
-        href="${platform.url}" 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        class="flex items-center justify-between w-full p-4 mb-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-shadow"
-        onclick="trackPlatformClick('${platform.id}')"
-      >
-        <div class="flex items-center">
-          <img src="${icon}" alt="${platform.platform_name}" class="w-8 h-8 mr-3" loading="lazy" />
-          <span class="font-medium">${platform.platform_name}</span>
-        </div>
-        <div class="flex items-center text-primary font-medium">
-          ${actionText}
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      </a>
-    `;
-  }).join('') || '';
-
-  // Generate schema markup for music
-  const streamingPlatforms = smartLink.platform_links?.map(pl => ({
-    name: pl.platform_name,
-    url: pl.url
-  })) || [];
-  
-  const musicSchema = {
-    "@context": "https://schema.org",
-    "@type": "MusicRecording",
-    "name": smartLink.title,
-    "byArtist": {
-      "@type": "MusicGroup",
-      "name": smartLink.artist_name,
-      "@id": `${siteUrl}/artist/${encodeURIComponent(smartLink.artist_name)}`
-    },
-    "image": artworkUrl,
-    "description": smartLink.description,
-    ...(smartLink.release_date && { "datePublished": smartLink.release_date }),
-    "url": canonical,
-    "offers": streamingPlatforms.map(platform => ({
-      "@type": "Offer",
-      "url": platform.url,
-      "availability": "https://schema.org/InStock",
-      "category": "stream"
-    }))
-  };
-
-  // Generate email capture form HTML if enabled
-  const emailCaptureHtml = smartLink.email_capture_enabled ? `
-    <div class="mt-6 p-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm">
-      <h3 class="text-lg font-medium mb-2">${smartLink.email_capture_title || 'Join the Newsletter'}</h3>
-      <p class="text-sm text-gray-600 mb-3">${smartLink.email_capture_description || 'Subscribe to stay updated with new releases and exclusive content.'}</p>
-      <form id="emailSubscribeForm" class="space-y-3">
-        <input type="hidden" name="smartLinkId" value="${smartLink.id}">
-        <div>
-          <input 
-            type="email" 
-            name="email" 
-            placeholder="Your email address" 
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-        </div>
-        <button 
-          type="submit" 
-          class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
-        >
-          Subscribe
-        </button>
-      </form>
-    </div>
-  ` : '';
-
-  // Generate branding section
-  const brandingHtml = !smartLink.profiles?.hide_branding ? `
-    <div class="mt-8 text-center">
-      <a 
-        href="https://soundraiser.io" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
-      >
-        <img 
-          src="https://soundraiser.io/lovable-uploads/soundraiser-logo/Iso%20D.svg"
-          alt="Soundraiser"
-          class="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
-          width="16"
-          height="16"
-        />
-        <span class="text-sm">Powered by Soundraiser</span>
-      </a>
-    </div>
-  ` : '';
-
-  // Meta Pixel code for tracking if enabled
-  const metaPixelCode = smartLink.meta_pixel_id ? `
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s) {
-        if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
+    // Generate platform buttons HTML
+    let platformButtons = '';
+    try {
+      platformButtons = smartLink.platform_links?.map(platform => {
+        let iconUrl = '';
+        try {
+          iconUrl = platformIcons[platform.platform_id] || `${siteUrl}/lovable-uploads/default-platform.png`;
+        } catch (error) {
+          console.error(`[Render Smart Link] Error getting platform icon for ${platform.platform_id}: ${error}`);
+          iconUrl = `${siteUrl}/lovable-uploads/default-platform.png`;
+        }
         
-        fbq('init', '${smartLink.meta_pixel_id}');
-        fbq('track', '${smartLink.meta_view_event || 'SmartLinkView'}');
-    </script>
-    <!-- End Meta Pixel Code -->
-  ` : '';
+        const actionText = ['itunes', 'beatport'].includes(platform.platform_id) ? 'Buy' : 'Play';
+        
+        return `
+          <a 
+            href="${platform.url}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="platform-button"
+            onclick="trackPlatformClick('${platform.id}')"
+          >
+            <div class="platform-info">
+              <img src="${iconUrl}" alt="${platform.platform_name}" class="platform-icon" loading="lazy" />
+              <span class="platform-name">${platform.platform_name}</span>
+            </div>
+            <div class="platform-action">
+              ${actionText}
+              <svg xmlns="http://www.w3.org/2000/svg" class="platform-arrow" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </a>
+        `;
+      }).join('') || '';
+    } catch (error) {
+      console.error(`[Render Smart Link] Error generating platform buttons: ${error}`);
+      platformButtons = `<p class="error-message">Could not load streaming platforms. Please try again later.</p>`;
+    }
 
-  // Analytics tracking code
-  const analyticsCode = `
-    <script>
-      // Simple page view tracking
-      function trackPageView() {
-        console.log('Tracking page view for: ${smartLink.id}');
-        try {
-          fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/link_views', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2Njc2MzYsImV4cCI6MjA1MTI0MzYzNn0.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc'
-            },
-            body: JSON.stringify({
-              smart_link_id: '${smartLink.id}',
-              user_agent: navigator.userAgent
-            })
-          }).then(response => {
-            console.log('Page view tracked:', response.status);
-          }).catch(error => {
-            console.error('Error tracking page view:', error);
-          });
-        } catch (e) {
-          console.error('Error in tracking code:', e);
-        }
-      }
+    // Generate schema markup for music
+    const streamingPlatforms = smartLink.platform_links?.map(pl => ({
+      name: pl.platform_name,
+      url: pl.url
+    })) || [];
+    
+    const musicSchema = {
+      "@context": "https://schema.org",
+      "@type": "MusicRecording",
+      "name": smartLink.title,
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": smartLink.artist_name,
+        "@id": `${siteUrl}/artist/${encodeURIComponent(smartLink.artist_name)}`
+      },
+      "image": artworkUrl,
+      "description": smartLink.description,
+      ...(smartLink.release_date && { "datePublished": smartLink.release_date }),
+      "url": canonical,
+      "offers": streamingPlatforms.map(platform => ({
+        "@type": "Offer",
+        "url": platform.url,
+        "availability": "https://schema.org/InStock",
+        "category": "stream"
+      }))
+    };
 
-      // Platform click tracking
-      function trackPlatformClick(platformLinkId) {
-        console.log('Tracking platform click for ID:', platformLinkId);
-        try {
-          fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/platform_clicks', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2Njc2MzYsImV4cCI6MjA1MTI0MzYzNn0.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc'
-            },
-            body: JSON.stringify({
-              platform_link_id: platformLinkId
-            })
-          }).then(response => {
-            console.log('Platform click tracked:', response.status);
-            
-            // Also trigger Meta Pixel event if configured
-            ${smartLink.meta_pixel_id ? `if (typeof fbq === 'function') {
-              fbq('track', '${smartLink.meta_click_event || 'SmartLinkClick'}');
-            }` : ''}
-          }).catch(error => {
-            console.error('Error tracking platform click:', error);
-          });
-        } catch (e) {
-          console.error('Error in tracking code:', e);
-        }
-      }
+    // Generate email capture form HTML if enabled
+    let emailCaptureHtml = '';
+    try {
+      emailCaptureHtml = smartLink.email_capture_enabled ? `
+        <div class="email-form">
+          <h3 class="email-title">${smartLink.email_capture_title || 'Join the Newsletter'}</h3>
+          <p class="email-description">${smartLink.email_capture_description || 'Subscribe to stay updated with new releases and exclusive content.'}</p>
+          <form id="emailSubscribeForm" class="email-subscribe-form">
+            <input type="hidden" name="smartLinkId" value="${smartLink.id}">
+            <div>
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Your email address" 
+                required
+                class="email-input"
+              >
+            </div>
+            <button 
+              type="submit" 
+              class="subscribe-button"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+      ` : '';
+    } catch (error) {
+      console.error(`[Render Smart Link] Error generating email form: ${error}`);
+      emailCaptureHtml = '';
+    }
 
-      // Email subscription handling
-      document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('emailSubscribeForm');
-        if (form) {
-          form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = form.querySelector('input[name="email"]').value;
-            const smartLinkId = form.querySelector('input[name="smartLinkId"]').value;
-            
-            fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/email_subscribers', {
+    // Generate branding section
+    let brandingHtml = '';
+    try {
+      brandingHtml = !smartLink.profiles?.hide_branding ? `
+        <div class="branding">
+          <a 
+            href="https://soundraiser.io" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="branding-link"
+          >
+            <img 
+              src="${siteUrl}/lovable-uploads/soundraiser-logo/Iso%20D.svg"
+              alt="Soundraiser"
+              class="branding-logo"
+              width="16"
+              height="16"
+            />
+            <span class="branding-text">Powered by Soundraiser</span>
+          </a>
+        </div>
+      ` : '';
+    } catch (error) {
+      console.error(`[Render Smart Link] Error generating branding: ${error}`);
+      brandingHtml = '';
+    }
+
+    // Meta Pixel code for tracking if enabled
+    const metaPixelCode = smartLink.meta_pixel_id ? `
+      <!-- Meta Pixel Code -->
+      <script>
+        !function(f,b,e,v,n,t,s) {
+          if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          
+          fbq('init', '${smartLink.meta_pixel_id}');
+          fbq('track', '${smartLink.meta_view_event || 'SmartLinkView'}');
+      </script>
+      <!-- End Meta Pixel Code -->
+    ` : '';
+
+    // Analytics tracking code
+    const analyticsCode = `
+      <script>
+        // Simple page view tracking
+        function trackPageView() {
+          console.log('Tracking page view for: ${smartLink.id}');
+          try {
+            fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/link_views', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2Njc2MzYsImV4cCI6MjA1MTI0MzYzNn0.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc'
               },
               body: JSON.stringify({
-                email: email,
-                smart_link_id: smartLinkId
+                smart_link_id: '${smartLink.id}',
+                user_agent: navigator.userAgent
               })
             }).then(response => {
-              if (response.ok) {
-                form.innerHTML = '<p class="text-green-600 font-medium py-2">Thanks for subscribing!</p>';
-              } else {
-                throw new Error('Subscription failed');
-              }
+              console.log('Page view tracked:', response.status);
             }).catch(error => {
-              console.error('Error subscribing:', error);
-              form.innerHTML += '<p class="text-red-500 text-sm mt-2">Something went wrong. Please try again.</p>';
+              console.error('Error tracking page view:', error);
             });
-          });
+          } catch (e) {
+            console.error('Error in tracking code:', e);
+          }
         }
-      });
 
-      // Track page view when the page loads
-      document.addEventListener('DOMContentLoaded', trackPageView);
-    </script>
-  `;
-
-  // Define CSS for components - improved with critical CSS
-  const inlineStyles = `
-    <style>
-      /* Base styles */
-      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
-
-      :root {
-        --primary: #6851FB;
-        --primary-hover: #4A47A5;
-        --primary-light: #ECE9FF;
-        --primary-disabled: #ECE9FF;
-        --background: #FAFAFA;
-        --foreground: #111827;
-        --neutral-seasalt: #FAFAFA;
-        --neutral-night: #0F0F0F;
-        --neutral-border: #E6E6E6;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body, html {
-        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-        background-color: var(--background);
-        color: var(--foreground);
-        min-height: 100vh;
-        width: 100%;
-        line-height: 1.5;
-      }
-
-      h1, h2, h3, h4, h5, h6 {
-        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-        font-weight: 600;
-      }
-
-      img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-      }
-
-      /* Utility classes */
-      .container {
-        width: 100%;
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 1rem;
-        padding-right: 1rem;
-      }
-
-      .min-h-screen {
-        min-height: 100vh;
-      }
-
-      .flex {
-        display: flex;
-      }
-
-      .items-center {
-        align-items: center;
-      }
-
-      .justify-center {
-        justify-content: center;
-      }
-
-      .justify-between {
-        justify-content: space-between;
-      }
-
-      .flex-col {
-        flex-direction: column;
-      }
-
-      .relative {
-        position: relative;
-      }
-
-      .absolute {
-        position: absolute;
-      }
-
-      .inset-0 {
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-      }
-
-      .bg-cover {
-        background-size: cover;
-      }
-
-      .bg-center {
-        background-position: center;
-      }
-
-      .bg-no-repeat {
-        background-repeat: no-repeat;
-      }
-
-      .rounded-xl {
-        border-radius: 0.75rem;
-      }
-
-      .rounded-3xl {
-        border-radius: 1.5rem;
-      }
-
-      .p-4 {
-        padding: 1rem;
-      }
-
-      .p-6 {
-        padding: 1.5rem;
-      }
-
-      .px-4 {
-        padding-left: 1rem;
-        padding-right: 1rem;
-      }
-
-      .py-2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-      }
-
-      .py-8 {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-      }
-
-      .mt-4 {
-        margin-top: 1rem;
-      }
-
-      .mt-6 {
-        margin-top: 1.5rem;
-      }
-
-      .mt-8 {
-        margin-top: 2rem;
-      }
-
-      .mb-2 {
-        margin-bottom: 0.5rem;
-      }
-
-      .mb-3 {
-        margin-bottom: 0.75rem;
-      }
-
-      .mb-4 {
-        margin-bottom: 1rem;
-      }
-
-      .mb-6 {
-        margin-bottom: 1.5rem;
-      }
-
-      .mr-3 {
-        margin-right: 0.75rem;
-      }
-
-      .ml-1 {
-        margin-left: 0.25rem;
-      }
-
-      .w-full {
-        width: 100%;
-      }
-
-      .max-w-md {
-        max-width: 28rem;
-      }
-
-      .mx-auto {
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .bg-white\\/95 {
-        background-color: rgba(255, 255, 255, 0.95);
-      }
-
-      .backdrop-blur-sm {
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-      }
-
-      .shadow-sm {
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      }
-
-      .shadow-md {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      }
-
-      .shadow-xl {
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      }
-
-      .text-center {
-        text-align: center;
-      }
-
-      .text-primary {
-        color: var(--primary);
-      }
-
-      .text-white {
-        color: white;
-      }
-
-      .text-white\\/60 {
-        color: rgba(255, 255, 255, 0.6);
-      }
-
-      .text-white\\/80 {
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .text-gray-600 {
-        color: #4B5563;
-      }
-
-      .text-sm {
-        font-size: 0.875rem;
-      }
-
-      .text-lg {
-        font-size: 1.125rem;
-      }
-
-      .text-xl {
-        font-size: 1.25rem;
-      }
-
-      .text-2xl {
-        font-size: 1.5rem;
-      }
-
-      .font-medium {
-        font-weight: 500;
-      }
-
-      .font-semibold {
-        font-weight: 600;
-      }
-
-      .font-bold {
-        font-weight: 700;
-      }
-
-      .z-10 {
-        z-index: 10;
-      }
-
-      .space-y-3 > * + * {
-        margin-top: 0.75rem;
-      }
-
-      .space-y-4 > * + * {
-        margin-top: 1rem;
-      }
-
-      .gap-1\\.5 {
-        gap: 0.375rem;
-      }
-
-      .inline-flex {
-        display: inline-flex;
-      }
-
-      .h-4 {
-        height: 1rem;
-      }
-
-      .w-4 {
-        width: 1rem;
-      }
-
-      .h-5 {
-        height: 1.25rem;
-      }
-
-      .w-5 {
-        width: 1.25rem;
-      }
-
-      .h-8 {
-        height: 2rem;
-      }
-
-      .w-8 {
-        width: 2rem;
-      }
-
-      .h-48 {
-        height: 12rem;
-      }
-
-      .w-48 {
-        width: 12rem;
-      }
-
-      .object-cover {
-        object-fit: cover;
-      }
-
-      .transition-colors {
-        transition-property: color, background-color, border-color, fill, stroke;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 150ms;
-      }
-
-      .transition-opacity {
-        transition-property: opacity;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 150ms;
-      }
-
-      .transition-shadow {
-        transition-property: box-shadow;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 150ms;
-      }
-
-      .hover\\:shadow-md:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      }
-
-      .hover\\:text-white\\/80:hover {
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .hover\\:bg-primary\\/80:hover {
-        background-color: rgba(104, 81, 251, 0.8);
-      }
-
-      .opacity-60 {
-        opacity: 0.6;
-      }
-
-      .group:hover .group-hover\\:opacity-80 {
-        opacity: 0.8;
-      }
-
-      .border {
-        border-width: 1px;
-      }
-
-      .border-gray-300 {
-        border-color: #D1D5DB;
-      }
-
-      .rounded-lg {
-        border-radius: 0.5rem;
-      }
-
-      .focus\\:ring-2:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px var(--primary-light), 0 0 0 4px var(--primary);
-      }
-
-      .focus\\:ring-primary:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px var(--primary-light), 0 0 0 4px var(--primary);
-      }
-
-      .focus\\:border-transparent:focus {
-        border-color: transparent;
-      }
-
-      .bg-primary {
-        background-color: var(--primary);
-      }
-
-      .text-green-600 {
-        color: #059669;
-      }
-
-      .text-red-500 {
-        color: #EF4444;
-      }
-
-      .py-2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-      }
-
-      .filter {
-        filter: blur(30px) brightness(0.7);
-      }
-
-      .transform {
-        transform: scale(1.1);
-      }
-
-      /* Mobile optimizations */
-      @media (max-width: 640px) {
-        .p-6 {
-          padding: 1.25rem;
+        // Platform click tracking
+        function trackPlatformClick(platformLinkId) {
+          console.log('Tracking platform click for ID:', platformLinkId);
+          try {
+            fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/platform_clicks', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2Njc2MzYsImV4cCI6MjA1MTI0MzYzNn0.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc'
+              },
+              body: JSON.stringify({
+                platform_link_id: platformLinkId
+              })
+            }).then(response => {
+              console.log('Platform click tracked:', response.status);
+              
+              // Also trigger Meta Pixel event if configured
+              ${smartLink.meta_pixel_id ? `if (typeof fbq === 'function') {
+                fbq('track', '${smartLink.meta_click_event || 'SmartLinkClick'}');
+              }` : ''}
+            }).catch(error => {
+              console.error('Error tracking platform click:', error);
+            });
+          } catch (e) {
+            console.error('Error in tracking code:', e);
+          }
+        }
+
+        // Email subscription handling
+        document.addEventListener('DOMContentLoaded', function() {
+          const form = document.getElementById('emailSubscribeForm');
+          if (form) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              const email = form.querySelector('input[name="email"]').value;
+              const smartLinkId = form.querySelector('input[name="smartLinkId"]').value;
+              
+              fetch('https://owtufhdsuuyrgmxytclj.supabase.co/rest/v1/email_subscribers', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dHVmaGRzdXV5cmdteHl0Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2Njc2MzYsImV4cCI6MjA1MTI0MzYzNn0.Yl6IzV36GK1yNZ42AlSGJEpm_QAXXJ7fqQsQB-omoDc'
+                },
+                body: JSON.stringify({
+                  email: email,
+                  smart_link_id: smartLinkId
+                })
+              }).then(response => {
+                if (response.ok) {
+                  form.innerHTML = '<p class="success-message">Thanks for subscribing!</p>';
+                } else {
+                  throw new Error('Subscription failed');
+                }
+              }).catch(error => {
+                console.error('Error subscribing:', error);
+                form.innerHTML += '<p class="error-message">Something went wrong. Please try again.</p>';
+              });
+            });
+          }
+        });
+
+        // Track page view when the page loads
+        document.addEventListener('DOMContentLoaded', trackPageView);
+      </script>
+    `;
+
+    // Define CSS styles
+    const inlineStyles = `
+      <style>
+        /* Reset and base styles */
+        *, *::before, *::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
         }
         
-        .h-48, .w-48 {
-          height: 10rem;
-          width: 10rem;
+        body, html {
+          font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+          background-color: #FAFAFA;
+          color: #111827;
+          min-height: 100vh;
+          width: 100%;
+          line-height: 1.5;
+          font-size: 16px;
         }
         
-        .text-2xl {
-          font-size: 1.35rem;
+        img {
+          max-width: 100%;
+          height: auto;
+          display: block;
         }
         
-        .max-w-md {
-          max-width: 90%;
-          margin-left: auto;
-          margin-right: auto;
+        a {
+          color: inherit;
+          text-decoration: none;
         }
-      }
+        
+        /* Main container */
+        .page-container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 1;
+        }
+        
+        /* Blurred background */
+        .background {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-position: center;
+          background-size: cover;
+          background-repeat: no-repeat;
+          filter: blur(30px) brightness(0.7);
+          transform: scale(1.1);
+          z-index: -1;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+          width: 100%;
+          max-width: 450px;
+          margin: 20px;
+          padding: 20px 0;
+          position: relative;
+          z-index: 2;
+        }
+        
+        /* Main card */
+        .card {
+          background-color: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-radius: 24px;
+          padding: 24px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 5px 10px -5px rgba(0, 0, 0, 0.05);
+          margin-bottom: 20px;
+        }
+        
+        /* Header section */
+        .header {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 24px;
+          text-align: center;
+        }
+        
+        .artwork {
+          width: 192px;
+          height: 192px;
+          object-fit: cover;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          margin-bottom: 16px;
+        }
+        
+        .title {
+          font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 700;
+          font-size: 24px;
+          margin-bottom: 4px;
+          color: #111827;
+        }
+        
+        .artist {
+          font-size: 18px;
+          color: #4B5563;
+          margin-bottom: 8px;
+        }
+        
+        .description {
+          font-size: 14px;
+          color: #6B7280;
+        }
+        
+        /* Platform buttons */
+        .platform-button {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 16px;
+          margin-bottom: 12px;
+          background-color: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          transition: box-shadow 0.2s, transform 0.2s;
+        }
+        
+        .platform-button:hover {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          transform: translateY(-1px);
+        }
+        
+        .platform-info {
+          display: flex;
+          align-items: center;
+        }
+        
+        .platform-icon {
+          width: 32px;
+          height: 32px;
+          margin-right: 12px;
+          border-radius: 4px;
+        }
+        
+        .platform-name {
+          font-weight: 500;
+        }
+        
+        .platform-action {
+          display: flex;
+          align-items: center;
+          color: #6851FB;
+          font-weight: 500;
+        }
+        
+        .platform-arrow {
+          width: 20px;
+          height: 20px;
+          margin-left: 4px;
+        }
+        
+        /* Email subscription */
+        .email-form {
+          margin-top: 24px;
+          padding: 16px;
+          background-color: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .email-title {
+          font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          color: #111827;
+        }
+        
+        .email-description {
+          font-size: 14px;
+          color: #6B7280;
+          margin-bottom: 12px;
+        }
+        
+        .email-subscribe-form {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        
+        .email-input {
+          width: 100%;
+          padding: 10px 16px;
+          border: 1px solid #E5E7EB;
+          border-radius: 8px;
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .email-input:focus {
+          border-color: #6851FB;
+          box-shadow: 0 0 0 2px rgba(104, 81, 251, 0.2);
+        }
+        
+        .subscribe-button {
+          width: 100%;
+          padding: 10px 16px;
+          background-color: #6851FB;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .subscribe-button:hover {
+          background-color: #5941e2;
+        }
+        
+        /* Branding footer */
+        .branding {
+          margin-top: 32px;
+          text-align: center;
+        }
+        
+        .branding-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: rgba(255, 255, 255, 0.6);
+          transition: color 0.2s;
+        }
+        
+        .branding-link:hover {
+          color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .branding-logo {
+          opacity: 0.6;
+          transition: opacity 0.2s;
+          width: 16px;
+          height: 16px;
+        }
+        
+        .branding-link:hover .branding-logo {
+          opacity: 0.8;
+        }
+        
+        .branding-text {
+          font-size: 14px;
+        }
+        
+        /* Messages */
+        .success-message {
+          color: #059669;
+          font-weight: 500;
+          padding: 8px 0;
+          text-align: center;
+        }
+        
+        .error-message {
+          color: #EF4444;
+          font-size: 14px;
+          padding: 8px 0;
+          text-align: center;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+          .content-wrapper {
+            padding: 16px 0;
+          }
+          
+          .card {
+            padding: 20px;
+            border-radius: 20px;
+          }
+          
+          .artwork {
+            width: 160px;
+            height: 160px;
+          }
+          
+          .title {
+            font-size: 22px;
+          }
+          
+          .artist {
+            font-size: 16px;
+          }
+          
+          .platform-button {
+            padding: 14px;
+          }
+          
+          .platform-icon {
+            width: 28px;
+            height: 28px;
+          }
+        }
+        
+        /* Anti-flickering */
+        .no-fouc {
+          visibility: hidden;
+        }
+        
+        .fouc-ready {
+          visibility: visible;
+        }
+      </style>
+    `;
 
-      /* SVG Fix */
-      svg {
-        display: inline-block;
-        vertical-align: middle;
-      }
-
-      /* Fix for blurry artwork */
-      .artwork-image {
-        -webkit-backface-visibility: hidden;
-        -moz-backface-visibility: hidden;
-        -webkit-transform: translate3d(0, 0, 0);
-        -moz-transform: translate3d(0, 0, 0);
-      }
-      
-      /* Prevent FOUC */
-      .no-fouc {
-        visibility: hidden;
-      }
-      .fouc-ready {
-        visibility: visible;
-      }
-    </style>
-  `;
-
-  // Full HTML response
-  const html = `<!DOCTYPE html>
+    // Full HTML response
+    const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="https://soundraiser.io/lovable-uploads/soundraiser-logo/Iso%20A%20fav.png" />
+    <link rel="icon" type="image/png" href="${siteUrl}/lovable-uploads/soundraiser-logo/Iso%20A%20fav.png" />
     
     <!-- SEO & Social Meta Tags -->
     <title>${fullTitle}</title>
@@ -917,6 +823,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" as="style" />
     <link rel="preload" href="${artworkUrl}" as="image" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="music.song" />
@@ -955,7 +863,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     </script>
     
     <!-- Version Meta Tag -->
-    <meta name="soundraiser:version" content="1.2.0" />
+    <meta name="soundraiser:version" content="1.3.0" />
     <meta name="soundraiser:render-mode" content="edge-function" />
     <meta name="soundraiser:smart-link-id" content="${smartLink.id}" />
     <meta name="soundraiser:render-time" content="${new Date().toISOString()}" />
@@ -963,34 +871,35 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     ${metaPixelCode}
   </head>
   <body>
-    <div class="relative min-h-screen flex flex-col items-center justify-center">
+    <div class="page-container">
       <!-- Background blur effect -->
       <div 
-        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style="background-image: url('${artworkUrl}'); filter: blur(30px) brightness(0.7); transform: scale(1.1);"
+        class="background"
+        style="background-image: url('${artworkUrl}');"
         aria-hidden="true"
       ></div>
 
       <!-- Content Container -->
-      <div class="relative w-full max-w-md mx-auto px-4 py-8 z-10">
+      <div class="content-wrapper">
         <!-- Main Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
+        <div class="card">
           <!-- Header with artwork -->
-          <div class="flex flex-col items-center mb-6">
+          <div class="header">
             <img 
               src="${artworkUrl}" 
               alt="${smartLink.title}" 
-              class="h-48 w-48 object-cover rounded-xl shadow-md mb-4 artwork-image"
+              class="artwork"
               width="192"
               height="192"
+              loading="eager"
             />
-            <h1 class="text-xl md:text-2xl font-bold text-center">${smartLink.title}</h1>
-            <p class="text-gray-600 text-lg text-center">${smartLink.artist_name}</p>
-            ${smartLink.description ? `<p class="text-gray-500 text-sm text-center mt-2">${smartLink.description}</p>` : ''}
+            <h1 class="title">${smartLink.title}</h1>
+            <p class="artist">${smartLink.artist_name}</p>
+            ${smartLink.description ? `<p class="description">${smartLink.description}</p>` : ''}
           </div>
           
           <!-- Platform Links -->
-          <div class="space-y-4">
+          <div class="platforms">
             ${platformButtons}
           </div>
 
@@ -1008,19 +917,53 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
   </body>
 </html>`;
 
-  console.log(`[Render Smart Link] HTML response generated successfully`);
+    console.log(`[Render Smart Link] HTML response generated successfully`);
 
-  // Enhanced headers to aid troubleshooting and caching
-  const responseHeaders = {
-    ...corsHeaders,
-    'Content-Type': 'text/html; charset=utf-8',
-    'Cache-Control': 'no-store, no-cache, must-revalidate',
-    'X-Content-Type-Options': 'nosniff',
-    'X-Smart-Link-ID': smartLink.id,
-    'X-Render-Source': 'Soundraiser Edge Function',
-    'X-Is-Crawler': 'false', // Set dynamically in the main function based on user agent
-    'X-Soundraiser-Version': '1.2.0', // Updated version for tracking response format changes
-  };
+    // Enhanced headers to aid troubleshooting and caching
+    const responseHeaders = {
+      ...corsHeaders,
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Smart-Link-ID': smartLink.id,
+      'X-Render-Source': 'Soundraiser Edge Function',
+      'X-Is-Crawler': isCrawler ? 'true' : 'false',
+      'X-Soundraiser-Version': '1.3.0',
+    };
 
-  return new Response(html, { headers: responseHeaders });
+    return new Response(html, { headers: responseHeaders });
+  } catch (error) {
+    console.error(`[Render Smart Link] Error in generateHtmlResponse: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // Provide a simple fallback response
+    const fallbackHtml = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listen to Music | Soundraiser</title>
+    <style>
+      body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f7f7f7; }
+      .error-container { text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 90%; width: 450px; }
+      h1 { margin-top: 0; color: #333; }
+      p { color: #666; line-height: 1.5; }
+      a { color: #6851FB; text-decoration: none; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div class="error-container">
+      <h1>Sorry, we couldn't load this music link</h1>
+      <p>Please try again later or visit <a href="https://soundraiser.io">Soundraiser</a> to discover more music.</p>
+    </div>
+  </body>
+</html>`;
+
+    return new Response(fallbackHtml, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate'
+      }
+    });
+  }
 }
