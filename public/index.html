@@ -56,8 +56,33 @@
     }
   </script>
   
-  <!-- Crawler detection script - runs immediately -->
-  <script src="/crawler-detector.js"></script>
+  <!-- Simplified crawler detection script - loads first -->
+  <script>
+    // Essential crawler detection - runs immediately to allow routing decisions
+    (function() {
+      var path = window.location.pathname;
+      if (!path.startsWith('/link/')) return;
+      
+      var slug = path.split('/').pop();
+      var crawlerPatterns = [
+        /facebook/i, /twitter/i, /linkedin/i, /pinterest/i, /telegram/i, 
+        /whatsapp/i, /googlebot/i, /bingbot/i, /yandex/i, /bot/i, /crawl/i, 
+        /spider/i, /facebookexternalhit/i, /linkedinbot/i, /twitterbot/i
+      ];
+      
+      var isCrawler = crawlerPatterns.some(function(pattern) {
+        return pattern.test(navigator.userAgent);
+      });
+      
+      if (isCrawler) {
+        // Let the Vercel routing handle the redirect
+        console.log('Crawler detected by inline script.');
+      }
+    })();
+  </script>
+  
+  <!-- Full crawler detector script - runs later -->
+  <script defer src="/crawler-detector.js"></script>
   
   <!-- Preconnect to image optimization endpoint -->
   <link rel="preconnect" href="/_next" crossorigin />

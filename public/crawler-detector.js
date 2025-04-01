@@ -1,7 +1,9 @@
 
 /**
- * This script runs immediately to detect crawler user agents
- * and update meta tags accordingly if the URL is a smart link
+ * Enhanced crawler detector script that:
+ * 1. Detects a wide range of social media and search crawler user agents
+ * 2. Sets meta tags immediately for crawlers that don't execute JavaScript 
+ * 3. Works alongside Vercel routing for better SEO
  */
 (function() {
   console.log('Crawler detector running...');
@@ -21,7 +23,7 @@
   
   console.log(`Smart link path detected: ${path}, Slug: ${slug}`);
   
-  // Enhanced list of known crawler patterns - expanded to catch more crawlers
+  // Comprehensive list of known crawler patterns
   const crawlerPatterns = [
     // Social media crawlers
     /facebook/i,
@@ -58,7 +60,7 @@
     /Playwright/i,
     /Puppeteer/i,
     
-    // Catch-all for metadata scrapers (many use "bot" or "scraper" in UA)
+    // Catch-all for metadata scrapers
     /meta/i,
     /scraper/i,
     /preview/i,
@@ -73,7 +75,25 @@
   const isCrawler = crawlerPatterns.some(pattern => pattern.test(userAgent));
   console.log('Is crawler detected:', isCrawler);
   
-  // Immediately try to fetch meta data for this link
+  // Add escaped fragment for crawlers (helps with routing)
+  if (isCrawler && window.location.href.indexOf('?_escaped_fragment_=') === -1) {
+    console.log('Adding _escaped_fragment_ for crawler routing');
+    
+    // This query parameter will trigger the Vercel rewrite rule
+    const newUrl = window.location.origin + window.location.pathname + '?_escaped_fragment_=true';
+    
+    // For some crawlers that support JavaScript, we can redirect
+    try {
+      window.history.replaceState(null, '', newUrl);
+    } catch (e) {
+      console.error('Failed to update history state:', e);
+    }
+    
+    // If we've added the escaped fragment, we'll let the Vercel routing take care of redirection
+    // But we'll also fetch and set meta tags directly as a backup
+  }
+  
+  // Even for non-crawlers, immediately fetch and set meta tags for better UX and as a fallback
   const siteUrl = "https://soundraiser.io";
   const metaUrl = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`;
   
@@ -92,7 +112,7 @@
       if (data && data.title) {
         console.log('Received meta data:', data);
         
-        // Create the important meta information
+        // Format the important meta information
         const fullTitle = `${data.title} by ${data.artistName} | Listen on All Platforms`;
         const description = data.description || `Stream or download ${data.title} by ${data.artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
         
@@ -104,36 +124,6 @@
         // Set page title
         document.title = fullTitle;
         
-        // Update all meta tags - doing this immediately and with high priority
-        const metaTags = [
-          // Standard meta
-          { name: 'description', content: description },
-          { name: 'robots', content: 'index, follow' },
-          
-          // Open Graph basic
-          { property: 'og:title', content: fullTitle },
-          { property: 'og:description', content: description },
-          { property: 'og:image', content: artworkUrl },
-          { property: 'og:url', content: `${siteUrl}/link/${slug}` },
-          { property: 'og:type', content: 'music.song' },
-          { property: 'og:site_name', content: 'Soundraiser' },
-          
-          // Twitter
-          { name: 'twitter:card', content: 'summary_large_image' },
-          { name: 'twitter:title', content: fullTitle },
-          { name: 'twitter:description', content: description },
-          { name: 'twitter:image', content: artworkUrl },
-          
-          // Facebook-specific meta
-          { property: 'fb:app_id', content: '1325418224779181' }, // Replace with your actual FB App ID if available
-          
-          // Music-specific (for rich previews)
-          { property: 'music:musician', content: `${siteUrl}/artist/${encodeURIComponent(data.artistName)}` },
-          { property: 'music:album', content: artworkUrl },
-          { property: 'music:song', content: `${siteUrl}/link/${slug}` },
-          { property: 'music:creator', content: data.artistName },
-        ];
-        
         // Store meta data globally for React components to use
         window.smartLinkData = {
           title: data.title,
@@ -142,71 +132,123 @@
           artworkUrl: artworkUrl,
         };
         
-        // Create meta tags if they don't exist or update existing ones
-        metaTags.forEach(tag => {
-          let meta;
-          if (tag.property) {
-            meta = document.querySelector(`meta[property="${tag.property}"]`);
-            if (!meta) {
-              meta = document.createElement('meta');
-              meta.setAttribute('property', tag.property);
-              document.head.appendChild(meta);
-            }
-            meta.setAttribute('content', tag.content);
-          } else if (tag.name) {
-            meta = document.querySelector(`meta[name="${tag.name}"]`);
-            if (!meta) {
-              meta = document.createElement('meta');
-              meta.setAttribute('name', tag.name);
-              document.head.appendChild(meta);
-            }
-            meta.setAttribute('content', tag.content);
-          }
-        });
-
-        // Add a canonical link
-        let canonical = document.querySelector('link[rel="canonical"]');
-        if (!canonical) {
-          canonical = document.createElement('link');
-          canonical.setAttribute('rel', 'canonical');
-          document.head.appendChild(canonical);
-        }
-        canonical.setAttribute('href', `${siteUrl}/link/${slug}`);
-
-        // Add structured data
-        let structuredData = document.querySelector('script[type="application/ld+json"]');
-        if (!structuredData) {
-          structuredData = document.createElement('script');
-          structuredData.setAttribute('type', 'application/ld+json');
-          document.head.appendChild(structuredData);
-        }
+        // Update all meta tags immediately with high priority
+        updateMetaTags(fullTitle, description, artworkUrl, `${siteUrl}/link/${slug}`);
         
-        const musicSchema = {
-          "@context": "https://schema.org",
-          "@type": "MusicRecording",
-          "name": data.title,
-          "byArtist": {
-            "@type": "MusicGroup",
-            "name": data.artistName
-          },
-          "image": artworkUrl,
-          "description": description,
-          "url": `${siteUrl}/link/${slug}`
-        };
-        
-        structuredData.textContent = JSON.stringify(musicSchema);
-
-        // Only redirect crawlers if we're already using the SSR approach, otherwise 
-        // just rely on the meta tags we've injected
-        if (isCrawler && window.location.href.indexOf('?_escaped_fragment_=') === -1) {
-          console.log('Adding _escaped_fragment_ for crawler compatibility');
-          // Add an _escaped_fragment_ parameter to help crawlers understand this is a dynamic page
-          // This is a nod to the AJAX crawling scheme that some crawlers still respect
-          history.replaceState(null, '', `${window.location.pathname}?_escaped_fragment_=true`);
-        }
+        // Also update structured data
+        updateStructuredData(
+          data.title, 
+          data.artistName, 
+          artworkUrl, 
+          description, 
+          data.releaseDate, 
+          `${siteUrl}/link/${slug}`
+        );
       }
     })
     .catch(error => {
       console.error('Error fetching smart link meta data:', error);
     });
+    
+  /**
+   * Updates meta tags in the document head with provided values
+   */
+  function updateMetaTags(title, description, image, url) {
+    const metaTags = [
+      // Standard meta
+      { name: 'description', content: description },
+      { name: 'robots', content: 'index, follow' },
+      
+      // Open Graph basic
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:image', content: image },
+      { property: 'og:url', content: url },
+      { property: 'og:type', content: 'music.song' },
+      { property: 'og:site_name', content: 'Soundraiser' },
+      
+      // Twitter
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: image },
+      
+      // Facebook-specific meta
+      { property: 'fb:app_id', content: '1325418224779181' },
+      
+      // Music-specific (for rich previews)
+      { property: 'music:musician', content: `${siteUrl}/artist/${encodeURIComponent(title.split(' by ')[1].split(' |')[0])}` },
+      { property: 'music:song', content: url },
+    ];
+    
+    // Create meta tags if they don't exist or update existing ones
+    metaTags.forEach(tag => {
+      let meta;
+      if (tag.property) {
+        meta = document.querySelector(`meta[property="${tag.property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', tag.property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      } else if (tag.name) {
+        meta = document.querySelector(`meta[name="${tag.name}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', tag.name);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      }
+    });
+
+    // Add a canonical link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+    
+    console.log('Meta tags updated with:', { title, description, image, url });
+  }
+  
+  /**
+   * Updates the structured data schema.org script in the head
+   */
+  function updateStructuredData(title, artistName, image, description, releaseDate, url) {
+    let structuredData = document.querySelector('script[type="application/ld+json"]');
+    if (!structuredData) {
+      structuredData = document.createElement('script');
+      structuredData.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(structuredData);
+    }
+    
+    const musicSchema = {
+      "@context": "https://schema.org",
+      "@type": "MusicRecording",
+      "name": title,
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": artistName
+      },
+      "image": image,
+      "description": description,
+      ...(releaseDate && { "datePublished": releaseDate }),
+      "url": url,
+      "publisher": {
+        "@type": "Organization",
+        "name": "Soundraiser",
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
+        }
+      }
+    };
+    
+    structuredData.textContent = JSON.stringify(musicSchema);
+    console.log('Structured data updated for:', title);
+  }
 })();

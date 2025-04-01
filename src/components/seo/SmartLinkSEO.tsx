@@ -126,6 +126,24 @@ export function SmartLinkSEO({
           meta.setAttribute('content', tag.content);
         }
       });
+      
+      // Add a canonical link
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', canonical);
+      
+      // Update structured data
+      let structuredData = document.querySelector('script[type="application/ld+json"]');
+      if (!structuredData) {
+        structuredData = document.createElement('script');
+        structuredData.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(structuredData);
+      }
+      structuredData.textContent = JSON.stringify(musicSchema);
     };
     
     // Run immediately

@@ -45,6 +45,17 @@
       "source": "/link/:slug",
       "has": [
         {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?:bot|crawl|facebook|twitter|linkedin|pinterest|telegram|whatsapp|facebook|facebookexternalhit|linkedinbot|pinterest|twitterbot|whatsapp).*"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
           "type": "query",
           "key": "_escaped_fragment_",
           "value": "true"

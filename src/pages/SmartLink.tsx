@@ -17,6 +17,16 @@ export default function SmartLink() {
   useEffect(() => {
     analytics.initialize(true);
     analytics.trackPageView(`/link/${slug}`);
+    
+    // If this is the initial page load and we're on a smart link,
+    // check the URL for the escaped fragment and update the meta tags
+    // This helps with SEO for crawlers
+    if (window.location.search.includes('_escaped_fragment_')) {
+      console.log('Escaped fragment detected, preparing for crawler view');
+      
+      // This is an important signal that we need to optimize for crawlers
+      document.documentElement.setAttribute('data-crawler-view', 'true');
+    }
   }, [slug]);
 
   const recordViewMutation = useMutation({
@@ -126,7 +136,7 @@ export default function SmartLink() {
     if (smartLink?.id) {
       recordViewMutation.mutate(smartLink.id);
       
-      // Store the data globally for the CrawlerMetaUpdater and crawler detection script
+      // Store the data globally for the crawler detection script
       window.smartLinkData = {
         title: smartLink.title,
         artistName: smartLink.artist_name,
@@ -134,7 +144,7 @@ export default function SmartLink() {
         artworkUrl: smartLink.artwork_url,
       };
       
-      // Update meta tags immediately for quicker crawler access
+      // Update meta tags and document title immediately for quicker crawler access
       const siteUrl = "https://soundraiser.io";
       const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
       const description = smartLink.description || `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
@@ -143,37 +153,87 @@ export default function SmartLink() {
         ? smartLink.artwork_url 
         : `${siteUrl}${smartLink.artwork_url.startsWith('/') ? '' : '/'}${smartLink.artwork_url}`;
       
-      // Update meta tags with data attributes for crawler detection
-      document.querySelectorAll('meta[data-meta]').forEach(meta => {
-        const metaEl = meta as HTMLMetaElement;
-        const type = metaEl.getAttribute('data-meta');
-        
-        switch (type) {
-          case 'title':
-          case 'twitter:title':
-            metaEl.setAttribute('content', fullTitle);
-            break;
-          case 'description':
-          case 'twitter:description':
-            metaEl.setAttribute('content', description);
-            break;
-          case 'image':
-          case 'twitter:image':
-            metaEl.setAttribute('content', artworkUrl);
-            break;
-          case 'url':
-            metaEl.setAttribute('content', canonical);
-            break;
-          case 'type':
-            metaEl.setAttribute('content', 'music.song');
-            break;
-        }
-      });
-      
-      // Update document title
+      // Set the document title immediately
       document.title = fullTitle;
+      
+      // Update meta tags with data attributes for crawler detection
+      updateMetaTags(fullTitle, description, artworkUrl, canonical);
     }
   }, [smartLink?.id, slug]);
+  
+  // Function to update meta tags
+  function updateMetaTags(title: string, description: string, image: string, url: string) {
+    const metaTags = [
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:image', content: image },
+      { property: 'og:url', content: url },
+      { property: 'og:type', content: 'music.song' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: image },
+      { name: 'description', content: description }
+    ];
+    
+    // Update data-meta elements
+    document.querySelectorAll('meta[data-meta]').forEach(meta => {
+      const metaEl = meta as HTMLMetaElement;
+      const type = metaEl.getAttribute('data-meta');
+      
+      switch (type) {
+        case 'title':
+        case 'twitter:title':
+          metaEl.setAttribute('content', title);
+          break;
+        case 'description':
+        case 'twitter:description':
+          metaEl.setAttribute('content', description);
+          break;
+        case 'image':
+        case 'twitter:image':
+          metaEl.setAttribute('content', image);
+          break;
+        case 'url':
+          metaEl.setAttribute('content', url);
+          break;
+        case 'type':
+          metaEl.setAttribute('content', 'music.song');
+          break;
+      }
+    });
+    
+    // Also update or create the direct meta tags
+    metaTags.forEach(tag => {
+      let meta;
+      if (tag.property) {
+        meta = document.querySelector(`meta[property="${tag.property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', tag.property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      } else if (tag.name) {
+        meta = document.querySelector(`meta[name="${tag.name}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', tag.name);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      }
+    });
+    
+    // Add a canonical link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+  }
 
   useEffect(() => {
     if (smartLink?.meta_pixel_id) {
