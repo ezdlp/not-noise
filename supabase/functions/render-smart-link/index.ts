@@ -442,6 +442,417 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     </script>
   `;
 
+  // Define CSS for components (using Tailwind-like classes but direct CSS)
+  const inlineStyles = `
+    <style>
+      /* Base styles */
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+      :root {
+        --primary: #6851FB;
+        --primary-hover: #4A47A5;
+        --primary-light: #ECE9FF;
+        --primary-disabled: #ECE9FF;
+        --background: #FAFAFA;
+        --foreground: #111827;
+        --neutral-seasalt: #FAFAFA;
+        --neutral-night: #0F0F0F;
+        --neutral-border: #E6E6E6;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body, html {
+        font-family: 'DM Sans', sans-serif;
+        background-color: var(--background);
+        color: var(--foreground);
+        min-height: 100vh;
+        width: 100%;
+        line-height: 1.5;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      /* Utility classes */
+      .container {
+        width: 100%;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .min-h-screen {
+        min-height: 100vh;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      .items-center {
+        align-items: center;
+      }
+
+      .justify-center {
+        justify-content: center;
+      }
+
+      .justify-between {
+        justify-content: space-between;
+      }
+
+      .flex-col {
+        flex-direction: column;
+      }
+
+      .relative {
+        position: relative;
+      }
+
+      .absolute {
+        position: absolute;
+      }
+
+      .inset-0 {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      .bg-cover {
+        background-size: cover;
+      }
+
+      .bg-center {
+        background-position: center;
+      }
+
+      .bg-no-repeat {
+        background-repeat: no-repeat;
+      }
+
+      .rounded-xl {
+        border-radius: 0.75rem;
+      }
+
+      .rounded-3xl {
+        border-radius: 1.5rem;
+      }
+
+      .p-4 {
+        padding: 1rem;
+      }
+
+      .p-6 {
+        padding: 1.5rem;
+      }
+
+      .px-4 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .py-2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+      }
+
+      .py-8 {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+      }
+
+      .mt-4 {
+        margin-top: 1rem;
+      }
+
+      .mt-6 {
+        margin-top: 1.5rem;
+      }
+
+      .mt-8 {
+        margin-top: 2rem;
+      }
+
+      .mb-2 {
+        margin-bottom: 0.5rem;
+      }
+
+      .mb-3 {
+        margin-bottom: 0.75rem;
+      }
+
+      .mb-4 {
+        margin-bottom: 1rem;
+      }
+
+      .mb-6 {
+        margin-bottom: 1.5rem;
+      }
+
+      .mr-3 {
+        margin-right: 0.75rem;
+      }
+
+      .ml-1 {
+        margin-left: 0.25rem;
+      }
+
+      .w-full {
+        width: 100%;
+      }
+
+      .max-w-md {
+        max-width: 28rem;
+      }
+
+      .mx-auto {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .bg-white\/95 {
+        background-color: rgba(255, 255, 255, 0.95);
+      }
+
+      .backdrop-blur-sm {
+        backdrop-filter: blur(4px);
+      }
+
+      .shadow-sm {
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      }
+
+      .shadow-md {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .shadow-xl {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .text-primary {
+        color: var(--primary);
+      }
+
+      .text-white {
+        color: white;
+      }
+
+      .text-white\/60 {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .text-white\/80 {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .text-gray-600 {
+        color: #4B5563;
+      }
+
+      .text-sm {
+        font-size: 0.875rem;
+      }
+
+      .text-lg {
+        font-size: 1.125rem;
+      }
+
+      .text-xl {
+        font-size: 1.25rem;
+      }
+
+      .text-2xl {
+        font-size: 1.5rem;
+      }
+
+      .font-medium {
+        font-weight: 500;
+      }
+
+      .font-semibold {
+        font-weight: 600;
+      }
+
+      .font-bold {
+        font-weight: 700;
+      }
+
+      .z-10 {
+        z-index: 10;
+      }
+
+      .space-y-3 > * + * {
+        margin-top: 0.75rem;
+      }
+
+      .space-y-4 > * + * {
+        margin-top: 1rem;
+      }
+
+      .gap-1\.5 {
+        gap: 0.375rem;
+      }
+
+      .inline-flex {
+        display: inline-flex;
+      }
+
+      .h-4 {
+        height: 1rem;
+      }
+
+      .w-4 {
+        width: 1rem;
+      }
+
+      .h-5 {
+        height: 1.25rem;
+      }
+
+      .w-5 {
+        width: 1.25rem;
+      }
+
+      .h-8 {
+        height: 2rem;
+      }
+
+      .w-8 {
+        width: 2rem;
+      }
+
+      .h-48 {
+        height: 12rem;
+      }
+
+      .w-48 {
+        width: 12rem;
+      }
+
+      .object-cover {
+        object-fit: cover;
+      }
+
+      .transition-colors {
+        transition-property: color, background-color, border-color, fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+      }
+
+      .transition-opacity {
+        transition-property: opacity;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+      }
+
+      .transition-shadow {
+        transition-property: box-shadow;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+      }
+
+      .hover\\:shadow-md:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .hover\\:text-white\\/80:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .hover\\:bg-primary\\/80:hover {
+        background-color: rgba(104, 81, 251, 0.8);
+      }
+
+      .opacity-60 {
+        opacity: 0.6;
+      }
+
+      .group:hover .group-hover\\:opacity-80 {
+        opacity: 0.8;
+      }
+
+      .border {
+        border-width: 1px;
+      }
+
+      .border-gray-300 {
+        border-color: #D1D5DB;
+      }
+
+      .rounded-lg {
+        border-radius: 0.5rem;
+      }
+
+      .focus\\:ring-2:focus {
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+      }
+
+      .focus\\:ring-primary:focus {
+        --tw-ring-color: var(--primary);
+      }
+
+      .focus\\:border-transparent:focus {
+        border-color: transparent;
+      }
+
+      .bg-primary {
+        background-color: var(--primary);
+      }
+
+      .text-green-600 {
+        color: #059669;
+      }
+
+      .text-red-500 {
+        color: #EF4444;
+      }
+
+      .py-2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+      }
+
+      .filter {
+        filter: blur(30px) brightness(0.7);
+      }
+
+      .transform {
+        transform: scale(1.1);
+      }
+
+      /* Mobile adjustments */
+      @media (max-width: 768px) {
+        .max-w-md {
+          max-width: 100%;
+        }
+      }
+    </style>
+  `;
+
   // Full HTML response
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -473,24 +884,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${smartLink.artwork_url}" />
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#6851FB',
-              primaryDark: '#4A47A5',
-              primaryLight: '#ECE9FF',
-              neutral: {
-                seasalt: '#FAFAFA'
-              }
-            }
-          }
-        }
-      }
-    </script>
+    <!-- Inline Styling (responsive, self-contained) -->
+    ${inlineStyles}
     
     <!-- Schema.org structured data -->
     <script type="application/ld+json">
@@ -498,14 +893,14 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     </script>
     
     <!-- Debugging Meta Tags -->
-    <meta name="soundraiser:version" content="1.0.5" />
+    <meta name="soundraiser:version" content="1.1.0" />
     <meta name="soundraiser:render-mode" content="edge-function" />
     <meta name="soundraiser:smart-link-id" content="${smartLink.id}" />
     <meta name="soundraiser:render-time" content="${new Date().toISOString()}" />
     
     ${metaPixelCode}
   </head>
-  <body class="min-h-screen">
+  <body>
     <div class="relative min-h-screen flex flex-col items-center justify-center">
       <!-- Background blur effect -->
       <div 
@@ -522,7 +917,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
             <img 
               src="${smartLink.artwork_url}" 
               alt="${smartLink.title}" 
-              class="w-48 h-48 md:w-64 md:h-64 object-cover rounded-xl shadow-md mb-4"
+              class="h-48 w-48 object-cover rounded-xl shadow-md mb-4"
             />
             <h1 class="text-xl md:text-2xl font-bold text-center">${smartLink.title}</h1>
             <p class="text-gray-600 text-lg text-center">${smartLink.artist_name}</p>
@@ -559,7 +954,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     'X-Smart-Link-ID': smartLink.id,
     'X-Render-Source': 'Soundraiser Edge Function',
     'X-Is-Crawler': 'false', // Set dynamically in the main function based on user agent
-    'X-Soundraiser-Version': '1.0.5', // Updated version for tracking response format changes
+    'X-Soundraiser-Version': '1.1.0', // Updated version for tracking response format changes
   };
 
   return new Response(html, { headers: responseHeaders });

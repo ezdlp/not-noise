@@ -53,7 +53,7 @@ const RedirectWithId = ({ path }: { path: string }) => {
 export default function AppContent() {
   return (
     <Routes>
-      {/* Removed the /link/:slug route as it's now handled directly by the edge function via Vercel rewrites */}
+      {/* Note: The /link/:slug route is now handled directly by the edge function via Vercel rewrites */}
       
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
