@@ -21,8 +21,9 @@
   
   console.log(`Smart link path detected: ${path}, Slug: ${slug}`);
   
-  // List of known crawler user agents
+  // Enhanced list of known crawler patterns - expanded to catch more crawlers
   const crawlerPatterns = [
+    // Social media crawlers
     /facebook/i,
     /facebookexternalhit/i,
     /fbbot/i,
@@ -33,14 +34,36 @@
     /twitter/i,
     /twitterbot/i, 
     /telegram/i,
+    /whatsapp/i,
+    
+    // Search engine crawlers
     /google/i,
+    /googlebot/i,
     /bot/i,
     /crawler/i,
     /spider/i,
     /yandex/i,
     /bingbot/i,
+    /slurp/i, // Yahoo
+    /duckduckbot/i,
+    /baiduspider/i,
     /mediapartners-google/i,
-    /whatsapp/i
+    
+    // Generic API clients that might be used by crawlers
+    /axios/i,
+    /curl/i,
+    /wget/i,
+    /jsdom/i,
+    /HeadlessChrome/i,
+    /Playwright/i,
+    /Puppeteer/i,
+    
+    // Catch-all for metadata scrapers (many use "bot" or "scraper" in UA)
+    /meta/i,
+    /scraper/i,
+    /preview/i,
+    /embed/i,
+    /ogp/i,
   ];
   
   const userAgent = navigator.userAgent;
@@ -48,6 +71,7 @@
   
   // Check if the current user agent matches any crawler pattern
   const isCrawler = crawlerPatterns.some(pattern => pattern.test(userAgent));
+  console.log('Is crawler detected:', isCrawler);
   
   // Immediately try to fetch meta data for this link
   const siteUrl = "https://soundraiser.io";
@@ -82,19 +106,35 @@
         
         // Update all meta tags - doing this immediately and with high priority
         const metaTags = [
+          // Standard meta
+          { name: 'description', content: description },
+          { name: 'robots', content: 'index, follow' },
+          
+          // Open Graph basic
           { property: 'og:title', content: fullTitle },
           { property: 'og:description', content: description },
           { property: 'og:image', content: artworkUrl },
           { property: 'og:url', content: `${siteUrl}/link/${slug}` },
           { property: 'og:type', content: 'music.song' },
+          { property: 'og:site_name', content: 'Soundraiser' },
+          
+          // Twitter
           { name: 'twitter:card', content: 'summary_large_image' },
           { name: 'twitter:title', content: fullTitle },
           { name: 'twitter:description', content: description },
           { name: 'twitter:image', content: artworkUrl },
-          { name: 'description', content: description }
+          
+          // Facebook-specific meta
+          { property: 'fb:app_id', content: '1325418224779181' }, // Replace with your actual FB App ID if available
+          
+          // Music-specific (for rich previews)
+          { property: 'music:musician', content: `${siteUrl}/artist/${encodeURIComponent(data.artistName)}` },
+          { property: 'music:album', content: artworkUrl },
+          { property: 'music:song', content: `${siteUrl}/link/${slug}` },
+          { property: 'music:creator', content: data.artistName },
         ];
         
-        // Store meta data globally
+        // Store meta data globally for React components to use
         window.smartLinkData = {
           title: data.title,
           artistName: data.artistName,
@@ -124,23 +164,49 @@
           }
         });
 
-        // Create preemptive SSR redirect for crawlers
-        if (isCrawler) {
-          console.log('Crawler detected, ensuring redirect to SSR version');
-          // Use a short timeout to ensure meta tags were at least attempted to be set first
-          setTimeout(() => {
-            window.location.href = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/${slug}`;
-          }, 200);
+        // Add a canonical link
+        let canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) {
+          canonical = document.createElement('link');
+          canonical.setAttribute('rel', 'canonical');
+          document.head.appendChild(canonical);
+        }
+        canonical.setAttribute('href', `${siteUrl}/link/${slug}`);
+
+        // Add structured data
+        let structuredData = document.querySelector('script[type="application/ld+json"]');
+        if (!structuredData) {
+          structuredData = document.createElement('script');
+          structuredData.setAttribute('type', 'application/ld+json');
+          document.head.appendChild(structuredData);
+        }
+        
+        const musicSchema = {
+          "@context": "https://schema.org",
+          "@type": "MusicRecording",
+          "name": data.title,
+          "byArtist": {
+            "@type": "MusicGroup",
+            "name": data.artistName
+          },
+          "image": artworkUrl,
+          "description": description,
+          "url": `${siteUrl}/link/${slug}`
+        };
+        
+        structuredData.textContent = JSON.stringify(musicSchema);
+
+        // Only redirect crawlers if we're already using the SSR approach, otherwise 
+        // just rely on the meta tags we've injected
+        if (isCrawler && window.location.href.indexOf('?_escaped_fragment_=') === -1) {
+          console.log('Adding _escaped_fragment_ for crawler compatibility');
+          // Add an _escaped_fragment_ parameter to help crawlers understand this is a dynamic page
+          // This is a nod to the AJAX crawling scheme that some crawlers still respect
+          history.replaceState(null, '', `${window.location.pathname}?_escaped_fragment_=true`);
         }
       }
     })
     .catch(error => {
       console.error('Error fetching smart link meta data:', error);
-      
-      // For crawlers, redirect directly to the SSR version as fallback
-      if (isCrawler) {
-        console.log('Error fetching meta, redirecting crawler to SSR version');
-        window.location.href = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/${slug}`;
-      }
     });
 })();

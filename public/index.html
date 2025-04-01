@@ -8,25 +8,111 @@
   <title>Soundraiser - Music Marketing Tools for Independent Artists</title>
   <meta name="description" content="Promote your music with powerful tools for independent artists. Create smart links, bio pages, and get Spotify playlist promotion." />
   
+  <!-- Base meta tags for SEO -->
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Soundraiser" />
+  
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://soundraiser.io/" />
   <meta property="og:title" content="Soundraiser - Music Marketing Tools for Independent Artists" />
   <meta property="og:description" content="Promote your music with powerful tools for independent artists. Create smart links, bio pages, and get Spotify playlist promotion." />
-  <meta property="og:image" content="https://soundraiser.io/og-image.png" />
+  <meta property="og:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
+  <meta property="og:site_name" content="Soundraiser" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="fb:app_id" content="1325418224779181" />
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://soundraiser.io/" />
   <meta name="twitter:title" content="Soundraiser - Music Marketing Tools for Independent Artists" />
   <meta name="twitter:description" content="Promote your music with powerful tools for independent artists. Create smart links, bio pages, and get Spotify playlist promotion." />
-  <meta name="twitter:image" content="https://soundraiser.io/og-image.png" />
+  <meta name="twitter:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
   
-  <!-- Preload critical scripts -->
+  <!-- Dynamic meta placeholders for link paths - Using data-meta attributes for client-side updates -->
+  <meta data-meta="title" property="og:title" content="Listen on All Platforms - Soundraiser" />
+  <meta data-meta="description" property="og:description" content="Stream or download music across all major platforms with a single link. Available on Spotify, Apple Music, and more." />
+  <meta data-meta="image" property="og:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
+  <meta data-meta="url" property="og:url" content="https://soundraiser.io" />
+  <meta data-meta="type" property="og:type" content="website" />
+  <meta data-meta="twitter:title" name="twitter:title" content="Listen on All Platforms - Soundraiser" />
+  <meta data-meta="twitter:description" name="twitter:description" content="Stream or download music across all major platforms with a single link." />
+  <meta data-meta="twitter:image" name="twitter:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
+  
+  <!-- Schema.org JSON-LD structured data for rich results -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Soundraiser",
+      "url": "https://soundraiser.io",
+      "description": "Music marketing tools for independent artists",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://soundraiser.io/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  </script>
+  
+  <!-- Crawler detection script - runs immediately -->
   <script src="/crawler-detector.js"></script>
+  
+  <!-- Preconnect to image optimization endpoint -->
+  <link rel="preconnect" href="/_next" crossorigin />
+  
+  <!-- Preload critical resources -->
+  <link
+    rel="preload"
+    as="image"
+    href="/_next/image?url=/lovable-uploads/soundraiser-logo/Logo A.png&w=304&q=75"
+    media="(max-width: 768px)"
+    type="image/webp"
+  />
+  <link
+    rel="preload"
+    as="image"
+    href="/_next/image?url=/lovable-uploads/soundraiser-logo/Logo A.png&w=760&q=75"
+    media="(min-width: 769px)"
+    type="image/webp"
+  />
+  
+  <!-- Google Analytics - Simplified Implementation -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    
+    // Set default measurement ID (main product)
+    gtag('config', 'G-2CFB508HGL', {
+      send_page_view: true,
+      anonymize_ip: true
+    });
+    
+    // Function to switch to smart links measurement ID
+    window.switchToSmartLinkTracking = function() {
+      gtag('config', 'G-1XE9T2280Q', {
+        send_page_view: true,
+        anonymize_ip: true
+      });
+      console.log('[GA4] Switched to Smart Link tracking');
+    };
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2CFB508HGL"></script>
+
+  <!-- Direct reCAPTCHA loading -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LeUZ30pAAAAACaK4YM4czGhGFU-A6HliZYn680F"></script>
+  <style>
+    .grecaptcha-badge {
+      visibility: hidden;
+    }
+  </style>
 </head>
+
 <body>
   <div id="root"></div>
+  <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
