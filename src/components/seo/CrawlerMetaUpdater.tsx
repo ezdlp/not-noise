@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -8,6 +9,7 @@ import { useLocation } from 'react-router-dom';
  * It works by:
  * 1. Checking if we're on a smart link route
  * 2. For browsers, it updates meta tags using DOM manipulation
+ * 3. For crawlers, it monitors meta tag changes and ensures they are populated
  */
 export function CrawlerMetaUpdater() {
   const location = useLocation();
@@ -22,11 +24,7 @@ export function CrawlerMetaUpdater() {
     // For debugging: log that we're updating meta tags
     console.log(`CrawlerMetaUpdater: Updating meta tags for ${slug}`);
     
-    // Get data from the page if possible
-    const title = document.querySelector('h1')?.textContent || '';
-    const artist = document.querySelector('.artist-name')?.textContent || '';
-    const description = document.querySelector('.description')?.textContent || '';
-    const image = document.querySelector('.artwork img')?.getAttribute('src') || '';
+    const siteUrl = "https://soundraiser.io";
     
     // Check if there's data from our React components
     if (window.smartLinkData) {
@@ -34,29 +32,69 @@ export function CrawlerMetaUpdater() {
         window.smartLinkData.title,
         window.smartLinkData.artistName,
         window.smartLinkData.description,
-        window.smartLinkData.artworkUrl
+        window.smartLinkData.artworkUrl,
+        `${siteUrl}/link/${slug}`
       );
-    } 
-    // Otherwise use what we can find in the DOM
-    else if (title && artist) {
-      updateMetaTags(
-        title,
-        artist,
-        description,
-        image
-      );
+    } else {
+      // As a fallback, try to use a fetch request to get the meta data
+      const fetchMetaData = async () => {
+        try {
+          const response = await fetch(`https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.title) {
+              updateMetaTags(
+                data.title,
+                data.artistName,
+                data.description,
+                data.artworkUrl,
+                `${siteUrl}/link/${slug}`
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching meta data:', error);
+        }
+      };
+      
+      fetchMetaData();
     }
+    
+    // Fallback: use content from the DOM if React data isn't available
+    setTimeout(() => {
+      if (!document.querySelector('meta[property="og:title"]')?.getAttribute('content')?.includes(' by ')) {
+        const title = document.querySelector('h1')?.textContent || '';
+        const artist = document.querySelector('.artist-name')?.textContent || '';
+        const description = document.querySelector('.description')?.textContent || '';
+        const image = document.querySelector('.artwork img')?.getAttribute('src') || '';
+        
+        if (title && artist) {
+          updateMetaTags(
+            title,
+            artist,
+            description,
+            image,
+            `${siteUrl}/link/${slug}`
+          );
+        }
+      }
+    }, 1000);
   }, [location.pathname, isSmartLinkRoute]);
   
   /**
    * Updates the meta tags in the document head
    */
-  const updateMetaTags = (title: string, artist: string, description: string, image: string) => {
+  const updateMetaTags = (title: string, artist: string, description: string, image: string, url: string) => {
     const fullTitle = `${title} by ${artist} | Listen on All Platforms`;
     const fullDescription = description || `Stream or download ${title} by ${artist}. Available on Spotify, Apple Music, and more streaming platforms.`;
-    const fullUrl = window.location.href;
     
-    // Update all meta tags with data-meta attribute
+    // Make sure image URL is absolute
+    const siteUrl = "https://soundraiser.io";
+    const absoluteImageUrl = image.startsWith('http') 
+      ? image 
+      : `${siteUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+    
+    // First update data-meta attributes
     document.querySelectorAll('meta[data-meta]').forEach(meta => {
       const metaEl = meta as HTMLMetaElement;
       const type = metaEl.getAttribute('data-meta');
@@ -72,10 +110,10 @@ export function CrawlerMetaUpdater() {
           break;
         case 'image':
         case 'twitter:image':
-          metaEl.setAttribute('content', image);
+          metaEl.setAttribute('content', absoluteImageUrl);
           break;
         case 'url':
-          metaEl.setAttribute('content', fullUrl);
+          metaEl.setAttribute('content', url);
           break;
         case 'type':
           metaEl.setAttribute('content', 'music.song');
@@ -83,8 +121,58 @@ export function CrawlerMetaUpdater() {
       }
     });
     
+    // Then update standard meta tags
+    const standardMetaTags = [
+      { property: 'og:title', content: fullTitle },
+      { property: 'og:description', content: fullDescription },
+      { property: 'og:image', content: absoluteImageUrl },
+      { property: 'og:url', content: url },
+      { property: 'og:type', content: 'music.song' },
+      { name: 'twitter:title', content: fullTitle },
+      { name: 'twitter:description', content: fullDescription },
+      { name: 'twitter:image', content: absoluteImageUrl },
+      { name: 'description', content: fullDescription }
+    ];
+    
+    standardMetaTags.forEach(tag => {
+      let meta;
+      if (tag.property) {
+        meta = document.querySelector(`meta[property="${tag.property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', tag.property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      } else if (tag.name) {
+        meta = document.querySelector(`meta[name="${tag.name}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', tag.name);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', tag.content);
+      }
+    });
+    
+    // Set canonical link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+    
     // Update document title
     document.title = fullTitle;
+    
+    console.log('Meta tags updated with:', {
+      title: fullTitle,
+      description: fullDescription,
+      image: absoluteImageUrl,
+      url: url
+    });
   };
   
   // This component doesn't render anything visible

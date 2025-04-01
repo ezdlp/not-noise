@@ -47,9 +47,13 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebook|facebookexternalhit|fbbot|FB_IAB|instagram|LinkedInBot|pinterest|twitter|twitterbot|telegram|google|bot|crawl|spider|yandex|bingbot|mediapartners-google)"
+          "value": "(facebook|facebookexternalhit|fbbot|FB_IAB|instagram|LinkedInBot|pinterest|twitter|twitterbot|telegram|google|bot|crawler|spider|yandex|bingbot|mediapartners-google)"
         }
       ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/seo-test/:slug",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
     },
     {
@@ -90,6 +94,15 @@
         {
           "key": "Content-Type",
           "value": "application/xml; charset=UTF-8"
+        }
+      ]
+    },
+    {
+      "source": "/link/:slug",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
         }
       ]
     }

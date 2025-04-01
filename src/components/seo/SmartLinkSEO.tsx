@@ -22,9 +22,15 @@ export function SmartLinkSEO({
   releaseDate,
   streamingPlatforms = [],
 }: SmartLinkSEOProps) {
+  const siteUrl = "https://soundraiser.io";
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
-  const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
+  const canonical = `${siteUrl}${window.location.pathname}`;
+  
+  // Make sure artwork URL is absolute
+  const absoluteArtworkUrl = artworkUrl.startsWith('http') 
+    ? artworkUrl 
+    : `${siteUrl}${artworkUrl.startsWith('/') ? '' : '/'}${artworkUrl}`;
 
   // Generate action buttons for schema markup
   const actionButtons = streamingPlatforms.map(platform => ({
@@ -51,9 +57,9 @@ export function SmartLinkSEO({
     "byArtist": {
       "@type": "MusicGroup",
       "name": artistName,
-      "@id": `${DEFAULT_SEO_CONFIG.siteUrl}/artist/${encodeURIComponent(artistName)}`
+      "@id": `${siteUrl}/artist/${encodeURIComponent(artistName)}`
     },
-    "image": artworkUrl,
+    "image": absoluteArtworkUrl,
     "description": description,
     ...(releaseDate && { "datePublished": releaseDate }),
     "potentialAction": actionButtons,
@@ -69,9 +75,17 @@ export function SmartLinkSEO({
       "name": "Soundraiser",
       "logo": {
         "@type": "ImageObject",
-        "url": `${DEFAULT_SEO_CONFIG.siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
+        "url": `${siteUrl}/lovable-uploads/soundraiser-logo/Logo A.png`
       }
     }
+  };
+  
+  // Store the smartLinkData globally for crawler detection
+  window.smartLinkData = {
+    title,
+    artistName,
+    description: description || '',
+    artworkUrl: absoluteArtworkUrl,
   };
 
   return (
@@ -82,12 +96,16 @@ export function SmartLinkSEO({
       <link rel="canonical" href={canonical} />
       
       {/* Technical SEO */}
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+      <meta name="robots" content="index, follow" />
+      <meta httpEquiv="content-language" content="en" />
+      
+      {/* OG (Open Graph) tags */}
       <meta property="og:type" content="music.song" />
+      <meta property="og:url" content={canonical} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
-      <meta property="og:image" content={artworkUrl} />
-      <meta property="og:url" content={canonical} />
+      <meta property="og:image" content={absoluteArtworkUrl} />
       <meta property="og:site_name" content="Soundraiser" />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (
@@ -102,7 +120,7 @@ export function SmartLinkSEO({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
-      <meta name="twitter:image" content={artworkUrl} />
+      <meta name="twitter:image" content={absoluteArtworkUrl} />
 
       {/* Schema.org structured data */}
       <script type="application/ld+json">

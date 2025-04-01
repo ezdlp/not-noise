@@ -126,15 +126,54 @@ export default function SmartLink() {
     if (smartLink?.id) {
       recordViewMutation.mutate(smartLink.id);
       
-      // Store the data globally for the CrawlerMetaUpdater
+      // Store the data globally for the CrawlerMetaUpdater and crawler detection script
       window.smartLinkData = {
         title: smartLink.title,
         artistName: smartLink.artist_name,
         description: smartLink.description || '',
         artworkUrl: smartLink.artwork_url,
       };
+      
+      // Update meta tags immediately for quicker crawler access
+      const siteUrl = "https://soundraiser.io";
+      const fullTitle = `${smartLink.title} by ${smartLink.artist_name} | Listen on All Platforms`;
+      const description = smartLink.description || `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
+      const canonical = `${siteUrl}/link/${slug}`;
+      const artworkUrl = smartLink.artwork_url.startsWith('http') 
+        ? smartLink.artwork_url 
+        : `${siteUrl}${smartLink.artwork_url.startsWith('/') ? '' : '/'}${smartLink.artwork_url}`;
+      
+      // Update meta tags with data attributes for crawler detection
+      document.querySelectorAll('meta[data-meta]').forEach(meta => {
+        const metaEl = meta as HTMLMetaElement;
+        const type = metaEl.getAttribute('data-meta');
+        
+        switch (type) {
+          case 'title':
+          case 'twitter:title':
+            metaEl.setAttribute('content', fullTitle);
+            break;
+          case 'description':
+          case 'twitter:description':
+            metaEl.setAttribute('content', description);
+            break;
+          case 'image':
+          case 'twitter:image':
+            metaEl.setAttribute('content', artworkUrl);
+            break;
+          case 'url':
+            metaEl.setAttribute('content', canonical);
+            break;
+          case 'type':
+            metaEl.setAttribute('content', 'music.song');
+            break;
+        }
+      });
+      
+      // Update document title
+      document.title = fullTitle;
     }
-  }, [smartLink?.id]);
+  }, [smartLink?.id, slug]);
 
   useEffect(() => {
     if (smartLink?.meta_pixel_id) {
