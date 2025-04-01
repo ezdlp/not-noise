@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,6 +125,14 @@ export default function SmartLink() {
   useEffect(() => {
     if (smartLink?.id) {
       recordViewMutation.mutate(smartLink.id);
+      
+      // Store the data globally for the CrawlerMetaUpdater
+      window.smartLinkData = {
+        title: smartLink.title,
+        artistName: smartLink.artist_name,
+        description: smartLink.description || '',
+        artworkUrl: smartLink.artwork_url,
+      };
     }
   }, [smartLink?.id]);
 

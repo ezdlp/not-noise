@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, useLocation, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { CookieConsent } from "@/components/cookie-consent/CookieConsent";
 import { switchToSmartLinkTracking } from "@/services/ga4";
 import { analyticsService } from "@/services/analyticsService";
 import { HelmetProvider } from 'react-helmet-async';
+import { CrawlerMetaUpdater } from "@/components/seo/CrawlerMetaUpdater";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -41,6 +43,7 @@ function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col w-full bg-neutral-seasalt">
       {!isAdminRoute && !isSmartLinkRoute && !isDashboardRoute && !isAuthRoute && <Header />}
+      <CrawlerMetaUpdater />
       <AppContent />
       <CookieConsent />
     </div>
