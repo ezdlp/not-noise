@@ -30,15 +30,16 @@ export const trackEvent = (
   eventName: string, 
   params?: Record<string, any>
 ): void => {
-  if (typeof window !== 'undefined' && typeof gtag === 'function') {
+  if (typeof window !== 'undefined' && window.gtag) {
     console.log(`[GA4] Tracking event: ${eventName}`, params);
-    gtag('event', eventName, params);
+    window.gtag('event', eventName, params);
   }
 };
 
-// Add global type definition
+// Type definitions for window object extensions
 declare global {
   interface Window {
-    switchToSmartLinkTracking: () => void;
+    switchToSmartLinkTracking?: () => void;
+    gtag?: (...args: any[]) => void;
   }
 }
