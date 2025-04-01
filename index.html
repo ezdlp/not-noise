@@ -74,37 +74,13 @@
       }
     </style>
     
-    <!-- Enhanced Crawler detection script with more user agents -->
+    <!-- Simplified Crawler detection script -->
     <script>
       (function() {
-        // Expanded crawler detection regex
-        const isCrawler = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i.test(navigator.userAgent);
-        
-        // If it's a crawler and trying to access a smart link, prevent client-side routing
-        if (isCrawler) {
-          console.log('Crawler detected:', navigator.userAgent);
-          
-          // Set a global flag to indicate this is a crawler
-          window.isCrawler = true;
-          
-          // For smart links, ensure proper routing
-          if (window.location.pathname.startsWith('/link/')) {
-            console.log('Crawler accessing smart link, disabling client-side routing');
-            
-            // Explicitly set document flag for React Router
-            document.addEventListener('DOMContentLoaded', function() {
-              // Prevent React router from taking over
-              window._preventReactRouterInitialization = true;
-              console.log('React Router initialization blocked for crawler');
-              
-              // Add a debug element visible only to crawlers
-              const debugEl = document.createElement('div');
-              debugEl.style.display = 'none';
-              debugEl.id = 'crawler-debug-info';
-              debugEl.textContent = 'Crawler detected: ' + navigator.userAgent;
-              document.body.appendChild(debugEl);
-            });
-          }
+        // Mark direct smart link access for analytics purposes
+        if (window.location.pathname.startsWith('/link/')) {
+          window.isSmartLink = true;
+          console.log('Smart link detected:', window.location.pathname);
         }
       })();
     </script>
