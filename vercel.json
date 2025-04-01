@@ -47,7 +47,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebook|twitter|linkedin|pinterest|google|bot|crawl|spider|yandex|bing)"
+          "value": "(facebook|facebookexternalhit|fbbot|FB_IAB|instagram|LinkedInBot|pinterest|twitter|twitterbot|telegram|google|bot|crawl|spider|yandex|bingbot|mediapartners-google)"
         }
       ],
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"

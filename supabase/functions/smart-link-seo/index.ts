@@ -17,6 +17,16 @@ interface StreamingPlatform {
 }
 
 Deno.serve(async (req) => {
+  const userAgent = req.headers.get('user-agent') || 'No User-Agent'
+  console.log(`Received request with User-Agent: ${userAgent}`)
+  
+  // Log all headers for debugging
+  const headersLog: Record<string, string> = {}
+  req.headers.forEach((value, key) => {
+    headersLog[key] = value
+  })
+  console.log('Request headers:', JSON.stringify(headersLog))
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -93,7 +103,7 @@ Deno.serve(async (req) => {
     try {
       await supabase.from('link_views').insert({
         smart_link_id: finalSmartLink.id,
-        user_agent: req.headers.get('user-agent') || '',
+        user_agent: userAgent,
       })
     } catch (analyticsError) {
       console.error('Failed to track analytics:', analyticsError)
