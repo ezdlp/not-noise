@@ -1,3 +1,4 @@
+
 project_id = "owtufhdsuuyrgmxytclj"
 
 [functions.generate-social-assets]
@@ -9,5 +10,9 @@ verify_jwt = false
 
 # Stripe webhook function - MUST REMAIN DISABLED FOR WEBHOOK ACCESS
 [functions.stripe-webhook]
+verify_jwt = false
+
+# Smart Link SEO function - MUST REMAIN DISABLED FOR CRAWLER ACCESS
+[functions.smart-link-seo]
 verify_jwt = false
 
