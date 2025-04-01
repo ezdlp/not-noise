@@ -24,6 +24,16 @@ export const trackPageView = (path: string) => {
   }
 };
 
+// Generic event tracking function
+export const trackEvent = (eventName: string, eventParams: Record<string, any> = {}) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', eventName, {
+      ...eventParams,
+      send_to: 'G-2CFB508HGL',
+    });
+  }
+};
+
 // Track smart link views
 export const trackSmartLinkView = (linkId: string, title: string, artist: string) => {
   if (typeof window !== 'undefined' && window.gtag) {
@@ -67,4 +77,5 @@ export default {
   trackSmartLinkView,
   trackPlatformClick,
   trackEmailSubscription,
+  trackEvent, // Added trackEvent to the default export as well
 };
