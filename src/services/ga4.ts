@@ -1,70 +1,44 @@
 
-declare global {
-  interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
-    switchToSmartLinkTracking: () => void;
-  }
-}
+/**
+ * Simplified Google Analytics 4 utility
+ * 
+ * Handles only the essentials:
+ * - Switching between measurement IDs
+ * - Basic event tracking
+ */
 
-// Switch to the smart link GA4 property
-export const switchToSmartLinkTracking = () => {
+// Measurement IDs from the previous implementation
+const MEASUREMENT_IDS = {
+  main: 'G-2CFB508HGL',
+  smartLinks: 'G-1XE9T2280Q'
+} as const;
+
+/**
+ * Switches tracking to Smart Link measurement ID
+ * Called when entering a Smart Link page
+ */
+export const switchToSmartLinkTracking = (): void => {
   if (typeof window !== 'undefined' && window.switchToSmartLinkTracking) {
     window.switchToSmartLinkTracking();
   }
 };
 
-// Track page views
-export const trackPageView = (path: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'page_view', {
-      page_path: path,
-      send_to: 'G-2CFB508HGL',
-    });
+/**
+ * Track a custom event in Google Analytics
+ */
+export const trackEvent = (
+  eventName: string, 
+  params?: Record<string, any>
+): void => {
+  if (typeof window !== 'undefined' && typeof gtag === 'function') {
+    console.log(`[GA4] Tracking event: ${eventName}`, params);
+    gtag('event', eventName, params);
   }
 };
 
-// Track smart link views
-export const trackSmartLinkView = (linkId: string, title: string, artist: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    // First switch to smart link tracking
-    switchToSmartLinkTracking();
-    
-    // Then track the specific event
-    window.gtag('event', 'smart_link_view', {
-      link_id: linkId,
-      title: title,
-      artist: artist,
-      send_to: 'G-1XE9T2280Q',
-    });
+// Add global type definition
+declare global {
+  interface Window {
+    switchToSmartLinkTracking: () => void;
   }
-};
-
-// Track platform clicks
-export const trackPlatformClick = (platform: string, linkId: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'platform_click', {
-      platform: platform,
-      link_id: linkId,
-      send_to: 'G-1XE9T2280Q',
-    });
-  }
-};
-
-// Track email subscriptions
-export const trackEmailSubscription = (linkId: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'email_subscription', {
-      link_id: linkId,
-      send_to: 'G-1XE9T2280Q',
-    });
-  }
-};
-
-export default {
-  switchToSmartLinkTracking,
-  trackPageView,
-  trackSmartLinkView,
-  trackPlatformClick,
-  trackEmailSubscription,
-};
+}
