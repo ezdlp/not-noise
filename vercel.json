@@ -1,3 +1,4 @@
+
 {
   "images": {
     "sizes": [304, 760],
@@ -39,6 +40,17 @@
     {
       "source": "/api/spotify/search",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(facebook|twitter|linkedin|pinterest|google|bot|crawl|spider|yandex|bing)"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
     },
     {
       "source": "/(.*)",
