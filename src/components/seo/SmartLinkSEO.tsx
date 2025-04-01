@@ -1,4 +1,3 @@
-
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
 
@@ -24,13 +23,13 @@ export function SmartLinkSEO({
 }: SmartLinkSEOProps) {
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
-  const canonical = `${DEFAULT_SEO_CONFIG.siteUrl}${window.location.pathname}`;
   const slug = window.location.pathname.split('/').pop() || '';
-  const seoPath = window.location.pathname.endsWith('/seo') 
-    ? window.location.pathname 
-    : `${window.location.pathname}/seo`;
-  const ogPath = `/og/${slug}`;
-  const socialApiPath = `/social-api/link/${slug}`;
+  const seoUrl = `${DEFAULT_SEO_CONFIG.siteUrl}/l/${slug}`;
+  const canonical = seoUrl;
+  
+  // Use the new /l/ path for all alternate URLs
+  const ogPath = `/l/${slug}`;
+  const socialApiPath = `/l/${slug}`;
   const renderedPath = `https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/${slug}`;
 
   // Generate action buttons for schema markup
@@ -94,7 +93,7 @@ export function SmartLinkSEO({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={finalDescription} />
       <meta property="og:image" content={artworkUrl} />
-      <meta property="og:url" content={canonical} />
+      <meta property="og:url" content={seoUrl} />
       <meta property="og:site_name" content="Soundraiser" />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
       {streamingPlatforms.map((platform, index) => (
@@ -114,7 +113,7 @@ export function SmartLinkSEO({
       {/* Enhanced Special Meta Crawler links - helps crawlers find the SEO-optimized version */}
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${ogPath}`} />
       <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${socialApiPath}`} />
-      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${seoPath}`} />
+      <link rel="alternate" type="text/html" href={`${DEFAULT_SEO_CONFIG.siteUrl}${seoUrl}`} />
       <link rel="alternate" type="text/html" href={renderedPath} />
 
       {/* Additional meta tags for crawler debugging */}

@@ -13,7 +13,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebookexternalhit/1.1|Facebot)"
+          "value": "(facebook|facebookexternalhit|facebot|FBAN|FBAV|FB_IAB|FB4A)"
         }
       ],
       "source": "/link/:slug*",
@@ -29,6 +29,14 @@
       ],
       "source": "/link/:slug*",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/render-smart-link/:slug*"
+    },
+    {
+      "source": "/l/:slug",
+      "destination": "/l/:slug.html"
+    },
+    {
+      "source": "/link/:slug*",
+      "destination": "/l/:slug*"
     },
     {
       "source": "/social-api/link/:slug*",
@@ -164,6 +172,15 @@
         {
           "key": "Content-Type",
           "value": "text/html; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/l/:slug*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
