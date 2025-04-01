@@ -31,26 +31,27 @@ interface SmartLink {
   email_capture_description?: string
 }
 
+// Platform icons with absolute URLs
 const platformIcons: { [key: string]: string } = {
-  spotify: "/lovable-uploads/spotify.png",
-  apple_music: "/lovable-uploads/applemusic.png",
-  youtube_music: "/lovable-uploads/youtubemusic.png",
-  youtube: "/lovable-uploads/youtube.png",
-  amazon_music: "/lovable-uploads/amazonmusic.png",
-  deezer: "/lovable-uploads/deezer.png",
-  soundcloud: "/lovable-uploads/soundcloud.png",
-  itunes: "/lovable-uploads/itunes.png",
-  tidal: "/lovable-uploads/tidal.png",
-  anghami: "/lovable-uploads/anghami.png",
-  napster: "/lovable-uploads/napster.png",
-  boomplay: "/lovable-uploads/boomplay.png",
-  yandex: "/lovable-uploads/yandex.png",
-  beatport: "/lovable-uploads/beatport.png",
-  bandcamp: "/lovable-uploads/bandcamp.png",
-  audius: "/lovable-uploads/audius.png",
-  youtubeMusic: "/lovable-uploads/youtubemusic.png",
-  appleMusic: "/lovable-uploads/applemusic.png",
-  amazonMusic: "/lovable-uploads/amazonmusic.png"
+  spotify: "https://soundraiser.io/_next/image?url=/lovable-uploads/spotify.png&w=64&q=75",
+  apple_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/applemusic.png&w=64&q=75",
+  youtube_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtubemusic.png&w=64&q=75",
+  youtube: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtube.png&w=64&q=75",
+  amazon_music: "https://soundraiser.io/_next/image?url=/lovable-uploads/amazonmusic.png&w=64&q=75",
+  deezer: "https://soundraiser.io/_next/image?url=/lovable-uploads/deezer.png&w=64&q=75",
+  soundcloud: "https://soundraiser.io/_next/image?url=/lovable-uploads/soundcloud.png&w=64&q=75",
+  itunes: "https://soundraiser.io/_next/image?url=/lovable-uploads/itunes.png&w=64&q=75",
+  tidal: "https://soundraiser.io/_next/image?url=/lovable-uploads/tidal.png&w=64&q=75",
+  anghami: "https://soundraiser.io/_next/image?url=/lovable-uploads/anghami.png&w=64&q=75",
+  napster: "https://soundraiser.io/_next/image?url=/lovable-uploads/napster.png&w=64&q=75",
+  boomplay: "https://soundraiser.io/_next/image?url=/lovable-uploads/boomplay.png&w=64&q=75",
+  yandex: "https://soundraiser.io/_next/image?url=/lovable-uploads/yandex.png&w=64&q=75",
+  beatport: "https://soundraiser.io/_next/image?url=/lovable-uploads/beatport.png&w=64&q=75",
+  bandcamp: "https://soundraiser.io/_next/image?url=/lovable-uploads/bandcamp.png&w=64&q=75",
+  audius: "https://soundraiser.io/_next/image?url=/lovable-uploads/audius.png&w=64&q=75",
+  youtubeMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/youtubemusic.png&w=64&q=75",
+  appleMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/applemusic.png&w=64&q=75",
+  amazonMusic: "https://soundraiser.io/_next/image?url=/lovable-uploads/amazonmusic.png&w=64&q=75"
 };
 
 Deno.serve(async (req) => {
@@ -231,6 +232,11 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     `Stream or download ${smartLink.title} by ${smartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`;
   const canonical = `${siteUrl}/link/${smartLink.id}`;
 
+  // Make artwork URL absolute if it's not already
+  const artworkUrl = smartLink.artwork_url.startsWith('http') 
+    ? smartLink.artwork_url 
+    : `${siteUrl}/_next/image?url=${encodeURIComponent(smartLink.artwork_url)}&w=760&q=75`;
+
   // Generate streamer buttons HTML
   const platformButtons = smartLink.platform_links?.map(platform => {
     const icon = platformIcons[platform.platform_id] || '';
@@ -245,7 +251,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         onclick="trackPlatformClick('${platform.id}')"
       >
         <div class="flex items-center">
-          <img src="${icon}" alt="${platform.platform_name}" class="w-8 h-8 mr-3" />
+          <img src="${icon}" alt="${platform.platform_name}" class="w-8 h-8 mr-3" loading="lazy" />
           <span class="font-medium">${platform.platform_name}</span>
         </div>
         <div class="flex items-center text-primary font-medium">
@@ -273,7 +279,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       "name": smartLink.artist_name,
       "@id": `${siteUrl}/artist/${encodeURIComponent(smartLink.artist_name)}`
     },
-    "image": smartLink.artwork_url,
+    "image": artworkUrl,
     "description": smartLink.description,
     ...(smartLink.release_date && { "datePublished": smartLink.release_date }),
     "url": canonical,
@@ -321,9 +327,11 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         class="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors group"
       >
         <img 
-          src="/lovable-uploads/soundraiser-logo/Iso D.svg"
+          src="https://soundraiser.io/lovable-uploads/soundraiser-logo/Iso%20D.svg"
           alt="Soundraiser"
           class="h-4 w-4 opacity-60 group-hover:opacity-80 transition-opacity"
+          width="16"
+          height="16"
         />
         <span class="text-sm">Powered by Soundraiser</span>
       </a>
@@ -442,7 +450,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     </script>
   `;
 
-  // Define CSS for components (using Tailwind-like classes but direct CSS)
+  // Define CSS for components - improved with critical CSS
   const inlineStyles = `
     <style>
       /* Base styles */
@@ -468,7 +476,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       }
 
       body, html {
-        font-family: 'DM Sans', sans-serif;
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
         background-color: var(--background);
         color: var(--foreground);
         min-height: 100vh;
@@ -477,13 +485,14 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       }
 
       h1, h2, h3, h4, h5, h6 {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
         font-weight: 600;
       }
 
       img {
         max-width: 100%;
         height: auto;
+        display: block;
       }
 
       /* Utility classes */
@@ -627,12 +636,13 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         margin-right: auto;
       }
 
-      .bg-white\/95 {
+      .bg-white\\/95 {
         background-color: rgba(255, 255, 255, 0.95);
       }
 
       .backdrop-blur-sm {
         backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
       }
 
       .shadow-sm {
@@ -659,11 +669,11 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         color: white;
       }
 
-      .text-white\/60 {
+      .text-white\\/60 {
         color: rgba(255, 255, 255, 0.6);
       }
 
-      .text-white\/80 {
+      .text-white\\/80 {
         color: rgba(255, 255, 255, 0.8);
       }
 
@@ -711,7 +721,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         margin-top: 1rem;
       }
 
-      .gap-1\.5 {
+      .gap-1\\.5 {
         gap: 0.375rem;
       }
 
@@ -806,13 +816,13 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       }
 
       .focus\\:ring-2:focus {
-        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        outline: none;
+        box-shadow: 0 0 0 2px var(--primary-light), 0 0 0 4px var(--primary);
       }
 
       .focus\\:ring-primary:focus {
-        --tw-ring-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 2px var(--primary-light), 0 0 0 4px var(--primary);
       }
 
       .focus\\:border-transparent:focus {
@@ -844,11 +854,48 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
         transform: scale(1.1);
       }
 
-      /* Mobile adjustments */
-      @media (max-width: 768px) {
-        .max-w-md {
-          max-width: 100%;
+      /* Mobile optimizations */
+      @media (max-width: 640px) {
+        .p-6 {
+          padding: 1.25rem;
         }
+        
+        .h-48, .w-48 {
+          height: 10rem;
+          width: 10rem;
+        }
+        
+        .text-2xl {
+          font-size: 1.35rem;
+        }
+        
+        .max-w-md {
+          max-width: 90%;
+          margin-left: auto;
+          margin-right: auto;
+        }
+      }
+
+      /* SVG Fix */
+      svg {
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      /* Fix for blurry artwork */
+      .artwork-image {
+        -webkit-backface-visibility: hidden;
+        -moz-backface-visibility: hidden;
+        -webkit-transform: translate3d(0, 0, 0);
+        -moz-transform: translate3d(0, 0, 0);
+      }
+      
+      /* Prevent FOUC */
+      .no-fouc {
+        visibility: hidden;
+      }
+      .fouc-ready {
+        visibility: visible;
       }
     </style>
   `;
@@ -859,18 +906,23 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/lovable-uploads/soundraiser-logo/Iso A fav.png" />
+    <link rel="icon" type="image/png" href="https://soundraiser.io/lovable-uploads/soundraiser-logo/Iso%20A%20fav.png" />
     
     <!-- SEO & Social Meta Tags -->
     <title>${fullTitle}</title>
     <meta name="description" content="${description}" />
     <link rel="canonical" href="${canonical}" />
     
+    <!-- Preload critical assets -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" as="style" />
+    <link rel="preload" href="${artworkUrl}" as="image" />
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="music.song" />
     <meta property="og:title" content="${fullTitle}" />
     <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${smartLink.artwork_url}" />
+    <meta property="og:image" content="${artworkUrl}" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:site_name" content="Soundraiser" />
     <meta property="og:image:width" content="1200" />
@@ -882,7 +934,17 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${fullTitle}" />
     <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${smartLink.artwork_url}" />
+    <meta name="twitter:image" content="${artworkUrl}" />
+
+    <!-- Anti-FOUC script -->
+    <script>
+      // Add no-fouc class to prevent flash of unstyled content
+      document.documentElement.classList.add('no-fouc');
+      window.addEventListener('load', function() {
+        document.documentElement.classList.remove('no-fouc');
+        document.documentElement.classList.add('fouc-ready');
+      });
+    </script>
 
     <!-- Inline Styling (responsive, self-contained) -->
     ${inlineStyles}
@@ -892,8 +954,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       ${JSON.stringify(musicSchema)}
     </script>
     
-    <!-- Debugging Meta Tags -->
-    <meta name="soundraiser:version" content="1.1.0" />
+    <!-- Version Meta Tag -->
+    <meta name="soundraiser:version" content="1.2.0" />
     <meta name="soundraiser:render-mode" content="edge-function" />
     <meta name="soundraiser:smart-link-id" content="${smartLink.id}" />
     <meta name="soundraiser:render-time" content="${new Date().toISOString()}" />
@@ -905,7 +967,8 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
       <!-- Background blur effect -->
       <div 
         class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style="background-image: url(${smartLink.artwork_url}); filter: blur(30px) brightness(0.7); transform: scale(1.1);"
+        style="background-image: url('${artworkUrl}'); filter: blur(30px) brightness(0.7); transform: scale(1.1);"
+        aria-hidden="true"
       ></div>
 
       <!-- Content Container -->
@@ -915,9 +978,11 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
           <!-- Header with artwork -->
           <div class="flex flex-col items-center mb-6">
             <img 
-              src="${smartLink.artwork_url}" 
+              src="${artworkUrl}" 
               alt="${smartLink.title}" 
-              class="h-48 w-48 object-cover rounded-xl shadow-md mb-4"
+              class="h-48 w-48 object-cover rounded-xl shadow-md mb-4 artwork-image"
+              width="192"
+              height="192"
             />
             <h1 class="text-xl md:text-2xl font-bold text-center">${smartLink.title}</h1>
             <p class="text-gray-600 text-lg text-center">${smartLink.artist_name}</p>
@@ -954,7 +1019,7 @@ function generateHtmlResponse(smartLink: SmartLink): Response {
     'X-Smart-Link-ID': smartLink.id,
     'X-Render-Source': 'Soundraiser Edge Function',
     'X-Is-Crawler': 'false', // Set dynamically in the main function based on user agent
-    'X-Soundraiser-Version': '1.1.0', // Updated version for tracking response format changes
+    'X-Soundraiser-Version': '1.2.0', // Updated version for tracking response format changes
   };
 
   return new Response(html, { headers: responseHeaders });
