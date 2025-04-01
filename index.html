@@ -43,26 +43,12 @@
       type="image/webp"
     />
     
-    <!-- Google Analytics - Simplified Implementation -->
+    <!-- Google Analytics -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      
-      // Set default measurement ID (main product)
-      gtag('config', 'G-2CFB508HGL', {
-        send_page_view: true,
-        anonymize_ip: true
-      });
-      
-      // Function to switch to smart links measurement ID
-      window.switchToSmartLinkTracking = function() {
-        gtag('config', 'G-1XE9T2280Q', {
-          send_page_view: true,
-          anonymize_ip: true
-        });
-        console.log('[GA4] Switched to Smart Link tracking');
-      };
+      gtag('config', 'G-2CFB508HGL');
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2CFB508HGL"></script>
 
@@ -73,41 +59,6 @@
         visibility: hidden;
       }
     </style>
-    
-    <!-- Enhanced Crawler detection script with more user agents -->
-    <script>
-      (function() {
-        // Expanded crawler detection regex
-        const isCrawler = /(facebook|twitter|linkedin|pinterest|whatsapp|telegram|discord|bot|crawl|spider|google|bing|yahoo|facebookexternalhit|facebot|instapaper|flipboard|tumblr|slackbot|skype|snapchat|pinterest|yandex)/i.test(navigator.userAgent);
-        
-        // If it's a crawler and trying to access a smart link, prevent client-side routing
-        if (isCrawler) {
-          console.log('Crawler detected:', navigator.userAgent);
-          
-          // Set a global flag to indicate this is a crawler
-          window.isCrawler = true;
-          
-          // For smart links, ensure proper routing
-          if (window.location.pathname.startsWith('/link/')) {
-            console.log('Crawler accessing smart link, disabling client-side routing');
-            
-            // Explicitly set document flag for React Router
-            document.addEventListener('DOMContentLoaded', function() {
-              // Prevent React router from taking over
-              window._preventReactRouterInitialization = true;
-              console.log('React Router initialization blocked for crawler');
-              
-              // Add a debug element visible only to crawlers
-              const debugEl = document.createElement('div');
-              debugEl.style.display = 'none';
-              debugEl.id = 'crawler-debug-info';
-              debugEl.textContent = 'Crawler detected: ' + navigator.userAgent;
-              document.body.appendChild(debugEl);
-            });
-          }
-        }
-      })();
-    </script>
   </head>
 
   <body>

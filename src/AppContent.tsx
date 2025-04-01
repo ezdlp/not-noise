@@ -13,7 +13,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // Lazy load non-critical routes
 const Dashboard = lazy(() => import("@/pages/DashboardWithSidebar"));
-const SmartLink = lazy(() => import("@/pages/SmartLink"));
 const SmartLinkAnalytics = lazy(() => import("@/pages/SmartLinkAnalytics"));
 const CreateSmartLink = lazy(() => import("@/pages/CreateSmartLink"));
 const EditSmartLink = lazy(() => import("@/pages/EditSmartLink"));
@@ -54,11 +53,7 @@ const RedirectWithId = ({ path }: { path: string }) => {
 export default function AppContent() {
   return (
     <Routes>
-      <Route path="/link/:slug" element={
-        <Suspense fallback={<LoadingSpinner />}>
-          <SmartLink />
-        </Suspense>
-      } />
+      {/* Removed the /link/:slug route as it's now handled directly by the edge function via Vercel rewrites */}
       
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
