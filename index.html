@@ -5,24 +5,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/lovable-uploads/soundraiser-logo/Iso A fav.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Soundraiser - Smart Links for Musicians</title>
-    <meta name="description" content="Create beautiful Smart Links to promote your music across all streaming platforms. Grow your audience with Soundraiser." />
+    <title>Soundraiser</title>
+    <meta name="description" content="Soundraiser - Smart Links for Musicians" />
     <meta name="author" content="Soundraiser" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://soundraiser.io" />
-    <meta property="og:title" content="Soundraiser - Smart Links for Musicians" />
-    <meta property="og:description" content="Create beautiful Smart Links to promote your music across all streaming platforms. Grow your audience with Soundraiser." />
-    <meta property="og:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Soundraiser - Smart Links for Musicians" />
-    <meta name="twitter:description" content="Create beautiful Smart Links to promote your music across all streaming platforms. Grow your audience with Soundraiser." />
-    <meta name="twitter:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png" />
+    <meta property="og:image" content="/og-image.png" />
     
     <!-- Preconnect to image optimization endpoint -->
     <link rel="preconnect" href="/_next" crossorigin />
@@ -43,12 +29,26 @@
       type="image/webp"
     />
     
-    <!-- Google Analytics -->
+    <!-- Google Analytics - Simplified Implementation -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-2CFB508HGL');
+      
+      // Set default measurement ID (main product)
+      gtag('config', 'G-2CFB508HGL', {
+        send_page_view: true,
+        anonymize_ip: true
+      });
+      
+      // Function to switch to smart links measurement ID
+      window.switchToSmartLinkTracking = function() {
+        gtag('config', 'G-1XE9T2280Q', {
+          send_page_view: true,
+          anonymize_ip: true
+        });
+        console.log('[GA4] Switched to Smart Link tracking');
+      };
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2CFB508HGL"></script>
 
