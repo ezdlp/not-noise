@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,17 +22,27 @@ export function useFeatureAccess() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Separate queries to avoid join issues
-      const { data: subscriptionData, error: subscriptionError } = await supabase
+      // Get all subscriptions for this user to handle the case of multiple subscriptions
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .maybeSingle();
+        .order('tier', { ascending: false }) // Put 'pro' before 'free'
+        .order('status', { ascending: false }) // Put 'active' before other statuses
+        .order('billing_period', { ascending: false }); // Put 'annual' before 'monthly'
 
-      if (subscriptionError) throw subscriptionError;
+      if (subscriptionsError) throw subscriptionsError;
+      
+      // Find the best subscription (prioritizing pro, active, and annual)
+      const activeProSub = subscriptionsData?.find(sub => 
+        sub.tier === 'pro' && sub.status === 'active'
+      );
+      
+      const anyProSub = subscriptionsData?.find(sub => sub.tier === 'pro');
+      const bestSub = activeProSub || anyProSub || subscriptionsData?.[0];
       
       // Default to free tier if no subscription data found
-      const tier = subscriptionData?.tier || 'free';
+      const tier = bestSub?.tier || 'free';
       
       // Get features for this tier
       const { data: features, error: featuresError } = await supabase
@@ -42,9 +53,11 @@ export function useFeatureAccess() {
       if (featuresError) throw featuresError;
       
       return {
-        ...subscriptionData,
+        ...bestSub,
         features,
-        tier
+        tier,
+        // For debugging purposes
+        all_subscriptions: subscriptionsData
       };
     },
     // Add these options to prevent constant refetching
@@ -57,7 +70,7 @@ export function useFeatureAccess() {
     
     if (feature === 'meta_pixel') {
       // Allow meta pixel if user is pro or if they're grandfathered in
-      return subscription.tier === 'pro';
+      return subscription.tier === 'pro' || subscription.meta_pixel_grandfathered === true;
     }
     
     return subscription.tier !== 'free';

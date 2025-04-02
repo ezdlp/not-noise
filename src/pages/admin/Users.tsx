@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, UserPlus, Filter } from 'lucide-react';
+import { Search, UserPlus, Filter, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router-dom';
 
 // Types
 type SubscriptionTier = 'free' | 'pro' | 'platinum';
@@ -63,10 +64,16 @@ const Users = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">User Management</h1>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
+        <div className="flex space-x-2">
+          <Button as={Link} to="/admin/fix-subscriptions" variant="outline">
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Fix Subscriptions
+          </Button>
+          <Button>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
