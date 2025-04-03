@@ -1,3 +1,4 @@
+
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
@@ -51,11 +52,13 @@ const Header = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return null
 
+      // Changed from maybeSingle to explicitly query only active subscriptions
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .maybeSingle()
+        .eq("status", "active")
+        .single()
 
       if (subscriptionError) return { tier: 'free' }
       
@@ -65,7 +68,7 @@ const Header = () => {
       }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
+    // Removed refetchOnWindowFocus: false to ensure fresh data when tab is focused
   })
 
   const getInitials = (name: string) => {
