@@ -15,7 +15,8 @@ export function FeatureLimits() {
         .from("subscriptions")
         .select("tier")
         .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("status", "active")
+        .single();
 
       if (subscriptionError) throw subscriptionError;
       

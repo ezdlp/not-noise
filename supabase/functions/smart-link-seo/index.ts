@@ -190,101 +190,47 @@ Deno.serve(async (req) => {
     let html
     
     if (isWhatsApp) {
-      // Simplified HTML specifically for WhatsApp (focusing on requirements in the first 300KB)
+      // Ultra-minimal HTML specifically for WhatsApp (putting meta tags as early as possible)
       html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${fullTitle}</title>
-  
-  <!-- WhatsApp optimized meta tags - must be in first 300KB -->
-  <meta property="og:title" content="${fullTitle}">
-  <meta property="og:description" content="${finalDescription}">
-  <meta property="og:url" content="${SITE_URL}/link/${slug}">
-  <meta property="og:image" content="${finalSmartLink.artwork_url}">
-  <meta property="og:type" content="music.song">
-  
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #FAFAFA;
-      color: #111827;
-      line-height: 1.5;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 32px 16px;
-    }
-    .card {
-      background-color: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .artwork {
-      width: 120px;
-      height: 120px;
-      border-radius: 8px;
-      object-fit: cover;
-      margin-right: 16px;
-    }
-    .title {
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0 0 4px 0;
-    }
-    .artist {
-      font-size: 18px;
-      color: #6B7280;
-      margin: 0 0 12px 0;
-    }
-    .platforms {
-      list-style-type: none;
-      padding: 0;
-      margin: 24px 0 0 0;
-    }
-    .button {
-      display: inline-block;
-      background-color: #6851FB;
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 500;
-      margin-top: 24px;
-      text-align: center;
-    }
-  </style>
+<title>${fullTitle}</title>
+<meta property="og:title" content="${finalSmartLink.title}">
+<meta property="og:description" content="${finalDescription.substring(0, 80)}">
+<meta property="og:url" content="${SITE_URL}/link/${slug}">
+<meta property="og:image" content="${finalSmartLink.artwork_url}">
+<meta property="og:type" content="website">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:system-ui,sans-serif;margin:0;padding:0;background:#FAFAFA;color:#111827}
+.container{max-width:600px;margin:0 auto;padding:32px 16px}
+.card{background:white;border-radius:16px;box-shadow:0 4px 6px rgba(0,0,0,0.1);padding:24px;margin-bottom:24px}
+.header{display:flex;align-items:center;margin-bottom:24px}
+.artwork{width:120px;height:120px;border-radius:8px;object-fit:cover;margin-right:16px}
+.title{font-size:22px;font-weight:600;margin:0 0 4px 0}
+.artist{font-size:18px;color:#6B7280;margin:0 0 12px 0}
+.platforms{list-style-type:none;padding:0;margin:24px 0 0 0}
+.button{display:inline-block;background:#6851FB;color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:24px;text-align:center}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <div class="header">
-        <img src="${finalSmartLink.artwork_url}" alt="${finalSmartLink.title}" class="artwork">
-        <div>
-          <h1 class="title">${finalSmartLink.title}</h1>
-          <p class="artist">by ${finalSmartLink.artist_name}</p>
-        </div>
-      </div>
-      
-      <h2>Available on:</h2>
-      <ul class="platforms">
-        ${platformList}
-      </ul>
-      
-      <a href="${SITE_URL}/link/${slug}" class="button">Open Interactive Page</a>
-    </div>
-  </div>
+<div class="container">
+<div class="card">
+<div class="header">
+<img src="${finalSmartLink.artwork_url}" alt="${finalSmartLink.title}" class="artwork">
+<div>
+<h1 class="title">${finalSmartLink.title}</h1>
+<p class="artist">by ${finalSmartLink.artist_name}</p>
+</div>
+</div>
+<h2>Available on:</h2>
+<ul class="platforms">
+${platformList}
+</ul>
+<a href="${SITE_URL}/link/${slug}" class="button">Open Interactive Page</a>
+</div>
+</div>
 </body>
 </html>`
     } else {
@@ -431,13 +377,23 @@ Deno.serve(async (req) => {
     // Record success in logs
     console.log(`Successfully generated SEO HTML for ${slug}`)
 
+    // Create headers specific to the crawler type
+    const responseHeaders = {
+      ...corsHeaders,
+      'Content-Type': 'text/html; charset=utf-8'
+    };
+
+    // Add specific headers for WhatsApp
+    if (isWhatsApp) {
+      console.log('Setting WhatsApp-optimized response headers');
+      responseHeaders['Cache-Control'] = 'public, max-age=0, must-revalidate';
+    } else {
+      responseHeaders['Cache-Control'] = 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400';
+    }
+
     // Return the HTML with proper headers
     return new Response(html, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400'
-      }
+      headers: responseHeaders
     })
   } catch (error) {
     console.error('Error in smart-link-seo function:', error)

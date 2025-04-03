@@ -41,7 +41,7 @@ export function PromotionsDashboard() {
       const {
         data: subscriptionData,
         error: subscriptionError
-      } = await supabase.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle();
+      } = await supabase.from("subscriptions").select("*").eq("user_id", user.id).eq("status", "active").single();
       if (subscriptionError) throw subscriptionError;
 
       // Default to free tier if no subscription data found

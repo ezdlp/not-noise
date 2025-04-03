@@ -51,7 +51,7 @@ export default function Pricing() {
         const {
           data,
           error
-        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).maybeSingle();
+        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).eq("status", "active").single();
         if (error) throw error;
         return data || {
           tier: 'free'

@@ -26,7 +26,8 @@ export function useFeatureAccess() {
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("status", "active")
+        .single();
 
       if (subscriptionError) throw subscriptionError;
       

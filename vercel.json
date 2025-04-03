@@ -57,7 +57,18 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "WhatsApp.*"
+          "value": "WhatsApp/[0-9\\.]+ [AIN]"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*[wW]hats[aA]pp.*"
         }
       ],
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
@@ -80,6 +91,10 @@
     {
       "source": "/whatsapp-test/:slug",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/whatsapp-debug",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/whatsapp-debug"
     },
     {
       "source": "/(.*)",

@@ -1,0 +1,2 @@
+[functions.whatsapp-debug]
+verify_jwt = false 
