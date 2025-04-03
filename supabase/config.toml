@@ -1,1 +1,19 @@
+
 project_id = "owtufhdsuuyrgmxytclj"
+
+[global.env_variables]
+# Add your environment variables here
+
+# Social media preview functions - MUST REMAIN DISABLED FOR SOCIAL MEDIA PREVIEWS
+[functions.smart-link-seo]
+verify_jwt = false
+
+[functions.smart-link-meta]
+verify_jwt = false
+
+[functions.whatsapp-debug]
+verify_jwt = false
+
+# Stripe webhook function - MUST REMAIN DISABLED FOR WEBHOOK ACCESS
+[functions.stripe-webhook]
+verify_jwt = false

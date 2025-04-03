@@ -1,4 +1,5 @@
 
 project_id = "owtufhdsuuyrgmxytclj"
 
+[functions.smart-link-seo]
 verify_jwt = false
