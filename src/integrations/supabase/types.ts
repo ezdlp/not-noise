@@ -1906,7 +1906,84 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      active_subscriptions: {
+        Row: {
+          billing_period: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string | null
+          is_early_adopter: boolean | null
+          is_lifetime: boolean | null
+          last_payment_date: string | null
+          payment_status: string | null
+          price_id: string | null
+          status: string | null
+          stripe_checkout_id: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          billing_period?: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string | null
+          is_early_adopter?: boolean | null
+          is_lifetime?: boolean | null
+          last_payment_date?: string | null
+          payment_status?: string | null
+          price_id?: string | null
+          status?: string | null
+          stripe_checkout_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          billing_period?: Database["public"]["Enums"]["billing_period"] | null
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string | null
+          is_early_adopter?: boolean | null
+          is_lifetime?: boolean | null
+          last_payment_date?: string | null
+          payment_status?: string | null
+          price_id?: string | null
+          status?: string | null
+          stripe_checkout_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_subscription_tier"
+            columns: ["tier"]
+            isOneToOne: false
+            referencedRelation: "temp_subscription_tiers"
+            referencedColumns: ["tier"]
+          },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey1"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_smart_link_limit: {
@@ -2111,6 +2188,22 @@ export type Database = {
           measured_at: string
           popularity_score: number
         }[]
+      }
+      get_users_with_multiple_active_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          subscription_count: number
+        }[]
+      }
+      handle_subscription_update: {
+        Args: {
+          p_user_id: string
+          p_tier: string
+          p_stripe_subscription_id: string
+          p_stripe_customer_id: string
+        }
+        Returns: string
       }
       has_role: {
         Args: {
