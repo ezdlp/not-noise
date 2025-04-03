@@ -1,7 +1,7 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
+import { handleSubscription } from './subscription-handler.js'
 
 // Initialize Stripe
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -228,98 +228,7 @@ serve(async (req) => {
       // Subscription events
       if (event.type.startsWith('customer.subscription.')) {
         const subscription = event.data.object
-        
-        // Try to find the user ID from the subscription table if not already set
-        if (!userId) {
-          const { data: customerData } = await supabase
-            .from('subscriptions')
-            .select('user_id')
-            .eq('stripe_subscription_id', subscription.id)
-            .single()
-            
-          userId = customerData?.user_id
-          console.log(`🔍 Found user ID ${userId || 'unknown'} for subscription ${subscription.id}`)
-        }
-        
-        // Get the subscription interval (month or year) from Stripe
-        const stripeInterval = subscription.items.data[0]?.plan.interval || 'month'
-        console.log(`📊 Subscription ${subscription.id} interval from Stripe: ${stripeInterval}`)
-            
-        // Map it to our database enum values (monthly or annual)
-        const billingPeriod = mapStripeToBillingPeriod(stripeInterval)
-        console.log(`📊 Mapped to DB billing_period: ${billingPeriod}`)
-        
-        if (event.type === 'customer.subscription.deleted') {
-          // Don't actually delete the record, just mark it as canceled
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: 'canceled',
-              updated_at: new Date().toISOString(),
-              tier: 'free' // Downgrade to free tier when subscription is canceled
-            })
-            .eq('stripe_subscription_id', subscription.id)
-            
-          console.log(`✅ Marked subscription ${subscription.id} as canceled`)
-        } else {
-          // For created or updated subscriptions
-          const tier = subscription.status === 'active' ? 'pro' : 'free'
-          
-          const subscriptionData = {
-            stripe_subscription_id: subscription.id,
-            stripe_customer_id: subscription.customer,
-            status: subscription.status,
-            tier: tier,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            billing_period: billingPeriod, // Use mapped value
-            updated_at: new Date().toISOString()
-          }
-          
-          // If we have a user ID, use it for the upsert
-          if (userId) {
-            // First check if record exists
-            const { data: existingData, error: checkError } = await supabase
-              .from('subscriptions')
-              .select('*')
-              .eq('user_id', userId)
-              .eq('stripe_subscription_id', subscription.id)
-              .maybeSingle()
-            
-            // Complete subscription data with user_id
-            const fullSubscriptionData = {
-              ...subscriptionData,
-              user_id: userId
-            }
-              
-            if (existingData) {
-              // Update existing record
-              await supabase
-                .from('subscriptions')
-                .update(fullSubscriptionData)
-                .eq('user_id', userId)
-                .eq('stripe_subscription_id', subscription.id)
-                
-              console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
-            } else {
-              // Insert new record
-              await supabase
-                .from('subscriptions')
-                .insert(fullSubscriptionData)
-                
-              console.log(`✅ Inserted subscription ${subscription.id} with status ${subscription.status} for user ${userId}`)
-            }
-          } else {
-            // Otherwise try to update by stripe_subscription_id
-            await supabase
-              .from('subscriptions')
-              .update(subscriptionData)
-              .eq('stripe_subscription_id', subscription.id)
-              
-            console.log(`✅ Updated subscription ${subscription.id} with status ${subscription.status}`)
-          }
-        }
+        await handleSubscription(supabase, subscription, event.type)
       }
         
       // Product events

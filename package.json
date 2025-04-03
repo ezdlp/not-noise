@@ -15,7 +15,10 @@
     "supabase:diagnose-wp-users": "node scripts/diagnose-wordpress-users.js",
     "supabase:fix-jarrod": "node scripts/deep-diagnosis-jarrod.js",
     "supabase:fix-cache": "node scripts/fix-frontend-cache.js",
-    "supabase:fix-queries": "node scripts/fix-subscription-queries.js"
+    "supabase:fix-queries": "node scripts/fix-subscription-queries.js",
+    "supabase:fix-status": "node scripts/fix-subscription-status.js",
+    "supabase:fix-manual": "node scripts/fix-subscription-status-manual.js",
+    "supabase:run-migrations": "node scripts/run-sql-migration.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
