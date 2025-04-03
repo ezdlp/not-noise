@@ -46,7 +46,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(?:bot|crawl|facebook|twitter|linkedin|pinterest|telegram|whatsapp|Facebook|facebookexternalhit|LinkedInBot|Pinterest|TwitterBot|WhatsApp|WhatsApp/|^WhatsApp).*"
+          "value": ".*(?:bot|crawl|facebook|twitter|linkedin|pinterest|telegram|facebook|facebookexternalhit|linkedinbot|pinterest|twitterbot).*"
         }
       ],
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
@@ -57,7 +57,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*WhatsApp.*"
+          "value": "WhatsApp.*"
         }
       ],
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
@@ -75,6 +75,10 @@
     },
     {
       "source": "/seo-test/:slug",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/whatsapp-test/:slug",
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
     },
     {

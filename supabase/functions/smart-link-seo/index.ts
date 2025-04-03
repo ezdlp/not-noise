@@ -22,6 +22,12 @@ Deno.serve(async (req) => {
   // Enhanced WhatsApp detection logging
   if (userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')) {
     console.log('WhatsApp crawler detected! Full User-Agent:', userAgent)
+    
+    // Check if request includes the Accept-Language header that WhatsApp sends
+    const acceptLanguage = req.headers.get('accept-language')
+    if (acceptLanguage) {
+      console.log('WhatsApp Accept-Language:', acceptLanguage)
+    }
   }
   
   // Log all headers for debugging
@@ -177,7 +183,113 @@ Deno.serve(async (req) => {
       `<li style="margin:8px 0;"><a href="${platform.url}" target="_blank" rel="noopener" style="color:#6851FB;text-decoration:none;font-weight:500;">${platform.name}</a></li>`
     ).join('')
 
-    const html = `<!DOCTYPE html>
+    // Determine if this is a WhatsApp crawler
+    const isWhatsApp = userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')
+    
+    // Create optimized HTML based on the crawler type
+    let html
+    
+    if (isWhatsApp) {
+      // Simplified HTML specifically for WhatsApp (focusing on requirements in the first 300KB)
+      html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${fullTitle}</title>
+  
+  <!-- WhatsApp optimized meta tags - must be in first 300KB -->
+  <meta property="og:title" content="${fullTitle}">
+  <meta property="og:description" content="${finalDescription}">
+  <meta property="og:url" content="${SITE_URL}/link/${slug}">
+  <meta property="og:image" content="${finalSmartLink.artwork_url}">
+  <meta property="og:type" content="music.song">
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #FAFAFA;
+      color: #111827;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .artwork {
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      object-fit: cover;
+      margin-right: 16px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+    }
+    .artist {
+      font-size: 18px;
+      color: #6B7280;
+      margin: 0 0 12px 0;
+    }
+    .platforms {
+      list-style-type: none;
+      padding: 0;
+      margin: 24px 0 0 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #6851FB;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      margin-top: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <img src="${finalSmartLink.artwork_url}" alt="${finalSmartLink.title}" class="artwork">
+        <div>
+          <h1 class="title">${finalSmartLink.title}</h1>
+          <p class="artist">by ${finalSmartLink.artist_name}</p>
+        </div>
+      </div>
+      
+      <h2>Available on:</h2>
+      <ul class="platforms">
+        ${platformList}
+      </ul>
+      
+      <a href="${SITE_URL}/link/${slug}" class="button">Open Interactive Page</a>
+    </div>
+  </div>
+</body>
+</html>`
+    } else {
+      // Full HTML with all meta tags for other crawlers
+      html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -314,6 +426,7 @@ Deno.serve(async (req) => {
   </div>
 </body>
 </html>`
+    }
 
     // Record success in logs
     console.log(`Successfully generated SEO HTML for ${slug}`)
