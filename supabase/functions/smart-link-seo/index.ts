@@ -1,3 +1,4 @@
+
 // Follow this setup guide to integrate the Deno runtime into your application:
 // https://deno.com/manual/examples/deploy_api
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
@@ -19,8 +20,12 @@ Deno.serve(async (req) => {
   const userAgent = req.headers.get('user-agent') || 'No User-Agent'
   console.log(`Received request with User-Agent: ${userAgent}`)
   
-  // Enhanced WhatsApp detection logging
-  if (userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')) {
+  // Enhanced WhatsApp detection - WhatsApp uses various UA strings
+  const isWhatsApp = userAgent.includes('WhatsApp') || 
+                      userAgent.toLowerCase().includes('whatsapp') ||
+                      /WhatsApp\/[0-9\.]+ [AIN]/.test(userAgent)
+  
+  if (isWhatsApp) {
     console.log('WhatsApp crawler detected! Full User-Agent:', userAgent)
     
     // Check if request includes the Accept-Language header that WhatsApp sends
@@ -183,9 +188,6 @@ Deno.serve(async (req) => {
       `<li style="margin:8px 0;"><a href="${platform.url}" target="_blank" rel="noopener" style="color:#6851FB;text-decoration:none;font-weight:500;">${platform.name}</a></li>`
     ).join('')
 
-    // Determine if this is a WhatsApp crawler
-    const isWhatsApp = userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')
-    
     // Create optimized HTML based on the crawler type
     let html
     
