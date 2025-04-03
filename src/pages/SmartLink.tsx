@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,6 +168,11 @@ export default function SmartLink() {
       { property: 'og:image', content: image },
       { property: 'og:url', content: url },
       { property: 'og:type', content: 'music.song' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: title },
+      { property: 'og:image:secure_url', content: image },
+      { property: 'og:locale', content: 'en_US' },
       { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:title', content: title },
       { name: 'twitter:description', content: description },

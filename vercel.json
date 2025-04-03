@@ -1,4 +1,3 @@
-
 {
   "images": {
     "sizes": [304, 760],
@@ -47,7 +46,18 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(?:bot|crawl|facebook|twitter|linkedin|pinterest|telegram|whatsapp|facebook|facebookexternalhit|linkedinbot|pinterest|twitterbot|whatsapp).*"
+          "value": ".*(?:bot|crawl|facebook|twitter|linkedin|pinterest|telegram|whatsapp|Facebook|facebookexternalhit|LinkedInBot|Pinterest|TwitterBot|WhatsApp|WhatsApp/|^WhatsApp).*"
+        }
+      ],
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"
+    },
+    {
+      "source": "/link/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*WhatsApp.*"
         }
       ],
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-seo/:slug"

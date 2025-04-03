@@ -1,4 +1,3 @@
-
 // Follow this setup guide to integrate the Deno runtime into your application:
 // https://deno.com/manual/examples/deploy_api
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
@@ -19,6 +18,11 @@ interface StreamingPlatform {
 Deno.serve(async (req) => {
   const userAgent = req.headers.get('user-agent') || 'No User-Agent'
   console.log(`Received request with User-Agent: ${userAgent}`)
+  
+  // Enhanced WhatsApp detection logging
+  if (userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')) {
+    console.log('WhatsApp crawler detected! Full User-Agent:', userAgent)
+  }
   
   // Log all headers for debugging
   const headersLog: Record<string, string> = {}
@@ -193,8 +197,13 @@ Deno.serve(async (req) => {
   <meta property="og:site_name" content="Soundraiser">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${fullTitle}">
   ${finalSmartLink.release_date ? `<meta property="music:release_date" content="${finalSmartLink.release_date}">` : ''}
   ${streamingPlatforms.map(platform => `<meta property="music:musician" content="${platform.url}">`).join('\n  ')}
+  
+  <!-- WhatsApp specific -->
+  <meta property="og:image:secure_url" content="${finalSmartLink.artwork_url}">
+  <meta property="og:locale" content="en_US">
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">

@@ -1,4 +1,3 @@
-
 import { Helmet } from "react-helmet";
 import { DEFAULT_SEO_CONFIG } from "./config";
 import { useEffect } from "react";
@@ -179,6 +178,11 @@ export function SmartLinkSEO({
       {/* Image dimensions for social media */}
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={fullTitle} />
+      
+      {/* WhatsApp specific */}
+      <meta property="og:image:secure_url" content={absoluteArtworkUrl} />
+      <meta property="og:locale" content="en_US" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
