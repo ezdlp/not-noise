@@ -73,7 +73,9 @@
   
   // Check if the current user agent matches any crawler pattern
   const isCrawler = crawlerPatterns.some(pattern => pattern.test(userAgent));
+  const isWhatsApp = /whatsapp/i.test(userAgent);
   console.log('Is crawler detected:', isCrawler);
+  console.log('Is WhatsApp detected:', isWhatsApp);
   
   // Add escaped fragment for crawlers (helps with routing)
   if (isCrawler && window.location.href.indexOf('?_escaped_fragment_=') === -1) {
@@ -88,9 +90,6 @@
     } catch (e) {
       console.error('Failed to update history state:', e);
     }
-    
-    // If we've added the escaped fragment, we'll let the Vercel routing take care of redirection
-    // But we'll also fetch and set meta tags directly as a backup
   }
   
   // Even for non-crawlers, immediately fetch and set meta tags for better UX and as a fallback
@@ -114,7 +113,12 @@
         
         // Format the important meta information
         const fullTitle = `${data.title} by ${data.artistName} | Listen on All Platforms`;
+        // For WhatsApp, use a shorter title (WhatsApp often truncates long titles)
+        const shortTitle = isWhatsApp ? `${data.title} by ${data.artistName}` : fullTitle;
+        
         const description = data.description || `Stream or download ${data.title} by ${data.artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
+        // WhatsApp sometimes truncates descriptions, so provide a shorter version
+        const shortDesc = isWhatsApp && description.length > 80 ? description.substring(0, 77) + '...' : description;
         
         // Make sure image URL is absolute
         const artworkUrl = data.artworkUrl.startsWith('http') 
@@ -133,7 +137,13 @@
         };
         
         // Update all meta tags immediately with high priority
-        updateMetaTags(fullTitle, description, artworkUrl, `${siteUrl}/link/${slug}`);
+        updateMetaTags(
+          isWhatsApp ? shortTitle : fullTitle,
+          isWhatsApp ? shortDesc : description,
+          artworkUrl,
+          `${siteUrl}/link/${slug}`,
+          isWhatsApp
+        );
         
         // Also update structured data
         updateStructuredData(
@@ -152,14 +162,47 @@
     
   /**
    * Updates meta tags in the document head with provided values
+   * Optimizes for WhatsApp when isWhatsApp is true
    */
-  function updateMetaTags(title, description, image, url) {
+  function updateMetaTags(title, description, image, url, isWhatsApp) {
+    // For WhatsApp, we want to optimize the meta tags sequence and structure
+    if (isWhatsApp) {
+      // WhatsApp optimization: Create critical OG tags first and at the top of head
+      const criticalMetaTags = [
+        { property: 'og:site_name', content: 'Soundraiser' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:image', content: image },
+        { property: 'og:url', content: url },
+        { property: 'og:type', content: 'music.song' },
+      ];
+      
+      // Apply critical meta tags at the TOP of head (order matters for WhatsApp)
+      criticalMetaTags.forEach(tag => {
+        // Remove existing tag if it exists
+        const existing = document.querySelector(`meta[property="${tag.property}"]`);
+        if (existing) {
+          existing.remove();
+        }
+        
+        // Create new tag and insert at the beginning of head
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', tag.property);
+        meta.setAttribute('content', tag.content);
+        
+        // Insert at beginning of head
+        const firstChild = document.head.firstChild;
+        document.head.insertBefore(meta, firstChild);
+      });
+    }
+    
+    // Standard meta tags for all crawlers (including WhatsApp)
     const metaTags = [
       // Standard meta
       { name: 'description', content: description },
       { name: 'robots', content: 'index, follow' },
       
-      // Open Graph basic
+      // Open Graph basic (these will be duplicates for WhatsApp, but that's OK)
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
       { property: 'og:image', content: image },
@@ -212,7 +255,7 @@
     }
     canonical.setAttribute('href', url);
     
-    console.log('Meta tags updated with:', { title, description, image, url });
+    console.log('Meta tags updated for ' + (isWhatsApp ? 'WhatsApp' : 'standard') + ' with:', { title, description, image, url });
   }
   
   /**

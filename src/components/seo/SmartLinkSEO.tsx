@@ -25,8 +25,14 @@ export function SmartLinkSEO({
 }: SmartLinkSEOProps) {
   const siteUrl = "https://soundraiser.io";
   const fullTitle = `${title} by ${artistName} | Listen on All Platforms`;
+  const shortTitle = `${title} by ${artistName}`; // Optimized for WhatsApp
   const finalDescription = description || `Stream or download ${title} by ${artistName}. Available on Spotify, Apple Music, and more streaming platforms.`;
+  // Truncated description for WhatsApp (which has character limits)
+  const shortDescription = finalDescription.length > 80 ? finalDescription.substring(0, 77) + '...' : finalDescription;
   const canonical = `${siteUrl}${window.location.pathname}`;
+  
+  // Check if the client is WhatsApp
+  const isWhatsApp = typeof navigator !== 'undefined' && /whatsapp/i.test(navigator.userAgent);
   
   // Make sure artwork URL is absolute
   const absoluteArtworkUrl = artworkUrl.startsWith('http') 
@@ -93,12 +99,46 @@ export function SmartLinkSEO({
     
     // Force update meta tags right away (in addition to Helmet)
     const updateMetaTags = () => {
+      // WhatsApp-optimized critical meta tags - these need to be at the top of <head>
+      if (isWhatsApp) {
+        const criticalMetaTags = [
+          { property: 'og:site_name', content: 'Soundraiser' },
+          { property: 'og:title', content: shortTitle },
+          { property: 'og:description', content: shortDescription },
+          { property: 'og:image', content: absoluteArtworkUrl },
+          { property: 'og:url', content: canonical },
+          { property: 'og:type', content: 'music.song' },
+        ];
+        
+        // Insert critical meta tags at the beginning of head (order matters for WhatsApp)
+        criticalMetaTags.forEach(tag => {
+          // Remove existing tag if present
+          const existing = document.querySelector(`meta[property="${tag.property}"]`);
+          if (existing) {
+            existing.remove();
+          }
+          
+          // Create and insert at beginning of head
+          const meta = document.createElement('meta');
+          meta.setAttribute('property', tag.property);
+          meta.setAttribute('content', tag.content);
+          document.head.insertBefore(meta, document.head.firstChild);
+        });
+      }
+      
+      // Standard meta tags (will still be applied for all clients including WhatsApp)
       const metaTags = [
-        { property: 'og:title', content: fullTitle },
-        { property: 'og:description', content: finalDescription },
+        { property: 'og:title', content: isWhatsApp ? shortTitle : fullTitle },
+        { property: 'og:description', content: isWhatsApp ? shortDescription : finalDescription },
         { property: 'og:image', content: absoluteArtworkUrl },
         { property: 'og:url', content: canonical },
         { property: 'og:type', content: 'music.song' },
+        { property: 'og:site_name', content: 'Soundraiser' },
+        { property: 'og:image:width', content: isWhatsApp ? '600' : '1200' },
+        { property: 'og:image:height', content: isWhatsApp ? '600' : '630' },
+        { property: 'og:image:alt', content: fullTitle },
+        { property: 'og:image:secure_url', content: absoluteArtworkUrl },
+        { property: 'og:locale', content: 'en_US' },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: fullTitle },
         { name: 'twitter:description', content: finalDescription },
@@ -144,13 +184,15 @@ export function SmartLinkSEO({
         document.head.appendChild(structuredData);
       }
       structuredData.textContent = JSON.stringify(musicSchema);
+      
+      console.log('Meta tags updated with WhatsApp optimization:', isWhatsApp);
     };
     
     // Run immediately
     updateMetaTags();
     // Also delay by a small amount to ensure it runs after any other scripts
     setTimeout(updateMetaTags, 100);
-  }, [title, artistName, description, absoluteArtworkUrl, canonical, fullTitle, finalDescription]);
+  }, [title, artistName, description, absoluteArtworkUrl, canonical, fullTitle, finalDescription, shortTitle, shortDescription, isWhatsApp]);
 
   return (
     <Helmet>
@@ -164,11 +206,11 @@ export function SmartLinkSEO({
       <meta name="robots" content="index, follow" />
       <meta httpEquiv="content-language" content="en" />
       
-      {/* OG (Open Graph) tags */}
+      {/* OG (Open Graph) tags - for WhatsApp, we're adding critical ones at the top of <head> via DOM API */}
       <meta property="og:type" content="music.song" />
       <meta property="og:url" content={canonical} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={finalDescription} />
+      <meta property="og:title" content={isWhatsApp ? shortTitle : fullTitle} />
+      <meta property="og:description" content={isWhatsApp ? shortDescription : finalDescription} />
       <meta property="og:image" content={absoluteArtworkUrl} />
       <meta property="og:site_name" content="Soundraiser" />
       {releaseDate && <meta property="music:release_date" content={releaseDate} />}
@@ -177,8 +219,8 @@ export function SmartLinkSEO({
       ))}
 
       {/* Image dimensions for social media */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content={isWhatsApp ? "600" : "1200"} />
+      <meta property="og:image:height" content={isWhatsApp ? "600" : "630"} />
       <meta property="og:image:alt" content={fullTitle} />
       
       {/* WhatsApp specific */}

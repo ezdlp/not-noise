@@ -8,7 +8,9 @@ Deno.serve(async (req) => {
   const userAgent = req.headers.get('user-agent') || 'No User-Agent'
   const url = new URL(req.url)
   const acceptLanguage = req.headers.get('accept-language')
-  const isWhatsApp = userAgent.includes('WhatsApp') || userAgent.toLowerCase().includes('whatsapp')
+  const isWhatsApp = userAgent.includes('WhatsApp') || 
+                      userAgent.toLowerCase().includes('whatsapp') ||
+                      /WhatsApp\/[0-9\.]+ [AIN]/.test(userAgent)
   
   // Log all headers for debugging
   const headersLog: Record<string, string> = {}
@@ -31,17 +33,18 @@ Deno.serve(async (req) => {
   
   console.log('WhatsApp Debug Request:', JSON.stringify(responseData, null, 2))
   
-  // Basic WhatsApp-friendly HTML response
+  // WhatsApp-optimized HTML response - simpler meta tags at the very top of head
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-<title>WhatsApp Debug Info</title>
-<meta property="og:title" content="WhatsApp Debug">
-<meta property="og:description" content="Debugging info for WhatsApp crawler">
-<meta property="og:url" content="${req.url}">
-<meta property="og:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png">
-<meta property="og:type" content="website">
 <meta charset="UTF-8">
+<meta property="og:site_name" content="Soundraiser">
+<meta property="og:title" content="WhatsApp Debug">
+<meta property="og:description" content="Debugging WhatsApp link previews">
+<meta property="og:image" content="https://soundraiser.io/lovable-uploads/soundraiser-logo/Logo A.png">
+<meta property="og:url" content="${req.url}">
+<meta property="og:type" content="website">
+<title>WhatsApp Debug Info</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
@@ -60,4 +63,4 @@ Deno.serve(async (req) => {
       'Cache-Control': 'no-cache, no-store, must-revalidate'
     }
   })
-}) 
+})

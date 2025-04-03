@@ -181,8 +181,11 @@ Deno.serve(async (req) => {
 
     // Create the full HTML with all required meta tags
     const fullTitle = `${finalSmartLink.title} by ${finalSmartLink.artist_name} | Listen on All Platforms`
+    const shortTitle = `${finalSmartLink.title} by ${finalSmartLink.artist_name}` // Shorter title for WhatsApp
     const finalDescription = finalSmartLink.description || 
       `Stream or download ${finalSmartLink.title} by ${finalSmartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`
+    // Truncated description for WhatsApp
+    const shortDescription = finalDescription.length > 80 ? finalDescription.substring(0, 77) + '...' : finalDescription
     
     const platformList = streamingPlatforms.map(platform => 
       `<li style="margin:8px 0;"><a href="${platform.url}" target="_blank" rel="noopener" style="color:#6851FB;text-decoration:none;font-weight:500;">${platform.name}</a></li>`
@@ -196,13 +199,16 @@ Deno.serve(async (req) => {
       html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-<title>${fullTitle}</title>
-<meta property="og:title" content="${finalSmartLink.title}">
-<meta property="og:description" content="${finalDescription.substring(0, 80)}">
-<meta property="og:url" content="${SITE_URL}/link/${slug}">
-<meta property="og:image" content="${finalSmartLink.artwork_url}">
-<meta property="og:type" content="website">
 <meta charset="UTF-8">
+<meta property="og:site_name" content="Soundraiser">
+<meta property="og:title" content="${shortTitle}">
+<meta property="og:description" content="${shortDescription}">
+<meta property="og:image" content="${finalSmartLink.artwork_url}">
+<meta property="og:image:width" content="600">
+<meta property="og:image:height" content="600">
+<meta property="og:url" content="${SITE_URL}/link/${slug}">
+<meta property="og:type" content="music.song">
+<title>${shortTitle}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:system-ui,sans-serif;margin:0;padding:0;background:#FAFAFA;color:#111827}
@@ -388,7 +394,7 @@ ${platformList}
     // Add specific headers for WhatsApp
     if (isWhatsApp) {
       console.log('Setting WhatsApp-optimized response headers');
-      responseHeaders['Cache-Control'] = 'public, max-age=0, must-revalidate';
+      responseHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';
     } else {
       responseHeaders['Cache-Control'] = 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400';
     }
