@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PromotionSignupModal } from "./PromotionSignupModal";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { PricingTier, SelectedTrack } from "@/types/spotify-promotion";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 interface PricingPlanProps {
   onSubmit?: (submissions: number, totalCost: number) => void;
@@ -26,55 +26,28 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [userSubscription, setUserSubscription] = useState<any>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  
+  const { subscription, isLoading: subscriptionLoading } = useFeatureAccess();
+  const isPro = subscription?.tier === 'pro';
 
   useEffect(() => {
-    const checkAuthAndSubscription = async () => {
+    const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
-      
-      if (session?.user) {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        if (!error) {
-          setUserSubscription(data);
-        }
-      }
-      
       setIsLoading(false);
     };
 
-    checkAuthAndSubscription();
+    checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setIsAuthenticated(!!session);
-      
-      if (session?.user) {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        if (!error) {
-          setUserSubscription(data);
-        }
-      } else {
-        setUserSubscription(null);
-      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const isPro = userSubscription?.tier === 'pro';
 
   const tiers: PricingTier[] = [
     {
@@ -206,7 +179,8 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
         packageId,
         trackId: spotifyTrackId,
         artistId: selectedTrack.artistId,
-        price: finalPrice
+        price: finalPrice,
+        isPro
       });
       
       try {
@@ -288,7 +262,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
     }
   };
 
-  if (isLoading) {
+  if (isLoading || subscriptionLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

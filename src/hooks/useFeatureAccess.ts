@@ -16,19 +16,18 @@ const FREE_PLATFORMS = [
 ];
 
 export function useFeatureAccess() {
-  const { data: subscription } = useQuery({
+  const { data: subscription, isLoading } = useQuery({
     queryKey: ["feature-access-subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Updated to explicitly query active subscriptions only
+      // Use active_subscriptions view which only returns active subscriptions
       const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from("subscriptions")
+        .from("active_subscriptions")
         .select("*")
         .eq("user_id", user.id)
-        .eq("status", "active")
-        .single();
+        .maybeSingle();  // Use maybeSingle instead of single to handle case of no subscription
 
       if (subscriptionError) {
         console.log("Subscription error:", subscriptionError);
@@ -52,9 +51,8 @@ export function useFeatureAccess() {
         tier
       };
     },
-    // Add these options to prevent constant refetching
     staleTime: 1000 * 60 * 5, // 5 minutes
-    // Allow refetching on window focus to ensure data is fresh
+    refetchOnWindowFocus: true,
   });
 
   const isFeatureEnabled = (feature: Feature): boolean => {
@@ -80,7 +78,7 @@ export function useFeatureAccess() {
   return {
     isFeatureEnabled,
     getAvailablePlatforms,
-    isLoading: !subscription,
+    isLoading,
     subscription,
   };
 }
