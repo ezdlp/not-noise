@@ -30,12 +30,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
+  const isMobile = useIsMobile();
   
   // Default section is smart-links
   const [activeSection, setActiveSection] = useState<'smart-links' | 'email-subscribers' | 'promotions'>(
@@ -45,41 +47,6 @@ export function DashboardSidebar() {
   const { isFeatureEnabled } = useFeatureAccess();
   const { setShowUpgradeModal } = useSmartLinkCreation();
   
-  // Handle URL parameter changes
-  useEffect(() => {
-    const validSections = ['smart-links', 'email-subscribers', 'promotions'];
-    if (sectionParam && validSections.includes(sectionParam)) {
-      // Check if user has access to this section
-      if (sectionParam === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
-        setShowUpgradeModal(true);
-      } else {
-        setActiveSection(sectionParam as any);
-      }
-    }
-  }, [sectionParam, isFeatureEnabled, setShowUpgradeModal]);
-
-  // Handle navigation from sidebar
-  const handleSectionChange = useCallback((section: 'smart-links' | 'email-subscribers' | 'promotions') => {
-    // Don't do anything if we're already on this section
-    if (section === activeSection) return;
-    
-    // Check feature access
-    if (section === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
-      setShowUpgradeModal(true);
-      return;
-    }
-    
-    // Update URL to reflect section change (use replace to avoid growing history stack)
-    navigate({
-      pathname: '/dashboard',
-      search: `?section=${section}`
-    }, { replace: true });
-    
-    // Change active section
-    setActiveSection(section);
-    
-  }, [activeSection, isFeatureEnabled, navigate, setShowUpgradeModal]);
-
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -143,20 +110,25 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar 
-      variant="sidebar" 
-      className="w-64 z-10 transition-all duration-300"
+      variant={isMobile ? "floating" : "sidebar"} 
+      className={cn(
+        "w-64 z-10 transition-all duration-300",
+        isMobile && "w-full shadow-none border-none"
+      )}
     >
-      <SidebarHeader className="px-4 py-3 flex items-center justify-between border-b">
-        <div className="h-6 flex items-center">
-          <Link to="/" className="transition-opacity duration-200 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded">
-            <img 
-              src="/lovable-uploads/56b25c3e-b9f6-40fe-a8db-39be68cb0cdb.png" 
-              alt="Soundraiser" 
-              className="h-6 transition-transform duration-300" 
-            />
-          </Link>
-        </div>
-      </SidebarHeader>
+      {!isMobile && (
+        <SidebarHeader className="px-4 py-3 flex items-center justify-between border-b">
+          <div className="h-6 flex items-center">
+            <Link to="/" className="transition-opacity duration-200 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded">
+              <img 
+                src="/lovable-uploads/56b25c3e-b9f6-40fe-a8db-39be68cb0cdb.png" 
+                alt="Soundraiser" 
+                className="h-6 transition-transform duration-300" 
+              />
+            </Link>
+          </div>
+        </SidebarHeader>
+      )}
       
       <SidebarContent className="py-5 px-2 flex flex-col h-[calc(100%-3.5rem)]">
         {/* User Profile Section */}
