@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -46,6 +47,29 @@ export function DashboardSidebar() {
   
   const { isFeatureEnabled } = useFeatureAccess();
   const { setShowUpgradeModal } = useSmartLinkCreation();
+  const { setOpenMobile } = useSidebar();
+  
+  // Define handleSectionChange function that was missing
+  const handleSectionChange = (section: 'smart-links' | 'email-subscribers' | 'promotions') => {
+    // Check if email-subscribers is restricted and show upgrade modal if needed
+    if (section === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Update active section
+    setActiveSection(section);
+    
+    // Update URL and navigate
+    const params = new URLSearchParams(location.search);
+    params.set('section', section);
+    navigate(`/dashboard?${params.toString()}`);
+    
+    // Close mobile sidebar if on mobile
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
   
   const { data: profile } = useQuery({
     queryKey: ["profile"],
