@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -49,7 +48,7 @@ export function DashboardSidebar() {
   const { setShowUpgradeModal } = useSmartLinkCreation();
   const { setOpenMobile } = useSidebar();
   
-  // Define handleSectionChange function that was missing
+  // Define handleSectionChange function
   const handleSectionChange = (section: 'smart-links' | 'email-subscribers' | 'promotions') => {
     // Check if email-subscribers is restricted and show upgrade modal if needed
     if (section === 'email-subscribers' && !isFeatureEnabled('email_capture')) {
