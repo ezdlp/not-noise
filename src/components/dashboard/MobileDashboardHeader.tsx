@@ -38,10 +38,8 @@ export function MobileDashboardHeader() {
               <span className="sr-only">Menu</span>
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="h-[80vh]">
-            <div className="mt-4 px-1">
-              <DashboardSidebar />
-            </div>
+          <DrawerContent className="h-[80vh] overflow-y-auto">
+            <DashboardSidebar inDrawer={true} />
           </DrawerContent>
         </Drawer>
       </div>

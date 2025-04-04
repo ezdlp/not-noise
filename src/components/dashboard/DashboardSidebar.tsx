@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -32,7 +33,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ inDrawer = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
@@ -131,6 +132,140 @@ export function DashboardSidebar() {
   const isDashboardRoute = location.pathname === '/dashboard';
   const isSettingsRoute = location.pathname === '/dashboard/settings';
 
+  // For mobile inside a drawer, render just the content without the Sidebar wrapper
+  if (isMobile && inDrawer) {
+    return (
+      <div className="flex flex-col h-full py-5 px-2">
+        {/* User Profile Section */}
+        <div className="px-2 py-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Avatar 
+              className={cn(
+                "h-9 w-9 transition-all duration-200 ring-offset-background shadow-sm",
+                isPro 
+                  ? "ring-2 ring-primary/40" 
+                  : ""
+              )}
+              title={profile?.name || "Your Account"}
+            >
+              <AvatarFallback 
+                className="bg-primary/10 text-primary text-xs font-medium"
+                aria-label={`User avatar for ${profile?.name || "User"}`}
+              >
+                {getInitials(profile?.name || "User")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium truncate leading-tight">{profile?.name || "Your Account"}</span>
+              {isPro ? (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary mt-0.5">
+                  Pro Plan
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground mt-0.5">Free Plan</span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <SidebarSeparator className="mb-2" />
+        
+        {/* Main Navigation Section - Dashboard */}
+        <div className="flex-grow px-1">
+          <div className="mb-4">
+            <p className="text-xs font-medium text-muted-foreground px-3 mb-1">
+              Dashboard
+            </p>
+            <div className="flex flex-col gap-1">
+              <button 
+                className={cn(
+                  "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative",
+                  isDashboardRoute && activeSection === 'smart-links' 
+                    ? "bg-accent text-accent-foreground font-medium" 
+                    : "hover:bg-accent/50"
+                )}
+                onClick={() => handleSectionChange('smart-links')}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                <span>Smart Links</span>
+              </button>
+              
+              <button
+                className={cn(
+                  "flex items-center px-3 text-sm h-10 min-w-0 w-full overflow-visible rounded-md transition-colors duration-200 relative",
+                  isDashboardRoute && activeSection === 'promotions' 
+                    ? "bg-accent text-accent-foreground font-medium" 
+                    : "hover:bg-accent/50"
+                )}
+                onClick={() => handleSectionChange('promotions')}
+              >
+                <div className="flex items-center w-full">
+                  <FileAudio className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Playlist Promotions</span>
+                  <Badge variant="outline" className="ml-1 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold flex-shrink-0">
+                    NEW
+                  </Badge>
+                </div>
+              </button>
+              
+              <button
+                className={cn(
+                  "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative",
+                  isDashboardRoute && activeSection === 'email-subscribers' 
+                    ? "bg-accent text-accent-foreground font-medium" 
+                    : "hover:bg-accent/50",
+                  !isFeatureEnabled('email_capture') ? "opacity-70" : ""
+                )}
+                onClick={() => handleSectionChange('email-subscribers')}
+                disabled={!isFeatureEnabled('email_capture')}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>Email Subscribers</span>
+                {!isFeatureEnabled('email_capture') && (
+                  <Lock className="ml-1.5 h-3.5 w-3.5 opacity-70" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+       
+        {/* Bottom Section - Help, Settings, Logout */}
+        <div className="mt-auto px-1">
+          <SidebarSeparator className="mb-2" />
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => navigate('/help')}
+              className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50"
+            >
+              <HelpCircle className="mr-2 h-4 w-4" />
+              <span>Help Center</span>
+            </button>
+            
+            <button
+              onClick={() => navigate('/dashboard/settings')}
+              className={cn(
+                "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200",
+                isSettingsRoute ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50"
+              )}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular desktop or non-drawer mobile version
   return (
     <Sidebar 
       variant={isMobile ? "floating" : "sidebar"} 
