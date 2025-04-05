@@ -32,8 +32,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DrawerClose } from "@/components/ui/drawer";
 
-export function DashboardSidebar({ inDrawer = false }) {
+export function DashboardSidebar({ inDrawer = false, autoCloseDrawer = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
@@ -132,12 +133,20 @@ export function DashboardSidebar({ inDrawer = false }) {
   const isDashboardRoute = location.pathname === '/dashboard';
   const isSettingsRoute = location.pathname === '/dashboard/settings';
 
+  // Helper function to wrap content with DrawerClose if needed
+  const wrapWithDrawerClose = (children: React.ReactNode, shouldWrap: boolean) => {
+    if (autoCloseDrawer && inDrawer && shouldWrap) {
+      return <DrawerClose asChild>{children}</DrawerClose>;
+    }
+    return children;
+  };
+
   // For mobile inside a drawer, render just the content without the Sidebar wrapper
   if (isMobile && inDrawer) {
     return (
-      <div className="flex flex-col h-full py-5 px-2">
+      <div className="flex flex-col h-full py-4 px-2">
         {/* User Profile Section */}
-        <div className="px-2 py-2 mb-4">
+        <div className="px-2 py-2 mb-2">
           <div className="flex items-center gap-2">
             <Avatar 
               className={cn(
@@ -177,54 +186,63 @@ export function DashboardSidebar({ inDrawer = false }) {
               Dashboard
             </p>
             <div className="flex flex-col gap-1">
-              <button 
-                className={cn(
-                  "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative",
-                  isDashboardRoute && activeSection === 'smart-links' 
-                    ? "bg-accent text-accent-foreground font-medium" 
-                    : "hover:bg-accent/50"
-                )}
-                onClick={() => handleSectionChange('smart-links')}
-              >
-                <Link2 className="mr-2 h-4 w-4" />
-                <span>Smart Links</span>
-              </button>
+              {wrapWithDrawerClose(
+                <button 
+                  className={cn(
+                    "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative w-full text-left",
+                    isDashboardRoute && activeSection === 'smart-links' 
+                      ? "bg-accent text-accent-foreground font-medium" 
+                      : "hover:bg-accent/50"
+                  )}
+                  onClick={() => handleSectionChange('smart-links')}
+                >
+                  <Link2 className="mr-2 h-4 w-4" />
+                  <span>Smart Links</span>
+                </button>,
+                true
+              )}
               
-              <button
-                className={cn(
-                  "flex items-center px-3 text-sm h-10 min-w-0 w-full overflow-visible rounded-md transition-colors duration-200 relative",
-                  isDashboardRoute && activeSection === 'promotions' 
-                    ? "bg-accent text-accent-foreground font-medium" 
-                    : "hover:bg-accent/50"
-                )}
-                onClick={() => handleSectionChange('promotions')}
-              >
-                <div className="flex items-center w-full">
-                  <FileAudio className="mr-2 h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">Playlist Promotions</span>
-                  <Badge variant="outline" className="ml-1 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold flex-shrink-0">
-                    NEW
-                  </Badge>
-                </div>
-              </button>
+              {wrapWithDrawerClose(
+                <button
+                  className={cn(
+                    "flex items-center px-3 text-sm h-10 min-w-0 w-full overflow-visible rounded-md transition-colors duration-200 relative text-left",
+                    isDashboardRoute && activeSection === 'promotions' 
+                      ? "bg-accent text-accent-foreground font-medium" 
+                      : "hover:bg-accent/50"
+                  )}
+                  onClick={() => handleSectionChange('promotions')}
+                >
+                  <div className="flex items-center w-full">
+                    <FileAudio className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Playlist Promotions</span>
+                    <Badge variant="outline" className="ml-1 h-5 px-1.5 bg-primary text-white text-[10px] font-semibold flex-shrink-0">
+                      NEW
+                    </Badge>
+                  </div>
+                </button>,
+                true
+              )}
               
-              <button
-                className={cn(
-                  "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative",
-                  isDashboardRoute && activeSection === 'email-subscribers' 
-                    ? "bg-accent text-accent-foreground font-medium" 
-                    : "hover:bg-accent/50",
-                  !isFeatureEnabled('email_capture') ? "opacity-70" : ""
-                )}
-                onClick={() => handleSectionChange('email-subscribers')}
-                disabled={!isFeatureEnabled('email_capture')}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                <span>Email Subscribers</span>
-                {!isFeatureEnabled('email_capture') && (
-                  <Lock className="ml-1.5 h-3.5 w-3.5 opacity-70" />
-                )}
-              </button>
+              {wrapWithDrawerClose(
+                <button
+                  className={cn(
+                    "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 relative w-full text-left",
+                    isDashboardRoute && activeSection === 'email-subscribers' 
+                      ? "bg-accent text-accent-foreground font-medium" 
+                      : "hover:bg-accent/50",
+                    !isFeatureEnabled('email_capture') ? "opacity-70" : ""
+                  )}
+                  onClick={() => handleSectionChange('email-subscribers')}
+                  disabled={!isFeatureEnabled('email_capture')}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Email Subscribers</span>
+                  {!isFeatureEnabled('email_capture') && (
+                    <Lock className="ml-1.5 h-3.5 w-3.5 opacity-70" />
+                  )}
+                </button>,
+                true
+              )}
             </div>
           </div>
         </div>
@@ -233,32 +251,41 @@ export function DashboardSidebar({ inDrawer = false }) {
         <div className="mt-auto px-1">
           <SidebarSeparator className="mb-2" />
           <div className="flex flex-col gap-1">
-            <button
-              onClick={() => navigate('/help')}
-              className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50"
-            >
-              <HelpCircle className="mr-2 h-4 w-4" />
-              <span>Help Center</span>
-            </button>
+            {wrapWithDrawerClose(
+              <button
+                onClick={() => navigate('/help')}
+                className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50 w-full text-left"
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help Center</span>
+              </button>,
+              true
+            )}
             
-            <button
-              onClick={() => navigate('/dashboard/settings')}
-              className={cn(
-                "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200",
-                isSettingsRoute ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50"
-              )}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </button>
+            {wrapWithDrawerClose(
+              <button
+                onClick={() => navigate('/dashboard/settings')}
+                className={cn(
+                  "flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 w-full text-left",
+                  isSettingsRoute ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50"
+                )}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </button>,
+              true
+            )}
             
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </button>
+            {wrapWithDrawerClose(
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-3 text-sm h-10 rounded-md transition-colors duration-200 hover:bg-accent/50 w-full text-left"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </button>,
+              true
+            )}
           </div>
         </div>
       </div>
