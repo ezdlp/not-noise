@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { Promotion } from "@/types/database";
 
 /**
  * Resumes the payment flow for a promotion campaign that was previously created
@@ -17,16 +18,19 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     }
 
     // Get the promotion details
-    const { data: promotion, error } = await supabase
+    const { data: promotionData, error } = await supabase
       .from("promotions")
       .select("*")
       .eq("id", promotionId)
       .eq("user_id", user.id)
       .single();
 
-    if (error || !promotion) {
+    if (error || !promotionData) {
       throw new Error("Could not find the promotion or you don't have permission to access it");
     }
+
+    // Cast the returned data to our Promotion type
+    const promotion = promotionData as Promotion;
 
     if (promotion.status !== "pending") {
       throw new Error("This promotion is not in a payment pending state");
