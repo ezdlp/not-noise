@@ -51,8 +51,38 @@ serve(async (req) => {
     if (session.payment_status === 'paid') {
       // Check the type of payment from metadata
       const paymentType = session.metadata?.type;
+      const promotionId = session.metadata?.promotionId;
       
       if (paymentType === 'promotion') {
+        // If we have a specific promotion ID, check if it exists and update if needed
+        if (promotionId) {
+          const { data: promotionData, error: promotionError } = await supabaseClient
+            .from('promotions')
+            .select('*')
+            .eq('id', promotionId)
+            .single();
+            
+          if (promotionError) {
+            console.error('Error fetching promotion:', promotionError);
+          } else if (promotionData && promotionData.status === 'pending') {
+            // Update the promotion status if it's still pending
+            const { error: updateError } = await supabaseClient
+              .from('promotions')
+              .update({ 
+                status: 'active',
+                start_date: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', promotionId);
+              
+            if (updateError) {
+              console.error('Error updating promotion status:', updateError);
+            } else {
+              console.log('Successfully updated promotion status to active');
+            }
+          }
+        }
+        
         // Return the promotion details from the session metadata
         const promotionDetails = {
           trackName: session.metadata?.trackName,
@@ -60,6 +90,8 @@ serve(async (req) => {
           submissionCount: parseInt(session.metadata?.submissionCount || '0'),
           estimatedAdditions: parseInt(session.metadata?.estimatedAdditions || '0'),
           genre: session.metadata?.genre || 'other',
+          packageId: session.metadata?.packageId || 'silver',
+          promotionId: promotionId,
         };
 
         return new Response(

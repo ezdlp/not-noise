@@ -96,7 +96,9 @@ serve(async (req) => {
         artistName, 
         genre, 
         basePrice, 
-        discountApplied 
+        discountApplied,
+        promotionId,
+        isResumingPayment 
       } = requestData;
 
       // Validate required parameters and log diagnostics
@@ -124,7 +126,9 @@ serve(async (req) => {
         basePrice,
         discountApplied,
         userId: user.id,
-        email 
+        email,
+        isResumingPayment,
+        promotionId
       });
 
       // Use the basePrice directly since the discount has already been applied in the frontend
@@ -179,52 +183,104 @@ serve(async (req) => {
       console.log('Normalized track ID:', normalizedTrackId);
       console.log('Artist ID:', artistId);
 
-      try {
-        // Create a record in the promotions table - USING ADMIN CLIENT to bypass RLS
-        console.log('Creating promotion database record with data:', {
-          user_id: user.id,
-          spotify_track_id: normalizedTrackId,
-          track_name: trackName,
-          track_artist: artistName,
-          spotify_artist_id: artistId || 'unknown',
-          genre: genre || 'other',
-          total_cost: finalPrice / 100
-        });
-        
-        const { data: promotion, error: promotionError } = await supabaseAdmin
-          .from('promotions')
-          .insert({
-            user_id: user.id,
-            spotify_track_id: normalizedTrackId,
-            track_name: trackName,
-            track_artist: artistName,
-            spotify_artist_id: artistId || 'unknown', // Use 'unknown' if artist ID is not available
-            genre: genre || 'other',
-            total_cost: finalPrice / 100, // Store price in dollars
-            status: 'pending', 
-            created_at: new Date().toISOString(),
-            submission_count: submissionCount,
-            estimated_additions: estimatedAdditions,
-            success_rate: 0 // Initialize at 0
-          })
-          .select('id')
-          .single();
+      let promotionRecord;
 
-        if (promotionError) {
-          console.error('Error creating promotion:', promotionError);
-          console.error('Attempted data:', {
+      try {
+        if (isResumingPayment && promotionId) {
+          // If resuming payment, get the existing promotion record but don't create a new one
+          console.log('Resuming payment for promotion:', promotionId);
+          
+          const { data: existingPromotion, error: getPromotionError } = await supabaseAdmin
+            .from('promotions')
+            .select('*')
+            .eq('id', promotionId)
+            .eq('user_id', user.id)
+            .single();
+            
+          if (getPromotionError) {
+            console.error('Error fetching existing promotion:', getPromotionError);
+            throw new Error('Failed to find the promotion: ' + getPromotionError.message);
+          }
+          
+          if (!existingPromotion) {
+            throw new Error('Promotion not found or you don\'t have permission to access it');
+          }
+          
+          if (existingPromotion.status !== 'pending') {
+            throw new Error('This promotion is not in a payment pending state');
+          }
+          
+          promotionRecord = existingPromotion;
+          console.log('Found existing promotion record:', promotionRecord);
+          
+          // Update the package_tier field if it's not already set
+          if (!promotionRecord.package_tier) {
+            const { error: updateError } = await supabaseAdmin
+              .from('promotions')
+              .update({ 
+                package_tier: packageId.toLowerCase(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', promotionId);
+              
+            if (updateError) {
+              console.error('Error updating promotion record:', updateError);
+            } else {
+              console.log('Updated promotion with package_tier:', packageId.toLowerCase());
+              promotionRecord.package_tier = packageId.toLowerCase();
+            }
+          }
+        } else {
+          // Create a new promotion record - USING ADMIN CLIENT to bypass RLS
+          console.log('Creating promotion database record with data:', {
             user_id: user.id,
             spotify_track_id: normalizedTrackId,
             track_name: trackName,
             track_artist: artistName,
             spotify_artist_id: artistId || 'unknown',
             genre: genre || 'other',
-            total_cost: finalPrice / 100
+            total_cost: finalPrice / 100,
+            package_tier: packageId.toLowerCase()
           });
-          throw new Error('Failed to create promotion record: ' + promotionError.message);
-        }
+          
+          const { data: promotion, error: promotionError } = await supabaseAdmin
+            .from('promotions')
+            .insert({
+              user_id: user.id,
+              spotify_track_id: normalizedTrackId,
+              track_name: trackName,
+              track_artist: artistName,
+              spotify_artist_id: artistId || 'unknown', // Use 'unknown' if artist ID is not available
+              genre: genre || 'other',
+              total_cost: finalPrice / 100, // Store price in dollars
+              status: 'pending', 
+              created_at: new Date().toISOString(),
+              submission_count: submissionCount,
+              estimated_additions: estimatedAdditions,
+              success_rate: 0, // Initialize at 0
+              package_tier: packageId.toLowerCase()
+            })
+            .select('id')
+            .single();
 
-        console.log('Promotion record created successfully:', promotion);
+          if (promotionError) {
+            console.error('Error creating promotion:', promotionError);
+            console.error('Attempted data:', {
+              user_id: user.id,
+              spotify_track_id: normalizedTrackId,
+              track_name: trackName,
+              track_artist: artistName,
+              spotify_artist_id: artistId || 'unknown',
+              genre: genre || 'other',
+              total_cost: finalPrice / 100,
+              package_tier: packageId.toLowerCase()
+            });
+            throw new Error('Failed to create promotion record: ' + promotionError.message);
+          }
+
+          console.log('Promotion record created successfully:', promotion);
+          promotionRecord = promotion;
+        }
 
         // Create Stripe checkout session
         try {
@@ -242,7 +298,7 @@ serve(async (req) => {
                     name: `${tierName} Promotion Package`,
                     description: `Spotify playlist promotion for "${trackName}" by ${artistName}`,
                     metadata: {
-                      promotionId: promotion.id,
+                      promotionId: promotionRecord.id,
                       trackId: normalizedTrackId,
                       packageId,
                     },
@@ -256,7 +312,7 @@ serve(async (req) => {
             success_url: `${req.headers.get('origin')}/spotify-playlist-promotion/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${req.headers.get('origin')}/spotify-playlist-promotion?canceled=true`,
             metadata: {
-              promotionId: promotion.id,
+              promotionId: promotionRecord.id,
               userId: user.id,
               type: 'promotion',
               trackName,
@@ -268,9 +324,10 @@ serve(async (req) => {
               genre: genre || 'other',
               packageId,
               isProDiscount: discountApplied ? 'true' : 'false',
-              discountPercent: discountApplied ? '25' : '0'
+              discountPercent: discountApplied ? '25' : '0',
+              isResumingPayment: isResumingPayment ? 'true' : 'false'
             },
-            client_reference_id: promotion.id,
+            client_reference_id: promotionRecord.id,
           });
 
           console.log('Stripe checkout session created successfully:', {
@@ -282,7 +339,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               checkoutUrl: session.url,
-              promotionId: promotion.id,
+              promotionId: promotionRecord.id,
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
