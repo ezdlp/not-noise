@@ -3,14 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeadphonesIcon, PlusCircleIcon, ExternalLinkIcon } from "lucide-react";
+import { HeadphonesIcon, PlusCircleIcon, ExternalLinkIcon, CreditCardIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistance } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { SpotifyTrackSearchModal } from "./SpotifyTrackSearchModal";
+import { resumePaymentFlow } from "@/lib/promotion-utils";
+import { toast } from "@/components/ui/use-toast";
 
-// This component provides consistent campaign creation experience across contexts
 const NewCampaignButton = ({
   isPro,
   onOpenModal
@@ -18,13 +19,18 @@ const NewCampaignButton = ({
   isPro: boolean;
   onOpenModal: () => void;
 }) => {
-  return <Button onClick={onOpenModal}>
+  return (
+    <Button onClick={onOpenModal}>
       <PlusCircleIcon className="mr-2 h-4 w-4" />
       New Campaign {isPro && <span className="ml-1"></span>}
-    </Button>;
+    </Button>
+  );
 };
+
 export function PromotionsDashboard() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<string | null>(null);
+  
   const {
     data: userSubscription
   } = useQuery({
@@ -64,6 +70,7 @@ export function PromotionsDashboard() {
     // 5 minutes
     refetchOnWindowFocus: false
   });
+  
   const {
     data: promotions,
     isLoading,
@@ -90,6 +97,7 @@ export function PromotionsDashboard() {
     // 1 minute
     refetchOnWindowFocus: false
   });
+  
   const isPro = userSubscription?.tier === "pro";
 
   // Refetch promotions when the modal closes (to show newly created campaigns)
@@ -97,7 +105,25 @@ export function PromotionsDashboard() {
     setIsSearchModalOpen(false);
     refetchPromotions();
   };
-  return <div className="space-y-6">
+  
+  const handleCompletePayment = async (campaignId: string) => {
+    try {
+      setIsProcessingPayment(campaignId);
+      await resumePaymentFlow(campaignId);
+    } catch (error) {
+      console.error("Failed to resume payment:", error);
+      toast({
+        title: "Payment Error",
+        description: "We couldn't process your payment request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(null);
+    }
+  };
+  
+  return (
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Spotify Playlist Promotions</h2>
@@ -106,17 +132,36 @@ export function PromotionsDashboard() {
         <NewCampaignButton isPro={isPro} onOpenModal={() => setIsSearchModalOpen(true)} />
       </div>
       
-      {isLoading ? <PromotionsSkeleton /> : promotions?.length === 0 ? <EmptyPromotionsState isPro={isPro} onOpenModal={() => setIsSearchModalOpen(true)} /> : <div className="space-y-4">
-          {promotions.map((campaign: any) => <CampaignCard key={campaign.id} campaign={campaign} />)}
-        </div>}
+      {isLoading ? (
+        <PromotionsSkeleton />
+      ) : promotions?.length === 0 ? (
+        <EmptyPromotionsState isPro={isPro} onOpenModal={() => setIsSearchModalOpen(true)} />
+      ) : (
+        <div className="space-y-4">
+          {promotions.map((campaign: any) => (
+            <CampaignCard 
+              key={campaign.id} 
+              campaign={campaign} 
+              isProcessingPayment={isProcessingPayment === campaign.id}
+              onCompletePayment={handleCompletePayment}
+            />
+          ))}
+        </div>
+      )}
       
       <SpotifyTrackSearchModal isOpen={isSearchModalOpen} onClose={handleModalClose} />
-    </div>;
+    </div>
+  );
 }
+
 function CampaignCard({
-  campaign
+  campaign,
+  isProcessingPayment,
+  onCompletePayment
 }: {
   campaign: any;
+  isProcessingPayment: boolean;
+  onCompletePayment: (campaignId: string) => void;
 }) {
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800",
@@ -124,13 +169,18 @@ function CampaignCard({
     completed: "bg-blue-100 text-blue-800",
     cancelled: "bg-red-100 text-red-800"
   };
-  return <Card>
+  
+  // Check if status is pending and display as Payment Pending
+  const displayStatus = campaign.status === 'pending' ? 'Payment Pending' : campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1);
+  
+  return (
+    <Card>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-medium">{campaign.track_name}</h3>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>Tier: {campaign.package_tier}</span>
+              <span>Tier: {campaign.package_tier || 'Standard'}</span>
               <span>•</span>
               <span>{formatDistance(new Date(campaign.created_at), new Date(), {
                 addSuffix: true
@@ -139,14 +189,35 @@ function CampaignCard({
           </div>
           <div className="flex items-center space-x-3">
             <Badge className={statusColors[campaign.status] || "bg-gray-100 text-gray-800"} variant="outline">
-              {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+              {displayStatus}
             </Badge>
-            {campaign.status === "active" || campaign.status === "completed" ? <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
+            {campaign.status === 'pending' ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1"
+                disabled={isProcessingPayment}
+                onClick={() => onCompletePayment(campaign.id)}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCardIcon className="h-3 w-3 mr-1" />
+                    <span>Complete Payment</span>
+                  </>
+                )}
+              </Button>
+            ) : campaign.status === "active" || campaign.status === "completed" ? (
+              <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
                 <Button variant="outline" size="sm" className="gap-1">
                   <span>View Details</span>
                   <ExternalLinkIcon className="h-3 w-3" />
                 </Button>
-              </Link> : null}
+              </Link>
+            ) : null}
           </div>
         </div>
         <div className="mt-4 text-sm">
@@ -170,8 +241,10 @@ function CampaignCard({
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
+
 function EmptyPromotionsState({
   isPro,
   onOpenModal
@@ -189,6 +262,7 @@ function EmptyPromotionsState({
       <Button onClick={onOpenModal}>Start Your First Campaign</Button>
     </Card>;
 }
+
 function PromotionsSkeleton() {
   return <div className="space-y-4">
       {[1, 2].map(i => <Card key={i}>
