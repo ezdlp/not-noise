@@ -28,6 +28,7 @@ import { formatDistance } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
 import { Promotion } from "@/types/database";
+import { updatePromotionStatus } from "@/lib/promotion-utils";
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
@@ -53,29 +54,19 @@ export default function Promotions() {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data as Promotion[] || [];
+      return data as unknown as Promotion[] || [];
     },
   });
 
-  const handleStatusChange = async (promotionId: string, newStatus: string) => {
+  const handleStatusChange = async (promotionId: string, newStatus: 'pending' | 'active' | 'completed' | 'cancelled' | 'rejected') => {
     try {
       setUpdatingStatus(promotionId);
       
-      // Add validation logic for the status change here if needed
-      const { error } = await supabase
-        .from("promotions")
-        .update({ status: newStatus })
-        .eq("id", promotionId);
+      const success = await updatePromotionStatus(promotionId, newStatus);
       
-      if (error) throw error;
-      
-      toast({
-        title: "Status updated",
-        description: `Promotion status has been updated to ${newStatus}`,
-        variant: "default",
-      });
-      
-      refetch();
+      if (success) {
+        await refetch();
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -93,6 +84,7 @@ export default function Promotions() {
       case 'active': return "bg-green-100 text-green-800";
       case 'completed': return "bg-blue-100 text-blue-800";
       case 'cancelled': return "bg-red-100 text-red-800";
+      case 'rejected': return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -102,6 +94,7 @@ export default function Promotions() {
       case 'completed': 
         return <CheckCircle className="h-4 w-4 text-blue-700" />;
       case 'cancelled':
+      case 'rejected':
         return <AlertCircle className="h-4 w-4 text-red-700" />;
       default:
         return null;
@@ -192,7 +185,7 @@ export default function Promotions() {
                         <Select
                           disabled={updatingStatus === promo.id}
                           defaultValue={promo.status}
-                          onValueChange={(value) => handleStatusChange(promo.id, value)}
+                          onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'cancelled' | 'rejected')}
                         >
                           <SelectTrigger className="w-[110px]">
                             <SelectValue placeholder="Change status" />
@@ -202,6 +195,7 @@ export default function Promotions() {
                             <SelectItem value="active">Active</SelectItem>
                             <SelectItem value="completed">Completed</SelectItem>
                             <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>

@@ -1,4 +1,5 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Promotion } from "@/types/database";
@@ -82,7 +83,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
  */
 export async function updatePromotionStatus(
   promotionId: string, 
-  newStatus: 'pending' | 'active' | 'completed' | 'cancelled'
+  newStatus: 'pending' | 'active' | 'completed' | 'cancelled' | 'rejected'
 ): Promise<boolean> {
   try {
     const { error } = await supabase
