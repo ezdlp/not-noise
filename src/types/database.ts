@@ -171,5 +171,5 @@ export interface Promotion {
   end_date?: string;
   success_rate?: number;
   estimated_additions?: number;
-  package_tier?: string; // Add this field to the interface
+  package_tier?: string; // Added this field to the interface
 }
