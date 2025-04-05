@@ -1191,6 +1191,7 @@ export type Database = {
           genre: string
           id: string
           initial_streams: number | null
+          package_tier: string | null
           spotify_artist_id: string
           spotify_track_id: string
           start_date: string | null
@@ -1211,6 +1212,7 @@ export type Database = {
           genre?: string
           id?: string
           initial_streams?: number | null
+          package_tier?: string | null
           spotify_artist_id: string
           spotify_track_id: string
           start_date?: string | null
@@ -1231,6 +1233,7 @@ export type Database = {
           genre?: string
           id?: string
           initial_streams?: number | null
+          package_tier?: string | null
           spotify_artist_id?: string
           spotify_track_id?: string
           start_date?: string | null

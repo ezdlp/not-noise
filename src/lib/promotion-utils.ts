@@ -32,10 +32,13 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
       throw new Error("This promotion is not in a payment pending state");
     }
 
+    // Use the package_tier from the database with a fallback to 'silver'
+    const packageTier = promotion.package_tier || 'silver';
+
     // Create a checkout session to resume payment
     const { data, error: checkoutError } = await supabase.functions.invoke("create-checkout-session", {
       body: {
-        packageId: promotion.package_tier || "silver", // Use existing package_tier with fallback
+        packageId: packageTier, // Use the package_tier with fallback
         trackId: promotion.spotify_track_id,
         trackName: promotion.track_name,
         artistName: promotion.track_artist,
