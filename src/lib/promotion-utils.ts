@@ -71,3 +71,48 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Updates the status of a promotion campaign.
+ * Only admin users can update promotions they didn't create.
+ * 
+ * @param promotionId - The ID of the promotion to update
+ * @param newStatus - The new status to set
+ * @returns Promise<boolean> - Whether the update was successful
+ */
+export async function updatePromotionStatus(
+  promotionId: string, 
+  newStatus: 'pending' | 'active' | 'completed' | 'cancelled'
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("promotions")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", promotionId);
+    
+    if (error) {
+      console.error("Error updating promotion status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update the promotion status",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    toast({
+      title: "Status Updated",
+      description: `Promotion has been marked as ${newStatus}`,
+    });
+    
+    return true;
+  } catch (error: any) {
+    console.error("Error in updatePromotionStatus:", error);
+    toast({
+      title: "Update Failed",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return false;
+  }
+}

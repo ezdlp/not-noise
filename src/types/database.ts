@@ -170,4 +170,5 @@ export interface Promotion {
   success_rate?: number;
   estimated_additions?: number;
   package_tier?: string; // The tier/package level of the promotion (silver, gold, platinum)
+  profiles?: Profile;
 }
