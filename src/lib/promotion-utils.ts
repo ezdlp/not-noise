@@ -35,7 +35,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     // Create a checkout session to resume payment
     const { data, error: checkoutError } = await supabase.functions.invoke("create-checkout-session", {
       body: {
-        packageId: promotion.package_tier || "silver",
+        packageId: promotion.package_tier as string || "silver", // Add type assertion here
         trackId: promotion.spotify_track_id,
         trackName: promotion.track_name,
         artistName: promotion.track_artist,

@@ -1,3 +1,4 @@
+
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -146,4 +147,29 @@ export interface SitemapCache {
   etag: string;
   created_at: string;
   updated_at: string;
+}
+
+// Add a new interface for Promotions
+export interface Promotion {
+  id: string;
+  user_id: string;
+  spotify_track_id: string;
+  spotify_artist_id: string;
+  track_name: string;
+  track_artist: string;
+  genre: string;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  total_cost: number;
+  submission_count: number;
+  approval_count?: number;
+  estimated_streams?: number;
+  initial_streams?: number;
+  final_streams?: number;
+  created_at: string;
+  updated_at?: string;
+  start_date?: string;
+  end_date?: string;
+  success_rate?: number;
+  estimated_additions?: number;
+  package_tier?: string; // Add this field to the interface
 }
