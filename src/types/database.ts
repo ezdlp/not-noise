@@ -1,4 +1,3 @@
-
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;

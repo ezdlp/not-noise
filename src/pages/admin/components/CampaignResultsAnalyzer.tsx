@@ -61,7 +61,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     try {
       setUploading(true);
       
-      // Upload file to storage
       const filePath = `campaign-results/${campaign.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('campaign-result-files')
@@ -71,7 +70,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         throw uploadError;
       }
       
-      // Create record of the uploaded file
       const { error: recordError } = await supabase
         .from('campaign_result_files')
         .insert({
@@ -89,7 +87,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: "Processing campaign results...",
       });
       
-      // Process the file
       await processFile(filePath);
       
     } catch (err: any) {
@@ -132,7 +129,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: "Campaign results processed successfully.",
       });
       
-      // Now analyze the results with AI
       await analyzeWithAI(data.stats, data.rawData || []);
       
     } catch (err: any) {
@@ -150,21 +146,18 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     try {
       setAnalyzing(true);
       
-      // Extract all feedback from raw data
       const feedbackTexts = rawData
         .filter(item => item.feedback && item.feedback.trim() !== '')
         .map(item => item.feedback);
       
-      // Prepare data for AI analysis
       const analysisData = {
         trackName: campaign.track_name,
         artistName: campaign.track_artist,
         genre: campaign.genre,
         stats,
-        feedbackSamples: feedbackTexts.slice(0, 15) // Limit to 15 feedback items to avoid token limits
+        feedbackSamples: feedbackTexts.slice(0, 15)
       };
       
-      // Call OpenAI to analyze the campaign results
       const aiResponse = await fetch('/api/ai/analyze-campaign', {
         method: 'POST',
         headers: {
@@ -186,7 +179,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: "Campaign feedback analyzed successfully.",
       });
       
-      // Update the campaign status if needed
       if (campaign.status === 'active') {
         await updateCampaignStatus('delivered');
       }
@@ -200,7 +192,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: "The statistical analysis was completed, but the AI feedback analysis failed.",
         variant: "destructive",
       });
-      // Still mark the campaign as complete even if AI analysis fails
       if (campaign.status === 'active') {
         await updateCampaignStatus('delivered');
       }
@@ -211,21 +202,21 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
   };
   
   const updateCampaignStatus = async (newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
-  try {
-    const { error } = await supabase
-      .from("promotions")
-      .update({ 
-        status: newStatus,
-        updated_at: new Date().toISOString() 
-      })
-      .eq("id", campaign.id);
-    
-    if (error) throw error;
-    
-  } catch (err: any) {
-    console.error("Error updating campaign status:", err);
-  }
-};
+    try {
+      const { error } = await supabase
+        .from("promotions")
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", campaign.id);
+      
+      if (error) throw error;
+      
+    } catch (err: any) {
+      console.error("Error updating campaign status:", err);
+    }
+  };
   
   const showFeedback = (feedback: string) => {
     setSelectedFeedback(feedback);

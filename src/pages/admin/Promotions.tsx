@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +44,6 @@ export default function Promotions() {
   const [selectedCampaign, setSelectedCampaign] = useState<Promotion | null>(null);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   
-  // Add session checking on component mount
   useEffect(() => {
     const checkAuth = async () => {
       const { data, error } = await supabase.auth.getSession();
@@ -59,7 +57,6 @@ export default function Promotions() {
       } else if (data.session) {
         console.log("Auth session found:", data.session.user.id);
         
-        // Check if user has admin role
         const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
           _role: 'admin'
         });
@@ -88,11 +85,9 @@ export default function Promotions() {
     queryFn: async () => {
       console.log("Fetching promotions...");
       
-      // Get current auth status
       const { data: sessionData } = await supabase.auth.getSession();
       console.log("Current session user:", sessionData?.session?.user?.id);
       
-      // Fixed query: First fetch promotions
       const { data: promoData, error: promoError } = await supabase
         .from("promotions")
         .select(`*`)
@@ -103,10 +98,8 @@ export default function Promotions() {
         throw promoError;
       }
       
-      // Then fetch profile data for each promotion
       const enhancedPromotions = await Promise.all(
         (promoData || []).map(async (promo) => {
-          // Get profile data for this promotion's user_id
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
             .select(`name, email, artist_name`)
@@ -127,7 +120,7 @@ export default function Promotions() {
       console.log(`Fetched ${enhancedPromotions?.length || 0} promotions`);
       return enhancedPromotions as unknown as Promotion[] || [];
     },
-    enabled: authChecked, // Only run the query after auth check
+    enabled: authChecked,
   });
 
   const handleStatusChange = async (promotionId: string, newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
@@ -171,7 +164,6 @@ export default function Promotions() {
     }
   };
   
-  // Get display status label based on status value
   const getStatusDisplay = (status: string) => {
     switch(status) {
       case 'payment_pending': return 'Payment Pending';
@@ -187,7 +179,6 @@ export default function Promotions() {
     setAnalysisDialogOpen(true);
   };
 
-  // Add a debug section that's only visible during development
   const showDebugInfo = process.env.NODE_ENV === 'development';
 
   return (
@@ -336,7 +327,6 @@ export default function Promotions() {
         </TabsContent>
       </Tabs>
 
-      {/* Campaign Analysis Dialog */}
       <Dialog open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
