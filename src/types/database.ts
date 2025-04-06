@@ -1,3 +1,4 @@
+
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -148,6 +149,7 @@ export interface SitemapCache {
   updated_at: string;
 }
 
+// Updated to match the database enum values exactly - removed 'cancelled'
 export interface Promotion {
   id: string;
   user_id: string;
@@ -156,7 +158,7 @@ export interface Promotion {
   track_name: string;
   track_artist: string;
   genre: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'rejected';
+  status: 'pending' | 'active' | 'completed' | 'rejected';
   total_cost: number;
   submission_count: number;
   approval_count?: number;
