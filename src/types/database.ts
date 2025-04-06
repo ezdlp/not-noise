@@ -1,4 +1,5 @@
 
+
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -149,7 +150,7 @@ export interface SitemapCache {
   updated_at: string;
 }
 
-// Updated to match the new database enum values
+// Updated to use the new status values
 export interface Promotion {
   id: string;
   user_id: string;
@@ -171,6 +172,6 @@ export interface Promotion {
   end_date?: string;
   success_rate?: number;
   estimated_additions?: number;
-  package_tier?: string; // The tier/package level of the promotion (silver, gold, platinum)
+  package_tier?: string;
   profiles?: Profile;
 }
