@@ -223,6 +223,79 @@ export interface Database {
           }
         ]
       }
+      // Add the promotions table with updated status enum type
+      promotions: {
+        Row: {
+          id: string
+          user_id: string
+          spotify_track_id: string
+          spotify_artist_id: string
+          track_name: string
+          track_artist: string
+          genre: string
+          status: "payment_pending" | "active" | "delivered" | "cancelled"
+          total_cost: number
+          submission_count: number
+          approval_count: number | null
+          estimated_streams: number | null
+          initial_streams: number | null
+          final_streams: number | null
+          created_at: string
+          updated_at: string | null
+          start_date: string | null
+          end_date: string | null
+          success_rate: number | null
+          estimated_additions: number | null
+          package_tier: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          spotify_track_id: string
+          spotify_artist_id: string
+          track_name: string
+          track_artist: string
+          genre?: string
+          status?: "payment_pending" | "active" | "delivered" | "cancelled"
+          total_cost: number
+          submission_count: number
+          approval_count?: number | null
+          estimated_streams?: number | null
+          initial_streams?: number | null
+          final_streams?: number | null
+          created_at?: string
+          updated_at?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          success_rate?: number | null
+          estimated_additions?: number | null
+          package_tier?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          spotify_track_id?: string
+          spotify_artist_id?: string
+          track_name?: string
+          track_artist?: string
+          genre?: string
+          status?: "payment_pending" | "active" | "delivered" | "cancelled"
+          total_cost?: number
+          submission_count?: number
+          approval_count?: number | null
+          estimated_streams?: number | null
+          initial_streams?: number | null
+          final_streams?: number | null
+          created_at?: string
+          updated_at?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          success_rate?: number | null
+          estimated_additions?: number | null
+          package_tier?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {}
     Functions: {
