@@ -51,7 +51,11 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
   
   const handleUpload = async () => {
     if (!file || !campaign?.id) {
-      toast.error("Please select a file to upload");
+      toast({
+        title: "Error",
+        description: "Please select a file to upload",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -334,7 +338,9 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
                           {results.approved + results.declined}/{results.totalSubmissions}
                         </div>
                       </div>
-                      <Progress value={(results.approved + results.declined) / results.totalSubmissions * 100} />
+                      <Progress 
+                        value={((results.approved + results.declined) / results.totalSubmissions) * 100} 
+                      />
                       {analyzing && (
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Spinner className="mr-2 h-4 w-4" />
@@ -363,7 +369,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
                     <tbody>
                       {Object.entries(countryData).map(([country, count]) => {
                         const approvedCount = getApprovedCount(country);
-                        const approvalRate = count > 0 ? (approvedCount / count) * 100 : 0;
+                        const approvalRate = count > 0 ? (approvedCount / Number(count)) * 100 : 0;
                         
                         return (
                           <tr key={country} className="border-b">
