@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -33,14 +33,56 @@ import { updatePromotionStatus } from "@/lib/promotion-utils";
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Add session checking on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Auth error:", error);
+        toast({
+          title: "Authentication Error",
+          description: "Could not verify your admin session. Please try logging in again.",
+          variant: "destructive",
+        });
+      } else if (data.session) {
+        console.log("Auth session found:", data.session.user.id);
+        
+        // Check if user has admin role
+        const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+          _role: 'admin'
+        });
+        
+        if (roleError) {
+          console.error("Role check error:", roleError);
+        } else {
+          console.log("Is admin:", roleData);
+        }
+      } else {
+        console.warn("No auth session found");
+      }
+      setAuthChecked(true);
+    };
+    
+    checkAuth();
+  }, []);
   
   const { 
     data: promotions, 
     isLoading, 
-    refetch 
+    refetch,
+    error
   } = useQuery({
     queryKey: ["admin-promotions"],
     queryFn: async () => {
+      console.log("Fetching promotions...");
+      
+      // Get current auth status
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Current session user:", sessionData?.session?.user?.id);
+      
+      // Important: Do not use user_id filter for admin panel
       const { data, error } = await supabase
         .from("promotions")
         .select(`
@@ -53,9 +95,15 @@ export default function Promotions() {
         `)
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching promotions:", error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} promotions`);
       return data as unknown as Promotion[] || [];
     },
+    enabled: authChecked, // Only run the query after auth check
   });
 
   const handleStatusChange = async (promotionId: string, newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
@@ -99,6 +147,9 @@ export default function Promotions() {
     }
   };
 
+  // Add a debug section that's only visible during development
+  const showDebugInfo = process.env.NODE_ENV === 'development';
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -107,6 +158,13 @@ export default function Promotions() {
           Manage promotions and related data collection
         </p>
       </div>
+
+      {showDebugInfo && error && (
+        <Card className="p-4 mb-4 bg-red-50 border-red-200">
+          <h3 className="text-red-700 font-medium">Error Loading Promotions</h3>
+          <pre className="text-xs mt-2 whitespace-pre-wrap">{JSON.stringify(error, null, 2)}</pre>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
