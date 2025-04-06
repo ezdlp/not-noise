@@ -82,26 +82,41 @@ export default function Promotions() {
       const { data: sessionData } = await supabase.auth.getSession();
       console.log("Current session user:", sessionData?.session?.user?.id);
       
-      // Important: Do not use user_id filter for admin panel
-      const { data, error } = await supabase
+      // Fixed query: First fetch promotions
+      const { data: promoData, error: promoError } = await supabase
         .from("promotions")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            email,
-            artist_name
-          )
-        `)
+        .select(`*`)
         .order("created_at", { ascending: false });
       
-      if (error) {
-        console.error("Error fetching promotions:", error);
-        throw error;
+      if (promoError) {
+        console.error("Error fetching promotions:", promoError);
+        throw promoError;
       }
       
-      console.log(`Fetched ${data?.length || 0} promotions`);
-      return data as unknown as Promotion[] || [];
+      // Then fetch profile data for each promotion
+      const enhancedPromotions = await Promise.all(
+        (promoData || []).map(async (promo) => {
+          // Get profile data for this promotion's user_id
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select(`name, email, artist_name`)
+            .eq("id", promo.user_id)
+            .single();
+            
+          if (profileError && !profileError.message.includes("No rows found")) {
+            console.error("Error fetching profile for user ID:", promo.user_id, profileError);
+          }
+          
+          // Return promotion with profile data
+          return {
+            ...promo,
+            profiles: profileData || null
+          };
+        })
+      );
+      
+      console.log(`Fetched ${enhancedPromotions?.length || 0} promotions`);
+      return enhancedPromotions as unknown as Promotion[] || [];
     },
     enabled: authChecked, // Only run the query after auth check
   });
