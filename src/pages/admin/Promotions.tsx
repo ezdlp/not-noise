@@ -117,7 +117,6 @@ export default function Promotions() {
             console.error("Error fetching profile for user ID:", promo.user_id, profileError);
           }
           
-          // Return promotion with profile data
           return {
             ...promo,
             profiles: profileData || null
@@ -131,7 +130,7 @@ export default function Promotions() {
     enabled: authChecked, // Only run the query after auth check
   });
 
-  const handleStatusChange = async (promotionId: string, newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
+  const handleStatusChange = async (promotionId: string, newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
     try {
       setUpdatingStatus(promotionId);
       
@@ -153,22 +152,33 @@ export default function Promotions() {
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return "bg-yellow-100 text-yellow-800";
+      case 'payment_pending': return "bg-yellow-100 text-yellow-800";
       case 'active': return "bg-green-100 text-green-800";
-      case 'completed': return "bg-blue-100 text-blue-800";
-      case 'rejected': return "bg-red-100 text-red-800";
+      case 'delivered': return "bg-blue-100 text-blue-800";
+      case 'cancelled': return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch(status) {
-      case 'completed': 
+      case 'delivered': 
         return <CheckCircle className="h-4 w-4 text-blue-700" />;
-      case 'rejected':
+      case 'cancelled':
         return <AlertCircle className="h-4 w-4 text-red-700" />;
       default:
         return null;
+    }
+  };
+  
+  // Get display status label based on status value
+  const getStatusDisplay = (status: string) => {
+    switch(status) {
+      case 'payment_pending': return 'Payment Pending';
+      case 'active': return 'Active';
+      case 'delivered': return 'Delivered';
+      case 'cancelled': return 'Cancelled';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -255,7 +265,7 @@ export default function Promotions() {
                           >
                             <span className="flex items-center gap-1">
                               {getStatusIcon(promo.status)}
-                              {promo.status.charAt(0).toUpperCase() + promo.status.slice(1)}
+                              {getStatusDisplay(promo.status)}
                             </span>
                           </Badge>
                         </div>
@@ -274,16 +284,16 @@ export default function Promotions() {
                             <Select
                               disabled={updatingStatus === promo.id}
                               defaultValue={promo.status}
-                              onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'rejected')}
+                              onValueChange={(value) => handleStatusChange(promo.id, value as 'payment_pending' | 'active' | 'delivered' | 'cancelled')}
                             >
                               <SelectTrigger className="w-[110px]">
                                 <SelectValue placeholder="Change status" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="payment_pending">Payment Pending</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
                               </SelectContent>
                             </Select>
                             <Button 

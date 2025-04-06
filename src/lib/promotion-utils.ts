@@ -32,7 +32,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     // Cast the returned data to our Promotion type
     const promotion = promotionData as Promotion;
 
-    if (promotion.status !== "pending") {
+    if (promotion.status !== "payment_pending") {
       throw new Error("This promotion is not in a payment pending state");
     }
 
@@ -82,7 +82,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
  */
 export async function updatePromotionStatus(
   promotionId: string, 
-  newStatus: 'pending' | 'active' | 'completed' | 'rejected'
+  newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled'
 ): Promise<boolean> {
   try {
     const { error } = await supabase

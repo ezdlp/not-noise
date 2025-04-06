@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0'
@@ -169,11 +168,11 @@ serve(async (req) => {
           }
         } else if (checkoutSession.mode === 'payment' && checkoutSession.metadata?.type === 'promotion') {
           // Handle promotion payments (one-time payments)
-          console.log(`💰 Processing promotion payment for user ${userId || 'unknown'}`)
+          console.log(`💰 Processing promotion payment for user ${userId || 'unknown'}`);
           
           // Check if we need to create/update a promotion record
           if (userId && checkoutSession.payment_status === 'paid') {
-            const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre, packageId } = checkoutSession.metadata
+            const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre, packageId } = checkoutSession.metadata;
             
             if (promotionId) {
               // Check if promotion already exists - this could be a payment resumption

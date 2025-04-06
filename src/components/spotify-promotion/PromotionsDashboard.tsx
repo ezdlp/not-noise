@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -164,14 +165,22 @@ function CampaignCard({
   onCompletePayment: (campaignId: string) => void;
 }) {
   const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800",
+    payment_pending: "bg-yellow-100 text-yellow-800",
     active: "bg-green-100 text-green-800",
-    completed: "bg-blue-100 text-blue-800",
+    delivered: "bg-blue-100 text-blue-800",
     cancelled: "bg-red-100 text-red-800"
   };
   
-  // Check if status is pending and display as Payment Pending
-  const displayStatus = campaign.status === 'pending' ? 'Payment Pending' : campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1);
+  // Get display status label based on status value
+  const getStatusDisplay = (status: string) => {
+    switch(status) {
+      case 'payment_pending': return 'Payment Pending';
+      case 'active': return 'Active';
+      case 'delivered': return 'Delivered';
+      case 'cancelled': return 'Cancelled';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
   
   return (
     <Card>
@@ -189,9 +198,9 @@ function CampaignCard({
           </div>
           <div className="flex items-center space-x-3">
             <Badge className={statusColors[campaign.status] || "bg-gray-100 text-gray-800"} variant="outline">
-              {displayStatus}
+              {getStatusDisplay(campaign.status)}
             </Badge>
-            {campaign.status === 'pending' ? (
+            {campaign.status === 'payment_pending' ? (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -210,7 +219,7 @@ function CampaignCard({
                   </>
                 )}
               </Button>
-            ) : campaign.status === "active" || campaign.status === "completed" ? (
+            ) : campaign.status === "active" || campaign.status === "delivered" ? (
               <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
                 <Button variant="outline" size="sm" className="gap-1">
                   <span>View Details</span>

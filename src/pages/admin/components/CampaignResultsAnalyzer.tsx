@@ -189,7 +189,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       
       // Update the campaign status if needed
       if (campaign.status === 'active') {
-        await updateCampaignStatus('completed');
+        await updateCampaignStatus('delivered');
       }
       
       onComplete();
@@ -203,7 +203,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       });
       // Still mark the campaign as complete even if AI analysis fails
       if (campaign.status === 'active') {
-        await updateCampaignStatus('completed');
+        await updateCampaignStatus('delivered');
       }
       onComplete();
     } finally {
@@ -211,7 +211,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     }
   };
   
-  const updateCampaignStatus = async (newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
+  const updateCampaignStatus = async (newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
     try {
       const { error } = await supabase
         .from("promotions")
@@ -233,7 +233,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     setFeedbackModalOpen(true);
   };
   
-  const countryData = rawData.reduce((acc: Record<string, number>, item) => {
+  const countryData: Record<string, number> = rawData.reduce((acc: Record<string, number>, item) => {
     const country = item.outlet_country || 'Unknown';
     acc[country] = (acc[country] || 0) + 1;
     return acc;
@@ -369,7 +369,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
                     <tbody>
                       {Object.entries(countryData).map(([country, count]) => {
                         const approvedCount = getApprovedCount(country);
-                        const approvalRate = count > 0 ? (approvedCount / Number(count)) * 100 : 0;
+                        const approvalRate = Number(count) > 0 ? (approvedCount / Number(count)) * 100 : 0;
                         
                         return (
                           <tr key={country} className="border-b">
