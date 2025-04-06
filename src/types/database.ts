@@ -1,3 +1,4 @@
+
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -148,7 +149,7 @@ export interface SitemapCache {
   updated_at: string;
 }
 
-// Updated to match the database enum values exactly
+// Updated to match the new database enum values
 export interface Promotion {
   id: string;
   user_id: string;

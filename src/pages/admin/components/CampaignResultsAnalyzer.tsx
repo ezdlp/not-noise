@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,21 +211,21 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
   };
   
   const updateCampaignStatus = async (newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
-    try {
-      const { error } = await supabase
-        .from("promotions")
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString() 
-        })
-        .eq("id", campaign.id);
-      
-      if (error) throw error;
-      
-    } catch (err: any) {
-      console.error("Error updating campaign status:", err);
-    }
-  };
+  try {
+    const { error } = await supabase
+      .from("promotions")
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", campaign.id);
+    
+    if (error) throw error;
+    
+  } catch (err: any) {
+    console.error("Error updating campaign status:", err);
+  }
+};
   
   const showFeedback = (feedback: string) => {
     setSelectedFeedback(feedback);
