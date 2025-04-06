@@ -23,17 +23,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, FileText, Loader2 } from "lucide-react";
 import { formatDistance } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
+import { CampaignResultsAnalyzer } from './components/CampaignResultsAnalyzer';
+import { DeletePromotionDialog } from './components/DeletePromotionDialog';
 import { Promotion } from "@/types/database";
 import { updatePromotionStatus } from "@/lib/promotion-utils";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Promotion | null>(null);
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   
   // Add session checking on component mount
   useEffect(() => {
@@ -162,6 +172,11 @@ export default function Promotions() {
     }
   };
 
+  const openCampaignAnalyzer = (campaign: Promotion) => {
+    setSelectedCampaign(campaign);
+    setAnalysisDialogOpen(true);
+  };
+
   // Add a debug section that's only visible during development
   const showDebugInfo = process.env.NODE_ENV === 'development';
 
@@ -211,7 +226,8 @@ export default function Promotions() {
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-10">
-                      Loading promotions...
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                      <div className="mt-2">Loading promotions...</div>
                     </TableCell>
                   </TableRow>
                 ) : promotions?.length === 0 ? (
@@ -253,21 +269,40 @@ export default function Promotions() {
                       </TableCell>
                       <TableCell>${promo.total_cost}</TableCell>
                       <TableCell>
-                        <Select
-                          disabled={updatingStatus === promo.id}
-                          defaultValue={promo.status}
-                          onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'rejected')}
-                        >
-                          <SelectTrigger className="w-[110px]">
-                            <SelectValue placeholder="Change status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <Select
+                              disabled={updatingStatus === promo.id}
+                              defaultValue={promo.status}
+                              onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'rejected')}
+                            >
+                              <SelectTrigger className="w-[110px]">
+                                <SelectValue placeholder="Change status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openCampaignAnalyzer(promo)}
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Results
+                            </Button>
+                          </div>
+                          <div>
+                            <DeletePromotionDialog 
+                              promotionId={promo.id}
+                              promotionName={`${promo.track_name} by ${promo.track_artist}`}
+                              onSuccess={() => refetch()}
+                            />
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -290,6 +325,24 @@ export default function Promotions() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Campaign Analysis Dialog */}
+      <Dialog open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Campaign Results: {selectedCampaign?.track_name} by {selectedCampaign?.track_artist}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedCampaign && (
+            <CampaignResultsAnalyzer 
+              campaign={selectedCampaign} 
+              onComplete={() => refetch()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -72,6 +72,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const declined = records.filter((r: any) => r.action === 'declined').length;
     const pending = records.filter((r: any) => r.action === 'listen').length;
     const approvalRate = totalSubmissions > 0 ? (approved / totalSubmissions) * 100 : 0;
+    
+    // Calculate average listen time
+    const listenTimes = records
+      .filter((r: any) => r.listen_time && !isNaN(parseInt(r.listen_time)))
+      .map((r: any) => parseInt(r.listen_time));
+    
+    const averageListenTime = listenTimes.length > 0 
+      ? listenTimes.reduce((sum: number, time: number) => sum + time, 0) / listenTimes.length 
+      : 0;
+      
+    // Count submissions by country
+    const countryBreakdown: Record<string, number> = {};
+    records.forEach((r: any) => {
+      const country = r.outlet_country || 'Unknown';
+      countryBreakdown[country] = (countryBreakdown[country] || 0) + 1;
+    });
+    
+    // Count submissions by outlet type
+    const outletTypeBreakdown: Record<string, number> = {};
+    records.forEach((r: any) => {
+      const type = r.outlet_type || 'Unknown';
+      outletTypeBreakdown[type] = (outletTypeBreakdown[type] || 0) + 1;
+    });
+
+    // Prepare the enhanced stats
+    const enhancedStats = {
+      totalSubmissions,
+      approved,
+      declined,
+      pending,
+      approvalRate,
+      averageListenTime,
+      countryBreakdown,
+      outletTypeBreakdown,
+    };
 
     // Store the parsed results
     const { error: resultsError } = await supabase
@@ -79,13 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         campaign_id: campaignId,
         raw_data: records,
-        stats: {
-          total_submissions: totalSubmissions,
-          approved,
-          declined,
-          pending,
-          approval_rate: approvalRate,
-        },
+        stats: enhancedStats,
       });
 
     if (resultsError) {
@@ -108,13 +137,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       message: 'Campaign results processed successfully',
-      stats: {
-        totalSubmissions,
-        approved,
-        declined,
-        pending,
-        approvalRate,
-      },
+      stats: enhancedStats,
+      rawData: records,
     });
 
   } catch (error: any) {
