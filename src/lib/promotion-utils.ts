@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { Promotion } from "@/types/database";
+import { Promotion, UIPromotionStatus, dbToUiStatus, uiToDbStatus } from "@/types/database";
 
 /**
  * Resumes the payment flow for a promotion campaign that was previously created
@@ -32,7 +32,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     // Cast the returned data to our Promotion type
     const promotion = promotionData as Promotion;
 
-    if (promotion.status !== "payment_pending") {
+    if (promotion.status !== 'pending') {
       throw new Error("This promotion is not in a payment pending state");
     }
 
@@ -77,19 +77,16 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
  * Only admin users can update promotions they didn't create.
  * 
  * @param promotionId - The ID of the promotion to update
- * @param newStatus - The new status to set
+ * @param newStatus - The new UI status to set (will be converted to DB status)
  * @returns Promise<boolean> - Whether the update was successful
  */
 export async function updatePromotionStatus(
   promotionId: string, 
-  newStatus: Promotion['status']
+  newStatus: UIPromotionStatus
 ): Promise<boolean> {
   try {
-    // Map the new UI status values to the current database enum values if needed
-    let dbStatus = newStatus;
-    if (newStatus === 'payment_pending') dbStatus = 'pending';
-    if (newStatus === 'delivered') dbStatus = 'completed';
-    if (newStatus === 'cancelled') dbStatus = 'rejected';
+    // Convert UI status to DB status
+    const dbStatus = uiToDbStatus(newStatus);
 
     const { error } = await supabase
       .from("promotions")

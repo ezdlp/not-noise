@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Check, BarChart3, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Promotion } from "@/types/database";
+import { Promotion, UIPromotionStatus, uiToDbStatus } from "@/types/database";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -200,9 +200,9 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     }
   };
   
-  const updateCampaignStatus = async (newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
+  const updateCampaignStatus = async (newStatus: UIPromotionStatus) => {
     try {
-      let dbStatus = newStatus;
+      const dbStatus = uiToDbStatus(newStatus);
       
       const { error } = await supabase
         .from("promotions")

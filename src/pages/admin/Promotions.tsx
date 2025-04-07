@@ -28,14 +28,8 @@ import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
 import { CampaignResultsAnalyzer } from './components/CampaignResultsAnalyzer';
 import { DeletePromotionDialog } from './components/DeletePromotionDialog';
-import { Promotion } from "@/types/database";
+import { Promotion, UIPromotionStatus, dbToUiStatus } from "@/types/database";
 import { updatePromotionStatus } from "@/lib/promotion-utils";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
@@ -123,13 +117,11 @@ export default function Promotions() {
     enabled: authChecked,
   });
 
-  const handleStatusChange = async (promotionId: string, newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
+  const handleStatusChange = async (promotionId: string, newUiStatus: UIPromotionStatus) => {
     try {
       setUpdatingStatus(promotionId);
       
-      let dbStatus = newStatus;
-      
-      const success = await updatePromotionStatus(promotionId, dbStatus);
+      const success = await updatePromotionStatus(promotionId, newUiStatus);
       
       if (success) {
         await refetch();
@@ -145,10 +137,8 @@ export default function Promotions() {
     }
   };
   
-  const getStatusColor = (status: string) => {
-    const uiStatus = status === 'pending' ? 'payment_pending' : 
-                     status === 'completed' ? 'delivered' :
-                     status === 'rejected' ? 'cancelled' : status;
+  const getStatusColor = (dbStatus: string) => {
+    const uiStatus = dbToUiStatus(dbStatus as Promotion['status']);
                      
     switch (uiStatus) {
       case 'payment_pending': return "bg-yellow-100 text-yellow-800";
@@ -159,10 +149,8 @@ export default function Promotions() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    const uiStatus = status === 'pending' ? 'payment_pending' : 
-                     status === 'completed' ? 'delivered' :
-                     status === 'rejected' ? 'cancelled' : status;
+  const getStatusIcon = (dbStatus: string) => {
+    const uiStatus = dbToUiStatus(dbStatus as Promotion['status']);
                      
     switch(uiStatus) {
       case 'delivered': 
@@ -174,17 +162,15 @@ export default function Promotions() {
     }
   };
   
-  const getStatusDisplay = (status: string) => {
-    const uiStatus = status === 'pending' ? 'payment_pending' : 
-                     status === 'completed' ? 'delivered' :
-                     status === 'rejected' ? 'cancelled' : status;
+  const getStatusDisplay = (dbStatus: string) => {
+    const uiStatus = dbToUiStatus(dbStatus as Promotion['status']);
                      
     switch(uiStatus) {
       case 'payment_pending': return 'Payment Pending';
       case 'active': return 'Active';
       case 'delivered': return 'Delivered';
       case 'cancelled': return 'Cancelled';
-      default: return status.charAt(0).toUpperCase() + status.slice(1);
+      default: return dbStatus.charAt(0).toUpperCase() + dbStatus.slice(1);
     }
   };
 
@@ -265,12 +251,12 @@ export default function Promotions() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Badge 
-                            className={getStatusColor(promo.status)}
+                            className={getStatusColor(dbToUiStatus(promo.status))}
                             variant="outline"
                           >
                             <span className="flex items-center gap-1">
-                              {getStatusIcon(promo.status)}
-                              {getStatusDisplay(promo.status)}
+                              {getStatusIcon(dbToUiStatus(promo.status))}
+                              {getStatusDisplay(dbToUiStatus(promo.status))}
                             </span>
                           </Badge>
                         </div>
@@ -288,17 +274,17 @@ export default function Promotions() {
                           <div className="flex gap-2">
                             <Select
                               disabled={updatingStatus === promo.id}
-                              defaultValue={promo.status}
-                              onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'rejected')}
+                              defaultValue={dbToUiStatus(promo.status)}
+                              onValueChange={(value) => handleStatusChange(promo.id, value as UIPromotionStatus)}
                             >
                               <SelectTrigger className="w-[110px]">
                                 <SelectValue placeholder="Change status" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pending">Payment Pending</SelectItem>
+                                <SelectItem value="payment_pending">Payment Pending</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="completed">Delivered</SelectItem>
-                                <SelectItem value="rejected">Cancelled</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
                               </SelectContent>
                             </Select>
                             <Button 

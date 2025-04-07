@@ -1,4 +1,3 @@
-
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -172,4 +171,26 @@ export interface Promotion {
   estimated_additions?: number;
   package_tier?: string;
   profiles?: Profile;
+}
+
+export type UIPromotionStatus = 'payment_pending' | 'active' | 'delivered' | 'cancelled';
+
+export function dbToUiStatus(dbStatus: Promotion['status']): UIPromotionStatus {
+  switch (dbStatus) {
+    case 'pending': return 'payment_pending';
+    case 'active': return 'active';
+    case 'completed': return 'delivered';
+    case 'rejected': return 'cancelled';
+    default: return 'payment_pending';
+  }
+}
+
+export function uiToDbStatus(uiStatus: UIPromotionStatus): Promotion['status'] {
+  switch (uiStatus) {
+    case 'payment_pending': return 'pending';
+    case 'active': return 'active';
+    case 'delivered': return 'completed';
+    case 'cancelled': return 'rejected';
+    default: return 'pending';
+  }
 }
