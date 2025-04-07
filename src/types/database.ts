@@ -1,5 +1,4 @@
 
-
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -150,7 +149,6 @@ export interface SitemapCache {
   updated_at: string;
 }
 
-// Updated to use the new status values
 export interface Promotion {
   id: string;
   user_id: string;

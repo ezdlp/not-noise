@@ -82,7 +82,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
  */
 export async function updatePromotionStatus(
   promotionId: string, 
-  newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled'
+  newStatus: Promotion['status']
 ): Promise<boolean> {
   try {
     const { error } = await supabase

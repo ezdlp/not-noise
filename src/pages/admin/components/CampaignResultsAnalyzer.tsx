@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
 import { AlertCircle, Check, BarChart3, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Promotion } from "@/types/database";
@@ -201,7 +200,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     }
   };
   
-  const updateCampaignStatus = async (newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
+  const updateCampaignStatus = async (newStatus: Promotion['status']) => {
     try {
       const { error } = await supabase
         .from("promotions")
@@ -265,12 +264,12 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
             >
               {uploading ? (
                 <>
-                  <Spinner className="mr-2 h-4 w-4" />
+                  <span className="animate-spin mr-2">◌</span>
                   Uploading...
                 </>
               ) : processing ? (
                 <>
-                  <Spinner className="mr-2 h-4 w-4" />
+                  <span className="animate-spin mr-2">◌</span>
                   Processing...
                 </>
               ) : (
@@ -333,7 +332,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
                       />
                       {analyzing && (
                         <div className="flex items-center text-sm text-muted-foreground">
-                          <Spinner className="mr-2 h-4 w-4" />
+                          <span className="animate-spin mr-2">◌</span>
                           Analyzing with AI...
                         </div>
                       )}

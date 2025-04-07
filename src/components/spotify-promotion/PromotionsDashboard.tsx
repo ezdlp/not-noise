@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeadphonesIcon, PlusCircleIcon, ExternalLinkIcon, CreditCardIcon } from "lucide-react";
+import { HeadphonesIcon, PlusCircleIcon, ExternalLinkIcon, CreditCardIcon, Loader2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistance } from "date-fns";
@@ -209,7 +209,8 @@ function CampaignCard({
               >
                 {isProcessingPayment ? (
                   <>
-                    <span>Processing...</span>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Processing...
                   </>
                 ) : (
                   <>
