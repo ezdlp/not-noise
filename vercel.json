@@ -157,7 +157,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "installCommand": "npm ci --legacy-peer-deps",
+        "installCommand": "npm ci",
         "buildCommand": "npm run build"
       }
     }
