@@ -205,15 +205,28 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       const { error } = await supabase
         .from("promotions")
         .update({ 
-          status: newStatus,
+          status: newStatus, 
           updated_at: new Date().toISOString() 
         })
         .eq("id", campaign.id);
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
-    } catch (err: any) {
-      console.error("Error updating campaign status:", err);
+      toast({
+        title: "Campaign status updated",
+        description: `Campaign has been marked as ${newStatus}`,
+      });
+      
+      refetch();
+    } catch (error: any) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Update failed",
+        description: error.message || "An error occurred while updating the campaign status",
+        variant: "destructive",
+      });
     }
   };
   

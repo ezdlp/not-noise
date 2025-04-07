@@ -86,7 +86,7 @@
     "html-to-image": "^1.11.11",
     "input-otp": "^1.2.4",
     "lodash": "^4.17.21",
-    "lucide-react": "^0.462.0",
+    "lucide-react": "^0.487.0",
     "micro": "^10.0.1",
     "next-themes": "^0.3.0",
     "openai": "^4.89.1",
@@ -127,6 +127,6 @@
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.17"
+    "vite": "^6.2.5"
   }
 }
