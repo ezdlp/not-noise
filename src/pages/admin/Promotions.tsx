@@ -30,6 +30,12 @@ import { CampaignResultsAnalyzer } from './components/CampaignResultsAnalyzer';
 import { DeletePromotionDialog } from './components/DeletePromotionDialog';
 import { Promotion, UIPromotionStatus, dbToUiStatus } from "@/types/database";
 import { updatePromotionStatus } from "@/lib/promotion-utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
