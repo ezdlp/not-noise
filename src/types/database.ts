@@ -1,3 +1,4 @@
+
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -156,7 +157,7 @@ export interface Promotion {
   track_name: string;
   track_artist: string;
   genre: string;
-  status: 'payment_pending' | 'active' | 'delivered' | 'cancelled';
+  status: 'pending' | 'active' | 'completed' | 'rejected';
   total_cost: number;
   submission_count: number;
   approval_count?: number;

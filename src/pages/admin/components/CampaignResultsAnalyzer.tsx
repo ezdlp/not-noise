@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -201,12 +200,14 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
     }
   };
   
-  const updateCampaignStatus = async (newStatus: Promotion['status']) => {
+  const updateCampaignStatus = async (newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
     try {
+      let dbStatus = newStatus;
+      
       const { error } = await supabase
         .from("promotions")
         .update({ 
-          status: newStatus, 
+          status: dbStatus, 
           updated_at: new Date().toISOString() 
         })
         .eq("id", campaign.id);
@@ -220,8 +221,6 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: `Campaign has been marked as ${newStatus}`,
       });
       
-      // Replaced refetch with onComplete since that seems to be the function 
-      // intended to trigger a refresh of data in the parent component
       onComplete();
     } catch (error: any) {
       console.error("Error updating status:", error);

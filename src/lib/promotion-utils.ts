@@ -85,9 +85,15 @@ export async function updatePromotionStatus(
   newStatus: Promotion['status']
 ): Promise<boolean> {
   try {
+    // Map the new UI status values to the current database enum values if needed
+    let dbStatus = newStatus;
+    if (newStatus === 'payment_pending') dbStatus = 'pending';
+    if (newStatus === 'delivered') dbStatus = 'completed';
+    if (newStatus === 'cancelled') dbStatus = 'rejected';
+
     const { error } = await supabase
       .from("promotions")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({ status: dbStatus, updated_at: new Date().toISOString() })
       .eq("id", promotionId);
     
     if (error) {

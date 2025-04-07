@@ -123,11 +123,13 @@ export default function Promotions() {
     enabled: authChecked,
   });
 
-  const handleStatusChange = async (promotionId: string, newStatus: 'payment_pending' | 'active' | 'delivered' | 'cancelled') => {
+  const handleStatusChange = async (promotionId: string, newStatus: 'pending' | 'active' | 'completed' | 'rejected') => {
     try {
       setUpdatingStatus(promotionId);
       
-      const success = await updatePromotionStatus(promotionId, newStatus);
+      let dbStatus = newStatus;
+      
+      const success = await updatePromotionStatus(promotionId, dbStatus);
       
       if (success) {
         await refetch();
@@ -144,7 +146,11 @@ export default function Promotions() {
   };
   
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const uiStatus = status === 'pending' ? 'payment_pending' : 
+                     status === 'completed' ? 'delivered' :
+                     status === 'rejected' ? 'cancelled' : status;
+                     
+    switch (uiStatus) {
       case 'payment_pending': return "bg-yellow-100 text-yellow-800";
       case 'active': return "bg-green-100 text-green-800";
       case 'delivered': return "bg-blue-100 text-blue-800";
@@ -154,7 +160,11 @@ export default function Promotions() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch(status) {
+    const uiStatus = status === 'pending' ? 'payment_pending' : 
+                     status === 'completed' ? 'delivered' :
+                     status === 'rejected' ? 'cancelled' : status;
+                     
+    switch(uiStatus) {
       case 'delivered': 
         return <CheckCircle className="h-4 w-4 text-blue-700" />;
       case 'cancelled':
@@ -165,7 +175,11 @@ export default function Promotions() {
   };
   
   const getStatusDisplay = (status: string) => {
-    switch(status) {
+    const uiStatus = status === 'pending' ? 'payment_pending' : 
+                     status === 'completed' ? 'delivered' :
+                     status === 'rejected' ? 'cancelled' : status;
+                     
+    switch(uiStatus) {
       case 'payment_pending': return 'Payment Pending';
       case 'active': return 'Active';
       case 'delivered': return 'Delivered';
@@ -275,16 +289,16 @@ export default function Promotions() {
                             <Select
                               disabled={updatingStatus === promo.id}
                               defaultValue={promo.status}
-                              onValueChange={(value) => handleStatusChange(promo.id, value as 'payment_pending' | 'active' | 'delivered' | 'cancelled')}
+                              onValueChange={(value) => handleStatusChange(promo.id, value as 'pending' | 'active' | 'completed' | 'rejected')}
                             >
                               <SelectTrigger className="w-[110px]">
                                 <SelectValue placeholder="Change status" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="payment_pending">Payment Pending</SelectItem>
+                                <SelectItem value="pending">Payment Pending</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                <SelectItem value="completed">Delivered</SelectItem>
+                                <SelectItem value="rejected">Cancelled</SelectItem>
                               </SelectContent>
                             </Select>
                             <Button 
