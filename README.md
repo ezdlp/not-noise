@@ -134,3 +134,34 @@ For production use, **never expose your Stripe secret key in client-side code**.
 1. Create a server API endpoint that uses the Stripe key securely on the server
 2. Call this endpoint from your client-side code
 3. Use Stripe's publishable key for front-end operations where appropriate
+
+## Security and Environment Variables
+
+⚠️ **IMPORTANT: NEVER commit API keys, tokens, or other secrets to the repository** ⚠️
+
+This project uses environment variables for sensitive information such as API keys. Follow these guidelines:
+
+### Environment Variables
+
+1. Create a `.env` file in the project root and in the `supabase` directory for Supabase Edge Functions
+2. Use the `.env.example` files as templates 
+3. Never commit the actual `.env` files to Git
+
+### Example .env file format:
+
+```
+STRIPE_SECRET_KEY=sk_live_***********************************
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### Deploying Edge Functions:
+
+When deploying Edge Functions, use the Supabase CLI to set secrets:
+
+```bash
+supabase secrets set STRIPE_SECRET_KEY=your_actual_key --project-ref your-project-ref
+```
+
+Never include actual keys in deployment scripts or documentation.

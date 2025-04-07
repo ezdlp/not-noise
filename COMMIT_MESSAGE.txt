@@ -1,0 +1,14 @@
+fix: remove exposed API keys and implement secure practices
+
+SECURITY: Removed exposed Stripe API keys and implemented proper security practices
+
+- Removed all sensitive API keys from repository files
+- Added proper .env.example files as templates
+- Updated .gitignore to prevent committing sensitive files
+- Created secure deployment script for Edge Functions
+- Added comprehensive security documentation
+- Implemented improved error logging for Edge Functions
+
+This commit addresses a critical security vulnerability where API keys
+were exposed in the repository. Please follow the guidelines in SECURITY.md
+to rotate any exposed credentials. 

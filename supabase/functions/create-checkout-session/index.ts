@@ -53,10 +53,10 @@ serve(async (req) => {
       throw new Error('Server configuration error: Missing Stripe credentials');
     }
     
-    console.log(`Initializing Stripe with API version 2024-09-30.acacia`);
+    console.log(`Initializing Stripe with latest API version`);
     
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2024-09-30.acacia', 
+      apiVersion: '2023-10-16', // Use a current stable version instead of a future date
       httpClient: Stripe.createFetchHttpClient(),
       maxNetworkRetries: 3,
     });
@@ -429,11 +429,37 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error creating payment session:', error);
+    
+    // Additional error debug info
+    const debugInfo = {
+      error: error.message || "An unknown error occurred",
+      errorName: error.name,
+      errorCode: error.code,
+      stripeError: error.type === 'StripeError',
+      timestamp: new Date().toISOString(),
+      requestData: requestData || {}
+    };
+    
+    console.error('Debug info:', JSON.stringify(debugInfo, null, 2));
+    
+    // Try to log to database
+    try {
+      await supabaseAdmin
+        .rpc('log_edge_function_error', {
+          p_function_name: 'create-checkout-session',
+          p_request_data: requestData || {},
+          p_error_message: JSON.stringify(debugInfo),
+          p_status_code: 500
+        });
+    } catch (logError) {
+      console.error('Failed to log error to database:', logError);
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || "An unknown error occurred",
         success: false,
-        stack: error.stack || "No stack trace available"
+        debug: debugInfo
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
