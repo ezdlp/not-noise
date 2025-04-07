@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@14.21.0'; // Keep consistent version with webhook
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -54,10 +53,10 @@ serve(async (req) => {
       throw new Error('Server configuration error: Missing Stripe credentials');
     }
     
-    console.log(`Initializing Stripe with API version 2025-02-24.acacia`);
+    console.log(`Initializing Stripe with API version 2024-09-30.acacia`);
     
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-02-24.acacia', 
+      apiVersion: '2024-09-30.acacia', 
       httpClient: Stripe.createFetchHttpClient(),
       maxNetworkRetries: 3,
     });
@@ -206,7 +205,7 @@ serve(async (req) => {
             throw new Error('Promotion not found or you don\'t have permission to access it');
           }
           
-          if (existingPromotion.status !== 'pending') {
+          if (existingPromotion.status !== 'payment_pending') {
             throw new Error('This promotion is not in a payment pending state');
           }
           
@@ -253,7 +252,7 @@ serve(async (req) => {
               spotify_artist_id: artistId || 'unknown', // Use 'unknown' if artist ID is not available
               genre: genre || 'other',
               total_cost: finalPrice / 100, // Store price in dollars
-              status: 'pending', 
+              status: 'payment_pending', 
               created_at: new Date().toISOString(),
               submission_count: submissionCount,
               estimated_additions: estimatedAdditions,
