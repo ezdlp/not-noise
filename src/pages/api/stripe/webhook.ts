@@ -1,93 +1,127 @@
+
+import { NextApiRequest, NextApiResponse } from 'next';
+import { supabase } from '@/integrations/supabase/client';
 import Stripe from 'stripe';
-import { supabase } from '../../../supabase/client';
-import { getSession } from '../../../utils/supabase';
-import { getURL } from '../../../utils/helpers';
-import { toast } from 'react-hot-toast';
 
-const handler = async (req, res) => {
-  try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2024-09-30.acacia',
-    });
+// Initialize Stripe with the secret key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2025-02-24.acacia' as any, // Ensure this matches the version used in other Stripe function calls
+});
 
-    if (req.method === 'POST') {
-      const body = req.body;
-      const event = stripe.webhooks.constructEvent(
-        body,
-        req.headers['stripe-signature'] || '',
-        process.env.STRIPE_WEBHOOK_SECRET || ''
-      );
-
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-
-        // Extract metadata from the session
-        const metadata = session.metadata;
-        const userId = session.client_reference_id;
-
-        // When creating a promotion after successful payment, use 'payment_pending' status:
-        const { data: promotionData, error: promotionError } = await supabase
-          .from('promotions')
-          .insert({
-            user_id: userId,
-            spotify_track_id: metadata.spotifyTrackId,
-            spotify_artist_id: metadata.spotifyArtistId,
-            track_name: metadata.trackName,
-            track_artist: metadata.trackArtist,
-            genre: metadata.genre,
-            status: 'payment_pending', // Using the correct enum value
-            total_cost: session.amount_total! / 100,
-            submission_count: parseInt(metadata.submissionCount),
-            estimated_additions: parseInt(metadata.estimatedAdditions),
-            package_tier: metadata.packageId
-          })
-          .select()
-          .single();
-
-        if (promotionError) {
-          console.error('Error creating promotion:', promotionError);
-          return res.status(500).json({ error: 'Failed to create promotion' });
-        }
-
-        console.log('Promotion created successfully:', promotionData);
-        return res.status(200).json({ received: true });
-      } else if (event.type === 'invoice.paid') {
-        // For subscription payments, create a new subscription record
-        const session = event.data.object;
-        const userId = session.metadata.userId;
-        const tier = session.lines.data[0].plan.id;
-
-        const { data: subscriptionData, error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: userId,
-            tier: tier,
-            status: 'active',
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error creating subscription:', error);
-          return res.status(500).json({ error: 'Failed to create subscription' });
-        }
-
-        console.log('Subscription created successfully:', subscriptionData);
-        return res.status(200).json({ received: true });
-      } else {
-        return res.status(200).json({ received: true });
-      }
-    }
-  } catch (error) {
-    console.error('Webhook error:', error);
-    return res.status(400).send(`Webhook Error: ${error.message}`);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-};
 
-export default handler;
+  try {
+    const sig = req.headers['stripe-signature'] as string;
+    if (!sig) {
+      return res.status(400).json({ error: 'Missing stripe-signature header' });
+    }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+    // Get the webhook secret from environment variables
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return res.status(500).json({ error: 'Missing Stripe webhook secret' });
+    }
+
+    // Get the raw body for signature verification
+    const rawBody = req.body;
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+
+    // Handle the event
+    console.log('Received event:', event.type);
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const checkoutSession = event.data.object;
+        const userId = checkoutSession.metadata?.userId;
+        const eventType = checkoutSession.metadata?.type;
+        const promotionId = checkoutSession.metadata?.promotionId;
+        
+        console.log('Processing checkout completion:', {
+          userId,
+          eventType,
+          promotionId,
+          paymentStatus: checkoutSession.payment_status
+        });
+
+        // If this is a promotion payment and it's paid
+        if (eventType === 'promotion' && checkoutSession.payment_status === 'paid' && userId) {
+          // If we have a promotion ID, update it
+          if (promotionId) {
+            const { data: existingPromotion, error: fetchError } = await supabase
+              .from('promotions')
+              .select('*')
+              .eq('id', promotionId)
+              .single();
+
+            if (fetchError && fetchError.code !== 'PGRST116') {
+              console.error('Error fetching promotion:', fetchError);
+            } 
+            
+            if (existingPromotion) {
+              console.log('Updating existing promotion:', promotionId);
+              
+              const { error: updateError } = await supabase
+                .from('promotions')
+                .update({ 
+                  status: 'active',
+                  updated_at: new Date().toISOString(),
+                  start_date: new Date().toISOString()
+                })
+                .eq('id', promotionId);
+              
+              if (updateError) {
+                console.error('Error updating promotion:', updateError);
+              }
+            } else {
+              // If promotion ID doesn't exist, create it
+              const { trackName, trackArtist, spotifyTrackId, spotifyArtistId, submissionCount, estimatedAdditions, genre, packageId } = checkoutSession.metadata || {};
+              
+              const { error: createError } = await supabase
+                .from('promotions')
+                .insert({
+                  id: promotionId,
+                  user_id: userId,
+                  track_name: trackName,
+                  track_artist: trackArtist,
+                  spotify_track_id: spotifyTrackId,
+                  spotify_artist_id: spotifyArtistId,
+                  submission_count: parseInt(submissionCount || '0', 10),
+                  estimated_additions: parseInt(estimatedAdditions || '0', 10),
+                  genre: genre || 'other',
+                  package_tier: packageId?.toLowerCase() || 'silver',
+                  total_cost: (checkoutSession.amount_total || 0) / 100,
+                  status: 'payment_pending',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+              
+              if (createError) {
+                console.error('Error creating promotion:', createError);
+              }
+            }
+          }
+        }
+        break;
+        
+      // Handle other event types as needed
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    // Return a response to acknowledge receipt of the event
+    return res.json({ received: true });
+  } catch (error: any) {
+    console.error('Error processing webhook:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}

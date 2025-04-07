@@ -30,7 +30,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2024-09-30.acacia' as any, // Use type assertion to bypass the TypeScript error
+      apiVersion: '2025-02-24.acacia' as any, // Updated to match other functions
       httpClient: Stripe.createFetchHttpClient(),
       maxNetworkRetries: 3,
     });
