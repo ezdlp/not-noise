@@ -1,8 +1,11 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// NOTE: We're using Vite 6.x but lovable-tagger requires Vite 5.x
+// This dependency conflict is resolved using the --legacy-peer-deps flag in vercel.json builds
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
