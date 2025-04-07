@@ -1,10 +1,11 @@
+
 import Stripe from 'stripe';
 
 // Initialize Stripe with your API key
 // This should ideally come from environment variables
 const stripeApiKey = import.meta.env.VITE_STRIPE_SECRET_KEY || '';
 const stripe = new Stripe(stripeApiKey, {
-  apiVersion: '2025-02-24.acacia', // Use the latest stable API version
+  apiVersion: '2024-09-30.acacia', // Updated to consistent version
 });
 
 // Type definitions for better TypeScript support

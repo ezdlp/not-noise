@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@14.21.0'; // Keep consistent version across functions
+import Stripe from 'https://esm.sh/stripe@15.7.0'; // Updated to match version in create-checkout-session
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
@@ -30,9 +30,9 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2025-02-24.acacia', // Updated to match the Stripe dashboard version
-      httpClient: Stripe.createFetchHttpClient(), // Explicitly set HTTP client for Deno environment
-      maxNetworkRetries: 3, // Add retries for better reliability
+      apiVersion: '2024-09-30.acacia', // Updated to match the consistent API version
+      httpClient: Stripe.createFetchHttpClient(),
+      maxNetworkRetries: 3,
     });
 
     // Get the session ID from the request body
@@ -64,7 +64,7 @@ serve(async (req) => {
             
           if (promotionError) {
             console.error('Error fetching promotion:', promotionError);
-          } else if (promotionData && promotionData.status === 'pending') {
+          } else if (promotionData && promotionData.status === 'payment_pending') {
             // Update the promotion status if it's still pending
             const { error: updateError } = await supabaseClient
               .from('promotions')

@@ -134,4 +134,4 @@ export const useStripe = (): UseStripeHook => {
     getInvoices,
     getInvoice
   };
-}; 
+};

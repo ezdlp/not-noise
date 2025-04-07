@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-08-16' as any, // Type assertion to bypass strict typing
+  apiVersion: '2024-09-30.acacia', // Updated to consistent API version
 });
 
 // Pro user discount coupon ID - will need to be created in Stripe dashboard
@@ -88,4 +88,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error creating checkout session:', error);
     return res.status(500).json({ error: 'Failed to create checkout session' });
   }
-} 
+}

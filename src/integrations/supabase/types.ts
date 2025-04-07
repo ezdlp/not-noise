@@ -603,6 +603,33 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_function_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          request_data: Json | null
+          status_code: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          request_data?: Json | null
+          status_code?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          request_data?: Json | null
+          status_code?: number | null
+        }
+        Relationships: []
+      }
       email_subscribers: {
         Row: {
           email: string
@@ -659,6 +686,30 @@ export type Database = {
           updated_at?: string | null
           usage_count?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      function_test_requests: {
+        Row: {
+          function_name: string
+          id: string
+          request_data: Json | null
+          response_status: number | null
+          timestamp: string
+        }
+        Insert: {
+          function_name: string
+          id?: string
+          request_data?: Json | null
+          response_status?: number | null
+          timestamp?: string
+        }
+        Update: {
+          function_name?: string
+          id?: string
+          request_data?: Json | null
+          response_status?: number | null
+          timestamp?: string
         }
         Relationships: []
       }
@@ -1248,6 +1299,33 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          details: Json | null
+          id: string
+          performed_at: string
+          resource_name: string
+          resource_type: string
+        }
+        Insert: {
+          action: string
+          details?: Json | null
+          id?: string
+          performed_at?: string
+          resource_name: string
+          resource_type: string
+        }
+        Update: {
+          action?: string
+          details?: Json | null
+          id?: string
+          performed_at?: string
+          resource_name?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
       sitemap_cache: {
         Row: {
           content: string
@@ -1818,6 +1896,36 @@ export type Database = {
           },
         ]
       }
+      system_notifications: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          title: string
+          type: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       temp_subscription_tiers: {
         Row: {
           tier: Database["public"]["Enums"]["subscription_tier"] | null
@@ -1986,6 +2094,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_fixes: {
+        Row: {
+          applied_at: string | null
+          description: string | null
+          fix_name: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -2183,6 +2299,19 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      log_edge_function_error: {
+        Args: {
+          p_function_name: string
+          p_request_data: Json
+          p_error_message: string
+          p_status_code?: number
+        }
+        Returns: string
+      }
+      test_create_checkout: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
@@ -2198,7 +2327,7 @@ export type Database = {
       content_type: "track" | "album" | "playlist"
       import_status: "pending" | "processing" | "completed" | "failed"
       playlist_category: "curated" | "algorithmic" | "editorial" | "independent"
-      promotion_status: "pending" | "active" | "completed" | "rejected"
+      promotion_status: "payment_pending" | "active" | "delivered" | "cancelled"
       social_media_platform:
         | "instagram_square"
         | "instagram_story"
@@ -2340,7 +2469,7 @@ export const Constants = {
       content_type: ["track", "album", "playlist"],
       import_status: ["pending", "processing", "completed", "failed"],
       playlist_category: ["curated", "algorithmic", "editorial", "independent"],
-      promotion_status: ["pending", "active", "completed", "rejected"],
+      promotion_status: ["payment_pending", "active", "delivered", "cancelled"],
       social_media_platform: [
         "instagram_square",
         "instagram_story",
