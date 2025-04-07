@@ -1,4 +1,3 @@
-
 export interface CampaignResultFiles {
   id: string;
   promotion_id: string;
@@ -109,7 +108,7 @@ export interface BlogPost {
   author: Profile;
   created_at: string;
   slug: string;
-  excerpt: string;
+  excerpt: string | null;
   featured_image: string | null;
   status: 'draft' | 'published';
   seo_title: string | null;

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -219,7 +220,9 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: `Campaign has been marked as ${newStatus}`,
       });
       
-      refetch();
+      // Replaced refetch with onComplete since that seems to be the function 
+      // intended to trigger a refresh of data in the parent component
+      onComplete();
     } catch (error: any) {
       console.error("Error updating status:", error);
       toast({
