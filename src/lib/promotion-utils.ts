@@ -32,7 +32,7 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
     // Cast the returned data to our Promotion type
     const promotion = promotionData as Promotion;
 
-    if (promotion.status !== 'pending') {
+    if (promotion.status !== 'payment_pending') {
       throw new Error("This promotion is not in a payment pending state");
     }
 

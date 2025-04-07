@@ -156,7 +156,7 @@ export interface Promotion {
   track_name: string;
   track_artist: string;
   genre: string;
-  status: 'pending' | 'active' | 'completed' | 'rejected';
+  status: 'payment_pending' | 'active' | 'delivered' | 'cancelled';
   total_cost: number;
   submission_count: number;
   approval_count?: number;
@@ -176,21 +176,9 @@ export interface Promotion {
 export type UIPromotionStatus = 'payment_pending' | 'active' | 'delivered' | 'cancelled';
 
 export function dbToUiStatus(dbStatus: Promotion['status']): UIPromotionStatus {
-  switch (dbStatus) {
-    case 'pending': return 'payment_pending';
-    case 'active': return 'active';
-    case 'completed': return 'delivered';
-    case 'rejected': return 'cancelled';
-    default: return 'payment_pending';
-  }
+  return dbStatus; // No conversion needed as we're using the same values
 }
 
 export function uiToDbStatus(uiStatus: UIPromotionStatus): Promotion['status'] {
-  switch (uiStatus) {
-    case 'payment_pending': return 'pending';
-    case 'active': return 'active';
-    case 'delivered': return 'completed';
-    case 'cancelled': return 'rejected';
-    default: return 'pending';
-  }
+  return uiStatus; // No conversion needed as we're using the same values
 }

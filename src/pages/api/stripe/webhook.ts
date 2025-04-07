@@ -1,132 +1,93 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { buffer } from 'micro';
 import Stripe from 'stripe';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../supabase/client';
+import { getSession } from '../../../utils/supabase';
+import { getURL } from '../../../utils/helpers';
+import { toast } from 'react-hot-toast';
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-08-16' as any,
-});
+const handler = async (req, res) => {
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2024-09-30.acacia',
+    });
 
-// Disable body parser for this endpoint to get the raw body for webhook signature verification
+    if (req.method === 'POST') {
+      const body = req.body;
+      const event = stripe.webhooks.constructEvent(
+        body,
+        req.headers['stripe-signature'] || '',
+        process.env.STRIPE_WEBHOOK_SECRET || ''
+      );
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+
+        // Extract metadata from the session
+        const metadata = session.metadata;
+        const userId = session.client_reference_id;
+
+        // When creating a promotion after successful payment, use 'payment_pending' status:
+        const { data: promotionData, error: promotionError } = await supabase
+          .from('promotions')
+          .insert({
+            user_id: userId,
+            spotify_track_id: metadata.spotifyTrackId,
+            spotify_artist_id: metadata.spotifyArtistId,
+            track_name: metadata.trackName,
+            track_artist: metadata.trackArtist,
+            genre: metadata.genre,
+            status: 'payment_pending', // Using the correct enum value
+            total_cost: session.amount_total! / 100,
+            submission_count: parseInt(metadata.submissionCount),
+            estimated_additions: parseInt(metadata.estimatedAdditions),
+            package_tier: metadata.packageId
+          })
+          .select()
+          .single();
+
+        if (promotionError) {
+          console.error('Error creating promotion:', promotionError);
+          return res.status(500).json({ error: 'Failed to create promotion' });
+        }
+
+        console.log('Promotion created successfully:', promotionData);
+        return res.status(200).json({ received: true });
+      } else if (event.type === 'invoice.paid') {
+        // For subscription payments, create a new subscription record
+        const session = event.data.object;
+        const userId = session.metadata.userId;
+        const tier = session.lines.data[0].plan.id;
+
+        const { data: subscriptionData, error } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: userId,
+            tier: tier,
+            status: 'active',
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating subscription:', error);
+          return res.status(500).json({ error: 'Failed to create subscription' });
+        }
+
+        console.log('Subscription created successfully:', subscriptionData);
+        return res.status(200).json({ received: true });
+      } else {
+        return res.status(200).json({ received: true });
+      }
+    }
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+};
+
+export default handler;
+
 export const config = {
   api: {
     bodyParser: false,
   },
 };
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const rawBody = await buffer(req);
-  const signature = req.headers['stripe-signature'] as string;
-
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (error: any) {
-    console.error(`Webhook signature verification failed: ${error.message}`);
-    return res.status(400).send(`Webhook Error: ${error.message}`);
-  }
-
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      
-      if (session.metadata?.trackName) {
-        // This is a promotion purchase
-        await handlePromotionCheckoutCompleted(session);
-      }
-      
-      break;
-    }
-    
-    // Handle other events as needed (subscription created, updated, etc.)
-    
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
-  }
-
-  return res.status(200).json({ received: true });
-}
-
-/**
- * Handle a completed checkout session for a promotion
- */
-async function handlePromotionCheckoutCompleted(session: Stripe.Checkout.Session) {
-  try {
-    const {
-      userId,
-      trackName,
-      trackArtist,
-      spotifyTrackId,
-      spotifyArtistId,
-      submissionCount,
-      estimatedAdditions,
-      genre,
-      isProDiscount
-    } = session.metadata || {};
-
-    if (!userId || !trackName) {
-      console.error('Missing required metadata in checkout session');
-      return;
-    }
-
-    // Get the payment details from the session
-    const paymentIntentId = session.payment_intent as string;
-    let paymentDetails;
-    
-    if (paymentIntentId) {
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      paymentDetails = paymentIntent;
-    }
-
-    // Create a record in the promotions table
-    const { data, error } = await supabase.from('promotions').insert({
-      user_id: userId,
-      track_name: trackName,
-      track_artist: trackArtist,
-      spotify_track_id: spotifyTrackId,
-      spotify_artist_id: spotifyArtistId,
-      submission_count: parseInt(submissionCount || '0'),
-      estimated_additions: parseInt(estimatedAdditions || '0'),
-      genre: genre || 'other',
-      status: 'pending',
-      total_cost: session.amount_total ? session.amount_total / 100 : 0,
-      payment_id: paymentIntentId,
-      pro_discount_applied: isProDiscount === 'true',
-      package_tier: getPackageTier(parseInt(submissionCount || '0')),
-      created_at: new Date().toISOString()
-    }).select('id').single();
-
-    if (error) {
-      console.error('Error creating promotion record:', error);
-      return;
-    }
-
-    // Log the successful creation of the promotion for tracking
-    console.log(`Promotion created with ID: ${data.id}`);
-
-    // Optional: Send confirmation email to the customer
-    // await sendPromotionConfirmationEmail(userId, trackName);
-  } catch (error) {
-    console.error('Error handling promotion checkout:', error);
-  }
-}
-
-/**
- * Determine the package tier based on submission count
- */
-function getPackageTier(submissionCount: number): string {
-  if (submissionCount <= 0) return 'Unknown';
-  if (submissionCount <= 20) return 'Silver';
-  if (submissionCount <= 35) return 'Gold';
-  return 'Platinum';
-} 
