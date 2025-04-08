@@ -12,11 +12,47 @@ interface CampaignResultsDashboardProps {
   campaignId: string;
 }
 
+interface CampaignReport {
+  curator_name: string;
+  action: string;
+  feedback: string;
+}
+
+interface AiAnalysis {
+  campaign_report: CampaignReport[];
+  key_takeaways: string[];
+  actionable_points: string[];
+}
+
+interface ResultStats {
+  totalSubmissions?: number;
+  approvalRate?: number;
+  approved?: number;
+  declined?: number;
+}
+
+interface CampaignResult {
+  stats?: ResultStats;
+  ai_analysis?: AiAnalysis;
+}
+
+interface Campaign {
+  id: string;
+  track_name: string;
+  track_artist: string;
+  status: string;
+  // ... other campaign fields
+}
+
+interface QueryResult {
+  campaign: Campaign;
+  results: CampaignResult | null;
+}
+
 export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboardProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['campaign-results', campaignId],
     queryFn: async () => {
-      // Fetch campaign data
       const { data: campaign, error: campaignError } = await supabase
         .from('promotions')
         .select('*')
@@ -25,7 +61,6 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       
       if (campaignError) throw campaignError;
       
-      // Fetch campaign results data with AI analysis
       const { data: resultData, error: resultError } = await supabase
         .from('campaign_result_data')
         .select('*')
@@ -41,7 +76,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       return {
         campaign,
         results: resultData || null
-      };
+      } as QueryResult;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
@@ -67,7 +102,6 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
   
   const { campaign, results } = data;
   
-  // Check if results with AI analysis are available
   if (!results || !results.ai_analysis) {
     return (
       <Card className="p-6">
@@ -85,7 +119,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
   }
   
   const { ai_analysis } = results;
-  const { campaign_report, key_takeaways, actionable_points } = ai_analysis;
+  const { campaign_report, key_takeaways, actionable_points } = ai_analysis as AiAnalysis;
   
   return (
     <div className="space-y-6">
@@ -279,4 +313,4 @@ function CampaignResultsSkeleton() {
       </Card>
     </div>
   );
-} 
+}

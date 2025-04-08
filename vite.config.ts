@@ -1,5 +1,4 @@
-
-import { defineConfig } from "vite";
+import { defineConfig, type ConfigEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -7,15 +6,15 @@ import { componentTagger } from "lovable-tagger";
 // NOTE: Lovable-tagger is a Vite plugin used in development to add helpful tagging to React components for easier debugging,
 // but it requires Vite 5.x and is not compatible with Vite 6.x, so we must use --legacy-peer-deps for installation
 // to resolve this conflict. NEVER upgrade Vite past version 5.x as it will break this plugin.
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }: ConfigEnv) => ({
   server: {
     host: "::",
     port: 8080,
     hmr: {
       timeout: 60000
     },
-    // Add allowedHosts to enable Lovable preview
-    allowedHosts: "all",
+    // Fix for allowedHosts - it should be an array or true, not a string
+    allowedHosts: ['all'],
     proxy: {
       // Forward API requests to Supabase Edge Functions
       '/api/payments/create-promotion-checkout': {
