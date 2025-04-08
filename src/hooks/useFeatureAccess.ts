@@ -16,40 +16,81 @@ const FREE_PLATFORMS = [
 ];
 
 export function useFeatureAccess() {
-  const { data: subscription, isLoading } = useQuery({
+  const { data: subscription, isLoading, error } = useQuery({
     queryKey: ["feature-access-subscription"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Use active_subscriptions view which only returns active subscriptions
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from("active_subscriptions")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();  // Use maybeSingle instead of single to handle case of no subscription
+      try {
+        // First try to use active_subscriptions view (optimized)
+        const { data: subscriptionData, error: viewError } = await supabase
+          .from("active_subscriptions")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (subscriptionError) {
-        console.log("Subscription error:", subscriptionError);
+        // If the view query fails or returns no results, fall back to the subscriptions table
+        if (viewError || !subscriptionData) {
+          console.log("Active subscriptions view error or no data, falling back to subscriptions table");
+          
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .maybeSingle();
+            
+          if (fallbackError) {
+            console.error("Subscription fallback error:", fallbackError);
+            return { tier: 'free' };
+          }
+          
+          // Use fallback data if available
+          const tier = fallbackData?.tier || 'free';
+          
+          // Get features for this tier
+          const { data: features, error: featuresError } = await supabase
+            .from("subscription_features")
+            .select("*")
+            .eq("tier", tier);
+            
+          if (featuresError) {
+            console.error("Features error:", featuresError);
+            return { tier };
+          }
+          
+          return {
+            ...fallbackData,
+            features,
+            tier
+          };
+        }
+      
+        // Default to free tier if no subscription data found
+        const tier = subscriptionData?.tier || 'free';
+        
+        // Get features for this tier
+        const { data: features, error: featuresError } = await supabase
+          .from("subscription_features")
+          .select("*")
+          .eq("tier", tier);
+          
+        if (featuresError) {
+          console.error("Features error:", featuresError);
+          return { tier };
+        }
+        
+        return {
+          ...subscriptionData,
+          features,
+          tier
+        };
+      } catch (err) {
+        console.error("Subscription error:", err);
+        // If all else fails, default to free tier
         return { tier: 'free' };
       }
-      
-      // Default to free tier if no subscription data found
-      const tier = subscriptionData?.tier || 'free';
-      
-      // Get features for this tier
-      const { data: features, error: featuresError } = await supabase
-        .from("subscription_features")
-        .select("*")
-        .eq("tier", tier);
-        
-      if (featuresError) throw featuresError;
-      
-      return {
-        ...subscriptionData,
-        features,
-        tier
-      };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: true,
@@ -79,6 +120,7 @@ export function useFeatureAccess() {
     isFeatureEnabled,
     getAvailablePlatforms,
     isLoading,
+    error,
     subscription,
   };
 }
