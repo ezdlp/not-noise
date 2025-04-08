@@ -116,15 +116,29 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
         }),
       });
       
-      const data = await response.json();
+      // Check for non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Invalid response format: ${await response.text().catch(() => 'Unable to get response text')}`);
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError: any) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error(`Failed to parse response: ${jsonError.message}`);
+      }
       
       if (!response.ok) {
-        throw new Error(data.message || 'Processing failed');
+        const errorMessage = data?.message || data?.error || 'Unknown error';
+        throw new Error(errorMessage);
       }
       
       setResults(data);
       toast.success("Campaign results processed and analyzed successfully");
     } catch (err: any) {
+      console.error('Processing error:', err);
       setError(`Processing failed: ${err.message}`);
       toast.error(`Processing failed: ${err.message}`);
     } finally {
