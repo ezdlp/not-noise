@@ -2,17 +2,46 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 import { parse } from 'csv-parse/sync';
 import { OpenAI } from 'openai';
+import Cors from 'cors';
 
+// Initialize the OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Initialize CORS middleware
+const cors = Cors({
+  methods: ['POST', 'OPTIONS'],
+  origin: true, // This allows requests from any origin
+});
+
+// Helper method to run middleware
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Run the CORS middleware
+  await runMiddleware(req, res, cors);
+
   // Ensure proper content type header is set for all responses
   res.setHeader('Content-Type', 'application/json');
   
+  // Handle OPTIONS requests explicitly
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   // Only allow POST requests
   if (req.method !== 'POST') {
+    console.log("[process-campaign-results] Method not allowed:", req.method);
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
@@ -453,3 +482,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
+
+// API route config to increase timeout and max body size
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+    responseLimit: false,
+    externalResolver: true,
+  },
+};

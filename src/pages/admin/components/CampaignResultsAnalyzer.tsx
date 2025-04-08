@@ -104,20 +104,42 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       setProcessing(true);
       console.log("Starting to process file:", filePath);
       
+      // Clear any previous results
+      setResults(null);
+      setRawData([]);
+      setAiAnalysis(null);
+      
+      const requestData = {
+        campaignId: campaign.id,
+        filePath,
+      };
+      
+      console.log("Sending request with data:", requestData);
+      
       const response = await fetch('/api/admin/process-campaign-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          campaignId: campaign.id,
-          filePath,
-        }),
+        body: JSON.stringify(requestData),
+        // Add credentials for session cookies
+        credentials: 'include',
       });
       
-      console.log("API response status:", response.status);
+      console.log("API response status:", response.status, response.statusText);
+      
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      
+      // If not a JSON response, throw an error with the text
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+      }
       
       const data = await response.json();
+      
       console.log("API response received:", {
         status: response.status,
         ok: response.ok,
@@ -152,9 +174,25 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       
     } catch (err: any) {
       console.error("Processing error:", err);
+      
+      // Provide more specific error messages based on common issues
+      let errorMessage = err.message || "An unknown error occurred";
+      
+      if (errorMessage.includes('405')) {
+        errorMessage = "API endpoint not accepting POST requests. Please check deployment.";
+      } else if (errorMessage.includes('404')) {
+        errorMessage = "API endpoint not found. Please verify deployment.";
+      } else if (errorMessage.includes('403')) {
+        errorMessage = "Permission denied. You may need to log in again.";
+      } else if (errorMessage.includes('401')) {
+        errorMessage = "Unauthorized. Please log in again.";
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      }
+      
       toast({
         title: "Processing failed",
-        description: err.message || "An unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
