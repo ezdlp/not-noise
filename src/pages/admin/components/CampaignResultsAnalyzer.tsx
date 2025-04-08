@@ -102,6 +102,7 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
   const processFile = async (filePath: string) => {
     try {
       setProcessing(true);
+      console.log("Starting to process file:", filePath);
       
       const response = await fetch('/api/admin/process-campaign-results', {
         method: 'POST',
@@ -114,10 +115,20 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         }),
       });
       
+      console.log("API response status:", response.status);
+      
       const data = await response.json();
+      console.log("API response received:", {
+        status: response.status,
+        ok: response.ok,
+        hasMessage: !!data.message,
+        hasStats: !!data.stats,
+        hasError: !!data.error
+      });
       
       if (!response.ok) {
-        throw new Error(data.message || 'Processing failed');
+        console.error("Processing failed:", data);
+        throw new Error(data.message || data.error || 'Processing failed');
       }
       
       setResults(data.stats);
@@ -128,12 +139,22 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
         description: "Campaign results processed successfully.",
       });
       
+      if (data.aiAnalysis && data.aiAnalysis.error) {
+        console.warn("AI Analysis contained errors:", data.aiAnalysis.error);
+        toast({
+          title: "Partial success",
+          description: "Statistics processed but AI analysis had errors. Results may be incomplete.",
+          variant: "default",
+        });
+      }
+      
       await analyzeWithAI(data.stats, data.rawData || []);
       
     } catch (err: any) {
+      console.error("Processing error:", err);
       toast({
         title: "Processing failed",
-        description: err.message,
+        description: err.message || "An unknown error occurred",
         variant: "destructive",
       });
     } finally {

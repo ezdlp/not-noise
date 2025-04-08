@@ -17,9 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log("[process-campaign-results] Request received:", { 
+      method: req.method,
+      body: JSON.stringify(req.body).substring(0, 200) // Log partial body for debugging
+    });
+    
     // Check if user is authenticated and is admin
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      console.log("[process-campaign-results] Authentication failed: No session");
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -31,6 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (userError || !user || !user.is_admin) {
+      console.log("[process-campaign-results] Authorization failed:", { userError, user });
       return res.status(403).json({ message: 'Forbidden - Admin access required' });
     }
 
@@ -38,10 +45,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { campaignId, filePath } = req.body;
 
     if (!campaignId || !filePath) {
+      console.log("[process-campaign-results] Missing parameters:", { campaignId, filePath });
       return res.status(400).json({ message: 'Missing required parameters' });
     }
 
     // Get the campaign details
+    console.log("[process-campaign-results] Fetching campaign:", campaignId);
     const { data: campaign, error: campaignError } = await supabase
       .from('promotions')
       .select('*')
@@ -49,26 +58,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (campaignError || !campaign) {
+      console.log("[process-campaign-results] Campaign fetch error:", campaignError);
       return res.status(404).json({ message: 'Campaign not found' });
     }
 
     // Download the CSV file from storage
+    console.log("[process-campaign-results] Downloading file from path:", filePath);
     const { data: fileData, error: fileError } = await supabase.storage
       .from('campaign-result-files')
       .download(filePath);
 
     if (fileError || !fileData) {
+      console.log("[process-campaign-results] File download error:", fileError);
       return res.status(404).json({ message: 'File not found', error: fileError?.message });
     }
 
     // Parse the CSV
+    console.log("[process-campaign-results] File downloaded, parsing CSV");
     const csvText = await fileData.text();
     
     // Add robust CSV validation and error handling
     let records;
     try {
       // Log the first 200 characters of the CSV to help with debugging
-      console.log("CSV preview:", csvText.substring(0, 200).replace(/\n/g, "\\n"));
+      console.log("[process-campaign-results] CSV preview:", csvText.substring(0, 200).replace(/\n/g, "\\n"));
       
       records = parse(csvText, {
         columns: true,
@@ -77,10 +90,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       
       // Log first record to see column names
-      console.log("CSV Columns:", records.length > 0 ? Object.keys(records[0]) : "No records");
+      console.log("[process-campaign-results] CSV Columns:", records.length > 0 ? Object.keys(records[0]) : "No records");
+      console.log("[process-campaign-results] Total records parsed:", records.length);
       
     } catch (csvError: any) {
-      console.error("CSV Parse Error:", csvError);
+      console.error("[process-campaign-results] CSV Parse Error:", csvError);
+      console.error("[process-campaign-results] CSV Parse Error Stack:", csvError.stack);
       return res.status(400).json({ 
         message: 'Failed to parse CSV file', 
         error: csvError.message,
@@ -211,7 +226,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let aiAnalysis = null;
     if (filteredRecords.length > 0) {
       try {
-        console.log("Sending to OpenAI for analysis:", JSON.stringify(filteredRecords).slice(0, 200) + "...");
+        console.log("[process-campaign-results] Sending to OpenAI for analysis - Records count:", filteredRecords.length);
+        console.log("[process-campaign-results] First record sample:", JSON.stringify(filteredRecords[0]));
         
         // Send to ChatGPT for analysis
         const systemPrompt = `
@@ -235,8 +251,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             "Specific, constructive suggestions based on curator feedback and current genre trends"
           ]
         }
+
+        Important: Your response MUST be valid JSON. Do not include markdown formatting, code blocks, or any text before or after the JSON. Your entire response should be parseable as JSON.
         `;
 
+        console.log("[process-campaign-results] About to call OpenAI API with model: gpt-4o");
+        
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -248,18 +268,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ],
           response_format: { type: "json_object" },
           temperature: 0.7,
+          max_tokens: 4000,
         });
 
+        console.log("[process-campaign-results] OpenAI API call completed successfully");
+        
         const aiResponse = completion.choices[0].message.content;
-        console.log("OpenAI Response received:", aiResponse ? aiResponse.slice(0, 200) + "..." : "No response");
+        console.log("[process-campaign-results] OpenAI Response received length:", aiResponse ? aiResponse.length : "No response");
+        console.log("[process-campaign-results] OpenAI Response preview:", aiResponse ? aiResponse.slice(0, 200) + "..." : "No response");
         
         if (aiResponse) {
           try {
-            aiAnalysis = JSON.parse(aiResponse);
+            console.log("[process-campaign-results] Attempting to parse OpenAI JSON response");
+            
+            // Try to clean up the response if it has any non-JSON content
+            let cleanedResponse = aiResponse;
+            
+            // Remove any markdown code block markers
+            cleanedResponse = cleanedResponse.replace(/```json/g, '').replace(/```/g, '');
+            
+            // Remove any text before the first { or after the last }
+            const firstBrace = cleanedResponse.indexOf('{');
+            const lastBrace = cleanedResponse.lastIndexOf('}');
+            
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleanedResponse = cleanedResponse.substring(firstBrace, lastBrace + 1);
+            }
+            
+            console.log("[process-campaign-results] Cleaned response:", 
+              cleanedResponse !== aiResponse ? "Response was cleaned" : "No cleaning needed");
+            
+            aiAnalysis = JSON.parse(cleanedResponse);
+            
+            console.log("[process-campaign-results] JSON parsed successfully");
+            console.log("[process-campaign-results] Response structure:", 
+              `campaign_report: ${aiAnalysis.campaign_report ? aiAnalysis.campaign_report.length : 'missing'} items, ` +
+              `key_takeaways: ${aiAnalysis.key_takeaways ? aiAnalysis.key_takeaways.length : 'missing'} items, ` +
+              `actionable_points: ${aiAnalysis.actionable_points ? aiAnalysis.actionable_points.length : 'missing'} items`
+            );
           } catch (parseError) {
-            console.error("Error parsing AI response:", parseError);
+            console.error("[process-campaign-results] Error parsing AI response:", parseError);
+            console.error("[process-campaign-results] Failed JSON string:", aiResponse);
+            
+            // Store the problematic response for debugging
+            try {
+              const { error: debugError } = await supabase
+                .from('debug_logs')
+                .insert({
+                  type: 'openai_parse_error',
+                  campaign_id: campaignId,
+                  error_message: parseError.message,
+                  raw_response: aiResponse,
+                  created_at: new Date().toISOString()
+                });
+                
+              if (debugError) {
+                console.error("[process-campaign-results] Failed to store debug log:", debugError);
+              } else {
+                console.log("[process-campaign-results] Stored problematic OpenAI response in debug_logs table");
+              }
+            } catch (logError) {
+              console.error("[process-campaign-results] Error storing debug log:", logError);
+            }
+            
             aiAnalysis = { 
               error: "Failed to parse AI analysis",
+              raw_response: aiResponse.substring(0, 500), // Store first 500 chars of the raw response for debugging
               campaign_report: filteredRecords.map(r => ({...r, shared_link: null})),
               key_takeaways: ["Analysis unavailable at this time."],
               actionable_points: ["Try analyzing again later."] 
@@ -267,7 +341,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         }
       } catch (aiError: any) {
-        console.error("Error generating AI analysis:", aiError);
+        console.error("[process-campaign-results] Error generating AI analysis:", aiError);
+        console.error("[process-campaign-results] Error details:", {
+          message: aiError.message,
+          name: aiError.name,
+          stack: aiError.stack,
+          status: aiError.status,
+          response: aiError.response ? JSON.stringify(aiError.response).substring(0, 500) : 'No response'
+        });
+        
         aiAnalysis = { 
           error: "AI analysis generation failed: " + aiError.message,
           campaign_report: filteredRecords.map(r => ({...r, shared_link: null})),
@@ -277,6 +359,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } else {
       // Provide fallback if no records to analyze
+      console.log("[process-campaign-results] No filtered records for AI analysis");
       aiAnalysis = {
         campaign_report: [],
         key_takeaways: ["No approved or declined feedback to analyze."],
@@ -286,6 +369,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Store the parsed results with AI analysis
     try {
+      console.log("[process-campaign-results] Storing results in Supabase");
       const { error: resultsError } = await supabase
         .from('campaign_result_data')
         .insert({
@@ -297,10 +381,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
       if (resultsError) {
-        console.error("Error inserting results:", resultsError);
+        console.error("[process-campaign-results] Error inserting results:", resultsError);
+      } else {
+        console.log("[process-campaign-results] Results stored successfully");
       }
     } catch (dbError: any) {
-      console.error("Database error:", dbError);
+      console.error("[process-campaign-results] Database error:", dbError);
+      console.error("[process-campaign-results] Database error details:", {
+        message: dbError.message,
+        name: dbError.name,
+        code: dbError.code,
+        stack: dbError.stack
+      });
     }
 
     // Update the campaign_results status
@@ -336,6 +428,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    console.log("[process-campaign-results] Process completed successfully");
     return res.status(200).json({
       message: 'Campaign results processed successfully',
       stats: enhancedStats,
@@ -344,7 +437,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error: any) {
-    console.error('Error processing campaign results:', error);
+    console.error('[process-campaign-results] Error processing campaign results:', error);
+    console.error('[process-campaign-results] Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      code: error.code
+    });
+    
     // Ensure we always return a JSON response even for unexpected errors
     return res.status(500).json({
       message: 'Failed to process campaign results',
