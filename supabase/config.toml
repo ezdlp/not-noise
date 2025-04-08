@@ -17,3 +17,7 @@ verify_jwt = false
 # Stripe webhook function - MUST REMAIN DISABLED FOR WEBHOOK ACCESS
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Campaign results processing function
+[functions.process-campaign-results]
+verify_jwt = true

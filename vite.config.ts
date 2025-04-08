@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       timeout: 60000
     },
+    // Add allowedHosts to enable Lovable preview
+    allowedHosts: "all",
     proxy: {
       // Forward API requests to Supabase Edge Functions
       '/api/payments/create-promotion-checkout': {

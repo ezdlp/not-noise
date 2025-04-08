@@ -1,3 +1,4 @@
+
 {
   "images": {
     "sizes": [304, 760],
@@ -168,7 +169,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "installCommand": "npm ci --force",
+        "installCommand": "npm ci --force --legacy-peer-deps",
         "buildCommand": "npm run build"
       }
     }
