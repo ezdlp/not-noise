@@ -1,4 +1,3 @@
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 import { parse } from 'csv-parse/sync';
@@ -66,11 +65,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       skip_empty_lines: true,
     });
 
+    // Filter for only the necessary columns and valid actions
+    const filteredRecords = records
+      .filter((r: any) => r.Action === 'approved' || r.Action === 'declined')
+      .map((r: any) => ({
+        curator_name: r.Outlet || '',
+        action: r.Action || '',
+        feedback: r.Feedback || ''
+      }));
+
     // Calculate campaign stats
     const totalSubmissions = records.length;
-    const approved = records.filter((r: any) => r.action === 'approved' || r.action === 'shared').length;
-    const declined = records.filter((r: any) => r.action === 'declined').length;
-    const pending = records.filter((r: any) => r.action === 'listen').length;
+    const approved = records.filter((r: any) => r.Action === 'approved' || r.Action === 'shared').length;
+    const declined = records.filter((r: any) => r.Action === 'declined').length;
+    const pending = records.filter((r: any) => r.Action === 'listen').length;
     const approvalRate = totalSubmissions > 0 ? (approved / totalSubmissions) * 100 : 0;
     
     // Calculate average listen time
@@ -108,13 +116,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       outletTypeBreakdown,
     };
 
-    // Store the parsed results
+    // Generate AI analysis if there are filtered records
+    let aiAnalysis = null;
+    if (filteredRecords.length > 0) {
+      try {
+        // Send to ChatGPT for analysis
+        const systemPrompt = `
+        You are Playlist Insights Bot, a specialist assistant that analyzes curator feedback for a music marketing app. You are given a structured list of curator responses (including their name, action, and feedback).
+
+        You must return your output in the following strict JSON structure, which will be parsed by the backend to populate the user's dashboard:
+        
+        {
+          "campaign_report": [
+            {
+              "curator_name": "string",
+              "action": "Approved or Declined",
+              "feedback": "summarized curator feedback",
+              "shared_link": null
+            }
+          ],
+          "key_takeaways": [
+            "Concise, overarching insights gathered from multiple curators' feedback"
+          ],
+          "actionable_points": [
+            "Specific, constructive suggestions based on curator feedback and current genre trends"
+          ]
+        }
+        `;
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4-turbo-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { 
+              role: "user", 
+              content: JSON.stringify(filteredRecords) 
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        });
+
+        const aiResponse = completion.choices[0].message.content;
+        if (aiResponse) {
+          try {
+            aiAnalysis = JSON.parse(aiResponse);
+          } catch (parseError) {
+            console.error("Error parsing AI response:", parseError);
+            aiAnalysis = { error: "Failed to parse AI analysis" };
+          }
+        }
+      } catch (aiError) {
+        console.error("Error generating AI analysis:", aiError);
+        aiAnalysis = { error: "AI analysis generation failed" };
+      }
+    }
+
+    // Store the parsed results with AI analysis
     const { error: resultsError } = await supabase
       .from('campaign_result_data')
       .insert({
         campaign_id: campaignId,
         raw_data: records,
         stats: enhancedStats,
+        ai_analysis: aiAnalysis,
+        processed_at: new Date().toISOString()
       });
 
     if (resultsError) {
@@ -135,9 +201,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw statusError;
     }
 
+    // Update the campaign status to delivered if it was active
+    if (campaign.status === 'active') {
+      await supabase
+        .from('promotions')
+        .update({ 
+          status: 'completed', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', campaignId);
+    }
+
     return res.status(200).json({
       message: 'Campaign results processed successfully',
       stats: enhancedStats,
+      aiAnalysis,
       rawData: records,
     });
 

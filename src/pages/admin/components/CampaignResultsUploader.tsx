@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FileSpreadsheet, Upload, Brain, AlertCircle } from "lucide-react";
 import { CampaignResults } from '@/types/database';
 
 interface Campaign {
@@ -90,7 +90,7 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
       
       toast.success("File uploaded successfully");
       
-      // Process the file
+      // Process the file with AI analysis
       await processFile(filePath);
       
     } catch (err: any) {
@@ -123,7 +123,7 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
       }
       
       setResults(data);
-      toast.success("Campaign results processed successfully");
+      toast.success("Campaign results processed and analyzed successfully");
     } catch (err: any) {
       setError(`Processing failed: ${err.message}`);
       toast.error(`Processing failed: ${err.message}`);
@@ -138,11 +138,15 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Upload Campaign Results</CardTitle>
+          <CardTitle>Upload & Process Campaign Results</CardTitle>
+          <CardDescription>
+            Upload CSV results files to process campaign feedback and generate AI insights
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
             <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4 mr-2" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -165,11 +169,13 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
                       No campaigns available
                     </div>
                   ) : (
-                    campaigns.map(campaign => (
-                      <SelectItem key={campaign.id} value={campaign.id}>
-                        {campaign.track_name} by {campaign.track_artist}
-                      </SelectItem>
-                    ))
+                    campaigns
+                      .filter(campaign => campaign.status === 'active')
+                      .map(campaign => (
+                        <SelectItem key={campaign.id} value={campaign.id}>
+                          {campaign.track_name} by {campaign.track_artist}
+                        </SelectItem>
+                      ))
                   )}
                 </SelectContent>
               </Select>
@@ -177,16 +183,38 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
             
             <div>
               <Label htmlFor="file">Campaign CSV Results</Label>
-              <Input id="file" type="file" accept=".csv" onChange={handleFileChange} />
+              <Input 
+                id="file" 
+                type="file" 
+                accept=".csv" 
+                onChange={handleFileChange} 
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Only CSV files with 'Outlet', 'Action', and 'Feedback' columns will be processed for AI analysis.
+              </p>
             </div>
             
             <Button 
               onClick={handleUpload} 
               disabled={uploading || processing || !file || !selectedCampaignId}
+              className="flex items-center"
             >
-              {uploading ? <><Spinner className="mr-2" /> Uploading...</> : 
-               processing ? <><Spinner className="mr-2" /> Processing...</> : 
-               'Upload & Process'}
+              {uploading ? (
+                <>
+                  <Spinner className="mr-2" /> 
+                  Uploading...
+                </>
+              ) : processing ? (
+                <>
+                  <Brain className="h-4 w-4 mr-2 animate-pulse" /> 
+                  Analyzing with AI...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload & Analyze
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -196,23 +224,51 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
         <Card>
           <CardHeader>
             <CardTitle>Processing Results</CardTitle>
+            <CardDescription>
+              AI analysis has been generated for this campaign's feedback
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-lg font-medium">Campaign</h3>
-                <p>{selectedCampaign?.track_name} by {selectedCampaign?.track_artist}</p>
+                <h3 className="text-base font-medium mb-2">Campaign</h3>
+                <p className="text-sm">{selectedCampaign?.track_name} by {selectedCampaign?.track_artist}</p>
               </div>
               <div>
-                <h3 className="text-lg font-medium">Statistics</h3>
-                <div className="space-y-2">
-                  <p>Total Submissions: {results.stats.totalSubmissions}</p>
-                  <p>Approved: {results.stats.approved} ({(results.stats.approvalRate).toFixed(1)}%)</p>
-                  <p>Declined: {results.stats.declined}</p>
-                  <p>Pending: {results.stats.pending}</p>
+                <h3 className="text-base font-medium mb-2">Statistics</h3>
+                <div className="space-y-1 text-sm">
+                  <p>Total Submissions: {results.stats?.totalSubmissions || 0}</p>
+                  <p>Approved: {results.stats?.approved || 0} ({(results.stats?.approvalRate || 0).toFixed(1)}%)</p>
+                  <p>Declined: {results.stats?.declined || 0}</p>
                 </div>
               </div>
             </div>
+            
+            {results.aiAnalysis && (
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="text-base font-medium mb-3">AI Analysis Generated</h3>
+                <div className="p-3 bg-blue-50 text-blue-800 rounded-md">
+                  <p className="font-medium">Key Takeaways and Actionable Points have been generated.</p>
+                  <p className="text-sm mt-1">
+                    The user will see these insights in their campaign dashboard.
+                  </p>
+                </div>
+                
+                {results.aiAnalysis.key_takeaways && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">Sample Key Takeaways:</h4>
+                    <ul className="text-xs list-disc pl-5 space-y-1">
+                      {results.aiAnalysis.key_takeaways.slice(0, 2).map((takeaway: string, index: number) => (
+                        <li key={index}>{takeaway}</li>
+                      ))}
+                      {results.aiAnalysis.key_takeaways.length > 2 && (
+                        <li className="text-muted-foreground">And {results.aiAnalysis.key_takeaways.length - 2} more...</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

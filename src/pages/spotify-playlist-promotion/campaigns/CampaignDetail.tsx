@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { HeadphonesIcon, ArrowLeftIcon, MusicIcon, UsersIcon } from 'lucide-react';
 import { formatDistance, format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
+import { CampaignResultsDashboard } from '@/components/spotify-promotion/CampaignResultsDashboard';
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -306,6 +307,10 @@ export default function CampaignDetail() {
               </div>
             </CardContent>
           </Card>
+          
+          {(campaign.status === 'completed' || campaign.status === 'delivered') && (
+            <CampaignResultsDashboard campaignId={campaign.id} />
+          )}
         </div>
         
         <div className="space-y-6">
