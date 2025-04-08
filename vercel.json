@@ -41,6 +41,10 @@
       "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/spotify-search"
     },
     {
+      "source": "/api/admin/process-campaign-results",
+      "destination": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/process-campaign-results"
+    },
+    {
       "source": "/link/:slug",
       "has": [
         {

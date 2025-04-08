@@ -116,14 +116,14 @@ export function CampaignResultsAnalyzer({ campaign, onComplete }: CampaignResult
       
       console.log("Sending request with data:", requestData);
       
-      const response = await fetch('/api/admin/process-campaign-results', {
+      // Use the Supabase Edge Function instead of the Next.js API route
+      const response = await fetch('https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/process-campaign-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
         body: JSON.stringify(requestData),
-        // Add credentials for session cookies
-        credentials: 'include',
       });
       
       console.log("API response status:", response.status, response.statusText);
