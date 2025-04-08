@@ -119,7 +119,10 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
       // Check for non-JSON responses
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Invalid response format: ${await response.text().catch(() => 'Unable to get response text')}`);
+        // Try to get response text for better error reporting
+        const responseText = await response.text().catch(e => `Unable to get response text: ${e.message}`);
+        console.error('Non-JSON response:', responseText.substring(0, 500)); // Log up to 500 chars
+        throw new Error(`Invalid response format: ${responseText.substring(0, 200)}`);
       }
       
       let data;
@@ -132,7 +135,8 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
       
       if (!response.ok) {
         const errorMessage = data?.message || data?.error || 'Unknown error';
-        throw new Error(errorMessage);
+        console.error('API error response:', data);
+        throw new Error(`API error: ${errorMessage}`);
       }
       
       setResults(data);
@@ -161,8 +165,19 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertTitle>Error Processing CSV</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{error}</p>
+                <div className="mt-2 text-sm">
+                  <p className="font-medium">Troubleshooting steps:</p>
+                  <ul className="list-disc pl-5 space-y-1 mt-1">
+                    <li>Check that your CSV has the required column headers (Action, Outlet, Feedback)</li>
+                    <li>Ensure your CSV has at least one record with "approved" or "declined" in the Action column</li>
+                    <li>Try simplifying your CSV file (remove extra columns, special characters, etc.)</li>
+                    <li>If you're still having trouble, contact support with the error message above</li>
+                  </ul>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
           
@@ -203,9 +218,14 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
                 accept=".csv" 
                 onChange={handleFileChange} 
               />
-              <p className="text-sm text-muted-foreground mt-1">
-                Only CSV files with 'Outlet', 'Action', and 'Feedback' columns will be processed for AI analysis.
-              </p>
+              <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                <p>CSV Requirements:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Must include columns: <strong>Action</strong>, <strong>Outlet</strong>, and <strong>Feedback</strong></li>
+                  <li>Must have at least one row with "approved" or "declined" in the Action column</li>
+                  <li>Optional columns: Country, Type, Listen Time (for additional data breakdowns)</li>
+                </ul>
+              </div>
             </div>
             
             <Button 

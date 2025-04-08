@@ -8,6 +8,9 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Ensure proper content type header is set for all responses
+  res.setHeader('Content-Type', 'application/json');
+  
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -61,9 +64,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Parse the CSV
     const csvText = await fileData.text();
     
-    // Add error handling for CSV parsing
+    // Add robust CSV validation and error handling
     let records;
     try {
+      // Log the first 200 characters of the CSV to help with debugging
+      console.log("CSV preview:", csvText.substring(0, 200).replace(/\n/g, "\\n"));
+      
       records = parse(csvText, {
         columns: true,
         skip_empty_lines: true,
@@ -77,12 +83,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error("CSV Parse Error:", csvError);
       return res.status(400).json({ 
         message: 'Failed to parse CSV file', 
-        error: csvError.message 
+        error: csvError.message,
+        hint: 'Please ensure your file is a valid CSV format with properly formatted columns'
       });
     }
     
     if (!records || records.length === 0) {
-      return res.status(400).json({ message: 'CSV file is empty or invalid' });
+      return res.status(400).json({ 
+        message: 'CSV file is empty or invalid',
+        hint: 'Please ensure your file contains data rows'
+      });
     }
 
     // Get column names (different files might have different casing)
@@ -90,9 +100,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const columns = Object.keys(firstRecord);
     
     // Find the action, outlet and feedback columns regardless of case
-    const actionColumn = columns.find(col => col.toLowerCase() === 'action') || 'Action';
-    const outletColumn = columns.find(col => col.toLowerCase() === 'outlet') || 'Outlet';
-    const feedbackColumn = columns.find(col => col.toLowerCase() === 'feedback') || 'Feedback';
+    const actionColumn = columns.find(col => col.toLowerCase() === 'action');
+    const outletColumn = columns.find(col => col.toLowerCase() === 'outlet');
+    const feedbackColumn = columns.find(col => col.toLowerCase() === 'feedback');
+    
+    // Validate required columns exist
+    if (!actionColumn || !outletColumn || !feedbackColumn) {
+      console.error("Missing required columns. Found:", columns);
+      return res.status(400).json({ 
+        message: 'CSV is missing required columns',
+        required: ['Action', 'Outlet', 'Feedback'],
+        found: columns,
+        hint: 'Please ensure your CSV includes Action, Outlet, and Feedback columns (case insensitive)'
+      });
+    }
     
     // Filter for only the necessary columns and valid actions
     const filteredRecords = records
@@ -110,6 +131,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }));
     
     console.log(`Filtered ${filteredRecords.length} records out of ${records.length} total`);
+    
+    // Validate we have at least one valid record after filtering
+    if (filteredRecords.length === 0) {
+      return res.status(400).json({ 
+        message: 'No valid records found in CSV',
+        hint: 'Please ensure your CSV contains at least one record with "approved" or "declined" in the Action column'
+      });
+    }
 
     // Calculate campaign stats
     const totalSubmissions = records.length;
@@ -316,6 +345,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('Error processing campaign results:', error);
+    // Ensure we always return a JSON response even for unexpected errors
     return res.status(500).json({
       message: 'Failed to process campaign results',
       error: error.message || 'Unknown error',
