@@ -45,6 +45,21 @@ export default defineConfig(({ mode }) => ({
             }
           });
         }
+      },
+      // Add proxy for process-campaign-results function (development only)
+      '/api/admin/process-campaign-results': {
+        target: 'https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/process-campaign-results',
+        changeOrigin: true,
+        rewrite: (path) => '',
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Forward the Authorization header if it exists
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+              proxyReq.setHeader('Authorization', authHeader);
+            }
+          });
+        }
       }
     }
   },

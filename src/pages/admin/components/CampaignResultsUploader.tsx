@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,10 +106,20 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
     try {
       setProcessing(true);
       
-      const response = await fetch('/api/admin/process-campaign-results', {
+      // Get authentication token for the Edge Function call
+      const { data: authData } = await supabase.auth.getSession();
+      const token = authData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      // Call the Supabase Edge Function directly
+      const response = await fetch('https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/process-campaign-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           campaignId: selectedCampaignId,
