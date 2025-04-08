@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertCircle, CheckCircle, Lightbulb, ListTodo } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/types/database';
 
 interface CampaignResultsDashboardProps {
   campaignId: string;
@@ -33,7 +34,7 @@ interface ResultStats {
 
 interface CampaignResult {
   stats?: ResultStats;
-  ai_analysis?: AiAnalysis;
+  ai_analysis?: AiAnalysis | Json;
 }
 
 interface Campaign {
@@ -50,7 +51,7 @@ interface QueryResult {
 }
 
 export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboardProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<QueryResult>({
     queryKey: ['campaign-results', campaignId],
     queryFn: async () => {
       const { data: campaign, error: campaignError } = await supabase
@@ -75,7 +76,10 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       
       return {
         campaign,
-        results: resultData || null
+        results: resultData ? { 
+          ...resultData, 
+          ai_analysis: resultData.ai_analysis as AiAnalysis 
+        } : null
       } as QueryResult;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -100,7 +104,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     );
   }
   
-  const { campaign, results } = data;
+  const { campaign, results } = data || {};
   
   if (!results || !results.ai_analysis) {
     return (
@@ -118,8 +122,8 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     );
   }
   
-  const { ai_analysis } = results;
-  const { campaign_report, key_takeaways, actionable_points } = ai_analysis as AiAnalysis;
+  const aiAnalysis = results.ai_analysis as AiAnalysis;
+  const { campaign_report, key_takeaways, actionable_points } = aiAnalysis;
   
   return (
     <div className="space-y-6">
