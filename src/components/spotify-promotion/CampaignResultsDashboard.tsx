@@ -76,10 +76,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       
       return {
         campaign,
-        results: resultData ? { 
-          ...resultData, 
-          ai_analysis: resultData.ai_analysis as AiAnalysis 
-        } : null
+        results: resultData ? resultData : null
       } as QueryResult;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -122,8 +119,11 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     );
   }
   
-  const aiAnalysis = results.ai_analysis as AiAnalysis;
-  const { campaign_report, key_takeaways, actionable_points } = aiAnalysis;
+  // Safe type assertion with additional checks to ensure the AI analysis structure is valid
+  const aiAnalysis = results.ai_analysis as any;
+  const campaign_report = Array.isArray(aiAnalysis?.campaign_report) ? aiAnalysis.campaign_report : [];
+  const key_takeaways = Array.isArray(aiAnalysis?.key_takeaways) ? aiAnalysis.key_takeaways : [];
+  const actionable_points = Array.isArray(aiAnalysis?.actionable_points) ? aiAnalysis.actionable_points : [];
   
   return (
     <div className="space-y-6">
