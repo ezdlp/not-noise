@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertCircle, CheckCircle, Lightbulb, ListTodo } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/types/database';
 
 interface CampaignResultsDashboardProps {
   campaignId: string;
@@ -34,7 +34,7 @@ interface ResultStats {
 
 interface CampaignResult {
   stats?: ResultStats;
-  ai_analysis?: AiAnalysis | Json;
+  ai_analysis?: AiAnalysis | any;
 }
 
 interface Campaign {
