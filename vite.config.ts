@@ -1,3 +1,4 @@
+
 import { defineConfig, type ConfigEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -155,6 +156,13 @@ export default defineConfig(({ mode }: ConfigEnv) => ({
             '@supabase/storage-js',
             '@supabase/functions-js',
             '@supabase/auth-helpers-react'
+          ],
+          // Add FontAwesome chunk
+          'fontawesome-vendor': [
+            '@fortawesome/fontawesome-svg-core',
+            '@fortawesome/free-brands-svg-icons',
+            '@fortawesome/free-solid-svg-icons',
+            '@fortawesome/react-fontawesome'
           ]
         },
         chunkFileNames: 'assets/[name]-[hash].js',
@@ -185,7 +193,12 @@ export default defineConfig(({ mode }: ConfigEnv) => ({
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
       '@radix-ui/react-popover',
-      '@radix-ui/react-tabs'
+      '@radix-ui/react-tabs',
+      // Add FontAwesome packages
+      '@fortawesome/fontawesome-svg-core',
+      '@fortawesome/free-brands-svg-icons',
+      '@fortawesome/free-solid-svg-icons',
+      '@fortawesome/react-fontawesome'
     ],
     exclude: [],
     esbuildOptions: {

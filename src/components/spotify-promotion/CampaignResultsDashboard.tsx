@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ interface ResultStats {
 
 interface CampaignResult {
   stats?: ResultStats;
-  ai_analysis?: AiAnalysis | any;
+  ai_analysis?: AiAnalysis;
 }
 
 interface Campaign {
@@ -119,11 +118,10 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     );
   }
   
-  // Safe type assertion with additional checks to ensure the AI analysis structure is valid
-  const aiAnalysis = results.ai_analysis as any;
-  const campaign_report = Array.isArray(aiAnalysis?.campaign_report) ? aiAnalysis.campaign_report : [];
-  const key_takeaways = Array.isArray(aiAnalysis?.key_takeaways) ? aiAnalysis.key_takeaways : [];
-  const actionable_points = Array.isArray(aiAnalysis?.actionable_points) ? aiAnalysis.actionable_points : [];
+  // Safely access the AI analysis properties
+  const campaign_report = Array.isArray(results.ai_analysis.campaign_report) ? results.ai_analysis.campaign_report : [];
+  const key_takeaways = Array.isArray(results.ai_analysis.key_takeaways) ? results.ai_analysis.key_takeaways : [];
+  const actionable_points = Array.isArray(results.ai_analysis.actionable_points) ? results.ai_analysis.actionable_points : [];
   
   return (
     <div className="space-y-6">
