@@ -48,17 +48,31 @@ export default function Pricing() {
     queryFn: async () => {
       if (!session?.user) return null;
       try {
+        // First try the active_subscriptions view (more efficient)
+        const {
+          data: activeData,
+          error: activeError
+        } = await supabase.from("active_subscriptions").select("*, tier").eq("user_id", session.user.id).maybeSingle();
+        
+        if (!activeError && activeData) {
+          return activeData;
+        }
+        
+        // Fallback to direct query if active_subscriptions fails
         const {
           data,
           error
-        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).eq("status", "active").single();
-        if (error) throw error;
-        return data || {
-          tier: 'free'
-        }; // Default to free tier if no subscription found
+        } = await supabase.from("subscriptions").select("*, tier").eq("user_id", session.user.id).eq("status", "active").maybeSingle();
+        
+        if (error) {
+          console.error("Subscription fetch error:", error);
+          return { tier: 'free' }; // Default to free tier on error
+        }
+        
+        return data || { tier: 'free' }; // Default to free tier if no subscription found
       } catch (error) {
         console.error("Subscription fetch error:", error);
-        throw error;
+        return { tier: 'free' }; // Default to free tier on any error
       }
     },
     enabled: !!session?.user,
