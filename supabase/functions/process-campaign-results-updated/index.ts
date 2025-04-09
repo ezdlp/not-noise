@@ -395,7 +395,7 @@ serve(async (req) => {
     }
 
     // Generate AI analysis if there are filtered records
-    let aiAnalysis: any = null
+    let aiAnalysis = null
     if (filteredRecords.length > 0 && OPENAI_API_KEY) {
       try {
         console.log("[process-campaign-results] Sending to OpenAI for analysis - Records count:", filteredRecords.length)
