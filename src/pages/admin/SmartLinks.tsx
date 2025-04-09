@@ -126,9 +126,11 @@ export default function SmartLinks() {
       return count ?? 0;
     },
     enabled: !!adminStatus?.isAdmin,
-    onError: (error) => {
-      console.error("Error fetching smart links count:", error);
-      setHasError(true);
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error fetching smart links count:", error);
+        setHasError(true);
+      }
     }
   });
 
