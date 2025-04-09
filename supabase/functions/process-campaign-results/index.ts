@@ -106,15 +106,34 @@ serve(async (req) => {
           userId = user.id
           console.log("[process-campaign-results] Authenticated user:", userId);
           
-          // Check if user is admin
+          // Check if user is admin - Check BOTH is_admin flag AND user_roles table
+          // First check profiles.is_admin
           const { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('is_admin')
             .eq('id', userId)
             .single()
+            
+          // Next check user_roles table for admin role
+          const { data: roleData, error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('role', 'admin')
+            .maybeSingle()
+
+          console.log("[process-campaign-results] Admin checks:", {
+            profileCheck: profile?.is_admin || false,
+            roleCheck: roleData ? true : false,
+            profileError: profileError?.message || null,
+            roleError: roleError?.message || null
+          });
           
-          if (profileError || !profile || !profile.is_admin) {
-            console.log("[process-campaign-results] Authorization failed:", { profileError, profile });
+          // Allow if EITHER check passes
+          const isAdmin = (profile && profile.is_admin === true) || (roleData !== null);
+          
+          if (!isAdmin) {
+            console.log("[process-campaign-results] Authorization failed - not admin");
             return new Response(
               JSON.stringify({ message: 'Forbidden - Admin access required' }),
               {
@@ -122,6 +141,8 @@ serve(async (req) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               }
             )
+          } else {
+            console.log("[process-campaign-results] Admin authorization successful");
           }
         }
       } catch (authError) {
