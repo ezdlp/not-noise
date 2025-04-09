@@ -131,285 +131,209 @@ Deno.serve(async (req) => {
       url: pl.url
     })) || []
 
-    // Generate action buttons for schema markup
-    const actionButtons = streamingPlatforms.map(platform => ({
-      "@type": "ListenAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": platform.url,
-        "actionPlatform": [
-          "http://schema.org/MusicPlatform",
-          platform.url
-        ]
-      },
-      "expectsAcceptanceOf": {
-        "@type": "Offer",
-        "category": "stream"
-      }
-    }))
+    // Generate the full HTML page with proper meta tags and schema markup
+    // Optimize for social sharing and search engines
+    const fullTitle = `${finalSmartLink.title} by ${finalSmartLink.artist_name} | Listen on All Platforms`
+    const description = finalSmartLink.description || `Stream or download ${finalSmartLink.title} by ${finalSmartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`
+    const canonicalUrl = `${SITE_URL}/link/${slug}`
+    
+    // Ensure artwork URL is absolute
+    const artworkUrl = finalSmartLink.artwork_url.startsWith('http') 
+      ? finalSmartLink.artwork_url 
+      : `${SITE_URL}${finalSmartLink.artwork_url.startsWith('/') ? '' : '/'}${finalSmartLink.artwork_url}`
 
-    // Create schema.org structured data
-    const musicSchema = {
-      "@context": "https://schema.org",
-      "@type": "MusicRecording",
-      "name": finalSmartLink.title,
-      "byArtist": {
-        "@type": "MusicGroup",
-        "name": finalSmartLink.artist_name,
-        "@id": `${SITE_URL}/artist/${encodeURIComponent(finalSmartLink.artist_name)}`
+    // Build platform links list for display
+    const platformLinksList = streamingPlatforms
+      .map(platform => `<li><a href="${platform.url}" target="_blank" rel="noopener noreferrer">${platform.name}</a></li>`)
+      .join('')
+
+    // Schema.org structured data
+    const schemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'MusicRecording',
+      'name': finalSmartLink.title,
+      'byArtist': {
+        '@type': 'MusicGroup',
+        'name': finalSmartLink.artist_name,
       },
-      "image": finalSmartLink.artwork_url,
-      "description": finalSmartLink.description,
-      ...(finalSmartLink.release_date && { "datePublished": finalSmartLink.release_date }),
-      "potentialAction": actionButtons,
-      "url": `${SITE_URL}/link/${slug}`,
-      "offers": streamingPlatforms.map(platform => ({
-        "@type": "Offer",
-        "url": platform.url,
-        "availability": "https://schema.org/InStock",
-        "category": "stream"
-      })),
-      "publisher": {
-        "@type": "Organization",
-        "name": "Soundraiser",
-        "logo": {
-          "@type": "ImageObject",
-          "url": `${SITE_URL}/lovable-uploads/soundraiser-logo/Logo A.png`
+      'image': artworkUrl,
+      'description': description,
+      'url': canonicalUrl,
+      ...(finalSmartLink.release_date && { 'datePublished': finalSmartLink.release_date }),
+      'potentialAction': streamingPlatforms.map(platform => ({
+        '@type': 'ListenAction',
+        'target': {
+          '@type': 'EntryPoint',
+          'urlTemplate': platform.url
+        },
+        'expectsAcceptanceOf': {
+          '@type': 'Offer',
+          'name': `${finalSmartLink.title} on ${platform.name}`
         }
-      }
+      }))
     }
 
-    // Create the full HTML with all required meta tags
-    const fullTitle = `${finalSmartLink.title} by ${finalSmartLink.artist_name} | Listen on All Platforms`
-    const shortTitle = `${finalSmartLink.title} by ${finalSmartLink.artist_name}` // Shorter title for WhatsApp
-    const finalDescription = finalSmartLink.description || 
-      `Stream or download ${finalSmartLink.title} by ${finalSmartLink.artist_name}. Available on Spotify, Apple Music, and more streaming platforms.`
-    // Truncated description for WhatsApp
-    const shortDescription = finalDescription.length > 80 ? finalDescription.substring(0, 77) + '...' : finalDescription
-    
-    const platformList = streamingPlatforms.map(platform => 
-      `<li style="margin:8px 0;"><a href="${platform.url}" target="_blank" rel="noopener" style="color:#6851FB;text-decoration:none;font-weight:500;">${platform.name}</a></li>`
-    ).join('')
-
-    // Create optimized HTML based on the crawler type
-    let html
-    
-    if (isWhatsApp) {
-      // Ultra-minimal HTML specifically for WhatsApp (putting meta tags as early as possible)
-      html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta property="og:site_name" content="Soundraiser">
-<meta property="og:title" content="${shortTitle}">
-<meta property="og:description" content="${shortDescription}">
-<meta property="og:image" content="${finalSmartLink.artwork_url}">
-<meta property="og:image:width" content="600">
-<meta property="og:image:height" content="600">
-<meta property="og:url" content="${SITE_URL}/link/${slug}">
-<meta property="og:type" content="music.song">
-<title>${shortTitle}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body{font-family:system-ui,sans-serif;margin:0;padding:0;background:#FAFAFA;color:#111827}
-.container{max-width:600px;margin:0 auto;padding:32px 16px}
-.card{background:white;border-radius:16px;box-shadow:0 4px 6px rgba(0,0,0,0.1);padding:24px;margin-bottom:24px}
-.header{display:flex;align-items:center;margin-bottom:24px}
-.artwork{width:120px;height:120px;border-radius:8px;object-fit:cover;margin-right:16px}
-.title{font-size:22px;font-weight:600;margin:0 0 4px 0}
-.artist{font-size:18px;color:#6B7280;margin:0 0 12px 0}
-.platforms{list-style-type:none;padding:0;margin:24px 0 0 0}
-.button{display:inline-block;background:#6851FB;color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;margin-top:24px;text-align:center}
-</style>
-</head>
-<body>
-<div class="container">
-<div class="card">
-<div class="header">
-<img src="${finalSmartLink.artwork_url}" alt="${finalSmartLink.title}" class="artwork">
-<div>
-<h1 class="title">${finalSmartLink.title}</h1>
-<p class="artist">by ${finalSmartLink.artist_name}</p>
-</div>
-</div>
-<h2>Available on:</h2>
-<ul class="platforms">
-${platformList}
-</ul>
-<a href="${SITE_URL}/link/${slug}" class="button">Open Interactive Page</a>
-</div>
-</div>
-</body>
-</html>`
-    } else {
-      // Full HTML with all meta tags for other crawlers
-      html = `<!DOCTYPE html>
+    // Complete HTML with Meta Tags optimized for social sharing
+    // Different optimizations for WhatsApp vs other social media
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${fullTitle}</title>
+  ${isWhatsApp ? `
+  <!-- WhatsApp optimization: Critical OG tags first -->
+  <meta property="og:site_name" content="Soundraiser">
+  <meta property="og:title" content="${finalSmartLink.title} by ${finalSmartLink.artist_name}">
+  <meta property="og:description" content="${description.substring(0, 100)}...">
+  <meta property="og:image" content="${artworkUrl}">
+  <meta property="og:url" content="${canonicalUrl}">
+  <meta property="og:type" content="music.song">` : ''}
   
-  <!-- Basic SEO -->
-  <meta name="description" content="${finalDescription}">
-  <link rel="canonical" href="${SITE_URL}/link/${slug}">
+  <!-- Basic Meta -->
+  <meta name="description" content="${description}">
   
   <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="music.song">
   <meta property="og:title" content="${fullTitle}">
-  <meta property="og:description" content="${finalDescription}">
-  <meta property="og:image" content="${finalSmartLink.artwork_url}">
-  <meta property="og:url" content="${SITE_URL}/link/${slug}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:image" content="${artworkUrl}">
+  <meta property="og:url" content="${canonicalUrl}">
+  <meta property="og:type" content="music.song">
   <meta property="og:site_name" content="Soundraiser">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="${fullTitle}">
-  ${finalSmartLink.release_date ? `<meta property="music:release_date" content="${finalSmartLink.release_date}">` : ''}
-  ${streamingPlatforms.map(platform => `<meta property="music:musician" content="${platform.url}">`).join('\n  ')}
-  
-  <!-- WhatsApp specific -->
-  <meta property="og:image:secure_url" content="${finalSmartLink.artwork_url}">
+  <meta property="og:image:alt" content="${finalSmartLink.title} by ${finalSmartLink.artist_name}">
+  <meta property="og:image:secure_url" content="${artworkUrl}">
   <meta property="og:locale" content="en_US">
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${fullTitle}">
-  <meta name="twitter:description" content="${finalDescription}">
-  <meta name="twitter:image" content="${finalSmartLink.artwork_url}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${artworkUrl}">
   
-  <!-- Schema.org structured data -->
-  <script type="application/ld+json">
-    ${JSON.stringify(musicSchema)}
-  </script>
-
+  <!-- Music specific -->
+  <meta property="music:musician" content="${SITE_URL}/artist/${encodeURIComponent(finalSmartLink.artist_name)}">
+  <meta property="music:song" content="${canonicalUrl}">
+  
+  <link rel="canonical" href="${canonicalUrl}">
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">${JSON.stringify(schemaData)}</script>
+  
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #FAFAFA;
-      color: #111827;
+      background: #f5f5f5;
+      color: #333;
       line-height: 1.5;
     }
     .container {
       max-width: 600px;
       margin: 0 auto;
-      padding: 32px 16px;
-    }
-    .card {
-      background-color: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 40px;
     }
     .artwork {
-      width: 120px;
-      height: 120px;
+      width: 100%;
       border-radius: 8px;
-      object-fit: cover;
-      margin-right: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .title {
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0 0 4px 0;
+    h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
     }
     .artist {
+      color: #666;
+      margin-bottom: 20px;
       font-size: 18px;
-      color: #6B7280;
-      margin: 0 0 12px 0;
     }
     .description {
-      margin-top: 16px;
-      color: #4B5563;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    .cta {
+      display: block;
+      background: #6851FB;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 20px;
     }
     .platforms {
-      list-style-type: none;
+      list-style: none;
       padding: 0;
-      margin: 24px 0 0 0;
     }
-    .button {
-      display: inline-block;
-      background-color: #6851FB;
-      color: white;
+    .platforms li {
+      margin-bottom: 8px;
+    }
+    .platforms a {
+      color: #6851FB;
       text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 500;
-      margin-top: 24px;
-      text-align: center;
     }
     .footer {
       text-align: center;
-      color: #9CA3AF;
+      margin-top: 40px;
+      color: #999;
       font-size: 14px;
-      margin-top: 32px;
+    }
+    .footer a {
+      color: #6851FB;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <div class="header">
-        <img src="${finalSmartLink.artwork_url}" alt="${finalSmartLink.title}" class="artwork">
-        <div>
-          <h1 class="title">${finalSmartLink.title}</h1>
-          <p class="artist">by ${finalSmartLink.artist_name}</p>
-          ${finalSmartLink.description ? `<p class="description">${finalSmartLink.description}</p>` : ''}
-        </div>
-      </div>
-      
-      <h2>Available on:</h2>
-      <ul class="platforms">
-        ${platformList}
-      </ul>
-      
-      <a href="${SITE_URL}/link/${slug}" class="button">Open Interactive Page</a>
-    </div>
+    <img class="artwork" src="${artworkUrl}" alt="${finalSmartLink.title} by ${finalSmartLink.artist_name}" />
+    <h1>${finalSmartLink.title}</h1>
+    <div class="artist">by ${finalSmartLink.artist_name}</div>
+    <div class="description">${description}</div>
     
-    ${!finalSmartLink.profiles?.hide_branding ? 
-      `<div class="footer">
-        Powered by <a href="${SITE_URL}" style="color:#6851FB;text-decoration:none;">Soundraiser</a>
-      </div>` : ''}
+    <a href="${canonicalUrl}" class="cta">Listen Now</a>
+    
+    <h2>Available on:</h2>
+    <ul class="platforms">
+      ${platformLinksList}
+    </ul>
+    
+    <div class="footer">
+      <p>
+        <a href="${SITE_URL}">Powered by Soundraiser</a>
+      </p>
+    </div>
   </div>
+
+  <script>
+    // If JavaScript is enabled, redirect to the actual Smart Link
+    window.location.href = "${canonicalUrl}";
+  </script>
 </body>
-</html>`
-    }
+</html>`;
 
-    // Record success in logs
-    console.log(`Successfully generated SEO HTML for ${slug}`)
-
-    // Create headers specific to the crawler type
-    const responseHeaders = {
-      ...corsHeaders,
-      'Content-Type': 'text/html; charset=utf-8'
-    };
-
-    // Add specific headers for WhatsApp
-    if (isWhatsApp) {
-      console.log('Setting WhatsApp-optimized response headers');
-      responseHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-    } else {
-      responseHeaders['Cache-Control'] = 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400';
-    }
-
-    // Return the HTML with proper headers
     return new Response(html, {
-      headers: responseHeaders
-    })
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=600'
+      }
+    });
   } catch (error) {
     console.error('Error in smart-link-seo function:', error)
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    return new Response(`Internal Server Error: ${error.message}`, {
       status: 500,
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain'
       }
     })
   }

@@ -6,9 +6,21 @@
   "installCommand": "npm install --legacy-peer-deps",
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/sitemap.xml", 
+      "dest": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap" 
+    },
+    { "src": "/sitemap-:file.xml", 
+      "dest": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/sitemap-:file.xml" 
+    },
+    { "src": "/api/sitemap", 
+      "dest": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap" 
+    },
+    { "src": "/api/sitemap/:file", 
+      "dest": "https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/simplified-sitemap/:file" 
+    },
     { "src": "/link/.*", "dest": "/index.html" },
-    { "src": "/control-room/.*", "dest": "/index.html" },
-    { "src": "/dashboard/.*", "dest": "/index.html" },
+    { "src": "/control-room(/.*)?", "dest": "/index.html" },
+    { "src": "/dashboard(/.*)?", "dest": "/index.html" },
     { "src": "/links/.*", "dest": "/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]

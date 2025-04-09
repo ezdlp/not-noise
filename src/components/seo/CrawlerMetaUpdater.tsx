@@ -39,8 +39,12 @@ export function CrawlerMetaUpdater() {
       // As a fallback, try to use a fetch request to get the meta data
       const fetchMetaData = async () => {
         try {
-          // Use correct URL format with project ID
-          const response = await fetch(`https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta?slug=${slug}`);
+          // Use the Edge Function directly with the correct project URL
+          const supabaseProjectId = 'owtufhdsuuyrgmxytclj';
+          const functionUrl = `https://${supabaseProjectId}.supabase.co/functions/v1/smart-link-meta?slug=${slug}`;
+          
+          const response = await fetch(functionUrl);
+          
           if (response.ok) {
             const data = await response.json();
             if (data && data.title) {
@@ -51,7 +55,11 @@ export function CrawlerMetaUpdater() {
                 data.artworkUrl,
                 `${siteUrl}/link/${slug}`
               );
+            } else {
+              console.warn("Smart link meta data missing required fields:", data);
             }
+          } else {
+            console.error(`Error fetching meta data: ${response.status} ${response.statusText}`);
           }
         } catch (error) {
           console.error('Error fetching meta data:', error);
@@ -129,12 +137,19 @@ export function CrawlerMetaUpdater() {
       { property: 'og:image', content: absoluteImageUrl },
       { property: 'og:url', content: url },
       { property: 'og:type', content: 'music.song' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: fullTitle },
+      { property: 'og:image:secure_url', content: absoluteImageUrl },
+      { property: 'og:locale', content: 'en_US' },
+      { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:title', content: fullTitle },
       { name: 'twitter:description', content: fullDescription },
       { name: 'twitter:image', content: absoluteImageUrl },
       { name: 'description', content: fullDescription }
     ];
     
+    // Update or create the meta tags
     standardMetaTags.forEach(tag => {
       let meta;
       if (tag.property) {

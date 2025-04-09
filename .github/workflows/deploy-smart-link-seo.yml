@@ -33,8 +33,14 @@ jobs:
       
       # Deploy smart-link-seo function
       - name: Deploy smart-link-seo function with JWT verification disabled
-        run: supabase functions deploy smart-link-seo --no-verify-jwt
+        run: |
+          echo "Deploying smart-link-seo function..."
+          supabase functions deploy smart-link-seo --no-verify-jwt
+          echo "Smart link SEO function deployed successfully!"
         
       # Deploy smart-link-meta function
       - name: Deploy smart-link-meta function with JWT verification disabled  
-        run: supabase functions deploy smart-link-meta --no-verify-jwt
+        run: |
+          echo "Deploying smart-link-meta function..."
+          supabase functions deploy smart-link-meta --no-verify-jwt
+          echo "Smart link meta function deployed successfully!"
