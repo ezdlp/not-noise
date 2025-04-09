@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertCircle, CheckCircle, Lightbulb, ListTodo, ExternalLink, Music } from "lucide-react";
+import { AlertCircle, CheckCircle, Lightbulb, ListTodo, ExternalLink, Music, Headphones } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -47,6 +47,7 @@ interface Campaign {
   artwork_url?: string;
   package_tier?: string;
   submission_count?: number;
+  spotify_track_id?: string;
   // ... other campaign fields
 }
 
@@ -56,6 +57,9 @@ interface QueryResult {
 }
 
 export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboardProps) {
+  const [trackArtwork, setTrackArtwork] = useState<string | null>(null);
+
+  // Fetch campaign data and results
   const { data, isLoading, error } = useQuery<QueryResult>({
     queryKey: ['campaign-results', campaignId],
     queryFn: async () => {
@@ -87,6 +91,32 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });
+
+  // Fetch Spotify track artwork
+  useEffect(() => {
+    if (data?.campaign?.spotify_track_id) {
+      const fetchSpotifyTrack = async () => {
+        try {
+          const { data: trackData, error } = await supabase.functions.invoke('spotify-search', {
+            body: { url: data.campaign.spotify_track_id }
+          });
+          
+          if (error) {
+            console.error('Error fetching Spotify track:', error);
+            return;
+          }
+          
+          if (trackData && trackData.artworkUrl) {
+            setTrackArtwork(trackData.artworkUrl);
+          }
+        } catch (err) {
+          console.error('Failed to fetch track artwork:', err);
+        }
+      };
+      
+      fetchSpotifyTrack();
+    }
+  }, [data?.campaign?.spotify_track_id]);
   
   if (isLoading) {
     return <CampaignResultsSkeleton />;
@@ -162,70 +192,55 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
   }
   
   const defaultArtwork = "https://placehold.co/400x400/6851FB/FFFFFF?text=Track+Artwork";
+  const artworkUrl = trackArtwork || campaign.artwork_url || defaultArtwork;
   const capitalizedTier = campaign.package_tier 
     ? campaign.package_tier.charAt(0).toUpperCase() + campaign.package_tier.slice(1) 
     : 'Standard';
   
   return (
-    <div className="space-y-6">
-      {/* Track Info with Artwork */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <div className="w-full md:w-auto">
-          <img 
-            src={campaign.artwork_url || defaultArtwork}
-            alt={`${campaign.track_name} by ${campaign.track_artist}`}
-            className="rounded-lg shadow-md h-48 w-48 object-cover"
-          />
+    <div className="space-y-8">
+      {/* Track Info with Artwork - Redesigned Header */}
+      <Card className="overflow-hidden border-0 shadow-md">
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="relative">
+              <img 
+                src={artworkUrl}
+                alt={`${campaign.track_name} by ${campaign.track_artist}`}
+                className="w-48 h-48 object-cover rounded-lg shadow-lg border-2 border-white"
+              />
+              <div className="absolute -bottom-3 -right-3 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full shadow-md">
+                {capitalizedTier} Campaign
+              </div>
+            </div>
+            
+            <div className="flex-1 md:ml-4">
+              <h1 className="text-2xl font-bold mb-2">{campaign.track_name}</h1>
+              <h2 className="text-lg text-muted-foreground mb-6">{campaign.track_artist}</h2>
+              
+              {/* Campaign stats in a sleek row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Submissions</span>
+                  <span className="text-2xl font-semibold">{results.stats?.totalSubmissions || campaign.submission_count || 0}</span>
+                </div>
+                <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Approval Rate</span>
+                  <span className="text-2xl font-semibold">{(results.stats?.approvalRate || 0).toFixed(1)}%</span>
+                </div>
+                <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Approved</span>
+                  <span className="text-2xl font-semibold">{results.stats?.approved || 0}</span>
+                </div>
+                <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Est. Streams</span>
+                  <span className="text-2xl font-semibold">{(results.stats?.approved || 0) * 250}+</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex-1 space-y-4">
-          {/* Campaign Package Info */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center mb-3">
-                <Music className="h-5 w-5 text-primary mr-2" />
-                <h3 className="font-medium text-lg">Campaign Details</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Campaign Package</div>
-                  <div className="font-medium">{capitalizedTier}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Outlets Pitched</div>
-                  <div className="font-medium">{campaign.submission_count || results.stats?.totalSubmissions || '0'}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Campaign Statistics */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Campaign Statistics</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-muted/20 p-4 rounded-lg text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Submissions</div>
-                  <div className="text-2xl font-semibold">{results.stats?.totalSubmissions || 0}</div>
-                </div>
-                <div className="bg-muted/20 p-4 rounded-lg text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Approval Rate</div>
-                  <div className="text-2xl font-semibold">{(results.stats?.approvalRate || 0).toFixed(1)}%</div>
-                </div>
-                <div className="bg-muted/20 p-4 rounded-lg text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Approved</div>
-                  <div className="text-2xl font-semibold">{results.stats?.approved || 0}</div>
-                </div>
-                <div className="bg-muted/20 p-4 rounded-lg text-center">
-                  <div className="text-sm text-muted-foreground mb-1">Est. Streams</div>
-                  <div className="text-2xl font-semibold">{(results.stats?.approved || 0) * 250}+</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </Card>
       
       {/* Key Takeaways and Actionable Suggestions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -334,44 +349,28 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
 
 function CampaignResultsSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Track Info and Artwork Skeleton */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <Skeleton className="h-48 w-48 rounded-lg" /> {/* Artwork skeleton */}
-        <div className="flex-1 space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <Skeleton className="h-5 w-40 mb-3" />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Skeleton className="h-4 w-28 mb-1" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-                <div>
-                  <Skeleton className="h-4 w-28 mb-1" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-5 w-36" />
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <Card className="overflow-hidden border-0 shadow-md">
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <Skeleton className="h-48 w-48 rounded-lg" /> {/* Artwork skeleton */}
+            <div className="flex-1 md:ml-4">
+              <Skeleton className="h-8 w-48 mb-2" />
+              <Skeleton className="h-6 w-32 mb-6" />
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-muted/20 p-4 rounded-lg">
-                    <Skeleton className="h-4 w-20 mx-auto mb-2" />
+                  <div key={i} className="bg-white/60 p-3 rounded-lg shadow-sm">
+                    <Skeleton className="h-4 w-20 mx-auto mb-1" />
                     <Skeleton className="h-8 w-12 mx-auto" />
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
       
       {/* Key Takeaways and Actionable Suggestions Skeletons */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
