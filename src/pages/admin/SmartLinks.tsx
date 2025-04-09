@@ -86,66 +86,91 @@ export default function SmartLinks() {
   const { data: smartLinks, isLoading } = useQuery({
     queryKey: ["adminSmartLinks", userId, currentPage, pageSize, sortDirection],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.error("Not authenticated");
-        throw new Error("Not authenticated");
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.error("Not authenticated");
+          throw new Error("Not authenticated");
+        }
 
-      const { data: userRoles, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin');
+        // Try both user_roles and profiles.is_admin to check admin permissions
+        const { data: userRoles, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin');
 
-      if (roleError || !userRoles?.length) {
-        console.error("Not authorized");
-        throw new Error("Not authorized");
-      }
+        // Also check profiles.is_admin
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        console.log("Admin checks:", { 
+          userRoles, 
+          roleError, 
+          profile, 
+          profileError,
+          isAdminByRole: userRoles?.length > 0,
+          isAdminByProfile: profile?.is_admin
+        });
+        
+        const isAdmin = (userRoles && userRoles.length > 0) || (profile && profile.is_admin);
+        
+        if (!isAdmin) {
+          console.error("Not authorized");
+          throw new Error("Not authorized");
+        }
 
-      let query = supabase
-        .from("smart_links")
-        .select(`
-          *,
-          profiles!inner (
-            name,
-            email,
-            artist_name
-          ),
-          platform_links (
-            id,
-            platform_id,
-            platform_name,
-            url,
-            platform_clicks (
+        let query = supabase
+          .from("smart_links")
+          .select(`
+            *,
+            profiles!inner (
+              name,
+              email,
+              artist_name
+            ),
+            platform_links (
               id,
-              clicked_at
+              platform_id,
+              platform_name,
+              url,
+              platform_clicks (
+                id,
+                clicked_at
+              )
+            ),
+            link_views (
+              id,
+              viewed_at
+            ),
+            email_subscribers (
+              id
             )
-          ),
-          link_views (
-            id,
-            viewed_at
-          ),
-          email_subscribers (
-            id
-          )
-        `)
-        .order('created_at', { ascending: sortDirection === 'asc' })
-        .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
+          `)
+          .order('created_at', { ascending: sortDirection === 'asc' })
+          .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching smart links:", error);
+        if (error) {
+          console.error("Error fetching smart links:", error);
+          toast.error("Failed to load smart links");
+          throw error;
+        }
+
+        return data as SmartLink[];
+      } catch (error) {
+        console.error("Error in smart links query:", error);
         toast.error("Failed to load smart links");
         throw error;
       }
-
-      return data as SmartLink[];
     }
   });
 
@@ -176,7 +201,7 @@ export default function SmartLinks() {
   const totalPages = Math.ceil((totalCount ?? 0) / pageSize);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Loading smart links...</div>;
   }
 
   return (

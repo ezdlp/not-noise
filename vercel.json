@@ -3,5 +3,13 @@
   "version": 2,
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps"
+  "installCommand": "npm install --legacy-peer-deps",
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/link/.*", "dest": "/index.html" },
+    { "src": "/control-room/.*", "dest": "/index.html" },
+    { "src": "/dashboard/.*", "dest": "/index.html" },
+    { "src": "/links/.*", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }

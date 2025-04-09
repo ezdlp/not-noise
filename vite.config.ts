@@ -126,44 +126,38 @@ export default defineConfig(({ mode }: ConfigEnv) => ({
       external: [],
       output: {
         format: 'es',
-        manualChunks: {
-          // Put React and all its dependencies in a single chunk that loads first
-          'react-vendor': [
-            'react',
-            'react-dom',
-            'react/jsx-runtime',
-            '@radix-ui/react-primitive',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-compose-refs',
-            '@radix-ui/primitive',
-            '@radix-ui/react-context',
-            '@radix-ui/react-presence',
-            '@radix-ui/react-use-callback-ref',
-            '@radix-ui/react-use-controllable-state'
-          ],
-          // Forms-related packages
-          'forms-vendor': [
-            'zod',
-            'react-hook-form',
-            '@hookform/resolvers'
-          ],
-          // Other vendor packages
-          'supabase-vendor': [
-            '@supabase/supabase-js',
-            '@supabase/postgrest-js',
-            '@supabase/realtime-js',
-            '@supabase/storage-js',
-            '@supabase/functions-js',
-            '@supabase/auth-helpers-react'
-          ],
-          // Add FontAwesome chunk
-          'fontawesome-vendor': [
-            '@fortawesome/fontawesome-svg-core',
-            '@fortawesome/free-brands-svg-icons',
-            '@fortawesome/free-solid-svg-icons',
-            '@fortawesome/react-fontawesome'
-          ]
+        manualChunks: (id) => {
+          // Create more explicit chunk groupings to avoid dynamic import errors
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/@radix-ui')) {
+            return 'react-vendor';
+          }
+          
+          if (id.includes('node_modules/zod') || 
+              id.includes('node_modules/react-hook-form') ||
+              id.includes('node_modules/@hookform')) {
+            return 'forms-vendor';
+          }
+          
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor';
+          }
+          
+          if (id.includes('node_modules/@fortawesome')) {
+            return 'fontawesome-vendor';
+          }
+          
+          if (id.includes('src/pages/admin/SmartLinks')) {
+            return 'smart-links';
+          }
+          
+          // Ensure control room pages are bundled together
+          if (id.includes('src/pages/admin') || id.includes('src/components/admin')) {
+            return 'admin';
+          }
+          
+          return null;
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',

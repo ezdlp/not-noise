@@ -7,6 +7,7 @@ on:
       - main  # or your default branch name
     paths:
       - 'supabase/functions/smart-link-seo/**'
+      - 'supabase/functions/smart-link-meta/**'
       - 'supabase/config.toml'
       - '.github/workflows/deploy-smart-link-seo.yml'
 
@@ -29,30 +30,11 @@ jobs:
 
       - name: Link to Supabase project
         run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-
-      - name: Update config.toml for smart-link-seo
-        run: |
-          # Ensure the function-specific config.toml exists and has verify_jwt = false
-          mkdir -p supabase/functions/smart-link-seo
-          echo 'project_id = "${{ secrets.SUPABASE_PROJECT_ID }}"' > supabase/functions/smart-link-seo/config.toml
-          echo '' >> supabase/functions/smart-link-seo/config.toml
-          echo '[functions.smart-link-seo]' >> supabase/functions/smart-link-seo/config.toml
-          echo 'verify_jwt = false' >> supabase/functions/smart-link-seo/config.toml
-          
-          # Also update the main config.toml if it exists
-          if [ -f "supabase/config.toml" ]; then
-            # Check if smart-link-seo config exists in the file
-            if grep -q "\[functions.smart-link-seo\]" "supabase/config.toml"; then
-              # Replace verify_jwt if it exists
-              sed -i 's/\(\[functions\.smart-link-seo\].*\n.*verify_jwt\s*=\s*\)true/\1false/g' supabase/config.toml
-            else
-              # Add the configuration if it doesn't exist
-              echo '' >> supabase/config.toml
-              echo '# SEO preview function - MUST REMAIN DISABLED FOR SOCIAL PREVIEWS' >> supabase/config.toml
-              echo '[functions.smart-link-seo]' >> supabase/config.toml
-              echo 'verify_jwt = false' >> supabase/config.toml
-            fi
-          fi
-
+      
+      # Deploy smart-link-seo function
       - name: Deploy smart-link-seo function with JWT verification disabled
         run: supabase functions deploy smart-link-seo --no-verify-jwt
+        
+      # Deploy smart-link-meta function
+      - name: Deploy smart-link-meta function with JWT verification disabled  
+        run: supabase functions deploy smart-link-meta --no-verify-jwt

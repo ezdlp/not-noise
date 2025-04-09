@@ -39,7 +39,8 @@ export function CrawlerMetaUpdater() {
       // As a fallback, try to use a fetch request to get the meta data
       const fetchMetaData = async () => {
         try {
-          const response = await fetch(`https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta/${slug}`);
+          // Use correct URL format with project ID
+          const response = await fetch(`https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/smart-link-meta?slug=${slug}`);
           if (response.ok) {
             const data = await response.json();
             if (data && data.title) {
