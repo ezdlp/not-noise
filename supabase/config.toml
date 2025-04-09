@@ -18,6 +18,6 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-# Campaign results processing function
+# Campaign results processing function - ensure it's properly configured
 [functions.process-campaign-results]
 verify_jwt = true

@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { parse } from 'https://esm.sh/csv-parse/sync'
@@ -6,8 +7,16 @@ import { corsHeaders } from '../_shared/cors.ts'
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
 serve(async (req) => {
+  // Additional logging for debugging
+  console.log("[process-campaign-results] Function invoked", {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log("[process-campaign-results] Handling OPTIONS preflight request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders,
@@ -28,8 +37,22 @@ serve(async (req) => {
     }
 
     // Get request body
-    const requestData = await req.json()
-    const { campaignId, filePath } = requestData
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log("[process-campaign-results] Request data parsed:", requestData);
+    } catch (parseError) {
+      console.error("[process-campaign-results] JSON parse error:", parseError);
+      return new Response(
+        JSON.stringify({ message: 'Invalid JSON', error: parseError.message }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { campaignId, filePath } = requestData;
 
     console.log("[process-campaign-results] Request received:", { 
       method: req.method,
@@ -49,9 +72,23 @@ serve(async (req) => {
     }
 
     // Create Supabase client with service role (has full access to the database)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("[process-campaign-results] Missing Supabase environment variables");
+      return new Response(
+        JSON.stringify({ message: 'Server configuration error' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      supabaseUrl,
+      supabaseServiceRoleKey
     )
 
     // Get auth user (if available)
@@ -59,33 +96,40 @@ serve(async (req) => {
     let userId = null
 
     if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
-      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
-      
-      if (userError) {
-        console.log("[process-campaign-results] Auth error:", userError);
-      } else if (user) {
-        userId = user.id
-        console.log("[process-campaign-results] Authenticated user:", userId);
+      try {
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
         
-        // Check if user is admin
-        const { data: profile, error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', userId)
-          .single()
-        
-        if (profileError || !profile || !profile.is_admin) {
-          console.log("[process-campaign-results] Authorization failed:", { profileError, profile });
-          return new Response(
-            JSON.stringify({ message: 'Forbidden - Admin access required' }),
-            {
-              status: 403,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          )
+        if (userError) {
+          console.log("[process-campaign-results] Auth error:", userError);
+        } else if (user) {
+          userId = user.id
+          console.log("[process-campaign-results] Authenticated user:", userId);
+          
+          // Check if user is admin
+          const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', userId)
+            .single()
+          
+          if (profileError || !profile || !profile.is_admin) {
+            console.log("[process-campaign-results] Authorization failed:", { profileError, profile });
+            return new Response(
+              JSON.stringify({ message: 'Forbidden - Admin access required' }),
+              {
+                status: 403,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            )
+          }
         }
+      } catch (authError) {
+        console.error("[process-campaign-results] Auth processing error:", authError);
+        // Continue with the function, but log the error
       }
+    } else {
+      console.log("[process-campaign-results] No auth header present");
     }
 
     // Get the campaign details
@@ -99,7 +143,7 @@ serve(async (req) => {
     if (campaignError || !campaign) {
       console.log("[process-campaign-results] Campaign fetch error:", campaignError);
       return new Response(
-        JSON.stringify({ message: 'Campaign not found' }),
+        JSON.stringify({ message: 'Campaign not found', error: campaignError?.message }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -137,7 +181,9 @@ serve(async (req) => {
       records = parse(csvText, {
         columns: true,
         skip_empty_lines: true,
-        trim: true
+        trim: true,
+        relax_column_count: true, // More forgiving CSV parsing
+        skip_records_with_error: true // Skip problematic rows instead of failing
       })
       
       // Log first record to see column names
@@ -178,8 +224,12 @@ serve(async (req) => {
     
     // Find the action, outlet and feedback columns regardless of case
     const actionColumn = columns.find(col => col.toLowerCase() === 'action')
-    const outletColumn = columns.find(col => col.toLowerCase() === 'outlet')
-    const feedbackColumn = columns.find(col => col.toLowerCase() === 'feedback')
+    const outletColumn = columns.find(col => 
+      col.toLowerCase() === 'outlet' || 
+      col.toLowerCase() === 'curator' || 
+      col.toLowerCase() === 'playlist'
+    )
+    const feedbackColumn = columns.find(col => col.toLowerCase() === 'feedback' || col.toLowerCase() === 'notes')
     
     // Validate required columns exist
     if (!actionColumn || !outletColumn || !feedbackColumn) {
@@ -203,8 +253,9 @@ serve(async (req) => {
       .filter((r) => {
         const action = r[actionColumn]
         return action && (
-          action.toLowerCase() === 'approved' || 
-          action.toLowerCase() === 'declined'
+          action.toLowerCase().includes('approved') || 
+          action.toLowerCase().includes('declined') ||
+          action.toLowerCase() === 'shared'
         )
       })
       .map((r) => ({
@@ -233,17 +284,17 @@ serve(async (req) => {
     const totalSubmissions = records.length
     const approved = records.filter((r) => {
       const action = r[actionColumn]
-      return action && (action.toLowerCase() === 'approved' || action.toLowerCase() === 'shared')
+      return action && (action.toLowerCase().includes('approved') || action.toLowerCase().includes('shared'))
     }).length
     
     const declined = records.filter((r) => {
       const action = r[actionColumn]
-      return action && action.toLowerCase() === 'declined'
+      return action && action.toLowerCase().includes('declined')
     }).length
     
     const pending = records.filter((r) => {
       const action = r[actionColumn]
-      return action && action.toLowerCase() === 'listen'
+      return action && action.toLowerCase().includes('listen')
     }).length
     
     const approvalRate = totalSubmissions > 0 ? (approved / totalSubmissions) * 100 : 0
@@ -350,6 +401,8 @@ serve(async (req) => {
         })
 
         if (!openAIResponse.ok) {
+          const errorText = await openAIResponse.text().catch(() => "Could not read response");
+          console.error(`OpenAI API error: ${openAIResponse.status}`, errorText);
           throw new Error(`OpenAI API responded with status: ${openAIResponse.status}`)
         }
 
@@ -432,7 +485,7 @@ serve(async (req) => {
       // Provide fallback if no records to analyze or no OpenAI key
       console.log("[process-campaign-results] No filtered records for AI analysis or missing OpenAI key")
       aiAnalysis = {
-        campaign_report: [],
+        campaign_report: filteredRecords.map(r => ({...r, shared_link: null})),
         key_takeaways: ["No approved or declined feedback to analyze."],
         actionable_points: ["Ensure your CSV contains feedback with 'approved' or 'declined' actions."]
       }

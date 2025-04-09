@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileSpreadsheet, Upload, Brain, AlertCircle } from "lucide-react";
+import { FileSpreadsheet, Upload, Brain, AlertCircle, Info } from "lucide-react";
 import { CampaignResults } from '@/types/database';
 
 interface Campaign {
@@ -45,6 +44,7 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<any>(null);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -65,16 +65,20 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
     try {
       setUploading(true);
       setError(null);
+      setDiagnosticInfo(null);
       
       // Upload file to storage
       const filePath = `campaign-results/${selectedCampaignId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('campaign-result-files')
         .upload(filePath, file);
       
       if (uploadError) {
+        console.error("Storage upload error:", uploadError);
         throw uploadError;
       }
+      
+      console.log("File uploaded successfully:", filePath);
       
       // Create record of the uploaded file
       const { error: recordError } = await supabase
@@ -86,6 +90,7 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
         });
       
       if (recordError) {
+        console.error("Record creation error:", recordError);
         throw recordError;
       }
       
@@ -114,18 +119,74 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
         throw new Error("Authentication required");
       }
       
-      // Call the Supabase Edge Function directly
-      const response = await fetch('https://owtufhdsuuyrgmxytclj.supabase.co/functions/v1/process-campaign-results', {
+      // Store diagnostic info
+      setDiagnosticInfo({
+        tokenExists: !!token,
+        filePathValid: !!filePath,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log("Calling process-campaign-results function with:", { 
+        campaignId: selectedCampaignId, 
+        filePath 
+      });
+      
+      // Call the function through Supabase functions.invoke API first
+      try {
+        const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
+          'process-campaign-results',
+          {
+            body: JSON.stringify({
+              campaignId: selectedCampaignId,
+              filePath,
+            }),
+          }
+        );
+        
+        if (invokeError) {
+          console.error("Function invoke error:", invokeError);
+          // If invoke fails, we'll try the direct fetch method next
+          setDiagnosticInfo(prev => ({
+            ...prev,
+            invokeError: invokeError
+          }));
+        } else {
+          // Success with invoke!
+          setResults(invokeData);
+          toast.success("Campaign results processed and analyzed successfully");
+          return;
+        }
+      } catch (invokeErr: any) {
+        console.error("Function invoke exception:", invokeErr);
+        setDiagnosticInfo(prev => ({
+          ...prev,
+          invokeException: invokeErr.message
+        }));
+        // Continue to try direct fetch method
+      }
+      
+      // Fallback: Call the Supabase Edge Function directly
+      const supabaseUrl = "https://owtufhdsuuyrgmxytclj.supabase.co";
+      const response = await fetch(`${supabaseUrl}/functions/v1/process-campaign-results`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Client-Info': 'campaignresultsuploader/1.0'
         },
         body: JSON.stringify({
           campaignId: selectedCampaignId,
           filePath,
         }),
       });
+      
+      // Update diagnostic info with response status
+      setDiagnosticInfo(prev => ({
+        ...prev,
+        responseStatus: response.status,
+        responseOk: response.ok,
+        responseHeaders: Object.fromEntries([...response.headers.entries()])
+      }));
       
       // Check for non-JSON responses
       const contentType = response.headers.get('content-type');
@@ -185,9 +246,21 @@ export function CampaignResultsUploader({ campaigns, isLoading }: CampaignResult
                     <li>Check that your CSV has the required column headers (Action, Outlet, Feedback)</li>
                     <li>Ensure your CSV has at least one record with "approved" or "declined" in the Action column</li>
                     <li>Try simplifying your CSV file (remove extra columns, special characters, etc.)</li>
-                    <li>If you're still having trouble, contact support with the error message above</li>
+                    <li>Contact support if the error persists with the diagnostic information below</li>
                   </ul>
                 </div>
+
+                {diagnosticInfo && (
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-sm font-medium flex items-center">
+                      <Info className="h-4 w-4 mr-1" /> 
+                      Technical Diagnostic Information
+                    </summary>
+                    <div className="mt-2 p-2 bg-slate-100 rounded text-xs font-mono overflow-auto max-h-40">
+                      {JSON.stringify(diagnosticInfo, null, 2)}
+                    </div>
+                  </details>
+                )}
               </AlertDescription>
             </Alert>
           )}
