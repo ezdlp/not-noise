@@ -100,7 +100,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       try {
         const rawData = data.results.raw_data;
         
-        // Process curator data from raw CSV
+        // Process curator data from raw CSV - get all available information to create comprehensive curator entries
         if (Array.isArray(rawData.results)) {
           // Create a map to track processed curators (to avoid duplicates)
           const processedCurators = new Map();
@@ -109,47 +109,104 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
           // Count only valid submissions (approved, shared, declined)
           let approved = 0;
           let declined = 0;
-          let totalValid = 0;
           
-          // Process raw results to get accurate counts and deduplicated curators
+          // First collect all curator information, including shared links
+          const curatorInfo = new Map();
+          
           rawData.results.forEach((entry: any) => {
             const action = (entry.action || '').toLowerCase();
             const curatorName = entry.curator_name || '';
             
-            // Only count entries with valid statuses
-            if (validStatuses.includes(action) && curatorName) {
-              totalValid++;
-              
-              if (action === 'approved' || action === 'shared') {
-                approved++;
-              } else if (action === 'declined') {
-                declined++;
-              }
-              
-              // Track curator by their name to avoid duplicates
-              const curatorKey = curatorName.trim().toLowerCase();
-              const existingCurator = processedCurators.get(curatorKey);
-              
-              if (existingCurator) {
-                // If we already have this curator and current entry is approved/shared with playlist link
-                if ((action === 'approved' || action === 'shared') && entry.playlist_url && !existingCurator.playlist_link) {
-                  processedCurators.set(curatorKey, {
-                    ...existingCurator,
-                    action: 'Approved', // Normalize to "Approved"
-                    playlist_link: entry.playlist_url
-                  });
-                }
-              } else {
-                // Add new curator
-                processedCurators.set(curatorKey, {
-                  curator_name: curatorName,
-                  action: action === 'shared' ? 'Approved' : action.charAt(0).toUpperCase() + action.slice(1),
-                  feedback: entry.feedback || '',
-                  playlist_link: (action === 'approved' || action === 'shared') ? entry.playlist_url : undefined
-                });
-              }
+            if (!curatorName) return;
+            
+            const curatorKey = curatorName.trim().toLowerCase();
+            
+            // Collect all entries for each curator
+            if (!curatorInfo.has(curatorKey)) {
+              curatorInfo.set(curatorKey, []);
             }
+            curatorInfo.get(curatorKey).push(entry);
           });
+          
+          // Now process each curator once, using all their entries
+          curatorInfo.forEach((entries, curatorKey) => {
+            const validEntries = entries.filter((entry: any) => {
+              const action = (entry.action || '').toLowerCase();
+              return validStatuses.includes(action);
+            });
+            
+            // Only count curators with valid entries as submissions
+            if (validEntries.length === 0) return;
+            
+            // Find if curator has any approved or shared entries
+            const approvedEntries = validEntries.filter((entry: any) => {
+              const action = (entry.action || '').toLowerCase();
+              return action === 'approved' || action === 'shared'; 
+            });
+            
+            // Find if curator has any declined entries
+            const declinedEntries = validEntries.filter((entry: any) => {
+              const action = (entry.action || '').toLowerCase();
+              return action === 'declined';
+            });
+            
+            // Count this curator once for statistics
+            if (approvedEntries.length > 0) {
+              approved++;
+            } else if (declinedEntries.length > 0) {
+              declined++;
+            }
+            
+            // Get curator name from first entry
+            const curatorName = entries[0].curator_name;
+            
+            // Collect all feedback and playlist links
+            let feedback = '';
+            let playlistLinks = '';
+            
+            // If approved, use shared links as feedback
+            if (approvedEntries.length > 0) {
+              // Collect all playlist links from shared/approved entries
+              approvedEntries.forEach((entry: any) => {
+                if (entry.playlist_url) {
+                  if (playlistLinks) playlistLinks += '\n';
+                  playlistLinks += entry.playlist_url;
+                }
+              });
+              
+              // If we have links, use them as feedback
+              if (playlistLinks) {
+                feedback = playlistLinks;
+              } else {
+                // Otherwise use text feedback from approved entries
+                const approvedFeedback = approvedEntries
+                  .map((e: any) => e.feedback)
+                  .filter(Boolean)
+                  .join('\n');
+                  
+                feedback = approvedFeedback || "Track approved";
+              }
+            } else if (declinedEntries.length > 0) {
+              // For declined, use text feedback
+              const declinedFeedback = declinedEntries
+                .map((e: any) => e.feedback)
+                .filter(Boolean)
+                .join('\n');
+                
+              feedback = declinedFeedback || "Track declined";
+            }
+            
+            // Add processed curator to our map
+            processedCurators.set(curatorKey, {
+              curator_name: curatorName,
+              action: approvedEntries.length > 0 ? 'Approved' : 'Declined',
+              feedback: feedback,
+              has_playlist: playlistLinks.length > 0
+            });
+          });
+          
+          // Calculate total valid submissions as the size of processed curators
+          const totalValid = processedCurators.size;
           
           // Calculate approval rate
           const approvalRate = totalValid > 0 ? (approved / totalValid) * 100 : 0;
@@ -357,7 +414,6 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                 <TableHead>Curator</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Feedback</TableHead>
-                <TableHead className="text-right">Playlist</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -382,18 +438,30 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                       </span>
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-md">{report.feedback}</TableCell>
-                  <TableCell className="text-right">
-                    {report.action.toLowerCase() === 'approved' && report.playlist_link && (
-                      <a 
-                        href={report.playlist_link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-primary hover:underline"
-                      >
-                        <span className="mr-1">View</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                  <TableCell className="max-w-md whitespace-pre-wrap">
+                    {report.feedback && report.has_playlist ? (
+                      // If this has playlist links, render with links
+                      report.feedback.split('\n').map((line, i) => {
+                        if (line.startsWith('http')) {
+                          return (
+                            <div key={i} className="mb-1">
+                              <a 
+                                href={line} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center text-primary hover:underline"
+                              >
+                                <span className="mr-1">View Playlist</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          );
+                        }
+                        return <div key={i}>{line}</div>;
+                      })
+                    ) : (
+                      // Otherwise just show the feedback text
+                      report.feedback
                     )}
                   </TableCell>
                 </TableRow>
