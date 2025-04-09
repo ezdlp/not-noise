@@ -58,6 +58,8 @@ interface QueryResult {
 
 export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboardProps) {
   const [trackArtwork, setTrackArtwork] = useState<string | null>(null);
+  const [processedStats, setProcessedStats] = useState<ResultStats | null>(null);
+  const [processedReports, setProcessedReports] = useState<CampaignReport[] | null>(null);
 
   // Fetch campaign data and results
   const { data, isLoading, error } = useQuery<QueryResult>({
@@ -91,6 +93,83 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false
   });
+
+  // Process raw data to get accurate counts and unified reports
+  useEffect(() => {
+    if (data?.results?.raw_data) {
+      try {
+        const rawData = data.results.raw_data;
+        
+        // Process curator data from raw CSV
+        if (Array.isArray(rawData.results)) {
+          // Create a map to track processed curators (to avoid duplicates)
+          const processedCurators = new Map();
+          const validStatuses = ['approved', 'shared', 'declined'];
+          
+          // Count only valid submissions (approved, shared, declined)
+          let approved = 0;
+          let declined = 0;
+          let totalValid = 0;
+          
+          // Process raw results to get accurate counts and deduplicated curators
+          rawData.results.forEach((entry: any) => {
+            const action = (entry.action || '').toLowerCase();
+            const curatorName = entry.curator_name || '';
+            
+            // Only count entries with valid statuses
+            if (validStatuses.includes(action) && curatorName) {
+              totalValid++;
+              
+              if (action === 'approved' || action === 'shared') {
+                approved++;
+              } else if (action === 'declined') {
+                declined++;
+              }
+              
+              // Track curator by their name to avoid duplicates
+              const curatorKey = curatorName.trim().toLowerCase();
+              const existingCurator = processedCurators.get(curatorKey);
+              
+              if (existingCurator) {
+                // If we already have this curator and current entry is approved/shared with playlist link
+                if ((action === 'approved' || action === 'shared') && entry.playlist_url && !existingCurator.playlist_link) {
+                  processedCurators.set(curatorKey, {
+                    ...existingCurator,
+                    action: 'Approved', // Normalize to "Approved"
+                    playlist_link: entry.playlist_url
+                  });
+                }
+              } else {
+                // Add new curator
+                processedCurators.set(curatorKey, {
+                  curator_name: curatorName,
+                  action: action === 'shared' ? 'Approved' : action.charAt(0).toUpperCase() + action.slice(1),
+                  feedback: entry.feedback || '',
+                  playlist_link: (action === 'approved' || action === 'shared') ? entry.playlist_url : undefined
+                });
+              }
+            }
+          });
+          
+          // Calculate approval rate
+          const approvalRate = totalValid > 0 ? (approved / totalValid) * 100 : 0;
+          
+          // Update stats
+          setProcessedStats({
+            totalSubmissions: totalValid,
+            approved: approved,
+            declined: declined,
+            approvalRate: approvalRate
+          });
+          
+          // Convert map to array for reports
+          setProcessedReports(Array.from(processedCurators.values()));
+        }
+      } catch (err) {
+        console.error('Error processing raw CSV data:', err);
+      }
+    }
+  }, [data]);
 
   // Fetch Spotify track artwork
   useEffect(() => {
@@ -159,37 +238,17 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
   const key_takeaways = Array.isArray(aiAnalysis.key_takeaways) ? aiAnalysis.key_takeaways : [];
   const actionable_points = Array.isArray(aiAnalysis.actionable_points) ? aiAnalysis.actionable_points : [];
   
-  // Process campaign report and add playlist links
-  let campaign_report = Array.isArray(aiAnalysis.campaign_report) ? aiAnalysis.campaign_report : [];
+  // Use the processed campaign report if available, otherwise fall back to AI analysis
+  const campaign_report = processedReports || 
+    (Array.isArray(aiAnalysis.campaign_report) ? aiAnalysis.campaign_report : []);
   
-  // Try to extract playlist links from raw_data if available
-  if (results.raw_data && typeof results.raw_data === 'object') {
-    const rawData = results.raw_data;
-    
-    // If raw_data contains entries with playlist_url, map them to the campaign_report
-    if (Array.isArray(rawData.results)) {
-      const playlistLinks = new Map();
-      
-      // First, collect all playlist links by curator name
-      rawData.results.forEach((entry: any) => {
-        if (entry.playlist_url && entry.curator_name) {
-          playlistLinks.set(entry.curator_name.trim().toLowerCase(), entry.playlist_url);
-        }
-      });
-      
-      // Then, update the campaign_report with playlist links
-      campaign_report = campaign_report.map(report => {
-        const curatorKey = report.curator_name.trim().toLowerCase();
-        const playlistLink = playlistLinks.get(curatorKey);
-        
-        if (playlistLink && report.action.toLowerCase() === 'approved') {
-          return { ...report, playlist_link: playlistLink };
-        }
-        
-        return report;
-      });
-    }
-  }
+  // Use processed stats if available, otherwise fall back to results stats
+  const stats = processedStats || results.stats || {
+    totalSubmissions: 0,
+    approvalRate: 0,
+    approved: 0,
+    declined: 0
+  };
   
   const defaultArtwork = "https://placehold.co/400x400/6851FB/FFFFFF?text=Track+Artwork";
   const artworkUrl = trackArtwork || campaign.artwork_url || defaultArtwork;
@@ -222,19 +281,19 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
                   <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Submissions</span>
-                  <span className="text-2xl font-semibold">{results.stats?.totalSubmissions || campaign.submission_count || 0}</span>
+                  <span className="text-2xl font-semibold">{stats.totalSubmissions || 0}</span>
                 </div>
                 <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
                   <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Approval Rate</span>
-                  <span className="text-2xl font-semibold">{(results.stats?.approvalRate || 0).toFixed(1)}%</span>
+                  <span className="text-2xl font-semibold">{(stats.approvalRate || 0).toFixed(1)}%</span>
                 </div>
                 <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
                   <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Approved</span>
-                  <span className="text-2xl font-semibold">{results.stats?.approved || 0}</span>
+                  <span className="text-2xl font-semibold">{stats.approved || 0}</span>
                 </div>
                 <div className="bg-white/60 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center">
                   <span className="text-xs text-muted-foreground uppercase font-medium mb-1">Est. Streams</span>
-                  <span className="text-2xl font-semibold">{(results.stats?.approved || 0) * 250}+</span>
+                  <span className="text-2xl font-semibold">{(stats.approved || 0) * 250}+</span>
                 </div>
               </div>
             </div>
