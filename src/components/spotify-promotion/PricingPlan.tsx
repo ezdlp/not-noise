@@ -273,17 +273,50 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
   return (
     <>
       <div className="container py-12 px-4 mx-auto">
-        {isPro && (
-          <div className="mb-8 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary text-white p-1 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+        {isPro ? (
+          <div className="mb-8 bg-gradient-to-r from-primary/20 to-primary/10 backdrop-blur-sm border border-primary/30 rounded-lg overflow-hidden shadow-md">
+            <div className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary text-white p-2 rounded-full shadow-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-primary drop-shadow-sm">PRO Subscriber Benefit Active</h4>
+                  <p className="text-black/75 font-medium">
+                    You're receiving a 25% discount on all promotion packages!
+                  </p>
+                </div>
               </div>
-              <p className="text-primary font-medium">
-                Pro Subscriber Benefit: You'll receive a 25% discount on your Spotify playlist promotion!
-              </p>
+              <div className="hidden md:block">
+                <div className="bg-primary/20 border border-primary/30 px-3 py-1.5 rounded-md">
+                  <span className="text-primary font-bold">25% OFF</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8 bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 rounded-lg overflow-hidden shadow-md">
+            <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/20 text-primary p-2 rounded-full shadow-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-primary drop-shadow-sm">Upgrade to PRO</h4>
+                  <p className="text-black/75 font-medium">
+                    PRO members get 25% off all promotion packages!
+                  </p>
+                </div>
+              </div>
+              <div>
+                <Button variant="default" size="sm" className="font-medium bg-primary hover:bg-primary/90" onClick={() => window.location.href = '/pricing'}>
+                  Upgrade Now
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -338,12 +371,41 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
                       </div>
                       <div className="text-center">
                         <h3 className="text-2xl font-semibold text-white drop-shadow-md">{tier.name} Edition</h3>
-                        <p className="text-4xl font-bold mb-2 text-white drop-shadow-md">
-                          ${tier.price}
-                        </p>
-                        <p className="text-sm text-white/90 mb-2 drop-shadow-sm">
-                          <a href="/pricing" className="text-primary hover:underline font-medium">Save ${proDiscount} with PRO membership</a>
-                        </p>
+                        <div className="mt-3 mb-2">
+                          {isPro ? (
+                            <>
+                              <div className="flex items-center justify-center gap-2 mb-1">
+                                <span className="text-2xl text-white/70 line-through font-medium drop-shadow-sm">${tier.price}</span>
+                                <span className="bg-primary px-2 py-0.5 rounded-md text-white text-xs font-medium">PRO SAVE ${Math.round(tier.price * 0.25)}</span>
+                              </div>
+                              <p className="text-4xl font-bold text-white drop-shadow-md">
+                                ${Math.round(tier.price * 0.75)}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-4xl font-bold mb-2 text-white drop-shadow-md">
+                                ${tier.price}
+                              </p>
+                              <div className="bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 px-3 py-2 rounded-lg mb-1">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                  <div className="text-sm text-primary/90 font-medium">With PRO:</div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-primary font-bold">${Math.round(tier.price * 0.75)}</span>
+                                    <span className="bg-primary px-2 py-0.5 rounded text-white text-xs font-semibold">SAVE ${Math.round(tier.price * 0.25)}</span>
+                                  </div>
+                                </div>
+                                <Button 
+                                  variant="link" 
+                                  className="text-xs p-0 h-auto text-primary font-semibold"
+                                  onClick={() => window.location.href = '/pricing'}
+                                >
+                                  Upgrade to PRO
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     
