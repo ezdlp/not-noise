@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,38 +119,42 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
             // Skip invalid entries
             if (!['shared', 'approved', 'declined'].includes(action)) return;
             
-            // If this is the first time we see this curator, or we're upgrading from approved/declined to shared
-            if (!curatorMap.has(curatorKey) || 
-                (action === 'shared' && curatorMap.get(curatorKey).action !== 'shared')) {
-              
-              // Check for playlist URLs in feedback
-              let hasPlaylist = false;
-              let playlistLinks = '';
-              
-              // Extract URLs from feedback
-              if (entry.feedback) {
-                const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
-                if (urlMatches && urlMatches.length > 0) {
-                  hasPlaylist = true;
-                  playlistLinks = urlMatches.join('\n');
-                }
-              }
-              
-              // Check for playlist_url field
-              if (entry.playlist_url) {
+            // Always prioritize shared entries (they contain the playlist links)
+            const isShared = action === 'shared';
+            const hasExistingSharedEntry = curatorMap.has(curatorKey) && 
+                                           curatorMap.get(curatorKey).action === 'Approved' &&
+                                           curatorMap.get(curatorKey).origin === 'shared';
+            
+            // Extract URLs from feedback
+            let hasPlaylist = false;
+            let playlistLinks = '';
+            
+            // Check for playlist_url field first
+            if (entry.playlist_url) {
+              hasPlaylist = true;
+              playlistLinks = entry.playlist_url;
+            }
+            // Then look for URLs in feedback
+            else if (entry.feedback) {
+              const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
+              if (urlMatches && urlMatches.length > 0) {
                 hasPlaylist = true;
-                playlistLinks = entry.playlist_url;
+                playlistLinks = urlMatches.join('\n');
               }
-              
-              // Prepare feedback - use playlist links or text feedback
-              let feedback = (hasPlaylist && playlistLinks) ? playlistLinks : (entry.feedback || '');
-              
-              // Add or update curator entry
+            }
+            
+            // Prefer feedback text for non-shared entries, playlist links for shared entries
+            let effectiveFeedback = entry.feedback || '';
+            
+            // If this is a shared entry with links, or we don't have a shared entry for this curator yet
+            if (isShared || !hasExistingSharedEntry) {
               curatorMap.set(curatorKey, {
                 curator_name: curatorName,
-                action: action === 'shared' ? 'Approved' : (action === 'approved' ? 'Approved' : 'Declined'),
-                feedback: feedback,
-                has_playlist: hasPlaylist
+                action: isShared || action === 'approved' ? 'Approved' : 'Declined',
+                feedback: effectiveFeedback,
+                playlist_link: playlistLinks || undefined,
+                has_playlist: hasPlaylist,
+                origin: action  // Track the original action type
               });
             }
           });
@@ -405,40 +410,74 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-md whitespace-pre-wrap break-words">
-                    {(() => {
-                      if (report.action.toLowerCase() === 'approved') {
-                        // Check if feedback contains URLs
-                        if (report.has_playlist || (report.feedback && /https?:\/\/\S+/i.test(report.feedback))) {
-                          // Split feedback by whitespace or newlines to extract URLs
-                          return report.feedback.split(/[\s\n]+/).map((word, i) => {
-                            if (word.match(/^https?:\/\/\S+/i)) {
-                              // Clean the URL (remove any trailing punctuation)
-                              const cleanUrl = word.trim().replace(/[,;.:!?]$/, '');
-                              return (
-                                <div key={i} className="mb-2">
-                                  <a 
-                                    href={cleanUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center text-primary hover:underline"
-                                  >
-                                    <span className="mr-1">View Playlist</span>
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </div>
-                              );
-                            }
-                            return null; // Don't return non-URL parts when we have URLs
-                          }).filter(Boolean); // Remove null entries
-                        } else {
-                          // For approved entries without URLs
-                          return report.feedback || "Track approved";
-                        }
-                      } else {
-                        // For declined entries, just show the feedback text
-                        return report.feedback || "Track declined";
-                      }
-                    })()}
+                    {report.action.toLowerCase() === 'approved' && (
+                      <>
+                        {/* First show playlist links if available */}
+                        {report.playlist_link ? (
+                          <div className="mb-2">
+                            {report.playlist_link.split(/[\s\n]+/).map((link, i) => {
+                              if (link.match(/^https?:\/\/\S+/i)) {
+                                // Clean the URL (remove any trailing punctuation)
+                                const cleanUrl = link.trim().replace(/[,;.:!?]$/, '');
+                                return (
+                                  <div key={i} className="mb-1">
+                                    <a 
+                                      href={cleanUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center text-primary hover:underline"
+                                    >
+                                      <span className="mr-1">View Playlist</span>
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }).filter(Boolean)}
+                          </div>
+                        ) : (
+                          // Show regular feedback if no playlist link
+                          <div>
+                            {/* Scan for URLs in feedback */}
+                            {report.feedback && report.feedback.match(/https?:\/\/\S+/i) ? (
+                              report.feedback.split(/[\s\n]+/).map((word, i) => {
+                                if (word.match(/^https?:\/\/\S+/i)) {
+                                  // Clean the URL
+                                  const cleanUrl = word.trim().replace(/[,;.:!?]$/, '');
+                                  return (
+                                    <div key={i} className="mb-1">
+                                      <a 
+                                        href={cleanUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-primary hover:underline"
+                                      >
+                                        <span className="mr-1">View Playlist</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }).filter(Boolean)
+                            ) : (
+                              <span>{report.feedback || "Track approved"}</span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Show feedback text if there was a playlist link AND feedback */}
+                        {report.playlist_link && report.feedback && !report.feedback.match(/https?:\/\/\S+/i) && (
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            {report.feedback}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // For declined entries, just show the feedback text
+                      <span>{report.feedback || "Track declined"}</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
