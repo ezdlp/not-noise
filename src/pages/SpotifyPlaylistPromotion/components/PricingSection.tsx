@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PricingPlan from "@/components/spotify-promotion/PricingPlan";
@@ -145,11 +144,6 @@ const PricingSection = () => {
               and boost your music career.
             </p>
           </div>
-        </div>
-
-        {/* Visual connector element */}
-        <div className="flex justify-center mb-12">
-          <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
         </div>
 
         <PricingPlan

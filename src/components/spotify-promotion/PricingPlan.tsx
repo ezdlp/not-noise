@@ -272,7 +272,7 @@ const PricingPlan: React.FC<PricingPlanProps> = ({ onSubmit, selectedTrack }) =>
 
   return (
     <>
-      <div className="container py-12 px-4 mx-auto">
+      <div className="container pt-6 pb-12 px-4 mx-auto">
         {isPro ? (
           <div className="mb-8 bg-white/20 backdrop-blur-md border border-primary/30 rounded-lg overflow-hidden shadow-md">
             <div className="p-4 flex items-center justify-between">
