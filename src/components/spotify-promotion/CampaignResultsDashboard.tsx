@@ -166,11 +166,26 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
             
             // If approved, use shared links as feedback
             if (approvedEntries.length > 0) {
-              // Collect all playlist links from shared/approved entries
-              approvedEntries.forEach((entry: any) => {
+              // First look for entries marked as "shared" that might have playlist URLs
+              const sharedEntries = approvedEntries.filter(entry => 
+                (entry.action || '').toLowerCase() === 'shared'
+              );
+              
+              // Collect all playlist links from shared entries first, then other approved entries
+              [...sharedEntries, ...approvedEntries].forEach((entry: any) => {
+                // Check both the playlist_url field and the feedback field for URLs
                 if (entry.playlist_url) {
                   if (playlistLinks) playlistLinks += '\n';
                   playlistLinks += entry.playlist_url;
+                } else if (entry.feedback && entry.feedback.includes('http')) {
+                  // Extract URLs from feedback
+                  const urls = entry.feedback.split(/\s+/).filter((word: string) => word.startsWith('http'));
+                  if (urls.length > 0) {
+                    urls.forEach((url: string) => {
+                      if (playlistLinks) playlistLinks += '\n';
+                      playlistLinks += url;
+                    });
+                  }
                 }
               });
               
@@ -439,14 +454,15 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-md whitespace-pre-wrap">
-                    {report.feedback && report.has_playlist ? (
-                      // If this has playlist links, render with links
+                    {report.action.toLowerCase() === 'approved' && report.feedback ? (
+                      // For approved entries, check if feedback contains URLs
                       report.feedback.split('\n').map((line, i) => {
-                        if (line.startsWith('http')) {
+                        // Check if line is a URL
+                        if (line.trim().startsWith('http')) {
                           return (
                             <div key={i} className="mb-1">
                               <a 
-                                href={line} 
+                                href={line.trim()} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center text-primary hover:underline"
@@ -457,11 +473,11 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                             </div>
                           );
                         }
-                        return <div key={i}>{line}</div>;
+                        return line ? <div key={i}>{line}</div> : null;
                       })
                     ) : (
-                      // Otherwise just show the feedback text
-                      report.feedback
+                      // For declined entries, just show the feedback text
+                      report.feedback || (report.action.toLowerCase() === 'approved' ? "Track approved" : "Track declined")
                     )}
                   </TableCell>
                 </TableRow>

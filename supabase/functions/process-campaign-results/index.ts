@@ -298,14 +298,31 @@ serve(async (req) => {
       const isApproved = action === 'approved' || action === 'shared';
       const existingCurator = curatorMap.get(curatorKey);
       
+      // Extract potential URLs from feedback for shared entries
+      let extractedUrls = '';
+      if (action === 'shared' && feedback) {
+        const urlMatches = feedback.match(/https?:\/\/[^\s]+/g);
+        if (urlMatches && urlMatches.length > 0) {
+          extractedUrls = urlMatches.join('\n');
+        }
+      }
+      
+      const effectivePlaylistUrl = playlistUrl || extractedUrls;
+      
       // If this curator already exists in our map
       if (existingCurator) {
-        // Only update if current entry is approved and has a playlist URL
-        if (isApproved && playlistUrl && !existingCurator.playlist_link) {
+        // Update if either:
+        // 1. Current entry is approved/shared and we don't have approval yet
+        // 2. Current entry has a playlist URL and existing one doesn't 
+        const shouldUpdateAction = isApproved && existingCurator.action !== 'Approved';
+        const shouldUpdateUrl = effectivePlaylistUrl && !existingCurator.playlist_link;
+        
+        if (shouldUpdateAction || shouldUpdateUrl) {
           curatorMap.set(curatorKey, {
             ...existingCurator,
-            action: 'Approved', // Standardize to "Approved"
-            playlist_link: playlistUrl
+            action: isApproved ? 'Approved' : existingCurator.action,
+            playlist_link: effectivePlaylistUrl || existingCurator.playlist_link,
+            feedback: action === 'shared' ? effectivePlaylistUrl || feedback : existingCurator.feedback
           });
         }
       } else {
@@ -314,8 +331,8 @@ serve(async (req) => {
           curator_name: curatorName,
           // Standardize action names: "approved" or "shared" → "Approved", "declined" → "Declined"
           action: isApproved ? 'Approved' : 'Declined',
-          feedback: feedback,
-          playlist_link: isApproved && playlistUrl ? playlistUrl : undefined
+          feedback: action === 'shared' && effectivePlaylistUrl ? effectivePlaylistUrl : feedback,
+          playlist_link: effectivePlaylistUrl || undefined
         });
       }
     });
@@ -340,7 +357,7 @@ serve(async (req) => {
     }
 
     // Calculate campaign stats based only on valid submissions
-    const totalSubmissions = validSubmissionRecords.length;
+    const totalSubmissions = filteredRecords.length;
     const approved = filteredRecords.filter(r => r.action === 'Approved').length;
     const declined = filteredRecords.filter(r => r.action === 'Declined').length;
     
