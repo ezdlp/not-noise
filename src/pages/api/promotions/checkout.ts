@@ -1,11 +1,10 @@
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 import Stripe from 'stripe';
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-09-30.acacia' as any, // Use type assertion to bypass the TypeScript error
+  apiVersion: '2025-02-24.acacia' as any, // Updated to match consistent version across the app
 });
 
 // Pro user discount coupon ID - will need to be created in Stripe dashboard

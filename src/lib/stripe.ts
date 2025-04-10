@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 // This should ideally come from environment variables
 const stripeApiKey = import.meta.env.VITE_STRIPE_SECRET_KEY || '';
 const stripe = new Stripe(stripeApiKey, {
-  apiVersion: '2024-09-30.acacia' as any, // Use type assertion to bypass the TypeScript error
+  apiVersion: '2025-02-24.acacia' as any, // Updated to match consistent version across the app
 });
 
 // Type definitions for better TypeScript support

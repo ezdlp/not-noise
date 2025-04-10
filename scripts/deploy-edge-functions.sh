@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Secure Edge Function Deployment Script
@@ -29,7 +28,7 @@ fi
 PROJECT_REF=$(echo $SUPABASE_URL | sed -E 's/https:\/\/([^.]+).*/\1/')
 
 echo "Deploying Edge Functions to project: $PROJECT_REF"
-echo "Using Stripe API version 2024-09-30.acacia"
+echo "Using Stripe API version 2025-02-24.acacia"
 
 # Deploy the Edge Functions
 echo "Deploying create-checkout-session function..."

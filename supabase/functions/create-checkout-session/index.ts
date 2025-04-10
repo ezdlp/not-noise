@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'https://esm.sh/stripe@15.7.0'; // Using the latest Stripe version
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -54,10 +53,10 @@ serve(async (req) => {
       throw new Error('Server configuration error: Missing Stripe credentials');
     }
     
-    console.log(`Initializing Stripe with API version 2024-09-30.acacia`);
+    console.log(`Initializing Stripe with API version 2025-02-24.acacia`);
     
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2024-09-30.acacia', // Updated to consistent API version
+      apiVersion: '2025-02-24.acacia', // Updated to match consistent version across the app
       httpClient: Stripe.createFetchHttpClient(),
       maxNetworkRetries: 3,
     });
