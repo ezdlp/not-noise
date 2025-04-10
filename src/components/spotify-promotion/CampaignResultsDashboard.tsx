@@ -414,7 +414,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                         {/* First show playlist links if available */}
                         {report.playlist_link ? (
                           <div className="mb-2">
-                            {report.playlist_link.split(/[\s\n]+/).map((link, i) => {
+                            {report.playlist_link.split(/[\s\n,]+/).map((link, i) => {
                               if (link.match(/^https?:\/\/\S+/i)) {
                                 // Clean the URL (remove any trailing punctuation)
                                 const cleanUrl = link.trim().replace(/[,;.:!?]$/, '');
@@ -424,10 +424,9 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                                       href={cleanUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center text-primary hover:underline"
+                                      className="text-primary hover:underline"
                                     >
-                                      <span className="mr-1">View Playlist</span>
-                                      <ExternalLink className="h-3 w-3" />
+                                      {cleanUrl}
                                     </a>
                                   </div>
                                 );
@@ -435,12 +434,12 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                               return null;
                             }).filter(Boolean)}
                           </div>
-                        ) : (
+                        ) :
                           // Show regular feedback if no playlist link
                           <div>
                             {/* Scan for URLs in feedback */}
                             {report.feedback && report.feedback.match(/https?:\/\/\S+/i) ? (
-                              report.feedback.split(/[\s\n]+/).map((word, i) => {
+                              report.feedback.split(/[\s\n,]+/).map((word, i) => {
                                 if (word.match(/^https?:\/\/\S+/i)) {
                                   // Clean the URL
                                   const cleanUrl = word.trim().replace(/[,;.:!?]$/, '');
@@ -450,10 +449,9 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                                         href={cleanUrl} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center text-primary hover:underline"
+                                        className="text-primary hover:underline"
                                       >
-                                        <span className="mr-1">View Playlist</span>
-                                        <ExternalLink className="h-3 w-3" />
+                                        {cleanUrl}
                                       </a>
                                     </div>
                                   );
@@ -464,7 +462,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                               <span>{report.feedback || "Track approved"}</span>
                             )}
                           </div>
-                        )}
+                        }
                         
                         {/* Show feedback text if there was a playlist link AND feedback */}
                         {report.playlist_link && report.feedback && !report.feedback.match(/https?:\/\/\S+/i) && (
