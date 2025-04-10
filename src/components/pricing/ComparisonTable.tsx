@@ -33,7 +33,7 @@ const ComparisonTable = () => {
       icon: <HeadphonesIcon className="h-4 w-4" />,
       free: "Regular pricing",
       pro: <div className="font-medium">
-        <a href="/spotify-playlist-promotion" className="text-primary hover:underline">10% discount on all campaigns</a>
+        <a href="/spotify-playlist-promotion" className="text-primary hover:underline">25% discount on all campaigns</a>
         <span className="ml-2 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-white">NEW</span>
       </div>,
       info: "Get your music heard by new listeners through our curated playlist promotion service",
