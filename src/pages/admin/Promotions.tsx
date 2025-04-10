@@ -246,7 +246,16 @@ export default function Promotions() {
                 ) : (
                   promotions?.map((promo: Promotion) => (
                     <TableRow key={promo.id}>
-                      <TableCell className="font-medium">{promo.track_name}</TableCell>
+                      <TableCell className="font-medium">
+                        <a 
+                          href={`https://open.spotify.com/track/${promo.spotify_track_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {promo.track_name}
+                        </a>
+                      </TableCell>
                       <TableCell>{promo.track_artist}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
@@ -337,7 +346,21 @@ export default function Promotions() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              Campaign Results: {selectedCampaign?.track_name} by {selectedCampaign?.track_artist}
+              Campaign Results: 
+              {selectedCampaign && (
+                <>
+                  <a 
+                    href={`https://open.spotify.com/track/${selectedCampaign.spotify_track_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {selectedCampaign.track_name}
+                  </a>
+                  {" by "}
+                  {selectedCampaign.track_artist}
+                </>
+              )}
             </DialogTitle>
           </DialogHeader>
           
