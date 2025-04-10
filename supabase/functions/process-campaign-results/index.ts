@@ -301,6 +301,7 @@ serve(async (req) => {
       // Extract potential URLs from feedback for shared entries
       let extractedUrls = '';
       if (action === 'shared' && feedback) {
+        // Use a better regex that captures full URLs even with query parameters
         const urlMatches = feedback.match(/https?:\/\/[^\s]+/g);
         if (urlMatches && urlMatches.length > 0) {
           extractedUrls = urlMatches.join('\n');
@@ -313,25 +314,26 @@ serve(async (req) => {
       if (existingCurator) {
         // Update if either:
         // 1. Current entry is approved/shared and we don't have approval yet
-        // 2. Current entry has a playlist URL and existing one doesn't 
+        // 2. Current entry has a playlist URL and existing one doesn't
+        // 3. Or this is a shared entry with URLs in feedback 
         const shouldUpdateAction = isApproved && existingCurator.action !== 'Approved';
-        const shouldUpdateUrl = effectivePlaylistUrl && !existingCurator.playlist_link;
+        const shouldUpdateUrl = action === 'shared' && extractedUrls && !existingCurator.playlist_link;
         
         if (shouldUpdateAction || shouldUpdateUrl) {
           curatorMap.set(curatorKey, {
             ...existingCurator,
             action: isApproved ? 'Approved' : existingCurator.action,
             playlist_link: effectivePlaylistUrl || existingCurator.playlist_link,
-            feedback: action === 'shared' ? effectivePlaylistUrl || feedback : existingCurator.feedback
+            feedback: action === 'shared' && extractedUrls ? extractedUrls : existingCurator.feedback
           });
         }
       } else {
-        // Add new curator entry
+        // Add new curator entry - for shared entries with URLs, use the URLs as feedback
         curatorMap.set(curatorKey, {
           curator_name: curatorName,
           // Standardize action names: "approved" or "shared" → "Approved", "declined" → "Declined"
           action: isApproved ? 'Approved' : 'Declined',
-          feedback: action === 'shared' && effectivePlaylistUrl ? effectivePlaylistUrl : feedback,
+          feedback: action === 'shared' && extractedUrls ? extractedUrls : feedback,
           playlist_link: effectivePlaylistUrl || undefined
         });
       }
@@ -356,10 +358,13 @@ serve(async (req) => {
       )
     }
 
-    // Calculate campaign stats based only on valid submissions
+    // Calculate campaign stats based only on valid submissions (unique curators)
     const totalSubmissions = filteredRecords.length;
     const approved = filteredRecords.filter(r => r.action === 'Approved').length;
     const declined = filteredRecords.filter(r => r.action === 'Declined').length;
+    
+    // Double-check that approved + declined equals totalSubmissions
+    console.log(`[process-campaign-results] Stats: total=${totalSubmissions}, approved=${approved}, declined=${declined}`);
     
     // Calculate approval rate based on valid submissions
     const approvalRate = totalSubmissions > 0 ? (approved / totalSubmissions) * 100 : 0;
@@ -412,7 +417,7 @@ serve(async (req) => {
     }
 
     // Generate AI analysis if there are filtered records
-    let aiAnalysis: any = null
+    let aiAnalysis = null
     if (filteredRecords.length > 0 && OPENAI_API_KEY) {
       try {
         console.log("[process-campaign-results] Sending to OpenAI for analysis - Records count:", filteredRecords.length)
