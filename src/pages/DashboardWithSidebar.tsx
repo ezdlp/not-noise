@@ -159,10 +159,6 @@ export default function Dashboard() {
                   <span>Back to Campaigns</span>
                 </Button>
               </Link>
-              <div className="ml-4">
-                <h2 className="text-xl font-medium">{campaignDetails.track_name}</h2>
-                <p className="text-sm text-muted-foreground">{campaignDetails.track_artist}</p>
-              </div>
             </div>
           )}
           
