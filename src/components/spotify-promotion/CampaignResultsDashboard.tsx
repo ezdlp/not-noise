@@ -104,6 +104,9 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
         
         // Process curator data from raw CSV - get all available information to create comprehensive curator entries
         if (Array.isArray(rawData.results)) {
+          console.log('Processing campaign raw data:');
+          console.log(`Total entries: ${rawData.results.length}`);
+          
           // Create a map to track processed curators (to avoid duplicates)
           const processedCurators = new Map();
           const validStatuses = ['approved', 'shared', 'declined'];
@@ -179,10 +182,13 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
               let foundUrlInShared = false;
               
               for (const entry of sharedEntries) {
+                console.log(`Processing shared entry for ${curatorName}:`, entry.feedback);
+                
                 // Check for URLs in feedback
                 if (entry.feedback) {
                   const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
                   if (urlMatches && urlMatches.length > 0) {
+                    console.log(`Found URLs in feedback: ${urlMatches.join(', ')}`);
                     foundUrlInShared = true;
                     hasPlaylist = true;
                     playlistLinks = urlMatches.join('\n');
@@ -192,6 +198,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                 
                 // Then check for playlist_url field
                 if (entry.playlist_url) {
+                  console.log(`Found playlist_url: ${entry.playlist_url}`);
                   foundUrlInShared = true;
                   hasPlaylist = true;
                   playlistLinks = entry.playlist_url;
@@ -213,6 +220,8 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
             } 
             // If no shared entries but has approved entries
             else if (approvedEntries.length > 0) {
+              console.log(`Processing approved entries for ${curatorName}`);
+              
               // Look for playlist URLs in approved entries too
               let foundUrlInApproved = false;
               
@@ -221,6 +230,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                 if (entry.feedback) {
                   const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
                   if (urlMatches && urlMatches.length > 0) {
+                    console.log(`Found URLs in approved feedback: ${urlMatches.join(', ')}`);
                     foundUrlInApproved = true;
                     hasPlaylist = true;
                     playlistLinks = urlMatches.join('\n');
@@ -230,6 +240,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                 
                 // Check for playlist_url field
                 if (entry.playlist_url) {
+                  console.log(`Found playlist_url in approved: ${entry.playlist_url}`);
                   foundUrlInApproved = true;
                   hasPlaylist = true;
                   playlistLinks = entry.playlist_url;
@@ -280,8 +291,12 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
             approvalRate: approvalRate
           });
           
+          console.log(`Stats: ${approved} approved, ${declined} declined, ${approvalRate.toFixed(1)}% approval rate`);
+          
           // Convert map to array for reports
-          setProcessedReports(Array.from(processedCurators.values()));
+          const reportArray = Array.from(processedCurators.values());
+          console.log('Processed reports:', reportArray);
+          setProcessedReports(reportArray);
         }
       } catch (err) {
         console.error('Error processing raw CSV data:', err);
@@ -528,15 +543,16 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                   <TableCell className="max-w-md whitespace-pre-wrap">
                     {(() => {
                       if (report.action.toLowerCase() === 'approved') {
-                        // For approved entries with has_playlist flag or URLs in feedback
-                        if (report.has_playlist || (report.feedback && report.feedback.includes('http'))) {
-                          // Split by newlines and check each line for URLs
-                          return report.feedback.split('\n').map((line, i) => {
-                            if (line.trim().startsWith('http')) {
+                        // Check if this is a playlist link (either has_playlist flag or URLs in feedback)
+                        if (report.has_playlist || (report.feedback && /https?:\/\/\S+/i.test(report.feedback))) {
+                          // Split feedback by newlines or spaces and look for URLs
+                          const words = report.feedback.split(/[\s\n]+/);
+                          return words.map((word, i) => {
+                            if (word.match(/^https?:\/\/\S+/i)) {
                               return (
                                 <div key={i} className="mb-1">
                                   <a 
-                                    href={line.trim()} 
+                                    href={word.trim()} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center text-primary hover:underline"
@@ -546,8 +562,9 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                                   </a>
                                 </div>
                               );
-                            }
-                            return line ? <div key={i}>{line}</div> : null;
+                            } 
+                            // Only return text words if they're not part of a URL sequence
+                            return word.match(/^https?:\/\//i) ? null : <span key={i}> {word}</span>;
                           });
                         } else {
                           // For approved entries without URLs
