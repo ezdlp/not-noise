@@ -18,6 +18,14 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Explicitly configure create-checkout-session with JWT verification enabled
+[functions.create-checkout-session]
+verify_jwt = true
+
 # Campaign results processing function - ensure it's properly configured
 [functions.process-campaign-results]
+verify_jwt = true
+
+# Payment verification function
+[functions.verify-payment-session]
 verify_jwt = true

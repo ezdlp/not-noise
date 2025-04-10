@@ -603,6 +603,27 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_function_check_logs: {
+        Row: {
+          check_time: string | null
+          function_name: string
+          has_stripe_key: boolean
+          id: number
+        }
+        Insert: {
+          check_time?: string | null
+          function_name: string
+          has_stripe_key: boolean
+          id?: number
+        }
+        Update: {
+          check_time?: string | null
+          function_name?: string
+          has_stripe_key?: boolean
+          id?: number
+        }
+        Relationships: []
+      }
       edge_function_logs: {
         Row: {
           created_at: string

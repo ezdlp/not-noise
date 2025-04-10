@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Secure Edge Function Deployment Script
@@ -30,11 +31,17 @@ PROJECT_REF=$(echo $SUPABASE_URL | sed -E 's/https:\/\/([^.]+).*/\1/')
 echo "Deploying Edge Functions to project: $PROJECT_REF"
 echo "Using Stripe API version 2025-02-24.acacia"
 
-# Deploy the Edge Functions
+# Deploy ALL Edge Functions with explicit settings
 echo "Deploying create-checkout-session function..."
-npx supabase functions deploy create-checkout-session --project-ref $PROJECT_REF --no-verify-jwt
+npx supabase functions deploy create-checkout-session --project-ref $PROJECT_REF --no-verify-jwt=false
 
-# Set secrets securely
+echo "Deploying verify-payment-session function..."
+npx supabase functions deploy verify-payment-session --project-ref $PROJECT_REF --no-verify-jwt=false
+
+echo "Deploying stripe-webhook function (JWT disabled)..."
+npx supabase functions deploy stripe-webhook --project-ref $PROJECT_REF --no-verify-jwt
+
+# Set secrets securely for ALL functions
 echo "Setting secrets for Edge Functions..."
 npx supabase secrets set \
   STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" \
@@ -43,4 +50,5 @@ npx supabase secrets set \
   SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
   --project-ref $PROJECT_REF
 
-echo "Edge Functions deployment complete!" 
+echo "Edge Functions deployment complete!"
+echo "Run 'npx supabase functions logs --project-ref $PROJECT_REF' to monitor for errors"
