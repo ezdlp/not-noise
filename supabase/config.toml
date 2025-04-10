@@ -2,7 +2,7 @@
 project_id = "owtufhdsuuyrgmxytclj"
 
 [global.env_variables]
-# Add your environment variables here
+# Environment variables can now be managed directly in Supabase dashboard
 
 # Social media preview functions - MUST REMAIN DISABLED FOR SOCIAL MEDIA PREVIEWS
 [functions.smart-link-seo]
@@ -18,12 +18,8 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-# Explicitly configure create-checkout-session with JWT verification enabled
+# Checkout session function with JWT verification
 [functions.create-checkout-session]
-verify_jwt = true
-
-# Campaign results processing function - ensure it's properly configured
-[functions.process-campaign-results]
 verify_jwt = true
 
 # Payment verification function
