@@ -22,8 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { AlertCircle, CheckCircle, FileText, Loader2 } from "lucide-react";
-import { formatDistance } from "date-fns";
+import { AlertCircle, CheckCircle, FileText, Loader2, Edit, Save, Globe } from "lucide-react";
+import { formatDistance, format } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
 import { CampaignResultsAnalyzer } from './components/CampaignResultsAnalyzer';
@@ -36,6 +36,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Promotions() {
   const [activeTab, setActiveTab] = useState("promotions");
@@ -43,6 +45,8 @@ export default function Promotions() {
   const [authChecked, setAuthChecked] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Promotion | null>(null);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [editingGenre, setEditingGenre] = useState<string | null>(null);
+  const [genreValue, setGenreValue] = useState<string>("");
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -102,7 +106,7 @@ export default function Promotions() {
         (promoData || []).map(async (promo) => {
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select(`name, email, artist_name`)
+            .select(`name, email, artist_name, country`)
             .eq("id", promo.user_id)
             .single();
             
@@ -110,9 +114,45 @@ export default function Promotions() {
             console.error("Error fetching profile for user ID:", promo.user_id, profileError);
           }
           
+          // Fetch Spotify popularity scores
+          let popularityScore = null;
+          try {
+            // Use fetch directly to get spotify track popularity
+            const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            
+            if (apiUrl && apiKey) {
+              const response = await fetch(
+                `${apiUrl}/rest/v1/spotify_popularity?track_id=eq.${promo.spotify_track_id}&select=popularity`,
+                {
+                  headers: {
+                    'apikey': apiKey,
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data && data.length > 0 && data[0].popularity !== undefined) {
+                  popularityScore = data[0].popularity;
+                }
+              }
+            }
+          } catch (popError) {
+            console.error("Error fetching popularity score:", popError);
+          }
+          
+          const stripeFeePercent = 0.029;
+          const stripeFeeFixed = 0.30;
+          const netTotal = promo.total_cost - (promo.total_cost * stripeFeePercent + stripeFeeFixed);
+          
           return {
             ...promo,
-            profiles: profileData || null
+            profiles: profileData || null,
+            popularity_score: popularityScore,
+            net_total: parseFloat(netTotal.toFixed(2))
           };
         })
       );
@@ -187,6 +227,39 @@ export default function Promotions() {
 
   const showDebugInfo = process.env.NODE_ENV === 'development';
 
+  const handleGenreEdit = (promotionId: string, currentGenre: string) => {
+    setEditingGenre(promotionId);
+    setGenreValue(currentGenre);
+  };
+  
+  const saveGenre = async (promotionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("promotions")
+        .update({ genre: genreValue })
+        .eq("id", promotionId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Genre Updated",
+        description: "The genre has been successfully updated.",
+      });
+      
+      await refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to update genre: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setEditingGenre(null);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -218,34 +291,64 @@ export default function Promotions() {
               </TableCaption>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Created</TableHead>
                   <TableHead>Track</TableHead>
                   <TableHead>Artist</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Genre</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Popularity
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Spotify track popularity score (0-100)
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead>Submissions</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Total</TableHead>
+                  <TableHead>Gross Total</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Net Total
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          After Stripe fees (2.9% + $0.30)
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-10">
+                    <TableCell colSpan={12} className="text-center py-10">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                       <div className="mt-2">Loading promotions...</div>
                     </TableCell>
                   </TableRow>
                 ) : promotions?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-10">
+                    <TableCell colSpan={12} className="text-center py-10">
                       No promotions found
                     </TableCell>
                   </TableRow>
                 ) : (
                   promotions?.map((promo: Promotion) => (
                     <TableRow key={promo.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(promo.created_at), 'MMM d, yyyy')}
+                      </TableCell>
                       <TableCell className="font-medium">
                         <a 
                           href={`https://open.spotify.com/track/${promo.spotify_track_id}`}
@@ -276,14 +379,57 @@ export default function Promotions() {
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell>{promo.genre}</TableCell>
-                      <TableCell>{promo.submission_count}</TableCell>
                       <TableCell>
-                        {formatDistance(new Date(promo.created_at), new Date(), { 
-                          addSuffix: true 
-                        })}
+                        {editingGenre === promo.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={genreValue} 
+                              onChange={(e) => setGenreValue(e.target.value)}
+                              className="h-8 w-28"
+                            />
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-6 w-6"
+                              onClick={() => saveGenre(promo.id)}
+                            >
+                              <Save className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span>{promo.genre || 'Not specified'}</span>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-6 w-6"
+                              onClick={() => handleGenreEdit(promo.id, promo.genre)}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
+                      <TableCell>
+                        {promo.popularity_score !== null ? (
+                          <span className="font-mono">{promo.popularity_score}</span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {promo.profiles?.country ? (
+                          <div className="flex items-center gap-1">
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>{promo.profiles.country}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Unknown</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{promo.submission_count}</TableCell>
                       <TableCell>${promo.total_cost}</TableCell>
+                      <TableCell>${promo.net_total}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <div className="flex gap-2">

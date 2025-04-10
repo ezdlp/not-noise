@@ -171,6 +171,8 @@ export interface Promotion {
   estimated_additions?: number;
   package_tier?: string;
   profiles?: Profile;
+  popularity_score?: number | null;
+  net_total?: number;
 }
 
 export type UIPromotionStatus = 'payment_pending' | 'active' | 'delivered' | 'cancelled';
