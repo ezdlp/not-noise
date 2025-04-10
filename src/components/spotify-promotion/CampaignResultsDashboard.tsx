@@ -434,7 +434,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                                 );
                               }
                               return null;
-                            }).filter(Boolean)}
+                            })}
                           </div>
                         ) : (
                           // Show regular feedback if no playlist link
