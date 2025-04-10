@@ -409,7 +409,7 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-md whitespace-pre-wrap break-words">
-                    {report.action.toLowerCase() === 'approved' ? (
+                    {report.action.toLowerCase() === 'approved' && (
                       <>
                         {/* First show playlist links if available */}
                         {report.playlist_link ? (
