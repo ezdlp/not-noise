@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +49,6 @@ interface Campaign {
   package_tier?: string;
   submission_count?: number;
   spotify_track_id?: string;
-  // ... other campaign fields
 }
 
 interface QueryResult {
@@ -102,185 +100,67 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       try {
         const rawData = data.results.raw_data;
         
-        // Process curator data from raw CSV - get all available information to create comprehensive curator entries
         if (Array.isArray(rawData.results)) {
           console.log('Processing campaign raw data:');
           console.log(`Total entries: ${rawData.results.length}`);
           
-          // Create a map to track processed curators (to avoid duplicates)
-          const processedCurators = new Map();
-          const validStatuses = ['approved', 'shared', 'declined'];
+          // Create a map to track curators by name (case insensitive key)
+          const curatorMap = new Map();
           
-          // Count only valid submissions (approved, shared, declined)
-          let approved = 0;
-          let declined = 0;
-          
-          // First collect all curator information, including shared links
-          const curatorInfo = new Map();
-          
+          // First pass: collect all entries by curator, prioritizing "shared" over others
           rawData.results.forEach((entry: any) => {
-            const action = (entry.action || '').toLowerCase();
-            const curatorName = entry.curator_name || '';
-            
+            const curatorName = entry.curator_name?.trim();
             if (!curatorName) return;
             
-            const curatorKey = curatorName.trim().toLowerCase();
+            const action = (entry.action || '').toLowerCase();
+            const curatorKey = curatorName.toLowerCase();
             
-            // Collect all entries for each curator
-            if (!curatorInfo.has(curatorKey)) {
-              curatorInfo.set(curatorKey, []);
+            // Skip invalid entries
+            if (!['shared', 'approved', 'declined'].includes(action)) return;
+            
+            // If this is the first time we see this curator, or we're upgrading from approved/declined to shared
+            if (!curatorMap.has(curatorKey) || 
+                (action === 'shared' && curatorMap.get(curatorKey).action !== 'shared')) {
+              
+              // Check for playlist URLs in feedback
+              let hasPlaylist = false;
+              let playlistLinks = '';
+              
+              // Extract URLs from feedback
+              if (entry.feedback) {
+                const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
+                if (urlMatches && urlMatches.length > 0) {
+                  hasPlaylist = true;
+                  playlistLinks = urlMatches.join('\n');
+                }
+              }
+              
+              // Check for playlist_url field
+              if (entry.playlist_url) {
+                hasPlaylist = true;
+                playlistLinks = entry.playlist_url;
+              }
+              
+              // Prepare feedback - use playlist links or text feedback
+              let feedback = (hasPlaylist && playlistLinks) ? playlistLinks : (entry.feedback || '');
+              
+              // Add or update curator entry
+              curatorMap.set(curatorKey, {
+                curator_name: curatorName,
+                action: action === 'shared' ? 'Approved' : (action === 'approved' ? 'Approved' : 'Declined'),
+                feedback: feedback,
+                has_playlist: hasPlaylist
+              });
             }
-            curatorInfo.get(curatorKey).push(entry);
           });
           
-          // Now process each curator once, using all their entries
-          curatorInfo.forEach((entries, curatorKey) => {
-            const validEntries = entries.filter((entry: any) => {
-              const action = (entry.action || '').toLowerCase();
-              return validStatuses.includes(action);
-            });
-            
-            // Only count curators with valid entries as submissions
-            if (validEntries.length === 0) return;
-            
-            // Prioritize "shared" entries over "approved" entries
-            const sharedEntries = validEntries.filter((entry: any) => {
-              const action = (entry.action || '').toLowerCase();
-              return action === 'shared'; 
-            });
-            
-            // Next check for approved entries if no shared ones exist
-            const approvedEntries = validEntries.filter((entry: any) => {
-              const action = (entry.action || '').toLowerCase();
-              return action === 'approved'; 
-            });
-            
-            // Find if curator has any declined entries
-            const declinedEntries = validEntries.filter((entry: any) => {
-              const action = (entry.action || '').toLowerCase();
-              return action === 'declined';
-            });
-            
-            // Count this curator once for statistics
-            if (sharedEntries.length > 0 || approvedEntries.length > 0) {
-              approved++;
-            } else if (declinedEntries.length > 0) {
-              declined++;
-            }
-            
-            // Get curator name from first entry
-            const curatorName = entries[0].curator_name;
-            
-            // Initialize feedback and playlist links
-            let feedback = '';
-            let playlistLinks = '';
-            let hasPlaylist = false;
-            
-            // PRIORITIZE SHARED ENTRIES - they're most likely to have playlist links
-            if (sharedEntries.length > 0) {
-              // First extract URLs from feedback fields in shared entries
-              let foundUrlInShared = false;
-              
-              for (const entry of sharedEntries) {
-                console.log(`Processing shared entry for ${curatorName}:`, entry.feedback);
-                
-                // Check for URLs in feedback
-                if (entry.feedback) {
-                  const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
-                  if (urlMatches && urlMatches.length > 0) {
-                    console.log(`Found URLs in feedback: ${urlMatches.join(', ')}`);
-                    foundUrlInShared = true;
-                    hasPlaylist = true;
-                    playlistLinks = urlMatches.join('\n');
-                    break; // Found URLs, no need to continue
-                  }
-                }
-                
-                // Then check for playlist_url field
-                if (entry.playlist_url) {
-                  console.log(`Found playlist_url: ${entry.playlist_url}`);
-                  foundUrlInShared = true;
-                  hasPlaylist = true;
-                  playlistLinks = entry.playlist_url;
-                  break;
-                }
-              }
-              
-              // If no URLs found in shared entries, use any text feedback
-              if (!foundUrlInShared) {
-                const sharedFeedback = sharedEntries
-                  .map((e: any) => e.feedback)
-                  .filter(Boolean)
-                  .join('\n');
-                
-                feedback = sharedFeedback || "Track shared";
-              } else {
-                feedback = playlistLinks; // Use the playlist links as feedback
-              }
-            } 
-            // If no shared entries but has approved entries
-            else if (approvedEntries.length > 0) {
-              console.log(`Processing approved entries for ${curatorName}`);
-              
-              // Look for playlist URLs in approved entries too
-              let foundUrlInApproved = false;
-              
-              for (const entry of approvedEntries) {
-                // Check for URLs in feedback
-                if (entry.feedback) {
-                  const urlMatches = entry.feedback.match(/https?:\/\/[^\s]+/g);
-                  if (urlMatches && urlMatches.length > 0) {
-                    console.log(`Found URLs in approved feedback: ${urlMatches.join(', ')}`);
-                    foundUrlInApproved = true;
-                    hasPlaylist = true;
-                    playlistLinks = urlMatches.join('\n');
-                    break;
-                  }
-                }
-                
-                // Check for playlist_url field
-                if (entry.playlist_url) {
-                  console.log(`Found playlist_url in approved: ${entry.playlist_url}`);
-                  foundUrlInApproved = true;
-                  hasPlaylist = true;
-                  playlistLinks = entry.playlist_url;
-                  break;
-                }
-              }
-              
-              if (!foundUrlInApproved) {
-                const approvedFeedback = approvedEntries
-                  .map((e: any) => e.feedback)
-                  .filter(Boolean)
-                  .join('\n');
-                
-                feedback = approvedFeedback || "Track approved";
-              } else {
-                feedback = playlistLinks;
-              }
-            } else if (declinedEntries.length > 0) {
-              // For declined, use text feedback
-              const declinedFeedback = declinedEntries
-                .map((e: any) => e.feedback)
-                .filter(Boolean)
-                .join('\n');
-                
-              feedback = declinedFeedback || "Track declined";
-            }
-            
-            // Add processed curator to our map
-            processedCurators.set(curatorKey, {
-              curator_name: curatorName,
-              action: (sharedEntries.length > 0 || approvedEntries.length > 0) ? 'Approved' : 'Declined',
-              feedback: feedback,
-              has_playlist: hasPlaylist
-            });
-          });
+          // Convert map to array
+          const uniqueCurators = Array.from(curatorMap.values());
           
-          // Calculate total valid submissions as the size of processed curators
-          const totalValid = processedCurators.size;
-          
-          // Calculate approval rate
+          // Calculate stats
+          const approved = uniqueCurators.filter(c => c.action === 'Approved').length;
+          const declined = uniqueCurators.filter(c => c.action === 'Declined').length;
+          const totalValid = uniqueCurators.length;
           const approvalRate = totalValid > 0 ? (approved / totalValid) * 100 : 0;
           
           // Update stats
@@ -292,11 +172,10 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
           });
           
           console.log(`Stats: ${approved} approved, ${declined} declined, ${approvalRate.toFixed(1)}% approval rate`);
+          console.log('Processed reports:', uniqueCurators);
           
-          // Convert map to array for reports
-          const reportArray = Array.from(processedCurators.values());
-          console.log('Processed reports:', reportArray);
-          setProcessedReports(reportArray);
+          // Set the processed reports
+          setProcessedReports(uniqueCurators);
         }
       } catch (err) {
         console.error('Error processing raw CSV data:', err);
@@ -359,21 +238,6 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
       processedStats,
       processedReports
     });
-    
-    if (results.raw_data && Array.isArray(results.raw_data.results)) {
-      const sharedEntries = results.raw_data.results.filter(
-        (entry: any) => entry.action?.toLowerCase() === 'shared'
-      );
-      
-      console.log(`Found ${sharedEntries.length} shared entries:`, 
-        sharedEntries.slice(0, 2).map((e: any) => ({
-          curator: e.curator_name,
-          action: e.action,
-          feedback: e.feedback,
-          playlist_url: e.playlist_url
-        }))
-      );
-    }
   }
   
   if (!results || !results.ai_analysis) {
@@ -540,19 +404,20 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                       </span>
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-md whitespace-pre-wrap">
+                  <TableCell className="max-w-md whitespace-pre-wrap break-words">
                     {(() => {
                       if (report.action.toLowerCase() === 'approved') {
-                        // Check if this is a playlist link (either has_playlist flag or URLs in feedback)
+                        // Check if feedback contains URLs
                         if (report.has_playlist || (report.feedback && /https?:\/\/\S+/i.test(report.feedback))) {
-                          // Split feedback by newlines or spaces and look for URLs
-                          const words = report.feedback.split(/[\s\n]+/);
-                          return words.map((word, i) => {
+                          // Split feedback by whitespace or newlines to extract URLs
+                          return report.feedback.split(/[\s\n]+/).map((word, i) => {
                             if (word.match(/^https?:\/\/\S+/i)) {
+                              // Clean the URL (remove any trailing punctuation)
+                              const cleanUrl = word.trim().replace(/[,;.:!?]$/, '');
                               return (
-                                <div key={i} className="mb-1">
+                                <div key={i} className="mb-2">
                                   <a 
-                                    href={word.trim()} 
+                                    href={cleanUrl} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center text-primary hover:underline"
@@ -562,10 +427,9 @@ export function CampaignResultsDashboard({ campaignId }: CampaignResultsDashboar
                                   </a>
                                 </div>
                               );
-                            } 
-                            // Only return text words if they're not part of a URL sequence
-                            return word.match(/^https?:\/\//i) ? null : <span key={i}> {word}</span>;
-                          });
+                            }
+                            return null; // Don't return non-URL parts when we have URLs
+                          }).filter(Boolean); // Remove null entries
                         } else {
                           // For approved entries without URLs
                           return report.feedback || "Track approved";
