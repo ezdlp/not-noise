@@ -13,7 +13,7 @@
       "command": "npx",
       "args": ["-y", "@stripe/mcp", "--tools=all"],
       "env": {
-        "STRIPE_SECRET_KEY": "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"
+        "STRIPE_SECRET_KEY": "${STRIPE_SECRET_KEY}"
       }
     }
   }
