@@ -3,10 +3,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeadphonesIcon, PlusCircleIcon, ExternalLinkIcon, CreditCardIcon, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { 
+  HeadphonesIcon, 
+  PlusCircleIcon, 
+  ExternalLinkIcon, 
+  CreditCardIcon, 
+  Loader2,
+  MusicIcon
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistance } from "date-fns";
+import { formatDistance, addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { SpotifyTrackSearchModal } from "./SpotifyTrackSearchModal";
 import { resumePaymentFlow } from "@/lib/promotion-utils";
@@ -163,6 +171,8 @@ function CampaignCard({
   isProcessingPayment: boolean;
   onCompletePayment: (campaignId: string) => void;
 }) {
+  const [trackArtwork, setTrackArtwork] = useState<string | null>(null);
+  
   const statusColors = {
     payment_pending: "bg-yellow-100 text-yellow-800",
     active: "bg-green-100 text-green-800",
@@ -181,75 +191,196 @@ function CampaignCard({
     }
   };
   
+  // Calculate campaign day (assuming 7-day delivery)
+  const calculateCampaignDay = () => {
+    if (campaign.status === 'payment_pending') return 0;
+    if (campaign.status === 'delivered') return 7;
+    
+    const creationDate = new Date(campaign.created_at);
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate.getTime() - creationDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.min(diffDays, 7);
+  };
+  
+  // Get campaign day message
+  const getCampaignDayMessage = (day: number) => {
+    switch(day) {
+      case 0:
+        return "Waiting for payment to start your campaign";
+      case 1:
+        return "Track analysis in progress. We're identifying the perfect playlist matches for your sound.";
+      case 2:
+      case 3:
+        return "Your track is now being pitched to our network of playlist curators who specialize in your genre.";
+      case 4:
+        return "Curators are reviewing your track. Initial responses are coming in while others are still evaluating.";
+      case 5:
+        return "Positive responses are arriving! About 60% of curators have reviewed your submission so far.";
+      case 6:
+        return "Final push! We're following up with remaining curators to maximize your playlist placements.";
+      case 7:
+        return "Campaign complete! Your full results and playlist placements are now available.";
+      default:
+        return "Track is being reviewed by curators";
+    }
+  };
+  
+  // Get next update message
+  const getNextUpdateMessage = (day: number) => {
+    if (day === 0) return "Starts after payment";
+    if (day === 7) return "Campaign completed";
+    
+    if (day === 1 || day === 4 || day === 5 || day === 6) {
+      return "Next update: Tomorrow by 6PM";
+    } else if (day === 2 || day === 3) {
+      return "Next update: In 48 hours";
+    }
+    
+    return "Updates coming soon";
+  };
+  
+  // Fetch Spotify track artwork
+  useEffect(() => {
+    if (campaign?.spotify_track_id) {
+      const fetchSpotifyTrack = async () => {
+        try {
+          const { data: trackData, error } = await supabase.functions.invoke('spotify-search', {
+            body: { url: campaign.spotify_track_id }
+          });
+          
+          if (error) {
+            console.error('Error fetching Spotify track:', error);
+            return;
+          }
+          
+          if (trackData && trackData.artworkUrl) {
+            setTrackArtwork(trackData.artworkUrl);
+          }
+        } catch (err) {
+          console.error('Failed to fetch track artwork:', err);
+        }
+      };
+      
+      fetchSpotifyTrack();
+    }
+  }, [campaign?.spotify_track_id]);
+  
+  const campaignDay = calculateCampaignDay();
+  const progressPercentage = (campaignDay / 7) * 100;
+  
+  const defaultArtwork = "https://placehold.co/400x400/6851FB/FFFFFF?text=Track+Artwork";
+  const artworkUrl = trackArtwork || campaign.artwork_url || defaultArtwork;
+  const capitalizedTier = campaign.package_tier 
+    ? campaign.package_tier.charAt(0).toUpperCase() + campaign.package_tier.slice(1) 
+    : 'Standard';
+  
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-medium">{campaign.track_name}</h3>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>Tier: {campaign.package_tier || 'Standard'}</span>
-              <span>•</span>
-              <span>{formatDistance(new Date(campaign.created_at), new Date(), {
-                addSuffix: true
-              })}</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
+    <Card className="overflow-hidden">
+      <div className="flex flex-col md:flex-row">
+        {/* Artwork Section */}
+        <div className="relative w-full md:w-48 h-48 md:h-auto">
+          <img 
+            src={artworkUrl}
+            alt={`${campaign.track_name} by ${campaign.track_artist}`}
+            className="w-full h-48 object-cover md:w-48 md:h-full"
+          />
+          <div className="absolute top-2 right-2">
             <Badge className={statusColors[campaign.status] || "bg-gray-100 text-gray-800"} variant="outline">
               {getStatusDisplay(campaign.status)}
             </Badge>
-            {campaign.status === 'payment_pending' ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-1"
-                disabled={isProcessingPayment}
-                onClick={() => onCompletePayment(campaign.id)}
-              >
-                {isProcessingPayment ? (
-                  <>
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCardIcon className="h-3 w-3 mr-1" />
-                    <span>Complete Payment</span>
-                  </>
-                )}
-              </Button>
-            ) : campaign.status === "active" || campaign.status === "delivered" ? (
-              <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <span>View Details</span>
-                  <ExternalLinkIcon className="h-3 w-3" />
-                </Button>
-              </Link>
-            ) : null}
+          </div>
+          <div className="absolute bottom-2 left-2">
+            <Badge className="bg-primary/80 text-white">{capitalizedTier}</Badge>
           </div>
         </div>
-        <div className="mt-4 text-sm">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div>
-              <div className="font-medium">Submissions</div>
-              <div>{campaign.submission_count}</div>
+        
+        {/* Content Section */}
+        <div className="p-4 flex-1 flex flex-col justify-between">
+          <div>
+            {/* Track Info & Actions */}
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">{campaign.track_name}</h3>
+                <p className="text-muted-foreground">{campaign.track_artist}</p>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Created {formatDistance(new Date(campaign.created_at), new Date(), {
+                    addSuffix: true
+                  })}
+                </div>
+              </div>
+              <div>
+                {campaign.status === 'payment_pending' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    disabled={isProcessingPayment}
+                    onClick={() => onCompletePayment(campaign.id)}
+                  >
+                    {isProcessingPayment ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCardIcon className="h-3 w-3 mr-1" />
+                        <span>Complete Payment</span>
+                      </>
+                    )}
+                  </Button>
+                ) : campaign.status === "active" || campaign.status === "delivered" ? (
+                  <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <span>View Details</span>
+                      <ExternalLinkIcon className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <div className="font-medium">Playlist Adds</div>
-              <div>{campaign.approval_count || 'Pending'}</div>
+            
+            {/* Campaign Progress Timeline */}
+            {campaign.status !== 'payment_pending' && campaign.status !== 'cancelled' && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center text-sm mb-1.5">
+                  <span className="font-medium">Campaign Progress</span>
+                  <span className="text-xs text-muted-foreground">Day {campaignDay} of 7</span>
+                </div>
+                <Progress value={progressPercentage} className="h-2 mb-2" />
+                <div className="text-sm text-muted-foreground mb-1">
+                  {getCampaignDayMessage(campaignDay)}
+                </div>
+                <div className="text-xs text-primary font-medium">
+                  {getNextUpdateMessage(campaignDay)}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Metrics Section */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <div className="text-xs uppercase font-medium text-muted-foreground">Submissions</div>
+              <div className="text-lg font-semibold">{campaign.submission_count || 0}</div>
             </div>
-            <div>
-              <div className="font-medium">Est. Streams</div>
-              <div>{campaign.estimated_streams || (campaign.approval_count ? campaign.approval_count * 250 : 'Pending')}</div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <div className="text-xs uppercase font-medium text-muted-foreground">Playlist Adds</div>
+              <div className="text-lg font-semibold">{campaign.approval_count || '0'}</div>
             </div>
-            <div>
-              <div className="font-medium">Price</div>
-              <div>${campaign.total_cost}</div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <div className="text-xs uppercase font-medium text-muted-foreground">Est. Streams</div>
+              <div className="text-lg font-semibold">{campaign.estimated_streams || (campaign.approval_count ? campaign.approval_count * 250 : '0')}+</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <div className="text-xs uppercase font-medium text-muted-foreground">Price</div>
+              <div className="text-lg font-semibold">${campaign.total_cost}</div>
             </div>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -261,40 +392,95 @@ function EmptyPromotionsState({
   isPro: boolean;
   onOpenModal: () => void;
 }) {
-  return <Card className="p-8 text-center">
-      <HeadphonesIcon className="mx-auto h-12 w-12 text-primary opacity-50 mb-4" />
-      <h3 className="text-lg font-medium mb-2">No promotion campaigns yet</h3>
-      <p className="text-muted-foreground mb-6">
-        Get your music heard by new listeners through our curated playlist promotion service.
-        {isPro && <span className="text-primary font-medium"> Pro users get 10% off all campaigns!</span>}
-      </p>
-      <Button onClick={onOpenModal}>Start Your First Campaign</Button>
-    </Card>;
+  return (
+    <Card className="overflow-hidden border-0 shadow-md">
+      <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-8 text-center">
+        <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <HeadphonesIcon className="h-8 w-8 text-primary" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Get Your Music Heard</h3>
+        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+          Boost your music with our curated playlist promotion service. Get your tracks in front of new listeners and grow your audience.
+          {isPro && <span className="text-primary font-medium"> Pro users enjoy 10% off all campaigns!</span>}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-muted-foreground mb-6 max-w-2xl mx-auto">
+          <div className="bg-white/60 p-4 rounded-lg shadow-sm">
+            <div className="font-medium text-primary mb-1">Targeted Promotion</div>
+            <p>Your music is pitched to playlist curators who specialize in your genre.</p>
+          </div>
+          <div className="bg-white/60 p-4 rounded-lg shadow-sm">
+            <div className="font-medium text-primary mb-1">Real Results</div>
+            <p>Track your campaign progress and see exactly where your music is being placed.</p>
+          </div>
+          <div className="bg-white/60 p-4 rounded-lg shadow-sm">
+            <div className="font-medium text-primary mb-1">7-Day Delivery</div>
+            <p>Start seeing results quickly with our streamlined promotion process.</p>
+          </div>
+        </div>
+        <Button onClick={onOpenModal} className="px-8" size="lg">
+          <PlusCircleIcon className="mr-2 h-4 w-4" />
+          Start Your First Campaign
+        </Button>
+      </div>
+    </Card>
+  );
 }
 
 function PromotionsSkeleton() {
   return <div className="space-y-4">
-      {[1, 2].map(i => <Card key={i}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-4 w-60" />
-              </div>
-              <div className="flex items-center space-x-3">
+      {[1, 2].map(i => (
+        <Card key={i} className="overflow-hidden">
+          <div className="flex flex-col md:flex-row">
+            {/* Artwork Skeleton */}
+            <div className="relative w-full md:w-48 h-48 md:h-auto">
+              <Skeleton className="w-full h-48 md:w-48 md:h-full absolute" />
+              <div className="absolute top-2 right-2">
                 <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-9 w-28" />
+              </div>
+              <div className="absolute bottom-2 left-2">
+                <Skeleton className="h-6 w-20" />
               </div>
             </div>
-            <div className="mt-4">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {[1, 2, 3, 4].map(j => <div key={j} className="space-y-1">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>)}
+            
+            {/* Content Skeleton */}
+            <div className="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                {/* Track Info & Actions Skeleton */}
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <Skeleton className="h-5 w-48 mb-2" />
+                    <Skeleton className="h-4 w-36 mb-2" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-9 w-28" />
+                  </div>
+                </div>
+                
+                {/* Campaign Progress Timeline Skeleton */}
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-2 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-1" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              </div>
+              
+              {/* Metrics Skeleton */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                {[1, 2, 3, 4].map(j => (
+                  <div key={j} className="bg-muted/30 rounded-lg p-3 text-center">
+                    <Skeleton className="h-3 w-16 mx-auto mb-2" />
+                    <Skeleton className="h-6 w-10 mx-auto" />
+                  </div>
+                ))}
               </div>
             </div>
-          </CardContent>
-        </Card>)}
+          </div>
+        </Card>
+      ))}
     </div>;
 }
