@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Promotion, UIPromotionStatus, dbToUiStatus, uiToDbStatus } from "@/types/database";
@@ -34,6 +33,33 @@ export async function resumePaymentFlow(promotionId: string): Promise<void> {
 
     if (promotion.status !== 'payment_pending') {
       throw new Error("This promotion is not in a payment pending state");
+    }
+
+    // Check for duplicate payment_pending promotions for the same track
+    const { data: duplicates, error: duplicateError } = await supabase
+      .from("promotions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "payment_pending")
+      .eq("spotify_track_id", promotion.spotify_track_id)
+      .neq("id", promotionId); // Exclude the current promotion
+    
+    if (duplicateError) {
+      console.warn("Error checking for duplicates:", duplicateError);
+    } else if (duplicates && duplicates.length > 0) {
+      // Delete duplicate payment_pending promotions
+      console.log(`Removing ${duplicates.length} duplicate pending promotions`);
+      
+      for (const duplicate of duplicates) {
+        const { error: deleteError } = await supabase
+          .from("promotions")
+          .delete()
+          .eq("id", duplicate.id);
+        
+        if (deleteError) {
+          console.error(`Error deleting duplicate promotion ${duplicate.id}:`, deleteError);
+        }
+      }
     }
 
     // Use the package_tier from the database with a fallback to 'silver'

@@ -10,7 +10,8 @@ import {
   ExternalLinkIcon, 
   CreditCardIcon, 
   Loader2,
-  MusicIcon
+  MusicIcon,
+  Trash2
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,16 @@ import { useQuery } from "@tanstack/react-query";
 import { SpotifyTrackSearchModal } from "./SpotifyTrackSearchModal";
 import { resumePaymentFlow } from "@/lib/promotion-utils";
 import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const NewCampaignButton = ({
   isPro,
@@ -172,6 +183,8 @@ function CampaignCard({
   onCompletePayment: (campaignId: string) => void;
 }) {
   const [trackArtwork, setTrackArtwork] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const statusColors = {
     payment_pending: "bg-yellow-100 text-yellow-800",
@@ -240,7 +253,14 @@ function CampaignCard({
     const totalDays = campaign.duration_days || 7;
     
     if (day === 0) return "Starts after payment";
-    if (campaign.status === 'delivered') return "Campaign completed";
+    if (campaign.status === 'delivered') {
+      return (
+        <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`} className="inline-flex items-center hover:underline">
+          View Campaign Report
+          <ExternalLinkIcon className="h-3 w-3 ml-1" />
+        </Link>
+      );
+    }
     
     // Extended campaign message
     if (day >= 6 && day < totalDays && totalDays > 7) {
@@ -292,6 +312,41 @@ function CampaignCard({
     ? campaign.package_tier.charAt(0).toUpperCase() + campaign.package_tier.slice(1) 
     : 'Standard';
   
+  // Handle campaign deletion
+  const handleDeleteCampaign = async () => {
+    try {
+      setIsDeleting(true);
+      
+      const { error } = await supabase
+        .from('promotions')
+        .delete()
+        .eq('id', campaign.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Campaign Deleted",
+        description: "Your campaign has been successfully removed.",
+      });
+      
+      // Force a refresh of the page to update the UI
+      window.location.reload();
+      
+    } catch (error: any) {
+      console.error("Error deleting campaign:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete campaign. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+  
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-col md:flex-row">
@@ -328,25 +383,36 @@ function CampaignCard({
               </div>
               <div>
                 {campaign.status === 'payment_pending' ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-1"
-                    disabled={isProcessingPayment}
-                    onClick={() => onCompletePayment(campaign.id)}
-                  >
-                    {isProcessingPayment ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCardIcon className="h-3 w-3 mr-1" />
-                        <span>Complete Payment</span>
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      disabled={isProcessingPayment}
+                      onClick={() => onCompletePayment(campaign.id)}
+                    >
+                      {isProcessingPayment ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCardIcon className="h-3 w-3 mr-1" />
+                          <span>Complete Payment</span>
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="gap-1 text-red-500 hover:text-red-700"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ) : campaign.status === "active" || campaign.status === "delivered" ? (
                   <Link to={`/dashboard?section=promotions&campaignId=${campaign.id}`}>
                     <Button variant="outline" size="sm" className="gap-1">
@@ -401,6 +467,35 @@ function CampaignCard({
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the campaign "{campaign.track_name}" from your dashboard. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteCampaign} 
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Campaign"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
