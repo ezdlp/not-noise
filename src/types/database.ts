@@ -173,6 +173,7 @@ export interface Promotion {
   profiles?: Profile;
   popularity_score?: number | null;
   net_total?: number;
+  duration_days?: number;
 }
 
 export type UIPromotionStatus = 'payment_pending' | 'active' | 'delivered' | 'cancelled';

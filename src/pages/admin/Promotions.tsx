@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { AlertCircle, CheckCircle, FileText, Loader2, Edit, Save, Globe } from "lucide-react";
+import { AlertCircle, CheckCircle, FileText, Loader2, Edit, Save, Globe, Pencil, Check, X } from "lucide-react";
 import { formatDistance, format } from "date-fns";
 import SpotifyPopularityBackfill from './components/SpotifyPopularityBackfill';
 import { CampaignResultsUploader } from './components/CampaignResultsUploader';
@@ -47,6 +47,8 @@ export default function Promotions() {
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [editingGenre, setEditingGenre] = useState<string | null>(null);
   const [genreValue, setGenreValue] = useState<string>("");
+  const [editingDuration, setEditingDuration] = useState<string | null>(null);
+  const [durationValue, setDurationValue] = useState<number>(7);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -260,6 +262,39 @@ export default function Promotions() {
     }
   };
 
+  const handleDurationEdit = (promotionId: string, currentDuration: number | null) => {
+    setEditingDuration(promotionId);
+    setDurationValue(currentDuration || 7);
+  };
+
+  const saveDuration = async (promotionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .update({ 
+          duration_days: durationValue 
+        } as any)
+        .eq('id', promotionId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Campaign duration updated successfully",
+      });
+      
+      await refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to update duration: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setEditingDuration(null);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -297,6 +332,7 @@ export default function Promotions() {
                   <TableHead>User</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Genre</TableHead>
+                  <TableHead>Duration (days)</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1">
                       Popularity
@@ -407,6 +443,42 @@ export default function Promotions() {
                             >
                               <Edit className="h-3.5 w-3.5" />
                             </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingDuration === promo.id ? (
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="number" 
+                              min={1}
+                              max={30}
+                              value={durationValue}
+                              onChange={(e) => setDurationValue(Number(e.target.value))}
+                              className="w-16"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveDuration(promo.id)}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingDuration(null)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer" 
+                            onClick={() => handleDurationEdit(promo.id, promo.duration_days)}
+                          >
+                            {promo.duration_days || 7}
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
                           </div>
                         )}
                       </TableCell>

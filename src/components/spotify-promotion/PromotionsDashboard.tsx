@@ -191,21 +191,28 @@ function CampaignCard({
     }
   };
   
-  // Calculate campaign day (assuming 7-day delivery)
+  // Calculate campaign day (assuming 7-day delivery by default)
   const calculateCampaignDay = () => {
     if (campaign.status === 'payment_pending') return 0;
-    if (campaign.status === 'delivered') return 7;
+    if (campaign.status === 'delivered') return campaign.duration_days || 7; // Return total duration if delivered
     
     const creationDate = new Date(campaign.created_at);
     const currentDate = new Date();
     const diffTime = Math.abs(currentDate.getTime() - creationDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    return Math.min(diffDays, 7);
+    return Math.min(diffDays, campaign.duration_days || 7);
   };
   
   // Get campaign day message
   const getCampaignDayMessage = (day: number) => {
+    const totalDays = campaign.duration_days || 7;
+    
+    // Campaign is in day 6+ and past standard week but not delivered yet
+    if (day >= 6 && day < totalDays && totalDays > 7) {
+      return "Final push! We're following up with remaining curators to maximize your playlist placements.";
+    }
+    
     switch(day) {
       case 0:
         return "Waiting for payment to start your campaign";
@@ -220,17 +227,25 @@ function CampaignCard({
         return "Positive responses are arriving! About 60% of curators have reviewed your submission so far.";
       case 6:
         return "Final push! We're following up with remaining curators to maximize your playlist placements.";
-      case 7:
-        return "Campaign complete! Your full results and playlist placements are now available.";
       default:
-        return "Track is being reviewed by curators";
+        // Only show completion message if actually delivered
+        return campaign.status === 'delivered' 
+          ? "Campaign complete! Your full results and playlist placements are now available."
+          : "We're finalizing your playlist placements. Results coming soon!";
     }
   };
   
   // Get next update message
   const getNextUpdateMessage = (day: number) => {
+    const totalDays = campaign.duration_days || 7;
+    
     if (day === 0) return "Starts after payment";
-    if (day === 7) return "Campaign completed";
+    if (campaign.status === 'delivered') return "Campaign completed";
+    
+    // Extended campaign message
+    if (day >= 6 && day < totalDays && totalDays > 7) {
+      return "Next update: Tomorrow by 6PM";
+    }
     
     if (day === 1 || day === 4 || day === 5 || day === 6) {
       return "Next update: Tomorrow by 6PM";
@@ -268,7 +283,8 @@ function CampaignCard({
   }, [campaign?.spotify_track_id]);
   
   const campaignDay = calculateCampaignDay();
-  const progressPercentage = (campaignDay / 7) * 100;
+  const totalDays = campaign.duration_days || 7;
+  const progressPercentage = (campaignDay / totalDays) * 100;
   
   const defaultArtwork = "https://placehold.co/400x400/6851FB/FFFFFF?text=Track+Artwork";
   const artworkUrl = trackArtwork || campaign.artwork_url || defaultArtwork;
@@ -347,7 +363,7 @@ function CampaignCard({
               <div className="mb-4">
                 <div className="flex justify-between items-center text-sm mb-1.5">
                   <span className="font-medium">Campaign Progress</span>
-                  <span className="text-xs text-muted-foreground">Day {campaignDay} of 7</span>
+                  <span className="text-xs text-muted-foreground">Day {campaignDay} of {totalDays}</span>
                 </div>
                 <Progress value={progressPercentage} className="h-2 mb-2" />
                 <div className="text-sm text-muted-foreground mb-1">
