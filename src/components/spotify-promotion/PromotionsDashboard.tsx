@@ -383,16 +383,20 @@ function CampaignCard({
               <div className="text-lg font-semibold">{campaign.submission_count || 0}</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-3 text-center">
-              <div className="text-xs uppercase font-medium text-muted-foreground">Playlist Adds</div>
-              <div className="text-lg font-semibold">{campaign.approval_count || '0'}</div>
+              <div className="text-xs uppercase font-medium text-muted-foreground">Approval Rate</div>
+              <div className="text-lg font-semibold">
+                {campaign.approval_count && campaign.submission_count 
+                  ? ((campaign.approval_count / campaign.submission_count) * 100).toFixed(1) 
+                  : '0.0'}%
+              </div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <div className="text-xs uppercase font-medium text-muted-foreground">Approved</div>
+              <div className="text-lg font-semibold">{campaign.approval_count || 0}</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-3 text-center">
               <div className="text-xs uppercase font-medium text-muted-foreground">Est. Streams</div>
               <div className="text-lg font-semibold">{campaign.estimated_streams || (campaign.approval_count ? campaign.approval_count * 250 : '0')}+</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-3 text-center">
-              <div className="text-xs uppercase font-medium text-muted-foreground">Price</div>
-              <div className="text-lg font-semibold">${campaign.total_cost}</div>
             </div>
           </div>
         </div>

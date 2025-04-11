@@ -647,7 +647,11 @@ serve(async (req) => {
           .from('promotions')
           .update({ 
             status: 'delivered', 
-            updated_at: new Date().toISOString() 
+            updated_at: new Date().toISOString(),
+            // Update the metrics fields based on the calculated stats
+            approval_count: approved,
+            submission_count: totalSubmissions,
+            estimated_streams: approved * 250, // Estimated streams calculation
           })
           .eq('id', campaignId)
       } catch (updateError) {
