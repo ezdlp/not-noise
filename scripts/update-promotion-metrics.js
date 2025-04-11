@@ -5,7 +5,8 @@
  * by retrieving data from the campaign_result_data table.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
+import process from 'process';
 
 // Supabase connection initialization (credentials will be taken from .env)
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -22,11 +23,21 @@ const updatePromotionMetrics = async () => {
   console.log('Starting promotion metrics update...');
   
   try {
-    // 1. Get all delivered campaigns
-    const { data: deliveredPromotions, error: promotionsError } = await supabase
-      .from('promotions')
+    // Check if a specific campaign ID was provided as a command-line argument
+    const specificCampaignId = process.argv[2];
+    
+    let query = supabase.from('promotions')
       .select('id, track_name, track_artist')
       .eq('status', 'delivered');
+    
+    // If a specific campaign ID was provided, filter by that
+    if (specificCampaignId) {
+      console.log(`Targeting specific campaign ID: ${specificCampaignId}`);
+      query = query.eq('id', specificCampaignId);
+    }
+    
+    // Execute the query
+    const { data: deliveredPromotions, error: promotionsError } = await query;
     
     if (promotionsError) {
       throw new Error(`Error fetching delivered promotions: ${promotionsError.message}`);

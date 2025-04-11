@@ -5,7 +5,18 @@ The promotions dashboard was not correctly showing metrics (approval rate, submi
 
 ## Solution
 
-### 1. Updated Edge Function
+### 1. Database Schema Update
+Added required columns to the promotions table:
+
+```sql
+ALTER TABLE public.promotions
+ADD COLUMN IF NOT EXISTS approval_count INTEGER DEFAULT 0;
+
+ALTER TABLE public.promotions
+ADD COLUMN IF NOT EXISTS estimated_streams INTEGER DEFAULT 0;
+```
+
+### 2. Edge Function Update
 Modified the `process-campaign-results` Edge Function to update the promotion record with metrics when marking a campaign as delivered:
 
 ```typescript
@@ -23,40 +34,74 @@ await supabaseAdmin
   .eq('id', campaignId)
 ```
 
-### 2. Updated Dashboard Display
-Changed the promotions dashboard to display consistent metrics matching the campaign detail page:
+### 3. Data Migration
+Applied SQL migration to update existing delivered campaigns:
 
-- Submissions
-- Approval Rate (calculated from approved / submissions)
-- Approved (number of approved tracks)
-- Est. Streams (estimated streams from approvals)
-
-### 3. Migration Script
-Created a script to update existing delivered campaigns with metrics from their result data:
-
-```bash
-# Run the migration script for existing campaigns
-node scripts/update-promotion-metrics.js
+```sql
+DO $$
+DECLARE
+  campaign_rec RECORD;
+  result_rec RECORD;
+  approved_count INTEGER;
+  total_submissions INTEGER;
+  est_streams INTEGER;
+BEGIN
+  -- Loop through all delivered campaigns
+  FOR campaign_rec IN 
+    SELECT id, track_name, track_artist
+    FROM public.promotions
+    WHERE status = 'delivered'
+  LOOP
+    -- Get latest result data for this campaign
+    SELECT stats
+    INTO result_rec
+    FROM public.campaign_result_data
+    WHERE campaign_id = campaign_rec.id
+    ORDER BY processed_at DESC
+    LIMIT 1;
+    
+    -- If result data found, update the campaign
+    IF result_rec.stats IS NOT NULL THEN
+      approved_count := COALESCE((result_rec.stats->>'approved')::INTEGER, 0);
+      total_submissions := COALESCE((result_rec.stats->>'totalSubmissions')::INTEGER, 0);
+      est_streams := approved_count * 250;
+      
+      -- Update the campaign
+      UPDATE public.promotions
+      SET 
+        approval_count = approved_count,
+        submission_count = total_submissions,
+        estimated_streams = est_streams
+      WHERE id = campaign_rec.id;
+    END IF;
+  END LOOP;
+END $$;
 ```
 
-## Deployment
+### 4. Dashboard Display Update
+Changed the promotions dashboard to display consistent metrics matching the campaign detail page:
 
-1. Deploy the updated Edge Function:
+- Submissions (from `submission_count`)
+- Approval Rate (calculated from `approval_count / submission_count`)
+- Approved (from `approval_count`)
+- Est. Streams (from `estimated_streams`)
+
+## Next Steps
+
+### 1. Deploy the Edge Function
+When Docker is available, deploy the updated function:
+
 ```bash
 npx supabase functions deploy process-campaign-results
 ```
 
-2. Run the migration script with appropriate environment variables:
-```bash
-export SUPABASE_URL=https://your-project.supabase.co
-export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-node scripts/update-promotion-metrics.js
-```
+### 2. Verify Functionality 
+For any new campaign deliveries, verify that metrics are properly populated in the dashboard view.
 
-## Additional Notes
+## Implementation Notes
 
-- The metrics calculation logic is consistent for both:
+- The metrics calculation logic is consistent between the campaign detail page and dashboard:
   - Approval Rate = (approved ÷ total submissions) × 100%
   - Estimated Streams = approved × 250
 
-- For campaigns without result data, the dashboard will show default values (0 for counts, 0.0% for rates) 
+- The dashboard has been updated to display 4 key metrics instead of showing the price, which provides a more useful view of campaign performance. 
